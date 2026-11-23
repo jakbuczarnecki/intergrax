@@ -7,17 +7,16 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import List, Optional
 
-from intergrax.integrations.providers.relational_store.sqlite.paths import (
-    DEFAULT_EXPERIMENTS_DB,
-    ENV_EXPERIMENTS_DB,
-    resolve_experiments_db_path,
-)
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
     RegisterExperimentRequest,
+)
+from intergrax.integrations.providers.relational_store.sqlite.paths import (
+    DEFAULT_EXPERIMENTS_DB,
+    ENV_EXPERIMENTS_DB,
+    resolve_experiments_db_path,
 )
 from intergrax.utils.time_provider import SystemTimeProvider
 
@@ -46,6 +45,7 @@ class SQLiteExperimentStore:
                 """
                 CREATE TABLE IF NOT EXISTS experiments (
                     experiment_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL DEFAULT '',
                     hypothesis TEXT NOT NULL,
                     capability TEXT NOT NULL,
                     agent_id TEXT,
@@ -58,6 +58,9 @@ class SQLiteExperimentStore:
                 );
                 """
             )
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(experiments)").fetchall()}
+            if "tenant_id" not in columns:
+                conn.execute("ALTER TABLE experiments ADD COLUMN tenant_id TEXT NOT NULL DEFAULT ''")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS experiment_runs (
@@ -81,13 +84,14 @@ class SQLiteExperimentStore:
             conn.execute(
                 """
                 INSERT INTO experiments (
-                    experiment_id, hypothesis, capability, agent_id,
+                    experiment_id, tenant_id, hypothesis, capability, agent_id,
                     expected_output, validation_criteria, decision, notes,
                     created_at_utc, updated_at_utc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.experiment_id,
+                    record.tenant_id,
                     record.hypothesis,
                     record.capability,
                     record.agent_id,
@@ -105,13 +109,20 @@ class SQLiteExperimentStore:
         self,
         *,
         limit: int = 50,
-        decision: Optional[ExperimentDecision] = None,
-    ) -> List[ExperimentRecord]:
+        decision: ExperimentDecision | None = None,
+        tenant_id: str | None = None,
+    ) -> list[ExperimentRecord]:
         query = "SELECT * FROM experiments"
         params: list[object] = []
+        clauses: list[str] = []
         if decision is not None:
-            query += " WHERE decision = ?"
+            clauses.append("decision = ?")
             params.append(decision.value)
+        if tenant_id is not None:
+            clauses.append("tenant_id = ?")
+            params.append(tenant_id)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
         query += " ORDER BY updated_at_utc DESC LIMIT ?"
         params.append(limit)
 
@@ -119,13 +130,15 @@ class SQLiteExperimentStore:
             rows = conn.execute(query, params).fetchall()
             return [self._row_to_record(conn, row) for row in rows]
 
-    def get(self, experiment_id: str) -> ExperimentRecord:
+    def get(self, experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord:
         with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM experiments WHERE experiment_id = ?",
                 (experiment_id,),
             ).fetchone()
             if row is None:
+                raise ValueError(f"Experiment not found: {experiment_id}")
+            if tenant_id is not None and row["tenant_id"] != tenant_id:
                 raise ValueError(f"Experiment not found: {experiment_id}")
             return self._row_to_record(conn, row)
 
@@ -134,15 +147,18 @@ class SQLiteExperimentStore:
         experiment_id: str,
         decision: ExperimentDecision,
         *,
-        notes: Optional[str] = None,
+        notes: str | None = None,
+        tenant_id: str | None = None,
     ) -> ExperimentRecord:
         now = SystemTimeProvider.utc_now().isoformat()
         with self._connection() as conn:
             row = conn.execute(
-                "SELECT notes FROM experiments WHERE experiment_id = ?",
+                "SELECT notes, tenant_id FROM experiments WHERE experiment_id = ?",
                 (experiment_id,),
             ).fetchone()
             if row is None:
+                raise ValueError(f"Experiment not found: {experiment_id}")
+            if tenant_id is not None and row["tenant_id"] != tenant_id:
                 raise ValueError(f"Experiment not found: {experiment_id}")
 
             merged_notes = row["notes"] or ""
@@ -165,6 +181,7 @@ class SQLiteExperimentStore:
                 )
                 return ExperimentRecord(
                     experiment_id=experiment_id,
+                    tenant_id=row["tenant_id"],
                     hypothesis="",
                     capability="",
                     decision=decision,
@@ -174,16 +191,24 @@ class SQLiteExperimentStore:
                     updated_at_utc=now,
                 )
 
-        return self.get(experiment_id)
+        return self.get(experiment_id, tenant_id=tenant_id)
 
-    def link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
+    def link_run(
+        self,
+        experiment_id: str,
+        run_id: str,
+        *,
+        tenant_id: str | None = None,
+    ) -> ExperimentRecord:
         now = SystemTimeProvider.utc_now().isoformat()
         with self._connection() as conn:
-            exists = conn.execute(
-                "SELECT 1 FROM experiments WHERE experiment_id = ?",
+            row = conn.execute(
+                "SELECT tenant_id FROM experiments WHERE experiment_id = ?",
                 (experiment_id,),
             ).fetchone()
-            if exists is None:
+            if row is None:
+                raise ValueError(f"Experiment not found: {experiment_id}")
+            if tenant_id is not None and row["tenant_id"] != tenant_id:
                 raise ValueError(f"Experiment not found: {experiment_id}")
 
             conn.execute(
@@ -197,7 +222,7 @@ class SQLiteExperimentStore:
                 "UPDATE experiments SET updated_at_utc = ? WHERE experiment_id = ?",
                 (now, experiment_id),
             )
-        return self.get(experiment_id)
+        return self.get(experiment_id, tenant_id=tenant_id)
 
     def _row_to_record(self, conn: sqlite3.Connection, row: sqlite3.Row) -> ExperimentRecord:
         run_rows = conn.execute(
@@ -208,8 +233,10 @@ class SQLiteExperimentStore:
             """,
             (row["experiment_id"],),
         ).fetchall()
+        tenant_key = "tenant_id" if "tenant_id" in row.keys() else None
         return ExperimentRecord(
             experiment_id=row["experiment_id"],
+            tenant_id=row[tenant_key] if tenant_key else "",
             hypothesis=row["hypothesis"],
             capability=row["capability"],
             agent_id=row["agent_id"],

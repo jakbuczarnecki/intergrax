@@ -6,14 +6,12 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from intergrax.debug.router import create_debug_router
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
     RegisterExperimentRequest,
 )
-from intergrax.experiments.persistence_contract import ExperimentPersistence
 
 pytestmark = pytest.mark.unit
 
@@ -36,15 +34,20 @@ class FakeExperimentStore:
         *,
         limit: int = 50,
         decision: ExperimentDecision | None = None,
+        tenant_id: str | None = None,
     ) -> list[ExperimentRecord]:
         rows = list(self._records.values())
         if decision is not None:
             rows = [row for row in rows if row.decision == decision]
+        if tenant_id is not None:
+            rows = [row for row in rows if row.tenant_id == tenant_id]
         return rows[:limit]
 
-    def get(self, experiment_id: str) -> ExperimentRecord:
+    def get(self, experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord:
         record = self._records.get(experiment_id)
         if record is None:
+            raise ValueError(f"Experiment not found: {experiment_id}")
+        if tenant_id is not None and record.tenant_id != tenant_id:
             raise ValueError(f"Experiment not found: {experiment_id}")
         return record
 
@@ -54,8 +57,9 @@ class FakeExperimentStore:
         decision: ExperimentDecision,
         *,
         notes: str | None = None,
+        tenant_id: str | None = None,
     ) -> ExperimentRecord:
-        record = self.get(experiment_id)
+        record = self.get(experiment_id, tenant_id=tenant_id)
         if decision == ExperimentDecision.DELETE:
             del self._records[experiment_id]
             return record.model_copy(update={"decision": decision, "notes": notes or ""})
@@ -68,8 +72,14 @@ class FakeExperimentStore:
         self._records[experiment_id] = updated
         return updated
 
-    def link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
-        record = self.get(experiment_id)
+    def link_run(
+        self,
+        experiment_id: str,
+        run_id: str,
+        *,
+        tenant_id: str | None = None,
+    ) -> ExperimentRecord:
+        record = self.get(experiment_id, tenant_id=tenant_id)
         run_ids = list(record.run_ids)
         if run_id not in run_ids:
             run_ids.append(run_id)

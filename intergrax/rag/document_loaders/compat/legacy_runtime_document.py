@@ -36,7 +36,11 @@ def to_legacy_rag_document(document: KnowledgeDocument) -> object:
     )
 
 
-def from_legacy_rag_hit(hit: object) -> KnowledgeDocument:
+def from_legacy_rag_hit(
+    hit: object,
+    *,
+    bound_tenant_id: str | None = None,
+) -> KnowledgeDocument:
     """Reconstruct a native document from a legacy provider hit."""
     try:
         metadata = attribute_access.optional(hit, "metadata")
@@ -67,4 +71,7 @@ def from_legacy_rag_hit(hit: object) -> KnowledgeDocument:
         content=content,
         metadata=metadata_copy,
     )
-    return from_langchain_document(legacy_document)
+    return from_langchain_document(
+        legacy_document,
+        bound_tenant_id=bound_tenant_id,
+    )

@@ -84,8 +84,7 @@ def _resolve_document_id(
 
     if not carriers:
         raise LangChainDocumentBridgeError(
-            "document_id is required from exactly one of: document_id argument, "
-            "Document.id, or metadata['document_id']"
+            "document_id is required from exactly one of: document_id argument, Document.id, or metadata['document_id']"
         )
     if len(carriers) > 1:
         raise LangChainDocumentBridgeError(
@@ -117,9 +116,7 @@ def _resolve_source_id(metadata: Mapping[str, Any]) -> str:
         legacy_source = raw_legacy_source
 
     if source_id is not None and legacy_source is not None and source_id != legacy_source:
-        raise LangChainDocumentBridgeError(
-            "metadata source_id and legacy metadata source must not conflict"
-        )
+        raise LangChainDocumentBridgeError("metadata source_id and legacy metadata source must not conflict")
 
     resolved = source_id if source_id is not None else legacy_source
     assert resolved is not None
@@ -186,6 +183,7 @@ def from_langchain_document(
     document: object,
     *,
     document_id: str | None = None,
+    bound_tenant_id: str | None = None,
 ) -> KnowledgeDocument:
     """Convert a LangChain Document into a native KnowledgeDocument."""
     document_cls = _get_langchain_document_class()
@@ -202,7 +200,16 @@ def from_langchain_document(
     )
     schema_version = _resolve_schema_version(metadata_view)
 
-    tenant_id = _required_transport_string(metadata_view, "tenant_id")
+    metadata_tenant_id = _required_transport_string(metadata_view, "tenant_id")
+    if bound_tenant_id is not None:
+        bound = bound_tenant_id.strip()
+        if not bound:
+            raise LangChainDocumentBridgeError("bound_tenant_id must be non-empty when provided")
+        if metadata_tenant_id.strip() != bound:
+            raise LangChainDocumentBridgeError("metadata tenant_id does not match bound_tenant_id")
+        tenant_id = bound
+    else:
+        tenant_id = metadata_tenant_id
     source_kind = _required_transport_string(metadata_view, "source_kind")
     source_id = _resolve_source_id(metadata_view)
 
@@ -267,9 +274,7 @@ def to_langchain_document(document: object) -> LangChainDocument:
         if not isinstance(legacy_source, str):
             raise LangChainDocumentBridgeError("metadata source must be a string")
         if legacy_source != validated.provenance.source_id:
-            raise LangChainDocumentBridgeError(
-                "metadata source and provenance.source_id must not conflict"
-            )
+            raise LangChainDocumentBridgeError("metadata source and provenance.source_id must not conflict")
 
     transport_metadata["root_document_id"] = validated.identity.root_document_id
     transport_metadata["tenant_id"] = validated.scope.tenant_id

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from intergrax.experiments.models import (
     ExperimentDecision,
@@ -27,29 +27,32 @@ class ExperimentReader(Protocol):
         self,
         *,
         limit: int = 50,
-        decision: Optional[ExperimentDecision] = None,
-    ) -> List[ExperimentRecord]:
-        ...
+        decision: ExperimentDecision | None = None,
+        tenant_id: str | None = None,
+    ) -> list[ExperimentRecord]: ...
 
-    def get(self, experiment_id: str) -> ExperimentRecord:
-        ...
+    def get(self, experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord: ...
 
 
 @runtime_checkable
 class ExperimentPersistence(ExperimentReader, Protocol):
     """Experiment registry persistence consumed by lab workflow and debug API."""
 
-    def register(self, request: RegisterExperimentRequest) -> ExperimentRecord:
-        ...
+    def register(self, request: RegisterExperimentRequest) -> ExperimentRecord: ...
 
     def set_decision(
         self,
         experiment_id: str,
         decision: ExperimentDecision,
         *,
-        notes: Optional[str] = None,
-    ) -> ExperimentRecord:
-        ...
+        notes: str | None = None,
+        tenant_id: str | None = None,
+    ) -> ExperimentRecord: ...
 
-    def link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
-        ...
+    def link_run(
+        self,
+        experiment_id: str,
+        run_id: str,
+        *,
+        tenant_id: str | None = None,
+    ) -> ExperimentRecord: ...
