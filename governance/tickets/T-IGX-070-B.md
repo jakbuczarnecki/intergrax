@@ -1,4 +1,4 @@
-﻿# T-IGX-070-B — SFX R2 corrective documentation (IGX-SFX-R2-CORR-001)
+# T-IGX-070-B — SFX R2 corrective documentation (IGX-SFX-R2-CORR-001)
 
 ## Scope
 
