@@ -11,7 +11,7 @@
   "certification_publication_sha": "406e948c4a7107fe68268f52137cf4a7fe378989",
   "session_b_verdict": "PASS",
   "session_b_governance_audit_report_digest": "c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e",
-  "session_b_manifest_digest": "798df4398a755eff5d2d7a7e9d332adf513e024134a024a217796fb2e71e5d5d",
+  "session_b_manifest_digest": "3b38725bd740fbf5e0509c1d2d1d2fb3db44156b1d107b79bbe0bfa569316f2e",
   "session_b_manifest_path": "docs/project/maintainers/qualification/iiac_evidence/ARCH-FREEZE/RB-2/activation/iiac_audit_session_manifest.IIAC-ACT-N11-ARCH-FREEZE-RB2-DEV-MAIN.json",
   "audit_report_path": "docs/project/maintainers/qualification/iiac_evidence/IIAC-GOV-1/certification/IIAC_ACT01_INDEPENDENT_REAUDIT_DOSSIER.md",
   "audit_scope_path": "docs/project/maintainers/qualification/iiac_evidence/ENT-AUDIT-X/act_n11_recovery/audit_scope.json",

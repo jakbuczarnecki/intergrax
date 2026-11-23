@@ -1,8 +1,8 @@
 # IIAC operator decision — ARCH-FREEZE RB-2 dev-main ACT-N11 rebind
 
-Decision ID: IIIC-OD-ARCH-FREEZE-RB2-DEV-MAIN-2026-11-23
+Decision ID: IIAC-OD-ARCH-FREEZE-RB2-DEV-MAIN-2026-11-23
 Policy version: IIAC-2026-11-05.1
-Decision scope: IIIC policy activation (ACT-N11 rebind of the `development` product tree at certification HEAD for PR #744)
+Decision scope: IIAC policy activation (ACT-N11 rebind of the `development` product tree at certification HEAD for PR #744)
 Decision status: AUTHORIZED
 Audit report digest: c405c65faf53243a0511b0b9584a9f3abda4db08c09ee9b9266c86fe9f6b7a4e
 
