@@ -14,37 +14,85 @@
     "canonical_digest"
   ],
   "properties": {
-    "schema_version": { "const": "sfx.candidate_comparison.v1" },
-    "mission_id": { "type": "string" },
-    "goal_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "acceptance_suite_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "schema_version": {
+      "const": "sfx.candidate_comparison.v1"
+    },
+    "mission_id": {
+      "type": "string"
+    },
+    "goal_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "acceptance_suite_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
     "candidates": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["candidate_id", "verdict_ref", "business_metrics"],
+        "required": [
+          "candidate_id",
+          "verdict_ref",
+          "business_metrics"
+        ],
         "properties": {
-          "candidate_id": { "type": "string" },
-          "verdict_ref": { "type": "string" },
-          "security_regression_ref": { "type": "string" },
+          "candidate_id": {
+            "type": "string"
+          },
+          "verdict_ref": {
+            "type": "string"
+          },
+          "security_regression_ref": {
+            "type": "string"
+          },
           "business_metrics": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "acceptance_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
-              "runtime_ms_p50": { "type": "number", "minimum": 0 },
-              "cost_total": { "type": "number", "minimum": 0 }
+              "acceptance_pass_rate_bp": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000,
+                "description": "Basis points (CF-4); floats forbidden."
+              },
+              "runtime_ms_p50": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cost_total_minor": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           },
-          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     },
-    "selected_champion_candidate_id": { "type": "string" },
-    "selection_rationale": { "type": "string" },
-    "evidence_refs": { "type": "array", "items": { "type": "string" } },
-    "canonical_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    "selected_champion_candidate_id": {
+      "type": "string"
+    },
+    "selection_rationale": {
+      "type": "string"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "canonical_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
   }
 }

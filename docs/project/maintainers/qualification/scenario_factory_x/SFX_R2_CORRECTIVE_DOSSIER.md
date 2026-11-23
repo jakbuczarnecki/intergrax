@@ -30,7 +30,8 @@
 | SEF delegation | `r2/SFX_R2_SEF_CROSS_PROGRAM_AMENDMENT.md` | §8 15 topics + revocation | review | §8 table | FIXED |
 | Dossier publication | `SFX_R2_AMENDMENT_DOSSIER.md` | historical SHAs | link test | pytest or BLOCKED | FIXED |
 | WBS H-01 | `r2/SFX_R2_WBS_DAG_AMENDMENT.md` | REF-1 assisted deps sans R2-W5-03 | reviewer H-01 | WBS regen | FIXED |
-| Independent audit | `r2/SFX_R2_INDEPENDENT_AUDIT_MATRIX.md` | igx-reviewer PASS_WITH_FINDINGS → H-01 fixed | re-review optional | agent cffc3e53 | FIXED pending sign-off |
+| Independent audit | `r2/SFX_R2_INDEPENDENT_AUDIT_MATRIX.md` | igx-reviewer @ `e5cd9879e` | B1–E+D | [eb149846](eb149846-2191-450b-974c-d05c85a117fc) | PASS_WITH_FINDINGS |
+| CF-4 numeric fields | proposed schemas | integer / basis points | CF-4 review | SFX_CANONICALIZATION.md | FIXED |
 
 ## C. Completeness counts
 
@@ -47,7 +48,7 @@
 | `DOCUMENTATION_CORRECTED` | **YES** |
 | `INTERNAL_CONSISTENCY_VERIFIED` | **YES** (DAG, contracts, REF-1, schemas) |
 | `VALIDATION_PASS` | **PARTIAL** — JSON 6/6 OK; link test **BLOCKED** (repo-wide pre-existing); pytest not SFX-only |
-| `INDEPENDENT_REVIEW_PASS` | **PASS_WITH_FINDINGS** — H-01 remediated; MEDIUM open (schema numeric CF-4, hub nuance) |
+| `INDEPENDENT_REVIEW_PASS` | **PASS_WITH_FINDINGS** (matrix = SSOT; no open HIGH) |
 | `READY_FOR_OPERATOR_APPROVAL` | **YES** (documentation queue; not implementation) |
 | `CANONICAL_R2_APPROVED` | **NO** |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
@@ -62,3 +63,13 @@
 | G4 link integrity pytest | **BLOCKED** (unrelated docs breakage @ HEAD) |
 | G5 architecture invariants | PASS (reviewer + self-QA) |
 | G6 environment `uv sync` | **NOT_RUN** (parallel pytest; run when idle) |
+
+## E. Operator decisions required
+
+| # | Decision | Status |
+| --- | --- | --- |
+| OD-R2-CANON | Adopt R2 as canonical overlay (`CANONICAL_R2_APPROVED`) | **OPEN** |
+| OD-SEF-DELEG | Approve SFX↔SEF delegated autonomy contract (HO-2) | **OPEN** — see `SFX_R2_OPERATOR_DECISION_REGISTER.md` |
+| OD-ECAP-16 | ECAP §16 applicability to Tier-2 SFX (`C-ECAP-01`) | **OPEN** |
+| OD-070-PLAN | `Approved:` on `PLAN_T-IGX-070-A` / `PLAN_T-IGX-070-B` | **OPEN** — `plan_pending` |
+| OD-PUBLISH | Push corrective batch to `origin/development` if not already | **OPEN** (hook-blocked in agent session) |
