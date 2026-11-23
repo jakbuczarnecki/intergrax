@@ -175,24 +175,202 @@ def test_pr_requires_exact_base_head_and_allowed_files(mod, monkeypatch) -> None
         mod.verify_pr(p, number)
 
 
+def _patch_pr_checks(monkeypatch, mod, *, required, all_checks):
+    def parse(argv: list[str]):
+        if "--required" in argv:
+            return required
+        return all_checks
+
+    monkeypatch.setattr(mod, "parse_pr_checks", parse)
+
+
 @pytest.mark.parametrize(
-    "checks",
+    "required,all_checks,kind",
     [
-        [],
-        [{"name": "smoke", "state": "FAILURE"}],
-        [{"name": "smoke", "state": "PENDING"}],
-        [{"name": "smoke", "state": "SKIPPING"}],
+        ([], [{"name": "smoke", "state": "SUCCESS"}], "product"),
+        ([{"name": "smoke", "state": "FAILURE"}], [{"name": "smoke", "state": "FAILURE"}], "product"),
+        ([{"name": "smoke", "state": "PENDING"}], [{"name": "smoke", "state": "PENDING"}], "product"),
+        ([{"name": "smoke", "state": "SKIPPING"}], [{"name": "smoke", "state": "SKIPPING"}], "product"),
     ],
 )
-def test_required_checks_fail_closed(mod, monkeypatch, checks) -> None:
-    monkeypatch.setattr(mod, "command", lambda argv, **kwargs: json.dumps(checks))
+def test_required_checks_fail_closed(mod, monkeypatch, required, all_checks, kind) -> None:
+    _patch_pr_checks(monkeypatch, mod, required=required, all_checks=all_checks)
     with pytest.raises(mod.Blocked):
-        mod.required_checks(17)
+        mod.required_checks(17, kind=kind)
 
 
 def test_required_checks_accept_success(mod, monkeypatch) -> None:
-    monkeypatch.setattr(mod, "command", lambda argv, **kwargs: json.dumps([{"name": "smoke", "state": "SUCCESS"}]))
-    mod.required_checks(17)
+    ok = [{"name": "smoke", "state": "SUCCESS"}]
+    _patch_pr_checks(monkeypatch, mod, required=ok, all_checks=ok)
+    mod.required_checks(17, kind="product")
+
+
+def test_docs_profile_passes_without_github_required(mod, monkeypatch) -> None:
+    all_ok = [{"name": name, "state": "SUCCESS"} for name in mod.DOC_CI_PROFILE]
+    _patch_pr_checks(monkeypatch, mod, required=[], all_checks=all_ok)
+    mod.required_checks(756, kind="docs")
+
+
+def test_docs_profile_blocks_skipped_mandatory(mod, monkeypatch) -> None:
+    checks = [{"name": name, "state": "SUCCESS"} for name in mod.DOC_CI_PROFILE]
+    for index, item in enumerate(checks):
+        if item["name"] == "ci-smoke":
+            checks[index] = {"name": "ci-smoke", "state": "SKIPPING"}
+            break
+    _patch_pr_checks(monkeypatch, mod, required=[], all_checks=checks)
+    with pytest.raises(mod.Blocked, match="mandatory documentation check skipped"):
+        mod.required_checks(756, kind="docs")
+
+
+def test_parse_pr_checks_handles_no_github_required(mod, monkeypatch) -> None:
+    class Done:
+        returncode = 1
+        stdout = b""
+        stderr = b"no required checks reported on the branch"
+
+    monkeypatch.setattr(mod, "run", lambda *a, **k: Done())
+    assert (
+        mod.parse_pr_checks(["gh", "pr", "checks", "756", "--required", "--json", "name,state", "-R", mod.REPO]) == []
+    )
+
+
+def test_docs_profile_blocks_missing_mandatory(mod, monkeypatch) -> None:
+    partial = [{"name": "ci-smoke", "state": "SUCCESS"}]
+    _patch_pr_checks(monkeypatch, mod, required=[], all_checks=partial)
+    with pytest.raises(mod.Blocked, match="mandatory documentation check missing"):
+        mod.required_checks(756, kind="docs")
+
+
+def test_command_rejects_invalid_utf8_structured_output(mod, monkeypatch) -> None:
+    class Done:
+        returncode = 0
+        stdout = b"\xff\xfe"
+        stderr = b""
+
+    monkeypatch.setattr(mod, "run", lambda *a, **k: Done())
+    with pytest.raises(mod.Blocked, match="UTF-8"):
+        mod.command(["gh", "pr", "view", "1", "--json", "number"])
+
+
+def test_command_reports_unicode_stderr_on_failure(mod, monkeypatch) -> None:
+    class Done:
+        returncode = 1
+        stdout = b""
+        stderr = "Błąd repozytorium".encode()
+
+    monkeypatch.setattr(mod, "run", lambda *a, **k: Done())
+    with pytest.raises(mod.Blocked, match="Błąd"):
+        mod.command(["gh", "status"])
+
+
+def test_publish_reuses_existing_open_pr(mod, monkeypatch, tmp_path: Path, capsys) -> None:
+    p = packet()
+    p.update(
+        {
+            "target": "development",
+            "kind": "docs",
+            "branch": "integ/sfx-r2-corr-001",
+            "write_set": ["docs/project/guide.md"],
+            "pr_title": "Doc update for integrator test",
+            "pr_body_file": ".tmp/proof/publish/body.md",
+        }
+    )
+    body = tmp_path / p["pr_body_file"]
+    body.parent.mkdir(parents=True)
+    body.write_text("body", encoding="utf-8")
+    create_calls: list[list[str]] = []
+
+    def track(argv, **kwargs):
+        create_calls.append(argv)
+        if argv[:3] == ["git", "push", "origin"]:
+            return ""
+        if len(argv) > 2 and argv[1:3] == ["pr", "list"]:
+            return json.dumps(
+                [
+                    {
+                        "number": 756,
+                        "headRefOid": p["head_sha"],
+                        "baseRefName": "development",
+                        "headRefName": p["branch"],
+                        "state": "OPEN",
+                    }
+                ]
+            )
+        return ""
+
+    monkeypatch.setattr(mod, "command", track)
+    monkeypatch.setattr(mod, "verify_local", lambda *_: None)
+    monkeypatch.setattr(mod, "target_sha", lambda _: p["base_sha"])
+    monkeypatch.setattr(mod, "branch_head_sha", lambda _: p["head_sha"])
+    mod.publish(p, tmp_path)
+    assert not any(len(c) > 2 and c[1:3] == ["pr", "create"] for c in create_calls)
+    out = json.loads(capsys.readouterr().out)
+    assert out["pr"] == 756 and out["reused"] is True
+
+
+def test_publish_blocks_duplicate_open_prs(mod, monkeypatch, tmp_path: Path) -> None:
+    p = packet()
+    p.update(
+        {
+            "target": "development",
+            "kind": "docs",
+            "branch": "integ/sfx-r2-corr-001",
+            "write_set": ["docs/project/guide.md"],
+            "pr_title": "Doc update for integrator test",
+            "pr_body_file": ".tmp/proof/publish/body.md",
+        }
+    )
+    body = tmp_path / p["pr_body_file"]
+    body.parent.mkdir(parents=True)
+    body.write_text("body", encoding="utf-8")
+
+    def track(argv, **kwargs):
+        if len(argv) > 2 and argv[1:3] == ["pr", "list"]:
+            row = {
+                "headRefOid": p["head_sha"],
+                "baseRefName": "development",
+                "headRefName": p["branch"],
+                "state": "OPEN",
+            }
+            return json.dumps([{**row, "number": 756}, {**row, "number": 757}])
+        return ""
+
+    monkeypatch.setattr(mod, "command", track)
+    monkeypatch.setattr(mod, "verify_local", lambda *_: None)
+    monkeypatch.setattr(mod, "target_sha", lambda _: p["base_sha"])
+    monkeypatch.setattr(mod, "branch_head_sha", lambda _: p["head_sha"])
+    with pytest.raises(mod.Blocked, match="duplicate open PRs"):
+        mod.publish(p, tmp_path)
+
+
+def test_publish_blocks_remote_divergence(mod, monkeypatch, tmp_path: Path) -> None:
+    p = packet()
+    p.update(
+        {
+            "target": "development",
+            "kind": "docs",
+            "branch": "integ/sfx-r2-corr-001",
+            "write_set": ["docs/project/guide.md"],
+            "pr_title": "Doc update for integrator test",
+            "pr_body_file": ".tmp/proof/publish/body.md",
+        }
+    )
+    body = tmp_path / p["pr_body_file"]
+    body.parent.mkdir(parents=True)
+    body.write_text("body", encoding="utf-8")
+    remote = "d" * 40
+
+    def track(argv, **kwargs):
+        if argv[:3] == ["git", "merge-base", "--is-ancestor"]:
+            raise mod.Blocked("not ancestor")
+        return ""
+
+    monkeypatch.setattr(mod, "command", track)
+    monkeypatch.setattr(mod, "verify_local", lambda *_: None)
+    monkeypatch.setattr(mod, "target_sha", lambda _: p["base_sha"])
+    monkeypatch.setattr(mod, "branch_head_sha", lambda _: remote)
+    with pytest.raises(mod.Blocked, match="remote branch diverged"):
+        mod.publish(p, tmp_path)
 
 
 @pytest.mark.parametrize(

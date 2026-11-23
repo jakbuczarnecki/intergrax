@@ -23,6 +23,20 @@ TARGETS = {"arch-freeze/rw-train": "product", "development": "docs"}
 SHA = re.compile(r"^[0-9a-f]{40}$")
 BRANCH = re.compile(r"^(?:af2|integ|feat|fix)/[A-Za-z0-9._/-]{1,110}$")
 TICKET = re.compile(r"^governance/tickets/T-IGX-\d{3}-[A-Z]\.md$")
+DOC_CI_PROFILE = frozenset(
+    {
+        "ci-smoke",
+        "ticket-governance",
+        "governance-policy-pin",
+        "governance-fast",
+        "evol-x-b4-preflight",
+        "ent-audit-fast",
+        "ent-audit-pr-gate",
+    }
+)
+CI_PASS = frozenset({"SUCCESS", "PASS", "NEUTRAL"})
+CI_PENDING = frozenset({"PENDING", "IN_PROGRESS", "QUEUED", "WAITING"})
+CI_SKIP = frozenset({"SKIPPING", "SKIPPED", "CANCELLED"})
 PROTECTED = (
     ".claude/",
     "agent-env/",
@@ -54,11 +68,32 @@ class Blocked(RuntimeError):
     """A fail-closed refusal; do not bypass or silently retry."""
 
 
+def _decode_bytes(data: bytes, *, strict: bool) -> str:
+    try:
+        return data.decode("utf-8", errors="strict" if strict else "replace")
+    except UnicodeDecodeError as exc:
+        raise Blocked("command output is not valid UTF-8") from exc
+
+
+def run(argv: list[str], *, cwd: Path | None = None) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(argv, cwd=cwd, capture_output=True, check=False)
+
+
 def command(argv: list[str], *, cwd: Path | None = None) -> str:
-    done = subprocess.run(argv, cwd=cwd, text=True, capture_output=True, check=False)
+    structured = "--json" in argv
+    done = run(argv, cwd=cwd)
     if done.returncode:
-        raise Blocked(f"command failed: {argv[0]} {argv[1] if len(argv) > 1 else ''}: {done.stderr.strip()[:250]}")
-    return done.stdout.strip()
+        err = _decode_bytes(done.stderr, strict=False).strip()[:250]
+        raise Blocked(f"command failed: {argv[0]} {argv[1] if len(argv) > 1 else ''}: {err}")
+    if not done.stdout:
+        return ""
+    text = _decode_bytes(done.stdout, strict=structured)
+    if structured:
+        try:
+            json.loads(text)
+        except ValueError as exc:
+            raise Blocked("command returned malformed JSON") from exc
+    return text.strip()
 
 
 def gh_api(path: str) -> Any:
@@ -138,8 +173,6 @@ def check_ticket(p: dict[str, Any], checkout: Path) -> None:
     if ticket.is_file():
         text = ticket.read_text(encoding="utf-8")
     else:
-        # RW train may predate development-only approved ticket records.
-        # Read the canonical published ticket; never forge/stage approvals.
         record = gh_api(f"contents/{p['ticket']}?ref=development")
         if not isinstance(record, dict) or record.get("encoding") != "base64":
             raise Blocked("approved ticket not found in worktree or canonical development")
@@ -185,6 +218,13 @@ def target_sha(branch: str) -> str:
     return value
 
 
+def branch_head_sha(branch: str) -> str | None:
+    try:
+        return target_sha(branch)
+    except Blocked:
+        return None
+
+
 def list_pr_files(number: int) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for page in range(1, 12):
@@ -219,16 +259,94 @@ def verify_pr(p: dict[str, Any], number: int) -> None:
         raise Blocked("target SHA moved")
 
 
-def required_checks(number: int) -> None:
-    raw = command(["gh", "pr", "checks", str(number), "--required", "--json", "name,state", "-R", REPO])
+def parse_pr_checks(argv: list[str]) -> list[dict[str, Any]]:
+    done = run(argv)
+    if done.returncode:
+        err = _decode_bytes(done.stderr, strict=False).lower()
+        if "--required" in argv and "no required checks" in err:
+            return []
+        msg = _decode_bytes(done.stderr, strict=False).strip()[:250]
+        raise Blocked(f"CI query failed: {msg}")
+    if not done.stdout:
+        raise Blocked("CI query returned no data")
+    text = _decode_bytes(done.stdout, strict=True)
     try:
-        checks = json.loads(raw)
+        checks = json.loads(text)
     except ValueError as exc:
-        raise Blocked("invalid required CI response") from exc
-    if not isinstance(checks, list) or not checks:
+        raise Blocked("invalid CI response") from exc
+    if not isinstance(checks, list):
+        raise Blocked("invalid CI response shape")
+    return checks
+
+
+def qualify_ci(number: int, kind: str) -> None:
+    required = parse_pr_checks(["gh", "pr", "checks", str(number), "--required", "--json", "name,state", "-R", REPO])
+    for item in required:
+        state = item.get("state")
+        if state in CI_SKIP:
+            raise Blocked("required checks red, pending, or skipped")
+        if state in CI_PENDING or state not in CI_PASS:
+            raise Blocked("required checks red, pending, or skipped")
+
+    all_checks = parse_pr_checks(["gh", "pr", "checks", str(number), "--json", "name,state", "-R", REPO])
+    if not all_checks:
+        raise Blocked("CI check information unavailable")
+
+    by_name = {c.get("name"): c.get("state") for c in all_checks if isinstance(c.get("name"), str)}
+
+    if kind == "docs":
+        for name in DOC_CI_PROFILE:
+            state = by_name.get(name)
+            if state is None:
+                raise Blocked(f"mandatory documentation check missing: {name}")
+            if state in CI_SKIP:
+                raise Blocked(f"mandatory documentation check skipped: {name}")
+            if state in CI_PENDING or state not in CI_PASS:
+                raise Blocked(f"mandatory documentation check not successful: {name}")
+    elif not required:
         raise Blocked("no required CI checks: cannot prove safe merge")
-    if any(x.get("state") not in ("SUCCESS", "PASS") for x in checks):
-        raise Blocked("required checks red, pending, or skipped")
+
+    for item in all_checks:
+        state = item.get("state")
+        if not isinstance(state, str):
+            raise Blocked("CI check information unavailable")
+        if state in CI_SKIP:
+            continue
+        if state in CI_PENDING:
+            raise Blocked("CI checks still pending")
+        if state not in CI_PASS:
+            raise Blocked("applicable CI check failed")
+
+
+def required_checks(number: int, *, kind: str = "product") -> None:
+    qualify_ci(number, kind)
+
+
+def open_prs_for_branch(branch: str, target: str) -> list[dict[str, Any]]:
+    raw = command(
+        [
+            "gh",
+            "pr",
+            "list",
+            "-R",
+            REPO,
+            "--head",
+            branch,
+            "--base",
+            target,
+            "--state",
+            "open",
+            "--json",
+            "number,headRefOid,baseRefName,headRefName,state",
+        ]
+    )
+    try:
+        data = json.loads(raw)
+    except ValueError as exc:
+        raise Blocked("invalid open PR listing") from exc
+    if not isinstance(data, list):
+        raise Blocked("invalid open PR listing shape")
+    return data
 
 
 def publish(p: dict[str, Any], checkout: Path) -> None:
@@ -243,7 +361,30 @@ def publish(p: dict[str, Any], checkout: Path) -> None:
     path = (checkout / body).resolve()
     if (checkout / ".tmp/proof").resolve() not in path.parents or not path.is_file():
         raise Blocked("PR body file missing")
-    command(["git", "push", "origin", f"{p['head_sha']}:refs/heads/{p['branch']}"], cwd=checkout)
+
+    remote_sha = branch_head_sha(p["branch"])
+    if remote_sha and remote_sha != p["head_sha"]:
+        try:
+            command(["git", "merge-base", "--is-ancestor", remote_sha, p["head_sha"]], cwd=checkout)
+        except Blocked as exc:
+            raise Blocked("remote branch diverged") from exc
+    if remote_sha != p["head_sha"]:
+        command(["git", "push", "origin", f"{p['head_sha']}:refs/heads/{p['branch']}"], cwd=checkout)
+
+    matches = [pr for pr in open_prs_for_branch(p["branch"], p["target"]) if pr.get("state") == "OPEN"]
+    if len(matches) > 1:
+        raise Blocked("duplicate open PRs for integration branch")
+    if len(matches) == 1:
+        pr = matches[0]
+        number = pr.get("number")
+        head = pr.get("headRefOid")
+        if not isinstance(number, int) or not isinstance(head, str) or head != p["head_sha"]:
+            raise Blocked("existing PR head does not match candidate")
+        if pr.get("baseRefName") != p["target"] or pr.get("headRefName") != p["branch"]:
+            raise Blocked("existing PR branch target mismatch")
+        print(json.dumps({"result": "PUBLISHED", "pr": number, "reused": True}))
+        return
+
     command(
         [
             "gh",
@@ -262,15 +403,25 @@ def publish(p: dict[str, Any], checkout: Path) -> None:
         ],
         cwd=checkout,
     )
+    created = open_prs_for_branch(p["branch"], p["target"])
+    if len(created) != 1:
+        raise Blocked("could not confirm created PR identity")
+    number = created[0].get("number")
+    if not isinstance(number, int):
+        raise Blocked("could not confirm created PR identity")
+    print(json.dumps({"result": "PUBLISHED", "pr": number, "reused": False}))
 
 
 def merge(p: dict[str, Any]) -> None:
     number = p.get("pr_number")
     if not isinstance(number, int) or number <= 0:
         raise Blocked("missing PR number")
+    kind = p.get("kind")
+    if kind not in TARGETS.values():
+        raise Blocked("invalid integration kind")
     verify_pr(p, number)
-    required_checks(number)
-    verify_pr(p, number)  # Detect changed base/head after required checks were queried.
+    required_checks(number, kind=kind)
+    verify_pr(p, number)
     command(["gh", "pr", "merge", str(number), "--merge", "--match-head-commit", p["head_sha"], "-R", REPO])
     final = gh_api(f"pulls/{number}")
     merged_sha = final.get("merge_commit_sha")
