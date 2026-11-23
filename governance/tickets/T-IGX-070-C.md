@@ -29,9 +29,15 @@ Plan digest: 7c039ad2c00db38b6a1e0ac8f0feca204cfd39c4805efc584c4aaa92752e9925
 uv run python -c "import json,glob; [json.load(open(p)) for p in glob.glob('docs/project/maintainers/qualification/scenario_factory_x/design/schemas/proposed/*.json')]"
 ```
 
+## Approved
+
+Approved: operator-delegate @ 2026-11-23T16:18:52+01:00
+Delegation: docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/DELEGATION-SFX-R2-070-C-PLAN-APPROVAL.md@58683f18aa029f85b487d2ae1f5df6228b3dfc68
+Delegate session: local_491df1e7-9f89-43d0-a7d8-ffdbbfb9cab4
+
 ## Lifecycle state
 
-plan_pending
+plan_approved
 
 ## Deliverables
 
