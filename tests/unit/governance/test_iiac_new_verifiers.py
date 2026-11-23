@@ -286,6 +286,7 @@ def test_published_allowlist_is_exactly_the_three_known_drafts_and_corpus_passes
     allow = json.loads((SCRIPTS / "iiac_known_draft_manifests.v1.json").read_text(encoding="utf-8"))
     assert allow["schema"] == "iiac_known_draft_manifests.v1"
     assert sorted(Path(e["path"]).name for e in allow["entries"]) == [
+        "iiac_audit_session_manifest.ARCH-FREEZE-RB-2.certifier_draft.json",
         "iiac_audit_session_manifest.EVOL-X-B4.reaudit_draft.json",
         "iiac_audit_session_manifest.EVOL-X-W4-01.reaudit_draft.json",
         "iiac_audit_session_manifest.EVOL-X.auditor_draft.json",
@@ -303,7 +304,7 @@ def test_published_corpus_fails_without_the_allowlist(tmp_path: Path) -> None:
     empty.write_text(json.dumps({"schema": "iiac_known_draft_manifests.v1", "entries": []}), encoding="utf-8")
     rc, output = _run(verify_iiac_manifest_corpus.main, ["--allowlist", str(empty)])
     assert rc == 1
-    assert len(re.findall(r"MANIFEST_INVALID", output)) == 3
+    assert len(re.findall(r"MANIFEST_INVALID", output)) == 4
 
 
 @pytest.mark.parametrize(

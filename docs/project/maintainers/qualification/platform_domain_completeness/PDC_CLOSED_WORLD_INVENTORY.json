@@ -14,7 +14,7 @@
   "summary": {
     "CONSUMER": {
       "INSPECTED": 0,
-      "INDEX_ONLY": 30,
+      "INDEX_ONLY": 31,
       "UNINSPECTED": 0
     },
     "PDC-D1": {
@@ -40,7 +40,7 @@
     "PDC-D5": {
       "INSPECTED": 9,
       "INDEX_ONLY": 0,
-      "UNINSPECTED": 2
+      "UNINSPECTED": 3
     },
     "PDC-D6": {
       "INSPECTED": 4,
@@ -435,6 +435,12 @@
     },
     {
       "kind": "consumer",
+      "path": "applications/build",
+      "category": "CONSUMER",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "consumer",
       "path": "applications/dispute_sim_application",
       "category": "CONSUMER",
       "status": "INDEX_ONLY"
@@ -570,6 +576,12 @@
       "path": "docs/project/architecture/CONVERSATION_CHANNEL_CONTRACT.md",
       "category": "PLATFORM-FOUNDATION",
       "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/architecture/CRITIC_VERIFICATION.md",
+      "category": "PDC-D5",
+      "status": "UNINSPECTED"
     },
     {
       "kind": "document",

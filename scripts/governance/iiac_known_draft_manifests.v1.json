@@ -19,6 +19,12 @@
       "sha256": "83db6500965e3ed55b4d0b5a397470312f013ecadd2090f95e792cd85a43b129",
       "reason": "EVOL-X B4 re-audit draft: evidence and certification SHAs are placeholders; superseded by the b4_delta_reaudit manifest; kept as published because the evidence index cites its digest.",
       "supersession_register_ref": null
+    },
+    {
+      "path": "docs/project/maintainers/qualification/iiac_evidence/ARCH-FREEZE/RB-2/certifier/iiac_audit_session_manifest.ARCH-FREEZE-RB-2.certifier_draft.json",
+      "sha256": "0933d6742a92470236923ecd482121aed2bd24860c21f528cb1802b4781f4ec2",
+      "reason": "ARCH-FREEZE RB-2 certifier DRAFT: session and publication SHAs are placeholders; kept as published because the RB-2 evidence tree cites it; does not claim PASS.",
+      "supersession_register_ref": null
     }
   ]
 }
