@@ -39,14 +39,14 @@ def _run_ruff(paths: list[str]) -> int:
         return 0
     print(f"[INFO] pre-commit ruff: {len(paths)} file(s)", flush=True)
     check = subprocess.run(
-        ["uv", "run", "ruff", "check", *paths],
+        ["uv", "run", "--no-sync", "ruff", "check", *paths],
         cwd=_REPO,
         check=False,
     )
     if check.returncode != 0:
         return check.returncode
     return subprocess.run(
-        ["uv", "run", "ruff", "format", "--check", *paths],
+        ["uv", "run", "--no-sync", "ruff", "format", "--check", *paths],
         cwd=_REPO,
         check=False,
     ).returncode
