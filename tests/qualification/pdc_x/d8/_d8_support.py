@@ -25,10 +25,11 @@ from intergrax.contracts.artifact_ref import (
     ArtifactRetentionClass,
 )
 from intergrax.contracts.execution_identity import (
+    RunId,
     mint_attempt_id,
     mint_execution_id,
-    mint_run_id,
     mint_task_id,
+    validate_run_id,
 )
 from intergrax.integrations.contracts.object_storage import StoredObject
 from intergrax.runtime.agent_governance.audit import (
@@ -57,6 +58,7 @@ from intergrax.runtime.nexus.artifacts.sources import ExecutionArtifactSource
 T0 = datetime(2026, 11, 13, 12, 0, tzinfo=UTC)
 TENANT_A = "tenant-a"
 TENANT_B = "tenant-b"
+DEFAULT_D8_RUN_ID = RunId(f"run_{'d' * 32}")
 
 
 class MutableClock:
@@ -76,7 +78,7 @@ def make_artifact(
     *,
     tenant_id: str = TENANT_A,
     artifact_id: str = "art-1",
-    run_id: str = "run-1",
+    run_id: str = str(DEFAULT_D8_RUN_ID),
     data: bytes = b"payload",
     artifact_class: ArtifactClass = ArtifactClass.EXECUTION_EVIDENCE,
     retention_class: ArtifactRetentionClass = ArtifactRetentionClass.DEFAULT,
@@ -116,12 +118,13 @@ def make_context(
     *,
     tenant_id: str = TENANT_A,
     agent_id: str = "agent-reader",
-    run_id: str | None = None,
+    run_id: RunId | str | None = None,
 ) -> ArtifactAccessContext:
+    resolved = validate_run_id(run_id) if run_id is not None else DEFAULT_D8_RUN_ID
     return ArtifactAccessContext(
         agent=AgentIdentity(agent_id=agent_id, tenant_id=tenant_id),
         task_id=mint_task_id(),
-        run_id=run_id or mint_run_id(),
+        run_id=resolved,
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )

@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from intergrax.contracts.data_classification import DataClassification
-from intergrax.contracts.structured_json_value import JsonObject
+from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.middleware_hook_semantics import (
     DataProtectionHookPayload,
     DataProtectionRestrictedValue,
@@ -13,8 +14,11 @@ from intergrax.contracts.middleware_hook_semantics import (
     MiddlewareExecutionSubjectFacet,
     ToolCallHookPayload,
 )
-from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import JsonObject
 from intergrax.runtime.hooks.hook_context import HookContext
+
+DEFAULT_HOOK_TASK = str(TaskId(f"task_{'a' * 32}"))
+DEFAULT_HOOK_RUN = str(RunId(f"run_{'a' * 32}"))
 
 
 def tool_hook_context_for_test(
@@ -28,8 +32,8 @@ def tool_hook_context_for_test(
         "arguments": arguments or {},
     }
     return HookContext(
-        task_id=str(kwargs.get("task_id", "task-1")),
-        run_id=str(kwargs.get("run_id", "run-1")),
+        task_id=str(kwargs.get("task_id", DEFAULT_HOOK_TASK)),
+        run_id=str(kwargs.get("run_id", DEFAULT_HOOK_RUN)),
         agent_id=kwargs.get("agent_id"),  # type: ignore[arg-type]
         phase=kwargs.get("phase") or ExecutionPhase.STEP_EXECUTION,
         payload=ToolCallHookPayload(
@@ -47,7 +51,7 @@ def llm_hook_context_for_test(
 ) -> HookContext:
     return HookContext(
         task_id=str(kwargs.get("task_id", "run-1")),
-        run_id=str(kwargs.get("run_id", "run-1")),
+        run_id=str(kwargs.get("run_id", DEFAULT_HOOK_RUN)),
         phase=kwargs.get("phase") or ExecutionPhase.STEP_EXECUTION,
         payload=LlmInferenceHookPayload(prompt=prompt),
         runtime_state={"prompt": prompt},
@@ -68,7 +72,7 @@ def tenant_intake_hook_context_for_test(
     }
     return HookContext(
         task_id=str(kwargs.get("task_id", "run-1")),
-        run_id=str(kwargs.get("run_id", "run-1")),
+        run_id=str(kwargs.get("run_id", DEFAULT_HOOK_RUN)),
         agent_id=kwargs.get("agent_id"),  # type: ignore[arg-type]
         phase=kwargs.get("phase") or ExecutionPhase.INTAKE,
         subject=MiddlewareExecutionSubjectFacet(
@@ -98,8 +102,8 @@ def data_protection_hook_context_for_test(
         runtime_value["note"] = note
     payload = DataProtectionHookPayload(value=value_model)
     return HookContext(
-        task_id=str(kwargs.get("task_id", "task-1")),
-        run_id=str(kwargs.get("run_id", "run-1")),
+        task_id=str(kwargs.get("task_id", DEFAULT_HOOK_TASK)),
+        run_id=str(kwargs.get("run_id", DEFAULT_HOOK_RUN)),
         agent_id=kwargs.get("agent_id"),  # type: ignore[arg-type]
         payload=payload,
         runtime_state={"value": runtime_value},
