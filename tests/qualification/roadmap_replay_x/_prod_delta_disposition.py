@@ -17,11 +17,19 @@ from tests.qualification.roadmap_replay_x._scoped_regression_evidence import (
     REPLAY_X_SCOPED_REGRESSION_EVIDENCE,
     scoped_regression_evidence_violations,
 )
+from tests.qualification.roadmap_replay_x._w06_eqo_prod_delta import (
+    W06_EQO_PROD_DELTA_BATCHES,
+    W06_EQO_REPLAY_QUALIFICATION_HEAD,
+)
 
 REPLAY_X_L2_QUALIFICATION_HEAD: Final[str] = PRE_ENT_REPLAY_L3_QUALIFICATION_HEAD
 _REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD: Final[str] = "91649e5d883664a855c02dea1baf14d467052fca"
 _ALLOWED_QUALIFICATION_HEADS: Final[frozenset[str]] = frozenset(
-    {REPLAY_X_L2_QUALIFICATION_HEAD, _REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD}
+    {
+        REPLAY_X_L2_QUALIFICATION_HEAD,
+        _REPLAY_X_L2_CTRL_X_QUALIFICATION_HEAD,
+        W06_EQO_REPLAY_QUALIFICATION_HEAD,
+    }
 )
 _DUP_X_PIN = "a7d83925b375b5f08eb0f175ced2c17fa026bba9"
 
@@ -57,9 +65,23 @@ for batch in PRE_ENT_L3_PROD_DELTA_BATCHES:
             )
         )
 
+_W06_ROWS: list[ProdDeltaDisposition] = []
+for batch in W06_EQO_PROD_DELTA_BATCHES:
+    *batch_paths, disposition, regression_evidence = batch
+    for path in batch_paths:
+        _W06_ROWS.append(
+            ProdDeltaDisposition(
+                path=path,
+                disposition=disposition,
+                regression_evidence=regression_evidence,
+                qualification_head_sha=W06_EQO_REPLAY_QUALIFICATION_HEAD,
+            )
+        )
+
 REPLAY_X_L2_SCOPED_PROD_DELTA: Final[tuple[ProdDeltaDisposition, ...]] = (
     _CTRL_X_L2,
     *_PRE_ENT_ROWS,
+    *_W06_ROWS,
 )
 
 REPLAY_X_L2_SCOPED_PROD_DELTA_PATHS: Final[frozenset[str]] = frozenset(
