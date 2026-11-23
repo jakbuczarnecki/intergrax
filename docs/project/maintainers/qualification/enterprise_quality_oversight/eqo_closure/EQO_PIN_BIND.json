@@ -25,7 +25,7 @@
     "source_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
     "execution_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
     "evidence_sha": "9f40f851f11dc90c2a1c0261e5874d4410ffc133",
-    "publication_sha": null
+    "publication_sha": "7b175958f795db557b01551a1d8c0d5c0ba398c6"
   },
   "FCS": null,
   "M3": null,
@@ -67,5 +67,5 @@
       "note": "164+ train-only commits not on LOCAL_HEAD ancestry to train tip"
     }
   ],
-  "note": "Proposed refresh for authorized publication only. LOCAL_HEAD is not publication_sha. Stage02a W0-02..04 evidence retained unchanged."
+  "note": "Authorized T-IGX-069-A publication. Inventory W0-05 @ 8ad8aa73 unchanged. publication_sha binds bind refresh commit."
 }
