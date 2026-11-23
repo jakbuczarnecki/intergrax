@@ -5,7 +5,7 @@ from pathlib import Path
 
 Q = "docs/project/maintainers/qualification/"
 RECORD = Path(Q + "IIAC_POLICY_ACTIVATION_RECORD.json")
-G = "9e931fd21c521719112a8808398fcd743a868813"
+G = "9d3a042fcb7219ab344e526e036ae3e3ca3dde9e"
 E = sys.argv[3] if len(sys.argv) > 3 else "__EVIDENCE_SHA__"
 C = sys.argv[4] if len(sys.argv) > 4 else E
 MANIFEST = Q + "iiac_evidence/ARCH-FREEZE/RB-2/activation/iiac_audit_session_manifest.IIAC-ACT-N11-ARCH-FREEZE-RB2-DEV-MAIN.json"
@@ -47,9 +47,9 @@ def main() -> int:
         doc["operator_activation_line"] = OD_LINE
         doc["operator_decision_class"] = "OD-ARCH-FREEZE-RB2-DEV-MAIN"
         doc["notes"] = (
-            "ACT-N11 rebind of development for PR #744 at product tree G=9e931fd21, "
+            "Supplemental ACT-N11 rebind of development for PR #744 at product tree G=9d3a042, "
             f"evidence and audit execution E={E}, certification publication C={C}. "
-            "Delegate DELEGATION-ARCH-FREEZE-RB2-DEV-MAIN-2026-11-23."
+            "Delegate DELEGATION-ARCH-FREEZE-RB2-DEV-MAIN-2026-11-23; supplemental operator chat auth 2026-11-23."
         )
     elif sys.argv[1] == "phase2":
         sha = sys.argv[2]

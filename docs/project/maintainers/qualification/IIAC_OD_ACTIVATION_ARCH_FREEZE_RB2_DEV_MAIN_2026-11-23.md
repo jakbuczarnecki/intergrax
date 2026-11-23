@@ -21,3 +21,7 @@ It authorizes binding policy `IIAC-2026-11-05.1` to the SHAs recorded in `IIAC_P
 ## Limits
 
 Mechanical rebind only: supersedes stale P8 pins for ACT-N11 product drift; does not close ARCH-FREEZE, EQO, PDC-X, or ENT-AUDIT-X. Open production gates and known red classes remain until separately repaired.
+## Supplemental authorization (PR #744 governance-fast)
+
+Operator authorized the supplemental ACT-N11 rebind chain at product tree `9d3a042fcb7219ab344e526e036ae3e3ca3dde9e` via Cursor chat 2026-11-23 (full delegate chain on `development`, no PR #744 merge).
+

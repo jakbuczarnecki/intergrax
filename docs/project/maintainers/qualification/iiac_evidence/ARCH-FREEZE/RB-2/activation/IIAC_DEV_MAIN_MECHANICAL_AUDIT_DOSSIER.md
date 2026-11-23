@@ -1,12 +1,12 @@
 # ARCH-FREEZE RB-2 — mechanical dev-main audit dossier
 
 **Verdict:** PASS_SCOPED (mechanical)  
-**Audited product tree (G):** `9e931fd21c521719112a8808398fcd743a868813`  
-**Prior evidence (E):** `a73d15ab341b30e9748aad03894f6faa75ad4e09`
+**Audited product tree (G):** `9d3a042fcb7219ab344e526e036ae3e3ca3dde9e`  
+**Prior evidence (E):** `406e948c4a7107fe68268f52137cf4a7fe378989`
 
 ## Scope
 
-Rebind ACT-N11 for PR #744 (`development` → `main`). Product delta from E to G: 288 paths under `intergrax/`, `agents/`, `applications/` (gate helper `product_paths_changed_between`).
+Rebind ACT-N11 for PR #744 (`development` → `main`). Supplemental delta from E to G: **2** paths (`package_wiring.py`, `strict_product_manifest_ci_gates.py`) after ent-audit CI fix `9d3a042fc` (Ref T-IGX-043-B).
 
 ## Method
 
