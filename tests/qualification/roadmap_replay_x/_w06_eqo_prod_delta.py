@@ -470,4 +470,9 @@ W06_EQO_PROD_DELTA_BATCHES: Final[tuple[tuple[tuple[str, ...], str, str], ...]] 
         "T-IGX-066-A W06-B11: Tier-3 applications wave",
         "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
     ),
+    (
+        "intergrax/globals/settings.py",
+        "T-IGX-066-B OD-042 W1: neutral GlobalSettings defaults; env override preserved",
+        "tests/unit/globals/test_global_settings_neutral_defaults.py",
+    ),
 )
