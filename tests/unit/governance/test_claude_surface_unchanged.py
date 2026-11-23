@@ -84,8 +84,8 @@ def test_generated_claude_targets_equal_committed_files() -> None:
 
 def test_cursor_stop_hook_is_not_the_claude_guard() -> None:
     hooks = json.loads((ROOT / ".cursor" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
-    for entry in hooks["stop"]:
-        assert "igx_stop_guard.py" not in entry["command"]
+    assert "stop" not in hooks
+    assert "beforeShellExecution" in hooks
 
 
 def test_claude_autonomy_surface_matches_pinned_git_hashes() -> None:

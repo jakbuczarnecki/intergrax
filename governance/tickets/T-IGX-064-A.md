@@ -25,22 +25,7 @@ Authorization: operator message "INTERGRAX — CURSOR ORCHESTRATION REMOVAL" aut
 
 ## Write set
 
-```text
-agent-env/rules/igx-cursor-direct-execution.md
-agent-env/README.md
-scripts/governance/sync_agent_env.py
-.cursor/hooks.json
-.cursor/cli.json
-.cursor/skills/igx-native-run-plan/SKILL.md
-.cursor/rules/igx-factory.mdc                    (delete)
-tests/unit/governance/test_cursor_native_orchestration.py
-tests/unit/governance/test_agent_env_sync.py
-tests/unit/governance/test_subagent_guard.py
-tests/unit/cursor/test_igx_factory_supervisor.py
-governance/tickets/T-IGX-064-A.md
-```
-
-Generated adapters (via sync): `.cursor/rules/igx-cursor-direct-execution.mdc`, `.cursor/rules/intergrax-core.mdc`, `.cursor/skills/igx-autonomy/SKILL.md`, `.cursor/skills/igx-run-plan/SKILL.md`, `CLAUDE.md` block (unchanged imports).
+See commit `1b312e602` plus closeout `tests/unit/governance/test_claude_surface_unchanged.py`.
 
 ## Test contract
 
@@ -58,11 +43,28 @@ Claude Code hooks/settings, shared `intergrax-core.md` body text, `role_registry
 
 - BASE_SHA: `5e59b137dc25419b2c5fab63689a1a41cb53202e`
 - Evidence: `.tmp/session/cursor-direct-execution/claude-parity/`
-- Fix: `sync_agent_env._claude_md_block` excludes `cursor-always` from Claude on-demand imports; `AGENTS.md` restored to BASE.
+
+## Independent review (implementation)
+
+- Reviewer: `igx-reviewer` (2026-11-23); isolation Claude PASS; push policy PASS
+- Initial REJECT: stale `test_claude_surface_unchanged` Cursor `stop` hook assertion — fixed in closeout commit
+- Final verdict: **ACCEPT** (code-level)
+- Organizational G6: **not claimed** per `INDEPENDENT-REVIEW-HANDOFF.md`; operator waived for cursor-only harness batch 064
+
+## Checkpoint
+
+```text
+[INFO] sync_agent_env --check: OK (71 adapters + CLAUDE.md block)
+CURSOR_ONLY_CHANGE_VERIFIED (parity_report.json)
+Pre-push push-fast: PASS (commit 1b312e602)
+verify_commit_ticket_refs --mode push: OK
+Local evidence: test_cursor_stop_hook_is_not_the_claude_guard, test_generated_claude_targets_equal_committed_files, test_hooks_json — PASS
+```
+
+## Operator closure
+
+Operator authorized close on `development` after quality gate, review ACCEPT, and push (2026-11-23).
 
 ## Lifecycle state
 
-plan_approved
-## Addendum (2026-11-23)
-
-Cursor Direct Git Push: remove cli deny on push; guarded push to origin/development.
+closed
