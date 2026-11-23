@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
     build_dependency_concurrency_admission_for_tool_ids,
     build_reference_host_tool_dependency_concurrency_admission,
@@ -16,12 +15,7 @@ from intergrax.applications.contracts.environment_profile.presets import (
     lab_reference_tool_profile,
 )
 from intergrax.contracts.dependency_concurrency_admission import (
-    DependencyConcurrencyAdmissionConfiguration,
-    DependencyConcurrencyIdentity,
     DependencyConcurrencyKind,
-    DependencyConcurrencyOverloadMode,
-    DependencyConcurrencyPolicy,
-    DependencyConcurrencyPolicyBinding,
 )
 from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
     ToolDependencyAttemptBoundaryMaterializationError,
@@ -72,10 +66,7 @@ def test_resolve_does_not_synthesize_for_unlisted_registry_tool() -> None:
         for binding in resolved.bindings
         if binding.identity.kind is DependencyConcurrencyKind.TOOL
     )
-    assert not any(
-        binding.identity.value == "unlisted.new.tool"
-        for binding in resolved.bindings
-    )
+    assert not any(binding.identity.value == "unlisted.new.tool" for binding in resolved.bindings)
 
 
 def test_reference_host_platform_defaults_materializes_tool_admission() -> None:
@@ -95,14 +86,11 @@ def test_reference_host_platform_defaults_materializes_tool_admission() -> None:
     admission = env.reliability_profile.dependency_concurrency_admission
     assert admission is not None
     tool_bindings = [
-        binding
-        for binding in admission.bindings
-        if binding.identity.kind is DependencyConcurrencyKind.TOOL
+        binding for binding in admission.bindings if binding.identity.kind is DependencyConcurrencyKind.TOOL
     ]
     assert tool_bindings
     assert all(
-        binding.policy.max_concurrent_calls == env.orchestration_profile.max_inflight_nodes
-        for binding in tool_bindings
+        binding.policy.max_concurrent_calls == env.orchestration_profile.max_inflight_nodes for binding in tool_bindings
     )
     boundary = materialize_tool_dependency_attempt_boundary(admission, production_mode=True)
     assert boundary is not None
@@ -110,20 +98,22 @@ def test_reference_host_platform_defaults_materializes_tool_admission() -> None:
 
 
 def test_declarative_strict_host_fail_closed_without_profile_admission() -> None:
+    from intergrax.applications._shared.application_composition_context import (
+        composition_for_factory_context,
+    )
     from intergrax.applications._shared.declarative_tool_wiring import (
         build_declarative_invoker_for_application_host,
     )
     from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
     from intergrax.applications._shared.wiring import build_application_registry
-    from intergrax.applications._shared.application_composition_context import (
-        composition_for_factory_context,
-    )
     from intergrax.applications.contracts.build_context import ApplicationBuildContext
     from intergrax.applications.contracts.execution_mode import ExecutionMode
     from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.skills.registry.profile import SkillProfile
     from intergrax.tools.registry import ToolRegistry
     from intergrax.tools.registry.wiring import ToolWiringContext
+
     from echo.echo_agent import EchoAgent
 
     manifest = ApplicationManifest.lab(
@@ -137,6 +127,7 @@ def test_declarative_strict_host_fail_closed_without_profile_admission() -> None
     composition = composition_for_factory_context(
         build_ctx,
         policy_bundle=RuntimePolicyBundle(),
+        skill_profile=SkillProfile(enabled_bundles=["harness"]),
     )
     registry = build_application_registry(manifest, build_ctx, composition=composition)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="decl.strict").model_copy(
