@@ -14,7 +14,8 @@
 | T-IGX-070-C G3 operator adoption | **APPROVED** @ `81c51263ea672e0f4d886dd0dc85bcf646849108` |
 | T-IGX-070-C overlay commit (§18 package) | **PUBLISHED** @ `1cd4c621ad7eee35526fb24eaedbfdc265a20404` |
 | T-IGX-070-C G6 whitespace candidate | **PUBLISHED** @ `9e4eb2d07df8621378830efd26e6c9db6a0f337a` |
-| `development` HEAD (post-overlay, non-SFX) | `9d3a042fcb7219ab344e526e036ae3e3ca3dde9e` |
+| T-IGX-070-C G6 corrective docs | **PUBLISHED** @ `7c16d9b5488234475e80a2e758158decca5e5ac5` |
+| `development` HEAD (closure batch baseline) | `7c16d9b5488234475e80a2e758158decca5e5ac5` |
 
 ## Git pins (immutable)
 
@@ -28,6 +29,7 @@
 | G3 OD signing (BASE) | `81c51263ea672e0f4d886dd0dc85bcf646849108` |
 | First T-IGX-070-C overlay on `development` | `1cd4c621ad7eee35526fb24eaedbfdc265a20404` |
 | G6 documentation candidate | `9e4eb2d07df8621378830efd26e6c9db6a0f337a` |
+| G6 corrective publication | `7c16d9b5488234475e80a2e758158decca5e5ac5` |
 
 ## Campaign posture (current)
 
@@ -36,8 +38,10 @@
 | `R2_ARCHITECTURE_APPROVED` | **YES** (G3 @ `81c51263`) |
 | `R2_OVERLAY_PUBLISHED_ON_DEVELOPMENT` | **YES** (`9e4eb2d07` on `development`) |
 | `G6_CONTENT_VERDICT` | **PASS_WITH_FINDINGS** @ audited `9e4eb2d07` |
-| `G6_GOVERNANCE_VERDICT` | **NONCOMPLIANT** (publication before G6) |
-| `FORMAL_TICKET_CLOSURE` | **PENDING** |
+| `G6_GOVERNANCE_VERDICT` | **NONCOMPLIANT** (publication before G6; preserved) |
+| `F-GOV-01` | **OPERATOR_ACCEPTED_WITH_FINDING** — [`OD-SFX-R2-GOV-01.md`](operator_decisions/OD-SFX-R2-GOV-01.md) |
+| `G6_DELTA_VERDICT` | **ACCEPT** (corrective @ `7c16d9b54`) |
+| `FORMAL_TICKET_CLOSURE` | **PENDING** (lifecycle / gates / closeout) |
 | `IMPLEMENTATION_AUTHORIZED` | **NO** |
 | `ENTERPRISE_PRODUCT_CERTIFIED` | **NO** |
 
@@ -61,7 +65,7 @@
 
 ## Governance — historical procedure gap (F-GOV-01)
 
-Overlay commits (`1cd4c621a`, `9e4eb2d07`) reached `development` **before** independent G6 sign-off. This is a **historical procedure violation**; it is **not** reversed, rewritten in git, or automatically accepted. Operator disposition on F-GOV-01 and formal ticket lifecycle remain **open** (`FORMAL_TICKET_CLOSURE = PENDING`). G6 corrective documentation does **not** close `T-IGX-070-C`.
+Overlay commits (`1cd4c621a`, `9e4eb2d07`) reached `development` **before** independent G6 sign-off. This is a **historical procedure violation**; it is **not** reversed, rewritten in git, or automatically accepted. Operator disposition **`ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING`** is recorded in [`OD-SFX-R2-GOV-01.md`](operator_decisions/OD-SFX-R2-GOV-01.md) (`F-GOV-01 = OPERATOR_ACCEPTED_WITH_FINDING`). **`G6_GOVERNANCE_VERDICT` remains NONCOMPLIANT.** Formal ticket closure remains **`PENDING`** until lifecycle, quality gates, and independent closeout package review complete.
 
 ## Platform CI (unchanged; not retrograded to PASS)
 

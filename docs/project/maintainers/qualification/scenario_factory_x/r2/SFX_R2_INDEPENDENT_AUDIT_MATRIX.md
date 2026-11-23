@@ -107,3 +107,25 @@ Independent enterprise G6 audit of documentation candidate `9e4eb2d07df862137883
 | Six proposed JSON schemas (`python` json.load) | PASS |
 | `verify_plan_approval` | PASS |
 | `uv run` / full `igx_gov ticket` | BLOCKED — Windows `tiktoken` install (`Odmowa dostępu` / `.pyd` lock); not claimed PASS |
+
+## T-IGX-070-C — G6 corrective delta recheck
+
+| Field | Value |
+| --- | --- |
+| BASE | `9d3a042fcb7219ab344e526e036ae3e3ca3dde9e` |
+| Corrective commit | `ac2cb4ea62c9a201123b2035389621bd164356d7` |
+| Published on `development` | `7c16d9b5488234475e80a2e758158decca5e5ac5` |
+| Auditor host | `local_039b59d4-5f1c-4360-8fd7-28315b244478` |
+| `G6_DELTA_VERDICT` | **ACCEPT** |
+| F-DOC-01 / F-DOC-02 | **FIXED** |
+
+## T-IGX-070-C — F-GOV-01 operator disposition
+
+| Field | Value |
+| --- | --- |
+| Finding | F-GOV-01 |
+| Disposition | `ACCEPT_SCOPED_WITH_GOVERNANCE_FINDING` |
+| Formal state | `F-GOV-01 = OPERATOR_ACCEPTED_WITH_FINDING` |
+| Record | [`OD-SFX-R2-GOV-01.md`](../operator_decisions/OD-SFX-R2-GOV-01.md) |
+| `G6_GOVERNANCE_VERDICT` | **NONCOMPLIANT** (preserved) |
+| Open LOW | F-R1-01, F-ATTR-01 |
