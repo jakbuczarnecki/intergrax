@@ -2,7 +2,7 @@
 
 **Review type:** documentation-campaign independent review  
 **Campaign:** `IGX-SFX-R2-CORR-001` · **Ticket:** `T-IGX-070-B`  
-**Audit SHA:** `d80c58ad50b1356e01046c6f705ba859636212b7`  
+**Audit SHA:** `7a30948530154d0b90b6f91566cca64582c2bf46`
 **Reviewer:** igx-reviewer (read-only, `[eb149846-2191-450b-974c-d05c85a117fc](eb149846-2191-450b-974c-d05c85a117fc)`)
 
 ## Historical (T-IGX-070-A initial pass)
@@ -53,4 +53,4 @@
 | F-04 | SEF engineering authority boundary | **PASS** | No second EEA |
 | F-05 | False implementation authorization | **PASS** | All **NO** |
 
-**Audit SHA:** `2245af23b18cc3c1b1b5d7577f1cc6406a3f62b7`
+**Audit SHA:** `7a30948530154d0b90b6f91566cca64582c2bf46`
