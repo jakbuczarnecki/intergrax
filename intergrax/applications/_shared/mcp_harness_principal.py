@@ -34,6 +34,26 @@ if TYPE_CHECKING:
     from starlette.requests import Request
 
 
+class McpIdentityCompositionError(ValueError):
+    """MCP identity wiring refuses client-asserted identity when the host fails closed."""
+
+
+def assert_mcp_identity_composition(
+    *,
+    identity_mode: McpIdentityMode | str | None = None,
+    harness_auth: HarnessAuthState | None,
+    fails_closed: bool,
+) -> None:
+    """Refuse composition that would admit unverified tenant/user identity on a fail-closed host."""
+    if not fails_closed:
+        return
+    mode = coerce_mcp_identity_mode(identity_mode)
+    if mode is McpIdentityMode.LOCAL_DEV_EXPLICIT or harness_auth is None:
+        raise McpIdentityCompositionError(
+            "MCP identity composition refuses LOCAL_DEV_EXPLICIT or missing harness auth when fails_closed",
+        )
+
+
 def resolve_harness_auth_for_mcp_request(request: Request | None) -> HarnessAuthState | None:
     """Resolve typed harness auth from the Starlette app serving the MCP HTTP request.
 
@@ -164,6 +184,7 @@ def resolve_mcp_run_agent_identity(
     default_tenant_id: str,
     default_user_id: str,
     identity_mode: McpIdentityMode | str | None = None,
+    fails_closed: bool = False,
 ) -> McpRunAgentIdentityResolution:
     """
     Bind MCP ``run_agent`` tenant/user from the verified harness principal.
@@ -190,6 +211,12 @@ def resolve_mcp_run_agent_identity(
             user_id=user_id,
             principal=principal,
             request_identity=identity,
+        )
+
+    if fails_closed:
+        raise mcp_tool_error(
+            McpServerDefinitionErrorCode.MCP_PRINCIPAL_REQUIRED,
+            "authenticated harness principal required for MCP calls",
         )
 
     tenant_id = (asserted_tenant_id or default_tenant_id).strip()
@@ -225,7 +252,9 @@ def _tool_error_from_http(exc: HTTPException) -> ToolError:
 
 
 __all__ = [
+    "McpIdentityCompositionError",
     "McpRunAgentIdentityResolution",
+    "assert_mcp_identity_composition",
     "require_mcp_caller_principal",
     "resolve_harness_auth_for_mcp_request",
     "resolve_mcp_caller_principal",

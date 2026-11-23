@@ -9,27 +9,25 @@ from __future__ import annotations
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationCategoryMismatchError,
+    LabSelectorOptIn,
 )
-from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.contracts.ref import normalize_integration_binding
+from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.contracts.runtime_binding import (
     EmbeddingProviderConfigurationError,
-    EmbeddingProviderRuntimeBindingContext,
     EmbeddingProviderRuntimeBinder,
+    EmbeddingProviderRuntimeBindingContext,
     EmbeddingProviderRuntimeBindingError,
 )
 from intergrax.rag.embedding.contracts.runtime_binding_spec import (
     EmbeddingProviderRuntimeBindingSpec,
 )
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
-from intergrax.rag.embedding.registry.provider_authority import (
-    default_embedding_provider_slug,
-    validate_embedding_provider_slug,
-)
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+from intergrax.rag.embedding.registry.provider_authority import validate_embedding_provider_slug
 
 _EMBEDDING_CATEGORY = IntegrationCategory.EMBEDDING_PROVIDER
 
@@ -39,6 +37,7 @@ def resolve_embedding_provider_slug(
     integration_profile: IntegrationProfile | None = None,
     provider_id: str | None = None,
     embedding_profile: EmbeddingProfile | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> str:
     """
     Resolve canonical embedding provider slug.
@@ -47,7 +46,7 @@ def resolve_embedding_provider_slug(
     explicit IntegrationProfile.embedding_provider
         > explicit provider_id compatibility argument
         > EmbeddingProfile / env compatibility
-        > documented default
+        > explicit LAB opt-in (laboratory paths only)
     """
     from_profile: str | None = None
     if integration_profile is not None:
@@ -66,8 +65,7 @@ def resolve_embedding_provider_slug(
     explicit_authorities = [value for value in (from_profile, from_arg) if value is not None]
     if len(set(explicit_authorities)) > 1:
         raise EmbeddingProviderConfigurationError(
-            "conflicting embedding provider selection: "
-            f"integration_profile={from_profile!r}, provider_id={from_arg!r}"
+            f"conflicting embedding provider selection: integration_profile={from_profile!r}, provider_id={from_arg!r}"
         )
 
     if from_profile is not None:
@@ -79,7 +77,13 @@ def resolve_embedding_provider_slug(
     if from_compat is not None:
         return from_compat
 
-    return validate_embedding_provider_slug(default_embedding_provider_slug())
+    if lab_opt_in is not None:
+        return validate_embedding_provider_slug(lab_opt_in.selector)
+
+    raise EmbeddingProviderConfigurationError(
+        "embedding provider is unset: configure IntegrationProfile.embedding_provider, "
+        "INTERGRAX_EMBEDDING_PROVIDER, or pass lab_opt_in"
+    )
 
 
 def _embedding_contract_spec(slug: str) -> IntegrationContractSpec:
@@ -100,9 +104,7 @@ def _embedding_runtime_binder(
 ) -> EmbeddingProviderRuntimeBinder:
     runtime_binding = spec.runtime_binding
     if runtime_binding is None:
-        raise EmbeddingProviderRuntimeBindingError(
-            f"embedding provider {slug!r} has no runtime binder registered"
-        )
+        raise EmbeddingProviderRuntimeBindingError(f"embedding provider {slug!r} has no runtime binder registered")
     if not isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec):
         raise EmbeddingProviderRuntimeBindingError(
             f"embedding provider {slug!r} supports runtime binding but runtime binding "
@@ -110,9 +112,7 @@ def _embedding_runtime_binder(
         )
     binder = runtime_binding.binder
     if not isinstance(binder, EmbeddingProviderRuntimeBinder):
-        raise EmbeddingProviderRuntimeBindingError(
-            f"embedding provider {slug!r} runtime binder is not typed"
-        )
+        raise EmbeddingProviderRuntimeBindingError(f"embedding provider {slug!r} runtime binder is not typed")
     return binder
 
 
@@ -122,12 +122,14 @@ def bind_embedding_provider(
     provider_id: str | None = None,
     embedding_profile: EmbeddingProfile | None = None,
     execution_config: EmbeddingProviderExecutionConfig | None = None,
+    lab_opt_in: LabSelectorOptIn | None = None,
 ) -> EmbeddingProvider:
     """Bind a typed EmbeddingProvider via Integrations catalog runtime metadata."""
     resolved_slug = resolve_embedding_provider_slug(
         integration_profile=integration_profile,
         provider_id=provider_id,
         embedding_profile=embedding_profile,
+        lab_opt_in=lab_opt_in,
     )
     resolved_model = None
     if embedding_profile is not None:

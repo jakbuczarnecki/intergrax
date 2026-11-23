@@ -42,7 +42,7 @@ class _ConflictTerminalService:
 def test_terminal_conflict_reconciles_lineage_seal() -> None:
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
-    loop = NexusLoop(registry, execution_lineage_persistence=persistence)
+    loop = NexusLoop(registry, execution_lineage_persistence=persistence, production_mode=False)
     task_id = mint_task_id()
     task = Task(
         task_id=task_id,

@@ -1,27 +1,38 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.integrations._shared.conformance import assert_llm_guardrail_backend
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import IntegrationCategory, LabSelectorOptIn
 from intergrax.integrations.providers.llm_guardrail._factory import create_guardrail_backend
 from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
 from intergrax.integrations.registry.catalog import get_entry
-from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.factory import resolve_from_profile
+from intergrax.integrations.registry.profile import IntegrationProfile
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_guardrail_backend_blocks_injection() -> None:
-    backend = create_guardrail_backend("llm_guard")
+    backend = create_guardrail_backend(
+        "llm_guard",
+        lab_opt_in=LabSelectorOptIn(
+            selector="llm_guard",
+            reason="harness guardrail contract injection block test",
+        ),
+    )
     result = backend.scan_input("BLOCK_INPUT test")
     assert result.allowed is False
     assert "test_block" in result.categories
 
 
 def test_guardrail_backend_conformance() -> None:
-    backend = create_guardrail_backend("presidio")
+    backend = create_guardrail_backend(
+        "presidio",
+        lab_opt_in=LabSelectorOptIn(
+            selector="presidio",
+            reason="harness guardrail contract conformance test",
+        ),
+    )
     assert_llm_guardrail_backend(backend)
     assert backend.health_check() is True
 

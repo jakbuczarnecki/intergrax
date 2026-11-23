@@ -20,9 +20,11 @@ from intergrax.applications.contracts.environment_profile import (
     EventSubscriptionSpec,
     ObservabilityProfile,
 )
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.contracts.host_observability_stores import HostObservabilityStores
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.execution.host_observability_composition import wire_host_observability
 
 
@@ -46,7 +48,7 @@ class EventSubscriptionWiring:
 
 
 def wire_observability_event_subscriptions(
-    bus: RuntimeEventBus,
+    bus: HostOrchestrationRuntimeEventPort,
     profile: ObservabilityProfile,
     *,
     extra_handlers: dict[str, EventSubscriptionHandler] | None = None,
@@ -81,8 +83,7 @@ def _resolve_subscription_handler(
         return require_event_subscription_handler(spec.handler_id)
     except KeyError as exc:
         raise EventSubscriptionWiringError(
-            f"subscription {spec.subscription_id!r} references unknown handler_id "
-            f"{spec.handler_id!r}"
+            f"subscription {spec.subscription_id!r} references unknown handler_id {spec.handler_id!r}"
         ) from exc
 
 

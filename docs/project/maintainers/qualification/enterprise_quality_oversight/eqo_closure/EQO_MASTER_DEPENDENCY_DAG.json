@@ -1,0 +1,206 @@
+{
+  "schema": "eqo_master_dependency_dag.v1",
+  "plan_ref": "eqo_closure_master_7499b85e.plan.md",
+  "critical_path_eqo": [
+    "EQO-W0-01",
+    "EQO-W0-03",
+    "EQO-W2-01",
+    "EQO-W3-WB01",
+    "EQO-W3-WB03",
+    "EQO-X-01",
+    "EQO-X-02",
+    "EQO-X-03",
+    "FCS",
+    "EQO-W7-01",
+    "EQO-W7-02",
+    "EQO-W7-03",
+    "M3",
+    "EQO-W8-01",
+    "EQO-W8-CLS",
+    "EQO-W9-01",
+    "EQO-W9-02"
+  ],
+  "edges": [
+    {
+      "from": "EQO-W0-01",
+      "to": "EQO-W2-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-01",
+      "to": "EQO-W3-WB01-DES",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-01",
+      "to": "EQO-W4-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-01",
+      "to": "EQO-C-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-01",
+      "to": "EQO-E-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-02",
+      "to": "EQO-W2-12",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-02",
+      "to": "EQO-W2-05",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-02",
+      "to": "EQO-E-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-03",
+      "to": "EQO-W2-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-04",
+      "to": "EQO-W2-10",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-04",
+      "to": "EQO-W3-WB05-DIS",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-05",
+      "to": "EQO-W4-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W0-05",
+      "to": "EQO-E-02",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W2-02",
+      "to": "EQO-X-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W2-01",
+      "to": "EQO-W3-WB01-DRV",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-DES",
+      "to": "EQO-W3-WB*-EXE",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-EXE",
+      "to": "EQO-W3-WB*-EVD",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-EVD",
+      "to": "EQO-W3-WB*-DIS",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-DIS",
+      "to": "EQO-W3-WB*-AUD",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-DIS",
+      "to": "EQO-W3-WB*-COR",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-AUD",
+      "to": "EQO-W3-WB*-CLS",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W3-WB*-DRV",
+      "to": "EQO-RV-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W4-CLS",
+      "to": "ARCH-FREEZE-PT-Q02-GATE",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-C-CLS",
+      "to": "ARCH-FREEZE-PT-Q02-GATE",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-E-CLS",
+      "to": "ARCH-FREEZE-PT-Q02-GATE",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-X-01",
+      "to": "ARCH-FREEZE-PT-Q02-GATE",
+      "kind": "hard"
+    },
+    {
+      "from": "FCS",
+      "to": "EQO-W7-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W7-01",
+      "to": "EQO-W7-02",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W7-02",
+      "to": "EQO-W7-03",
+      "kind": "hard"
+    },
+    {
+      "from": "M3",
+      "to": "EQO-W8-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W8-01",
+      "to": "EQO-W8-CLS",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W8-CLS",
+      "to": "EQO-W9-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-W9-01",
+      "to": "EQO-W9-02",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-CL-01",
+      "to": "EQO-RV-01",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-RV-01",
+      "to": "EQO-W3-WB*-DIS",
+      "kind": "hard"
+    },
+    {
+      "from": "EQO-E-02",
+      "to": "EQO-W3-WB11-EXE",
+      "kind": "hard"
+    }
+  ],
+  "conditional_edges_note": "WB COR/DRV per workstream when DIS or pin changes"
+}

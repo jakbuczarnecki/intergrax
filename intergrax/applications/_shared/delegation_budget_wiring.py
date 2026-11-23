@@ -4,19 +4,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.subtask_contract import SubtaskContract
-
-
-@dataclass(frozen=True, slots=True)
-class DelegationBudgetPolicy:
-    max_llm_calls: int | None
-    max_tool_calls: int | None
-    max_delegation_depth: int
-    enforcement_enabled: bool
+from intergrax.contracts.delegation_budget_policy import (
+    DelegationBudgetPolicy,
+    apply_delegation_budget_to_subtask,
+)
 
 
 def resolve_delegation_budget_policy(
@@ -35,16 +28,8 @@ def resolve_delegation_budget_policy(
     )
 
 
-def apply_delegation_budget_to_subtask(
-    contract: SubtaskContract,
-    policy: DelegationBudgetPolicy,
-) -> SubtaskContract:
-    """Attach delegation budgets when enforcement is enabled."""
-    if not policy.enforcement_enabled:
-        return contract
-    return contract.model_copy(
-        update={
-            "max_llm_calls": policy.max_llm_calls,
-            "max_tool_calls": policy.max_tool_calls,
-        },
-    )
+__all__ = [
+    "DelegationBudgetPolicy",
+    "apply_delegation_budget_to_subtask",
+    "resolve_delegation_budget_policy",
+]

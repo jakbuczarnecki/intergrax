@@ -7,25 +7,38 @@ from __future__ import annotations
 import ast
 import re
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from tests.unit.architecture.ebh_2e_external_structural_llm_adapter import (
     ExternalStructuralAdapter,
     assert_external_structural_llm_adapter,
 )
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+
 from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
 from tool_selection_qualifier.tool_selection_qualifier_agent import ToolSelectionQualifierAgent
+from web_search_qualifier.steps.web_search_job import ResolvedSearchProvider
 from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _stub_search_provider() -> ResolvedSearchProvider:
+    """Injected provider for the web-search qualifier (DP-15: the agent never resolves one)."""
+    return ResolvedSearchProvider(provider_id="stub", provider=SimpleNamespace(search=lambda *a, **k: ()))  # type: ignore[arg-type]
+
+
+def _build_agent(agent_cls: type, adapter: LLMAdapter):
+    if agent_cls is WebSearchQualifierAgent:
+        return agent_cls(llm_adapter=adapter, search_provider=_stub_search_provider())
+    return agent_cls(llm_adapter=adapter)
 
 
 def _minimal_runtime_request() -> RuntimeRequest:
@@ -37,6 +50,7 @@ def _minimal_runtime_request() -> RuntimeRequest:
         task_id=mint_task_id(),
         run_id=mint_run_id(),
     )
+
 
 _QUALIFIER_AGENT_MODULES = (
     _REPO_ROOT / "agents/web_search_qualifier/web_search_qualifier_agent.py",
@@ -113,6 +127,11 @@ def test_ebh_2e_r4_production_factory_injects_llm_adapter(
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         lambda *_args, **_kwargs: injected,
     )
+    monkeypatch.setattr(
+        agent_factories,
+        "_resolve_search_provider_from_profile",
+        lambda _ctx: _stub_search_provider(),
+    )
     agent = factory(ctx, binding)
     runtime = agent.build_context(_minimal_runtime_request())
     assert runtime.config.llm_adapter is injected
@@ -127,7 +146,7 @@ def test_ebh_2e_r4_injected_structural_adapter_reaches_runtime_context(
 ) -> None:
     injected = ExternalStructuralAdapter()
     assert_external_structural_llm_adapter(injected)
-    agent = agent_cls(llm_adapter=injected)
+    agent = _build_agent(agent_cls, injected)
     runtime = agent.build_context(_minimal_runtime_request())
     assert runtime.config.llm_adapter is injected
 

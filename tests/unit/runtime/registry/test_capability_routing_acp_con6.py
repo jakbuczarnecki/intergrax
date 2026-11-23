@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 import pytest
-
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.contracts.task_routing import TaskRoutingViolationError, validate_task_routing_payload
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -18,7 +18,6 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.capability_routing import select_best_capability_match
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.contracts.task_envelope import TaskEnvelope
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 _SHARED_CAPABILITY = "routing.demo.cap"
@@ -105,7 +104,7 @@ def test_select_best_capability_match_prefers_higher_score() -> None:
 def test_agent_router_rejects_class_name_in_task_metadata() -> None:
     registry = AgentRegistry()
     registry.register(_RoutingDemoAgent("routing-demo-a", 1.0))
-    router = AgentRouter(registry)
+    router = AgentRouter(registry, production_mode=False)
     task = Task(
         tenant_id="t1",
         user_id="u1",

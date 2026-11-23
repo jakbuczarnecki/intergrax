@@ -1,0 +1,20 @@
+{
+  "schema": "eqo_c04_run_manifest.v1",
+  "task_id": "EQO-C-04",
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "worktree": "D:/Projekty/_wt/intergrax/eqo-w3",
+  "executed_utc": "2026-11-21T07:10:00Z",
+  "targeted_layers": ["TRACE-X", "MCP-SERVER-X", "CODEOWNERS_DELTA"],
+  "pytest_command": "uv run pytest tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py tests/unit/docs/ -q --tb=line",
+  "pytest_exit_code": 1,
+  "pytest_summary": "47 failed, 395 passed in ~71s",
+  "log_path": "eqo_closure/runs/c/c04_targeted_replay.log",
+  "status": "BLOCKED",
+  "blockers": ["PYTEST_NON_ZERO_EXIT", "TRACE-X closed-world failures", "MCP P5 batch failure", "docs slice failures on TRAIN_PIN"],
+  "next_action": "Product/train fix or narrow replay slice; no register promotion in wave-3",
+  "wave_7_status_refresh_utc": "2026-11-21T08:20:00Z",
+  "wave_7_status_doc": "eqo_closure/runs/c/C04_STATUS.md",
+  "pytest_failed_count": 47,
+  "pytest_passed_count": 395,
+  "wave_7_lane": "eqo/wave-7/c"
+}

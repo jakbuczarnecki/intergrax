@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.mission_record.v1",
+  "title": "MissionRecord",
+  "description": "PROPOSED SFX R2. goal_digest required when lifecycle_phase >= GOAL_LOCKED.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "scenario_id",
+    "mission_id",
+    "lifecycle_phase",
+    "execution_mode",
+    "canonical_digest",
+    "created_at",
+    "created_by"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.mission_record.v1"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lifecycle_phase": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "DISCOVERING",
+        "GOAL_LOCKED",
+        "ENVELOPE_APPROVED",
+        "ITERATING",
+        "CHAMPION_FROZEN",
+        "CLOSED"
+      ]
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "ASSISTED",
+        "BOUNDED_AUTONOMOUS"
+      ]
+    },
+    "goal_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "acceptance_suite_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "autonomy_envelope_ref": {
+      "type": "string"
+    },
+    "champion_candidate_id": {
+      "type": "string"
+    },
+    "state_projection": {
+      "type": "string"
+    },
+    "canonical_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lifecycle_phase": {
+            "enum": [
+              "GOAL_LOCKED",
+              "ENVELOPE_APPROVED",
+              "ITERATING",
+              "CHAMPION_FROZEN",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "goal_digest",
+          "acceptance_suite_digest"
+        ]
+      }
+    }
+  ]
+}

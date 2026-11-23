@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Final
@@ -600,10 +601,60 @@ def _rel(path: Path) -> str:
     return path.relative_to(REPO).as_posix()
 
 
-def _subdirs(base: Path) -> list[Path]:
-    return sorted(
-        p for p in base.iterdir() if p.is_dir() and not p.name.startswith((".", "_")) and p.name != "__pycache__"
+def _git_ls_files(scope: str) -> list[str]:
+    proc = subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "ls-files", "--", scope],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
     )
+    if proc.returncode != 0:
+        return []
+    return [line for line in proc.stdout.splitlines() if line]
+
+
+def _tracked_direct_child_dirs(scope: Path, *, skip_names: frozenset[str] = frozenset()) -> list[str]:
+    """Repo-relative paths for direct child package directories (not loose module files)."""
+    prefix = scope.as_posix().rstrip("/") + "/"
+    children: set[str] = set()
+    for rel in _git_ls_files(scope.as_posix()):
+        if not rel.startswith(prefix):
+            continue
+        rest = rel[len(prefix) :]
+        if not rest:
+            continue
+        name = rest.split("/")[0]
+        if name in skip_names or name.startswith((".", "_")) or name == "__pycache__":
+            continue
+        if "/" in rest or rest.endswith("__init__.py"):
+            children.add(f"{scope.as_posix()}/{name}")
+    return sorted(children)
+
+
+def _tracked_glob_docs() -> list[str]:
+    """Tracked markdown paths matching DOC_GLOBS (VCS index, not filesystem glob)."""
+    seen: set[str] = set()
+    out: list[str] = []
+
+    def add(rel: str) -> None:
+        if VENDORED_MARKER in rel or rel in seen:
+            return
+        seen.add(rel)
+        out.append(rel)
+
+    for rel in _git_ls_files("docs/project/architecture"):
+        parts = Path(rel).parts
+        if len(parts) == 4 and parts[2] == "architecture" and rel.endswith(".md"):
+            add(rel)
+    for rel in _git_ls_files("docs/project/maintainers/plans"):
+        parts = Path(rel).parts
+        if len(parts) == 5 and parts[3] == "plans" and rel.endswith(".md"):
+            add(rel)
+    for rel in _git_ls_files("docs/project/capabilities"):
+        if rel.startswith("docs/project/capabilities/") and rel.endswith(".md"):
+            add(rel)
+    return sorted(out)
 
 
 def _status(rel: str, category: str) -> str:
@@ -630,30 +681,23 @@ def classify_doc(stem: str) -> str:
 
 def scan() -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
-    for pkg in _subdirs(REPO / "intergrax"):
-        if pkg.name == "runtime":
-            continue
-        cat = TIER0_PACKAGES.get(pkg.name) or (FOUNDATION if pkg.name in TIER0_FOUNDATION else UNMAPPED)
-        items.append(_item("package", _rel(pkg), cat))
-    for pkg in _subdirs(REPO / "intergrax/runtime"):
-        cat = TIER1_PACKAGES.get(pkg.name) or (FOUNDATION if pkg.name in TIER1_FOUNDATION else UNMAPPED)
-        items.append(_item("package", _rel(pkg), cat))
+    for rel in _tracked_direct_child_dirs(Path("intergrax"), skip_names=frozenset({"runtime"})):
+        name = Path(rel).name
+        cat = TIER0_PACKAGES.get(name) or (FOUNDATION if name in TIER0_FOUNDATION else UNMAPPED)
+        items.append(_item("package", rel, cat))
+    for rel in _tracked_direct_child_dirs(Path("intergrax/runtime")):
+        name = Path(rel).name
+        cat = TIER1_PACKAGES.get(name) or (FOUNDATION if name in TIER1_FOUNDATION else UNMAPPED)
+        items.append(_item("package", rel, cat))
     for tier in ("agents", "applications"):
-        for pkg in _subdirs(REPO / tier):
-            items.append(_item("consumer", _rel(pkg), CONSUMER))
-    seen: set[str] = set()
-    for pattern in DOC_GLOBS:
-        for doc in sorted(REPO.glob(pattern)):
-            rel = _rel(doc)
-            if rel in seen or VENDORED_MARKER in rel:
-                continue
-            seen.add(rel)
-            items.append(_item("document", rel, classify_doc(doc.stem)))
-    for suite in _subdirs(REPO / "tests/qualification"):
-        cat = QUALIFICATION_SUITES.get(suite.name) or (
-            FOUNDATION if suite.name in QUALIFICATION_FOUNDATION else UNMAPPED
-        )
-        items.append(_item("qualification_suite", _rel(suite), cat))
+        for rel in _tracked_direct_child_dirs(Path(tier)):
+            items.append(_item("consumer", rel, CONSUMER))
+    for rel in _tracked_glob_docs():
+        items.append(_item("document", rel, classify_doc(Path(rel).stem)))
+    for rel in _tracked_direct_child_dirs(Path("tests/qualification")):
+        name = Path(rel).name
+        cat = QUALIFICATION_SUITES.get(name) or (FOUNDATION if name in QUALIFICATION_FOUNDATION else UNMAPPED)
+        items.append(_item("qualification_suite", rel, cat))
     items.sort(key=lambda i: (i["kind"], i["path"]))
     return items
 
@@ -699,8 +743,14 @@ def check(payload: dict[str, object]) -> list[str]:
     errors.extend(f"MISSING_ANCHOR:{m}" for m in missing_anchors())
     if not OUTPUT.is_file():
         errors.append(f"MISSING_OUTPUT:{_rel(OUTPUT)}")
-    elif OUTPUT.read_text(encoding="utf-8") != render(payload):
-        errors.append(f"STALE_OUTPUT:{_rel(OUTPUT)} (re-run with --write)")
+    else:
+        try:
+            committed = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            errors.append(f"INVALID_OUTPUT:{_rel(OUTPUT)}")
+        else:
+            if committed != payload:
+                errors.append(f"STALE_OUTPUT:{_rel(OUTPUT)} (re-run with --write)")
     return errors
 
 

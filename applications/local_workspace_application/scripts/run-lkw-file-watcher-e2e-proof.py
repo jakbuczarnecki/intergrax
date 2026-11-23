@@ -20,10 +20,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Callable, Sequence
 from typing import Any
 
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -64,9 +64,7 @@ _RECEIPT_TASK = "LKW.7C2"
 _PROOF_RUNNER = "run-lkw-file-watcher-e2e-proof.py"
 _DEFAULT_MONGO_EXPRESS_URL = "http://127.0.0.1:8086"
 _SIDECAR_RESULT_SCHEMA = "lkw.file_watcher_sidecar_result.v1"
-_VERIFICATION_DOCUMENT = (
-    "applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md"
-)
+_VERIFICATION_DOCUMENT = "applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md"
 _REVIEWER_GUIDE = "applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md"
 
 _TENANT_ID = "lkw-file-watcher-e2e"
@@ -78,9 +76,7 @@ _SEARCH_USER_ID = "lkw.file_watcher"
 _TASK_TOPIC = "intergrax.tasks"
 
 _CONTAINER_DOCS_ROOT = "/data/user_docs"
-_CONTAINER_CHECKPOINT_PATH = (
-    "/data/file_watcher_state/data/file_watcher/checkpoint.json"
-)
+_CONTAINER_CHECKPOINT_PATH = "/data/file_watcher_state/data/file_watcher/checkpoint.json"
 
 _WATCHER_SERVICE = "lkw-file-watcher"
 _RESTART_SERVICES = (
@@ -94,7 +90,7 @@ _SCRIPT_PATH = Path(__file__).resolve()
 _SCRIPTS_DIR = _SCRIPT_PATH.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.append(str(_SCRIPTS_DIR))
-from lkw_ollama_embedding_bootstrap import (  # noqa: E402
+from lkw_ollama_embedding_bootstrap import (  # noqa: E402, I001
     OllamaEmbeddingBootstrapError,
     ensure_ollama_embedding_model_if_configured as _ensure_ollama_embedding_model_if_configured,
 )
@@ -193,9 +189,7 @@ class FileWatcherE2EWorkloadEvidence:
 
     @property
     def checkpoint_restore_verified(self) -> bool:
-        return (
-            self.watcher_restored_after_restart and self.watcher_final_checkpoint_saved
-        )
+        return self.watcher_restored_after_restart and self.watcher_final_checkpoint_saved
 
     @property
     def reviewer_rerun_required(self) -> bool:
@@ -271,10 +265,7 @@ def proof_file_stat_unchanged(
     before: ProofFileStat,
     after: ProofFileStat,
 ) -> bool:
-    return (
-        before.size_bytes == after.size_bytes
-        and before.modified_time_ns == after.modified_time_ns
-    )
+    return before.size_bytes == after.size_bytes and before.modified_time_ns == after.modified_time_ns
 
 
 def build_file_watcher_proof_id(run_id: str) -> str:
@@ -364,7 +355,7 @@ def fetch_watcher_service_logs(
 
 
 def select_watcher_ingest_enqueued_record(
-  records: Sequence[FileWatcherIngestEnqueuedRecord],
+    records: Sequence[FileWatcherIngestEnqueuedRecord],
 ) -> FileWatcherIngestEnqueuedRecord | None:
     if not records:
         return None
@@ -394,9 +385,7 @@ def poll_background_task_completion(
         if not bool(payload.get("completed")):
             time.sleep(2.0)
             continue
-        return str(payload.get("task_status", "")) == "SUCCEEDED" and bool(
-            payload.get("has_result")
-        )
+        return str(payload.get("task_status", "")) == "SUCCEEDED" and bool(payload.get("has_result"))
     return False
 
 
@@ -611,10 +600,7 @@ def watcher_checkpoint_ready(
         _WATCHER_SERVICE,
         "python",
         "-c",
-        (
-            "from pathlib import Path; "
-            f"raise SystemExit(0 if Path({_CONTAINER_CHECKPOINT_PATH!r}).is_file() else 1)"
-        ),
+        (f"from pathlib import Path; raise SystemExit(0 if Path({_CONTAINER_CHECKPOINT_PATH!r}).is_file() else 1)"),
         base_compose=base_compose,
         kafka_compose=kafka_compose,
         watcher_compose=watcher_compose,
@@ -707,9 +693,7 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
     num_results_raw = summary.get("num_results", 0)
     evidence_count_raw = summary.get("evidence_count", 0)
     num_results = int(num_results_raw) if isinstance(num_results_raw, int) else 0
-    evidence_count = (
-        int(evidence_count_raw) if isinstance(evidence_count_raw, int) else 0
-    )
+    evidence_count = int(evidence_count_raw) if isinstance(evidence_count_raw, int) else 0
 
     source_refs_raw = summary.get("source_refs")
     source_refs: tuple[str, ...]
@@ -719,9 +703,7 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
         source_refs = ()
 
     raw_tool_reason_value = summary.get("raw_tool_reason")
-    raw_tool_reason = (
-        str(raw_tool_reason_value) if raw_tool_reason_value is not None else None
-    )
+    raw_tool_reason = str(raw_tool_reason_value) if raw_tool_reason_value is not None else None
     used_value = summary.get("used")
     used = used_value if isinstance(used_value, bool) else None
     reason = parse_search_summary_reason(summary.get("reason"))
@@ -756,12 +738,20 @@ def build_embedding_readiness_probe_code(*, probe_text: str) -> str:
         "import json; "
         "from intergrax.rag.embedding.bootstrap.default_embedding_engine "
         "import create_default_embedding_pipeline; "
+        "from intergrax.integrations.contracts.base import LabSelectorOptIn; "
         "from intergrax.rag.embedding.registry.profile import embedding_profile_from_env; "
+        "from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug; "
         f"probe = '{escaped_probe}'; "
-        "profile = embedding_profile_from_env(); "
+        "profile = embedding_profile_from_env("
+        "lab_opt_in=LabSelectorOptIn("
+        "selector=lab_embedding_provider_slug(), "
+        "reason='lkw file watcher e2e proof',"
+        "),"
+        "); "
         "pipeline = create_default_embedding_pipeline(); "
         "vecs = pipeline.embed_texts([probe]); "
-        "dim = int(vecs.shape[1]) if getattr(vecs, 'ndim', 0) == 2 and vecs.shape[0] == 1 and vecs.shape[1] > 0 else -1; "
+        "dim = int(vecs.shape[1]) if getattr(vecs, 'ndim', 0) == 2 "
+        "and vecs.shape[0] == 1 and vecs.shape[1] > 0 else -1; "
         "ok = dim > 0; "
         "print(json.dumps({'provider': profile.provider, 'model': profile.model or '', "
         "'dimension': dim, 'ok': ok}))"
@@ -866,7 +856,7 @@ def ensure_embedding_model_bootstrap_if_configured(
             },
         )
     except OllamaEmbeddingBootstrapError as exc:
-        print(f"embedding_model_bootstrap=FAIL")
+        print("embedding_model_bootstrap=FAIL")
         print(f"embedding_bootstrap_reason={exc.reason}")
         raise
 
@@ -1099,12 +1089,8 @@ def build_file_watcher_e2e_proof_receipt(
             "enqueue_trigger": "filesystem_create",
             "watcher_process": "foreground_sidecar",
             "watcher_checkpoint_store": "json_file",
-            "checkpoint_restore_verified": (
-                workload_evidence.checkpoint_restore_verified
-            ),
-            "watcher_final_checkpoint_saved": (
-                workload_evidence.watcher_final_checkpoint_saved
-            ),
+            "checkpoint_restore_verified": (workload_evidence.checkpoint_restore_verified),
+            "watcher_final_checkpoint_saved": (workload_evidence.watcher_final_checkpoint_saved),
             "vector_store_provider": "qdrant",
             "persistent_index": True,
             "document_store_provider": "mongodb",
@@ -1118,9 +1104,7 @@ def build_file_watcher_e2e_proof_receipt(
             "change_token": workload_evidence.change_token,
             "broker_run_id": workload_evidence.broker_run_id,
             "platform_execution_linkage_gap": PLATFORM_EXECUTION_LINKAGE_GAP,
-            "duplicate_enqueue_after_restart": (
-                workload_evidence.duplicate_enqueue_after_restart
-            ),
+            "duplicate_enqueue_after_restart": (workload_evidence.duplicate_enqueue_after_restart),
             "restart_services": list(_RESTART_SERVICES),
         },
         domain_evidence={
@@ -1135,32 +1119,18 @@ def build_file_watcher_e2e_proof_receipt(
             "change_token": workload_evidence.change_token,
             "broker_run_id": workload_evidence.broker_run_id,
             "idempotency_key": workload_evidence.idempotency_key,
-            "embedding_warmup_completed": (
-                workload_evidence.embedding_warmup_completed
-            ),
+            "embedding_warmup_completed": (workload_evidence.embedding_warmup_completed),
             "reviewer_rerun_required": workload_evidence.reviewer_rerun_required,
             "watcher_checkpoint_ready": workload_evidence.watcher_checkpoint_ready,
-            "watcher_restored_after_restart": (
-                workload_evidence.watcher_restored_after_restart
-            ),
-            "search_results_before_restart": (
-                workload_evidence.search_results_before_restart
-            ),
-            "source_ref_found_before_restart": (
-                workload_evidence.source_ref_found_before_restart
-            ),
+            "watcher_restored_after_restart": (workload_evidence.watcher_restored_after_restart),
+            "search_results_before_restart": (workload_evidence.search_results_before_restart),
+            "source_ref_found_before_restart": (workload_evidence.source_ref_found_before_restart),
             "restart_mode": workload_evidence.restart_mode,
             "volumes_removed": workload_evidence.volumes_removed,
-            "source_file_modified_after_index": (
-                workload_evidence.source_file_modified_after_index
-            ),
+            "source_file_modified_after_index": (workload_evidence.source_file_modified_after_index),
             "reindexed_after_restart": workload_evidence.reindexed_after_restart,
-            "search_results_after_restart": (
-                workload_evidence.search_results_after_restart
-            ),
-            "source_ref_found_after_restart": (
-                workload_evidence.source_ref_found_after_restart
-            ),
+            "search_results_after_restart": (workload_evidence.search_results_after_restart),
+            "source_ref_found_after_restart": (workload_evidence.source_ref_found_after_restart),
         },
         guardrails={
             "manual_index_command": False,
@@ -1192,22 +1162,13 @@ def _resolve_host_mongodb_uri() -> str | None:
     if explicit:
         return explicit
 
-    username = (
-        os.environ.get("LKW_MONGODB_ROOT_USERNAME", "intergrax").strip() or "intergrax"
-    )
+    username = os.environ.get("LKW_MONGODB_ROOT_USERNAME", "intergrax").strip() or "intergrax"
     password = (
-        os.environ.get("LKW_MONGODB_ROOT_PASSWORD", "intergrax-local-dev-only").strip()
-        or "intergrax-local-dev-only"
+        os.environ.get("LKW_MONGODB_ROOT_PASSWORD", "intergrax-local-dev-only").strip() or "intergrax-local-dev-only"
     )
-    database = (
-        os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip()
-        or "intergrax_proofs"
-    )
+    database = os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip() or "intergrax_proofs"
     host_port = os.environ.get("LKW_MONGODB_HOST_PORT", "27018").strip() or "27018"
-    return (
-        f"mongodb://{username}:{password}@127.0.0.1:{host_port}/"
-        f"{database}?authSource=admin"
-    )
+    return f"mongodb://{username}:{password}@127.0.0.1:{host_port}/{database}?authSource=admin"
 
 
 def ensure_mongodb_env() -> None:
@@ -1218,19 +1179,15 @@ def ensure_mongodb_env() -> None:
             os.environ["INTERGRAX_MONGODB_URI"] = resolved
     if not os.environ.get("INTERGRAX_MONGODB_DATABASE", "").strip():
         os.environ["INTERGRAX_MONGODB_DATABASE"] = (
-            os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip()
-            or "intergrax_proofs"
+            os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip() or "intergrax_proofs"
         )
     if not os.environ.get("INTERGRAX_MONGODB_COLLECTION", "").strip():
         os.environ["INTERGRAX_MONGODB_COLLECTION"] = (
-            os.environ.get("LKW_MONGODB_COLLECTION", "proof_receipts").strip()
-            or "proof_receipts"
+            os.environ.get("LKW_MONGODB_COLLECTION", "proof_receipts").strip() or "proof_receipts"
         )
 
 
-def resolve_mongodb_document_store() -> tuple[
-    MongoDBDocumentStoreIntegration, DocumentStore
-]:
+def resolve_mongodb_document_store() -> tuple[MongoDBDocumentStoreIntegration, DocumentStore]:
     """Resolve MongoDB DocumentStore through the platform provider factory."""
     ensure_mongodb_env()
     bundle = create_mongodb_integration()
@@ -1248,9 +1205,7 @@ def record_file_watcher_e2e_proof_receipt(
 ) -> tuple[ProofReceipt, MongoDBDocumentStoreIntegration]:
     """Persist and verify a file-watcher proof receipt through the platform store."""
     integration, document_store = resolve_mongodb_document_store()
-    verified = record_and_verify_proof_receipt(
-        receipt, document_store, owns_document_store=True
-    )
+    verified = record_and_verify_proof_receipt(receipt, document_store, owns_document_store=True)
     return verified, integration
 
 
@@ -1291,9 +1246,7 @@ def build_pass_evidence(
         "vector_store_provider": "qdrant",
         "persistent_index": True,
         "watcher_checkpoint_ready": workload_evidence.watcher_checkpoint_ready,
-        "watcher_restored_after_restart": (
-            workload_evidence.watcher_restored_after_restart
-        ),
+        "watcher_restored_after_restart": (workload_evidence.watcher_restored_after_restart),
         "tenant_id": _TENANT_ID,
         "workspace_id": _WORKSPACE_ID,
         "collection_id": _COLLECTION_ID,
@@ -1309,29 +1262,17 @@ def build_pass_evidence(
         "task_count_before_file": workload_evidence.task_count_before_file,
         "task_count_after_file": workload_evidence.task_count_after_file,
         "task_topic_increased": workload_evidence.task_topic_increased,
-        "search_results_before_restart": (
-            workload_evidence.search_results_before_restart
-        ),
-        "source_ref_found_before_restart": (
-            workload_evidence.source_ref_found_before_restart
-        ),
+        "search_results_before_restart": (workload_evidence.search_results_before_restart),
+        "source_ref_found_before_restart": (workload_evidence.source_ref_found_before_restart),
         "restart_mode": workload_evidence.restart_mode,
         "volumes_removed": workload_evidence.volumes_removed,
-        "source_file_modified_after_index": (
-            workload_evidence.source_file_modified_after_index
-        ),
+        "source_file_modified_after_index": (workload_evidence.source_file_modified_after_index),
         "reindexed_after_restart": workload_evidence.reindexed_after_restart,
         "task_count_before_restart": workload_evidence.task_count_before_restart,
         "task_count_after_restart": workload_evidence.task_count_after_restart,
-        "duplicate_enqueue_after_restart": (
-            workload_evidence.duplicate_enqueue_after_restart
-        ),
-        "search_results_after_restart": (
-            workload_evidence.search_results_after_restart
-        ),
-        "source_ref_found_after_restart": (
-            workload_evidence.source_ref_found_after_restart
-        ),
+        "duplicate_enqueue_after_restart": (workload_evidence.duplicate_enqueue_after_restart),
+        "search_results_after_restart": (workload_evidence.search_results_after_restart),
+        "source_ref_found_after_restart": (workload_evidence.source_ref_found_after_restart),
         "embedding_warmup_completed": (workload_evidence.embedding_warmup_completed),
         "reviewer_rerun_required": workload_evidence.reviewer_rerun_required,
         "proof_receipt_recorded": True,
@@ -1362,15 +1303,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--base-url",
-        default=os.environ.get(
-            "LOCAL_WORKSPACE_BACKEND_BASE_URL", "http://127.0.0.1:8020"
-        ),
+        default=os.environ.get("LOCAL_WORKSPACE_BACKEND_BASE_URL", "http://127.0.0.1:8020"),
     )
     parser.add_argument(
         "--kafka-bootstrap",
-        default=os.environ.get(
-            "LKW_FILE_WATCHER_E2E_KAFKA_BOOTSTRAP", "127.0.0.1:9094"
-        ),
+        default=os.environ.get("LKW_FILE_WATCHER_E2E_KAFKA_BOOTSTRAP", "127.0.0.1:9094"),
     )
     parser.add_argument("--topic", default=_TASK_TOPIC)
     parser.add_argument("--timeout-seconds", type=int, default=600)
@@ -1380,12 +1317,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--proof-docs-dir", type=Path, default=_DEFAULT_PROOF_DOCS_DIR)
     parser.add_argument("--base-compose", type=Path, default=_DEFAULT_BASE_COMPOSE)
     parser.add_argument("--kafka-compose", type=Path, default=_DEFAULT_KAFKA_COMPOSE)
-    parser.add_argument(
-        "--watcher-compose", type=Path, default=_DEFAULT_WATCHER_COMPOSE
-    )
-    parser.add_argument(
-        "--mongodb-compose", type=Path, default=_DEFAULT_MONGODB_COMPOSE
-    )
+    parser.add_argument("--watcher-compose", type=Path, default=_DEFAULT_WATCHER_COMPOSE)
+    parser.add_argument("--mongodb-compose", type=Path, default=_DEFAULT_MONGODB_COMPOSE)
     parser.add_argument(
         "--mongo-express",
         default=os.environ.get("LKW_MONGO_EXPRESS_URL", _DEFAULT_MONGO_EXPRESS_URL),
@@ -1407,13 +1340,9 @@ def _poll_search_until_indexed(
         try:
             response = request_json(run_url, method="POST", payload=request_body)
             last_diagnostics = extract_search_diagnostics(response)
-            if search_attempt_succeeded(
-                last_diagnostics, expected_source_path=expected_source_path
-            ):
+            if search_attempt_succeeded(last_diagnostics, expected_source_path=expected_source_path):
                 assert last_diagnostics is not None
-                result_count = max(
-                    last_diagnostics.num_results, last_diagnostics.evidence_count
-                )
+                result_count = max(last_diagnostics.num_results, last_diagnostics.evidence_count)
                 return last_diagnostics, result_count
         except (urllib.error.URLError, TimeoutError, ValueError, OSError):
             pass
@@ -1470,9 +1399,7 @@ def main(argv: list[str] | None = None) -> int:
     except OllamaEmbeddingBootstrapError as exc:
         return fail(exc.reason)
 
-    readiness_timeout_seconds = int(
-        min(float(bootstrap_timeout_seconds), warmup_timeout_seconds)
-    )
+    readiness_timeout_seconds = int(min(float(bootstrap_timeout_seconds), warmup_timeout_seconds))
     readiness = run_embedding_readiness(
         base_compose=base_compose,
         kafka_compose=kafka_compose,
@@ -1522,29 +1449,16 @@ def main(argv: list[str] | None = None) -> int:
         deadline=deadline,
     )
     source_ref_found_before_restart = (
-        diagnostics is not None
-        and document.container_source_path in diagnostics.source_refs
+        diagnostics is not None and document.container_source_path in diagnostics.source_refs
     )
-    if not search_attempt_succeeded(
-        diagnostics, expected_source_path=document.container_source_path
-    ):
+    if not search_attempt_succeeded(diagnostics, expected_source_path=document.container_source_path):
         fields: dict[str, object] = {
             "expected_source_path": document.container_source_path,
-            "observed_source_refs": (
-                list(diagnostics.source_refs) if diagnostics is not None else []
-            ),
-            "observed_source_ref_count": (
-                len(diagnostics.source_refs) if diagnostics is not None else 0
-            ),
-            "last_num_results": (
-                diagnostics.num_results if diagnostics is not None else 0
-            ),
-            "last_evidence_count": (
-                diagnostics.evidence_count if diagnostics is not None else 0
-            ),
-            "last_raw_tool_reason": (
-                diagnostics.raw_tool_reason if diagnostics is not None else None
-            ),
+            "observed_source_refs": (list(diagnostics.source_refs) if diagnostics is not None else []),
+            "observed_source_ref_count": (len(diagnostics.source_refs) if diagnostics is not None else 0),
+            "last_num_results": (diagnostics.num_results if diagnostics is not None else 0),
+            "last_evidence_count": (diagnostics.evidence_count if diagnostics is not None else 0),
+            "last_raw_tool_reason": (diagnostics.raw_tool_reason if diagnostics is not None else None),
             "source_ref_found_before_restart": source_ref_found_before_restart,
         }
         if diagnostics is None:
@@ -1575,17 +1489,13 @@ def main(argv: list[str] | None = None) -> int:
             return fail("kafka_inspection_unavailable")
         return fail("kafka_topic_unavailable")
 
-    if kafka_topic_regression(
-        before=task_count_before_file, after=task_count_after_file
-    ):
+    if kafka_topic_regression(before=task_count_before_file, after=task_count_after_file):
         return fail(
             "kafka_topic_did_not_increase",
             task_count_before_file=task_count_before_file,
             task_count_after_file=task_count_after_file,
         )
-    if not kafka_topic_increased(
-        before=task_count_before_file, after=task_count_after_file
-    ):
+    if not kafka_topic_increased(before=task_count_before_file, after=task_count_after_file):
         return fail(
             "kafka_topic_did_not_increase",
             task_count_before_file=task_count_before_file,
@@ -1602,9 +1512,7 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError:
         return fail("watcher_logs_unavailable")
 
-    watcher_record = select_watcher_ingest_enqueued_record(
-        extract_file_watcher_ingest_enqueued_records(watcher_logs)
-    )
+    watcher_record = select_watcher_ingest_enqueued_record(extract_file_watcher_ingest_enqueued_records(watcher_logs))
     if watcher_record is None:
         return fail("watcher_enqueue_record_missing")
     try:
@@ -1677,9 +1585,7 @@ def main(argv: list[str] | None = None) -> int:
             return fail("kafka_inspection_unavailable")
         return fail("kafka_topic_unavailable")
 
-    if kafka_topic_regression(
-        before=task_count_before_restart, after=task_count_after_restart
-    ):
+    if kafka_topic_regression(before=task_count_before_restart, after=task_count_after_restart):
         return fail(
             "kafka_task_topic_regressed_after_restart",
             task_count_before_restart=task_count_before_restart,
@@ -1702,21 +1608,14 @@ def main(argv: list[str] | None = None) -> int:
         deadline=time.monotonic() + min(60.0, max(10.0, timeout_seconds / 4.0)),
     )
     source_ref_found_after_restart = (
-        post_diagnostics is not None
-        and document.container_source_path in post_diagnostics.source_refs
+        post_diagnostics is not None and document.container_source_path in post_diagnostics.source_refs
     )
-    if not search_attempt_succeeded(
-        post_diagnostics, expected_source_path=document.container_source_path
-    ):
+    if not search_attempt_succeeded(post_diagnostics, expected_source_path=document.container_source_path):
         return fail(
             "search_after_restart_failed",
             expected_source_path=document.container_source_path,
-            last_num_results=(
-                post_diagnostics.num_results if post_diagnostics is not None else 0
-            ),
-            last_evidence_count=(
-                post_diagnostics.evidence_count if post_diagnostics is not None else 0
-            ),
+            last_num_results=(post_diagnostics.num_results if post_diagnostics is not None else 0),
+            last_evidence_count=(post_diagnostics.evidence_count if post_diagnostics is not None else 0),
             source_ref_found_after_restart=source_ref_found_after_restart,
         )
     if not source_ref_found_after_restart:
@@ -1738,13 +1637,9 @@ def main(argv: list[str] | None = None) -> int:
     if source_file_modified_after_index:
         return fail(
             "source_file_modified_after_index",
-            size_changed=(
-                source_stat_after_index.size_bytes
-                != source_stat_after_restart.size_bytes
-            ),
+            size_changed=(source_stat_after_index.size_bytes != source_stat_after_restart.size_bytes),
             modified_time_changed=(
-                source_stat_after_index.modified_time_ns
-                != source_stat_after_restart.modified_time_ns
+                source_stat_after_index.modified_time_ns != source_stat_after_restart.modified_time_ns
             ),
         )
 
@@ -1787,9 +1682,7 @@ def main(argv: list[str] | None = None) -> int:
         except (RuntimeError, subprocess.TimeoutExpired):
             evidence_failure = "watcher_result_read_failed"
         else:
-            sidecar_result = extract_last_file_watcher_sidecar_result(
-                logs_completed.stdout
-            )
+            sidecar_result = extract_last_file_watcher_sidecar_result(logs_completed.stdout)
             if sidecar_result is None:
                 evidence_failure = "watcher_result_missing"
             elif not sidecar_result_proves_checkpoint_restore(sidecar_result):
@@ -1797,12 +1690,8 @@ def main(argv: list[str] | None = None) -> int:
                 evidence_fields = {
                     "sidecar_exit_kind": sidecar_result.get("exit_kind"),
                     "sidecar_exit_code": sidecar_result.get("exit_code"),
-                    "sidecar_restored_from_checkpoint": sidecar_result.get(
-                        "restored_from_checkpoint"
-                    ),
-                    "sidecar_final_checkpoint_saved": sidecar_result.get(
-                        "final_checkpoint_saved"
-                    ),
+                    "sidecar_restored_from_checkpoint": sidecar_result.get("restored_from_checkpoint"),
+                    "sidecar_final_checkpoint_saved": sidecar_result.get("final_checkpoint_saved"),
                     "sidecar_error_id": sidecar_result.get("error_id"),
                 }
             else:

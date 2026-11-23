@@ -27,8 +27,8 @@ Experiment registry:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -37,14 +37,10 @@ from intergrax.applications._shared.harness_auth import (
     resolve_harness_authenticated_principal,
 )
 from intergrax.applications._shared.harness_principal import harness_principal_to_approver_evidence
-from intergrax.runtime.human.models import HumanResponseVerdict
-
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.hitl_service import DebugHitlResumeService
-from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
-from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.runtime.metrics.export import export_run_metrics
 from intergrax.debug.models import (
     CheckpointItem,
     CheckpointListResponse,
@@ -64,27 +60,29 @@ from intergrax.debug.models import (
     TaskProgressResponse,
     TraceResponse,
 )
+from intergrax.debug.progress_service import TaskProgressService
 from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
     open_runtime_event_persistence,
     open_task_checkpoint_persistence,
-    resolve_trace_reader,
     resolve_trace_db_path,
+    resolve_trace_reader,
 )
+from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import (
     ExperimentDecision,
     ExperimentRecord,
     RegisterExperimentRequest,
     SetExperimentDecisionRequest,
 )
-from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.persistence_contract import ExperimentPersistence
 from intergrax.experiments.store import resolve_experiments_db_path
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointReader
+from intergrax.runtime.metrics.export import export_run_metrics
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
-from intergrax.contracts.run_trace_store import RunTraceReader
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
 def _trace_reader_factory(
@@ -92,6 +90,7 @@ def _trace_reader_factory(
     trace_store: RunTraceReader | None = None,
 ) -> Callable[[], RunTraceReader]:
     if trace_store is not None:
+
         def _open_injected() -> RunTraceReader:
             return trace_store
 
@@ -119,9 +118,7 @@ def _experiment_store_factory(
 
         return _open_injected
 
-    resolved = resolve_experiments_db_path(
-        str(experiments_db_path) if experiments_db_path is not None else None
-    )
+    resolved = resolve_experiments_db_path(str(experiments_db_path) if experiments_db_path is not None else None)
 
     def _open() -> ExperimentPersistence:
         return resolve_experiment_persistence(experiments_db=resolved)
@@ -350,17 +347,10 @@ def create_debug_router(
         if hitl_service is None:
             raise HTTPException(
                 status_code=503,
-                detail=(
-                    "HITL resume is not configured. "
-                    "Pass registry=AgentRegistry(...) to create_debug_app."
-                ),
+                detail=("HITL resume is not configured. Pass registry=AgentRegistry(...) to create_debug_app."),
             )
         principal = resolve_harness_authenticated_principal(request)
-        approver = (
-            harness_principal_to_approver_evidence(principal)
-            if principal is not None
-            else None
-        )
+        approver = harness_principal_to_approver_evidence(principal) if principal is not None else None
         try:
             verdict = HumanResponseVerdict(body.response.strip().lower())
         except ValueError as exc:
@@ -407,19 +397,17 @@ def create_debug_router(
         async def interaction_intake_unconfigured() -> InteractionIntakeResponse:
             raise HTTPException(
                 status_code=503,
-                detail=(
-                    "Interaction intake is not configured. "
-                    "Pass registry=AgentRegistry(...) to create_debug_app."
-                ),
+                detail=("Interaction intake is not configured. Pass registry=AgentRegistry(...) to create_debug_app."),
             )
 
     @router.get("/experiments", response_model=ExperimentListResponse)
     def list_experiments(
         limit: int = Query(default=20, ge=1, le=200),
         decision: ExperimentDecision | None = Query(default=None),
+        tenant: str = Query(default="default", description="Tenant id filter"),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentListResponse:
-        records = store.list_experiments(limit=limit, decision=decision)
+        records = store.list_experiments(limit=limit, decision=decision, tenant_id=tenant)
         return ExperimentListResponse(
             count=len(records),
             experiments=[record.model_dump(mode="json") for record in records],
@@ -428,17 +416,20 @@ def create_debug_router(
     @router.post("/experiments", response_model=ExperimentRecord, status_code=201)
     def register_experiment(
         body: RegisterExperimentRequest,
+        tenant: str = Query(default="default", description="Tenant id"),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
-        return store.register(body)
+        scoped = body.model_copy(update={"tenant_id": tenant})
+        return store.register(scoped)
 
     @router.get("/experiments/{experiment_id}", response_model=ExperimentRecord)
     def show_experiment(
         experiment_id: str,
+        tenant: str = Query(default="default", description="Tenant id"),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
-            return store.get(experiment_id)
+            return store.get(experiment_id, tenant_id=tenant)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -446,6 +437,7 @@ def create_debug_router(
     def decide_experiment(
         experiment_id: str,
         body: SetExperimentDecisionRequest,
+        tenant: str = Query(default="default", description="Tenant id"),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord | ExperimentDeletedResponse:
         try:
@@ -453,6 +445,7 @@ def create_debug_router(
                 experiment_id,
                 body.decision,
                 notes=body.notes,
+                tenant_id=tenant,
             )
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -464,10 +457,11 @@ def create_debug_router(
     def link_experiment_run(
         experiment_id: str,
         run_id: str,
+        tenant: str = Query(default="default", description="Tenant id"),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
-            return store.link_run(experiment_id, run_id)
+            return store.link_run(experiment_id, run_id, tenant_id=tenant)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

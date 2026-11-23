@@ -6,22 +6,22 @@ from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
-
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.integrations.registry.bootstrap import (
     register_default_integrations,
     reset_default_integrations_state,
 )
 from intergrax.integrations.registry.catalog import clear_catalog
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
-    create_default_embedding_engine,
     create_default_embedding_pipeline,
 )
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
+from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderConfigurationError
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
 from intergrax.rag.embedding.providers.openai_embedding_provider import OpenAIEmbeddingProvider
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile, embedding_profile_from_env
-
+from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug
+from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
 pytestmark = pytest.mark.unit
 
@@ -42,11 +42,24 @@ def patch_openai_client():
         yield
 
 
-def test_embedding_profile_from_env_defaults_to_ollama() -> None:
+def test_embedding_profile_from_env_unset_raises_without_lab_opt_in() -> None:
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.delenv("INTERGRAX_EMBEDDING_PROVIDER", raising=False)
         monkeypatch.delenv("INTERGRAX_EMBEDDING_MODEL", raising=False)
-        profile = embedding_profile_from_env()
+        with pytest.raises(EmbeddingProviderConfigurationError):
+            embedding_profile_from_env()
+
+
+def test_embedding_profile_from_env_lab_opt_in_selects_ollama() -> None:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.delenv("INTERGRAX_EMBEDDING_PROVIDER", raising=False)
+        monkeypatch.delenv("INTERGRAX_EMBEDDING_MODEL", raising=False)
+        profile = embedding_profile_from_env(
+            lab_opt_in=LabSelectorOptIn(
+                selector=lab_embedding_provider_slug(),
+                reason="embedding profile unit test",
+            )
+        )
     assert profile.provider == "ollama"
     assert profile.model is None
 
@@ -123,9 +136,7 @@ def test_openai_provider_uses_same_model_variable_via_runtime_binding(
 def test_lkw_env_example_contains_canonical_embedding_pair() -> None:
     from pathlib import Path
 
-    text = Path(
-        "applications/local_workspace_application/.env.example"
-    ).read_text(encoding="utf-8")
+    text = Path("applications/local_workspace_application/.env.example").read_text(encoding="utf-8")
     assert "INTERGRAX_EMBEDDING_PROVIDER=ollama" in text
     assert "INTERGRAX_EMBEDDING_MODEL=nomic-embed-text" in text
     assert "INTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL" not in text

@@ -7,6 +7,9 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 
+from intergrax.applications._shared.host_orchestration_environment_resolution import (
+    host_context_composition_spec,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.context.bootstrap import (
@@ -14,22 +17,17 @@ from intergrax.context.bootstrap import (
     bootstrap_context_catalog,
     materialize_context_plugin_registry,
 )
-from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
+from intergrax.context.orchestrator import ContextOrchestrator
 from intergrax.context.protocols import ContextEngine
+from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
+from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
-from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.execution import application_environment_context_composition as _context_composition
+from intergrax.runtime.execution.application_environment_context_composition import ContextManager
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
-from intergrax.runtime.execution.application_environment_context_composition import (
-    default_task_execution_options_for_environment,
-    merge_task_context_options_from_environment,
-    resolve_context_engine_for_graph_node,
-    resolve_context_engine_from_environment,
-    resolve_context_manager_from_environment,
-    resolve_context_orchestrator_from_environment,
-)
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
 
 logger = logging.getLogger(__name__)
@@ -68,8 +66,7 @@ def context_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str
     for item in report.rejected:
         if item.fail_closed:
             errors.append(
-                "context plugin admission rejected: "
-                f"{item.spec.name}: {item.reason_code.value}",
+                f"context plugin admission rejected: {item.spec.name}: {item.reason_code.value}",
             )
     if not errors:
         errors.append("context plugin bootstrap admission is not acceptable")
@@ -172,3 +169,69 @@ def apply_context_engine_to_runtime_config(
         return config
     config.context_engine = context_engine or resolve_context_engine_from_environment(env)
     return config
+
+
+def resolve_context_engine_from_environment(
+    env: ApplicationEnvironmentProfile,
+) -> ContextEngine:
+    """Resolve context engine for the environment preset (CE-7.4, CE-8.2)."""
+    return _context_composition.resolve_context_engine_from_environment(
+        host_context_composition_spec(env),
+    )
+
+
+def resolve_context_orchestrator_from_environment(
+    env: ApplicationEnvironmentProfile,
+    engine: ContextEngine,
+) -> ContextOrchestrator | None:
+    """Return bounded orchestrator for codebase preset only (CE-8.2)."""
+    return _context_composition.resolve_context_orchestrator_from_environment(
+        host_context_composition_spec(env),
+        engine,
+    )
+
+
+def resolve_context_engine_for_graph_node(
+    env: ApplicationEnvironmentProfile,
+    *,
+    has_delegation: bool,
+) -> ContextEngine:
+    """Delegation children use ``explore_child`` preset automatically (CE-8.3)."""
+    return _context_composition.resolve_context_engine_for_graph_node(
+        host_context_composition_spec(env),
+        has_delegation=has_delegation,
+    )
+
+
+def resolve_context_manager_from_environment(
+    env: ApplicationEnvironmentProfile,
+    *,
+    event_bus: RuntimeEventBus | None = None,
+    llm_adapter: LLMAdapter | None = None,
+    context_engine: ContextEngine | None = None,
+) -> ContextManager:
+    """Build ``ContextManager`` with environment assembly and budget policies."""
+    return _context_composition.resolve_context_manager_from_environment(
+        host_context_composition_spec(env),
+        event_bus=event_bus,
+        llm_adapter=llm_adapter,
+        context_engine=context_engine,
+    )
+
+
+def merge_task_context_options_from_environment(
+    options: TaskExecutionOptions,
+    env: ApplicationEnvironmentProfile,
+) -> TaskExecutionOptions:
+    return _context_composition.merge_task_context_options_from_environment(
+        options,
+        host_context_composition_spec(env),
+    )
+
+
+def default_task_execution_options_for_environment(
+    env: ApplicationEnvironmentProfile,
+) -> TaskExecutionOptions:
+    return _context_composition.default_task_execution_options_for_environment(
+        host_context_composition_spec(env),
+    )

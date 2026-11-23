@@ -1,0 +1,366 @@
+{
+  "schema": "eqo.next_wave_queue.v1",
+  "updated_at": "2026-11-21T16:30:00+00:00",
+  "slice": "NEW_IMPLEMENTATION_REQUIRED_all_33",
+  "development_pin": "f88e17c53bcb318076f9324382f848bb5c5d88a7",
+  "development_replay_artifact": "EQO_DEVELOPMENT_REPLAY.json",
+  "train_replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+  "ticket_ref_bookkeeping": "governance/tickets/T-IGX-046-F.md",
+  "status_counts": {
+    "REPLAY_ONLY": 24,
+    "SKIP_NO_GO": 5,
+    "ALREADY_DONE": 2,
+    "BLOCKED_EXACT_REASON": 2
+  },
+  "rows": [
+    {
+      "obligation_id": "EDER-F-0039",
+      "root_cause_id": "EQOA-A2-009",
+      "package_id": "EQO-PKG-A2-009",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0067",
+      "root_cause_id": "EQOA-A2-038",
+      "package_id": "EQO-PKG-A2-038",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0088",
+      "root_cause_id": "EQOA-A3-008",
+      "package_id": "EQO-PKG-A3-008",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "SKIP_NO_GO",
+      "ticket_ref": "governance/tickets/",
+      "skip_reason": "No ticket at development pin a0598ba3 names a product write set or implementation go for EQOA-A3-008."
+    },
+    {
+      "obligation_id": "EDER-F-0098",
+      "root_cause_id": "EQOA-A3-018",
+      "package_id": "EQO-PKG-A3-018",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "SKIP_NO_GO",
+      "ticket_ref": "governance/tickets/",
+      "skip_reason": "No ticket at development pin a0598ba3 names a product write set or implementation go for EQOA-A3-018."
+    },
+    {
+      "obligation_id": "EDER-F-0111",
+      "root_cause_id": "EQOA-A4-002",
+      "package_id": "EQO-PKG-A4-002",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-D.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0113",
+      "root_cause_id": "EQOA-A4-004",
+      "package_id": "EQO-PKG-A4-004",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0114",
+      "root_cause_id": "EQOA-A4-005",
+      "package_id": "EQO-PKG-A4-005",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0115",
+      "root_cause_id": "EQOA-A4-006",
+      "package_id": "EQO-PKG-A4-006",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "ALREADY_DONE",
+      "ticket_ref": "governance/tickets/T-IGX-043-D.md",
+      "note": "Development-based implementation on eqo/w1-a4-006; pytest 3 passed.",
+      "branch": "eqo/w1-a4-006",
+      "commit_sha": "960205aaaf7adf8c8bfd7075e9bfd60031b76417"
+    },
+    {
+      "obligation_id": "EDER-F-0118",
+      "root_cause_id": "EQOA-A4-009",
+      "package_id": "EQO-PKG-A4-009",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "FC-1",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0120",
+      "root_cause_id": "EQOA-A4-011",
+      "package_id": "EQO-PKG-A4-011",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "FC-1",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0126",
+      "root_cause_id": "EQOA-A4-017",
+      "package_id": "EQO-PKG-A4-017",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0127",
+      "root_cause_id": "EQOA-A4-018",
+      "package_id": "EQO-PKG-A4-018",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0128",
+      "root_cause_id": "EQOA-A4-019",
+      "package_id": "EQO-PKG-A4-019",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-F.md",
+      "replay_cluster": "FC-3",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0135",
+      "root_cause_id": "EQOA-A4-026",
+      "package_id": "EQO-PKG-A4-026",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0136",
+      "root_cause_id": "EQOA-A4-027",
+      "package_id": "EQO-PKG-A4-027",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "ALREADY_DONE",
+      "ticket_ref": "governance/tickets/T-IGX-055-B.md",
+      "note": "Behavior replayed on development pin; pytest 1 passed.",
+      "branch": "eqo/dev-a4-027",
+      "commit_sha": "537a06296d40b55458b08878f9180c393b607a07"
+    },
+    {
+      "obligation_id": "EDER-F-0139",
+      "root_cause_id": "EQOA-A4-030",
+      "package_id": "EQO-PKG-A4-030",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "replay_cluster": "FC-2",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0140",
+      "root_cause_id": "EQOA-A4-031",
+      "package_id": "EQO-PKG-A4-031",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "FC-1",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0141",
+      "root_cause_id": "EQOA-A4-032",
+      "package_id": "EQO-PKG-A4-032",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "replay_cluster": "FC-2",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0143",
+      "root_cause_id": "EQOA-A4-034",
+      "package_id": "EQO-PKG-A4-034",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "BLOCKED_EXACT_REASON",
+      "ticket_ref": "eqo/dev-a4-034",
+      "note": "Blocker packet @ d1da3b3c1; FRZ-REL-02 measured-behavior gap."
+    },
+    {
+      "obligation_id": "EDER-F-0144",
+      "root_cause_id": "EQOA-A4-035",
+      "package_id": "EQO-PKG-A4-035",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "replay_cluster": "FC-2",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0145",
+      "root_cause_id": "EQOA-A4-036",
+      "package_id": "EQO-PKG-A4-036",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "replay_cluster": "FC-2",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0146",
+      "root_cause_id": "EQOA-A4-037",
+      "package_id": "EQO-PKG-A4-037",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "FC-1",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0153",
+      "root_cause_id": "EQOA-A4-044",
+      "package_id": "EQO-PKG-A4-044",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "FC-1",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0157",
+      "root_cause_id": "EQOA-A5-001",
+      "package_id": "EQO-PKG-A5-001",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0172",
+      "root_cause_id": "EQOA-A6-001",
+      "package_id": "EQO-PKG-A6-001",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "SKIP_NO_GO",
+      "ticket_ref": "governance/tickets/",
+      "skip_reason": "Hard stop: evidence gap unless ticket go names exact file change (not removing semantic skip)."
+    },
+    {
+      "obligation_id": "EDER-F-0173",
+      "root_cause_id": "EQOA-A6-002",
+      "package_id": "EQO-PKG-A6-002",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0174",
+      "root_cause_id": "EQOA-A6-003",
+      "package_id": "EQO-PKG-A6-003",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0176",
+      "root_cause_id": "EQOA-A6-005",
+      "package_id": "EQO-PKG-A6-005",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0177",
+      "root_cause_id": "EQOA-A6-006",
+      "package_id": "EQO-PKG-A6-006",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "BLOCKED_EXACT_REASON",
+      "ticket_ref": "eqo/dev-a6-006",
+      "note": "Blocker packet @ b02278643; ENT_AUDIT_X_SEMANTIC skip retained."
+    },
+    {
+      "obligation_id": "EDER-F-0178",
+      "root_cause_id": "EQOA-A6-007",
+      "package_id": "EQO-PKG-A6-007",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-F-0179",
+      "root_cause_id": "EQOA-A6-008",
+      "package_id": "EQO-PKG-A6-008",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "REPLAY_ONLY",
+      "replay_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "replay_cluster": "fifteen_id_pass",
+      "note": "Train pin replay evidence; zero new commits this slice; development replay deferred per operator_merge_rule."
+    },
+    {
+      "obligation_id": "EDER-N-0003",
+      "root_cause_id": "A4-007-b1b2",
+      "package_id": "EQO-PKG-A4-007-b1b2",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "SKIP_NO_GO",
+      "ticket_ref": "governance/tickets/T-IGX-051-I.md",
+      "skip_reason": "Operator hard stop: EDER-N-0003 A4-007 b1/b2 seams do not start in this slice."
+    },
+    {
+      "obligation_id": "EDER-N-0004",
+      "root_cause_id": "DP-54",
+      "package_id": "EQO-PKG-DP-54",
+      "closure_path": "NEW_IMPLEMENTATION_REQUIRED",
+      "status": "SKIP_NO_GO",
+      "ticket_ref": "governance/tickets/T-IGX-052-E.md",
+      "skip_reason": "_(awaiting operator DP-54 implementation mandate)_ \u2014 no implementation go."
+    }
+  ]
+}

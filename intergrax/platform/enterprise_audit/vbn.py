@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from intergrax.platform.enterprise_audit.contracts import AuditCategory, AuditFinding
@@ -138,8 +140,14 @@ def load_vbn_domain_report(
     script = repo_root / "scripts" / "enterprise_audit" / "vbn_domain_report.py"
     if not script.is_file():
         return None
+    runner = shutil.which("uv")
+    cmd = (
+        [runner, "run", "python", str(script), "--output", str(cached)]
+        if runner
+        else [sys.executable, str(script), "--output", str(cached)]
+    )
     completed = subprocess.run(
-        ["uv", "run", "python", str(script), "--output", str(cached)],
+        cmd,
         cwd=repo_root,
         capture_output=True,
         text=True,

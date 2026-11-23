@@ -15,7 +15,124 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",
-      "Read(./.env.production)"
+      "Read(./.env.production)",
+      "Agent(general-purpose)"
     ]
-  }
+  },
+  "skillOverrides": {
+    "igx-run-plan": "user-invocable-only",
+    "sfx-blueprint": "user-invocable-only",
+    "sfx-discover": "user-invocable-only",
+    "sfx-integration-setup": "user-invocable-only",
+    "sfx-present": "user-invocable-only",
+    "sfx-resolve": "user-invocable-only",
+    "sfx-session": "user-invocable-only",
+    "sfx-specify": "user-invocable-only",
+    "sfx-test-plan": "user-invocable-only",
+    "anthropic-skills:built-in-browser": "name-only",
+    "anthropic-skills:chrome-browser": "name-only",
+    "anthropic-skills:computer-use": "name-only",
+    "anthropic-skills:consolidate-memory": "name-only",
+    "anthropic-skills:deep-research": "name-only",
+    "anthropic-skills:docs": "name-only",
+    "anthropic-skills:docx": "name-only",
+    "anthropic-skills:explain-usage": "name-only",
+    "anthropic-skills:google-workspace": "name-only",
+    "anthropic-skills:import-memory": "name-only",
+    "anthropic-skills:morning": "name-only",
+    "anthropic-skills:pdf": "name-only",
+    "anthropic-skills:pptx": "name-only",
+    "anthropic-skills:setup-claude": "name-only",
+    "anthropic-skills:skill-creator": "name-only",
+    "anthropic-skills:xlsx": "name-only",
+    "artifact-capabilities": "name-only",
+    "artifact-design": "name-only",
+    "artifact-diagramming": "name-only",
+    "claude-api": "name-only",
+    "code-review": "name-only",
+    "dataviz": "name-only",
+    "fewer-permission-prompts": "name-only",
+    "igx-autonomy": "name-only",
+    "igx-devos-github-pr-workflow": "name-only",
+    "igx-devos-parallel-orchestration": "name-only",
+    "igx-devos-qc-orchestrator": "name-only",
+    "igx-devos-role-architect": "name-only",
+    "igx-devos-ticket-scaffold": "name-only",
+    "init": "name-only",
+    "intergrax-agent-roles": "name-only",
+    "intergrax-ci-hotfix": "name-only",
+    "intergrax-env-vendor-qualification": "name-only",
+    "intergrax-hep-step": "name-only",
+    "intergrax-independent-audit": "name-only",
+    "intergrax-iteration": "name-only",
+    "intergrax-micro-implement": "name-only",
+    "intergrax-scenario-factory": "name-only",
+    "keybindings-help": "name-only",
+    "loop": "name-only",
+    "plugin-authoring": "name-only",
+    "run": "name-only",
+    "schedule": "name-only",
+    "security-review": "name-only",
+    "simplify": "name-only",
+    "update-config": "name-only",
+    "workflow-authoring": "name-only"
+  },
+  "effortLevel": "medium",
+  "env": {
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_bash_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\" epoch"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_read_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\" epoch"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os,sys,runpy,pathlib;c=pathlib.Path.cwd();n='igx_stop_guard.py';p=next((q for q in [os.path.join(x,'scripts','hooks',n) for x in [os.environ.get('CLAUDE_PROJECT_DIR') or '.',*map(str,[c,*c.parents])]] if os.path.isfile(q)),None);p and (sys.argv.__setitem__(0,p),runpy.run_path(p,run_name='__main__'))\""
+          }
+        ]
+      }
+    ]
+  },
+  "bashOutputMaxChars": 12000
 }

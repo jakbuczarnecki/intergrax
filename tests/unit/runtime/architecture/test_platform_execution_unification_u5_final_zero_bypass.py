@@ -8,7 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from tests.unit.runtime.architecture.test_platform_execution_unification_p0_bypass_inventory import (
     _central_inventory_verdict_counts,
     _inventory_doc_text,
@@ -19,34 +18,14 @@ from tests.unit.runtime.architecture.test_platform_execution_unification_p0_bypa
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_DECLARATIVE_WIRING = (
-    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "declarative_tool_wiring.py"
-)
-_ACP_SESSION_HOST_WIRING = (
-    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "acp_session_host_wiring.py"
-)
-_HARNESS_HOST_RUNTIME = (
-    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "harness_host_runtime.py"
-)
-_U5_ACP_TENANT_PROOF = (
-    _REPO_ROOT / "tests" / "unit" / "applications" / "test_acp_session_host_wiring.py"
-)
-_CATALOG_INVOKER = (
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "nexus"
-    / "agents"
-    / "catalog_declarative_invoker.py"
-)
+_DECLARATIVE_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "declarative_tool_wiring.py"
+_ACP_SESSION_HOST_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "acp_session_host_wiring.py"
+_HARNESS_HOST_RUNTIME = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "harness_host_runtime.py"
+_U5_ACP_TENANT_PROOF = _REPO_ROOT / "tests" / "unit" / "applications" / "test_acp_session_host_wiring.py"
+_CATALOG_INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agents" / "catalog_declarative_invoker.py"
 _PERSISTENCE_PACKAGE = _REPO_ROOT / "intergrax" / "agents" / "persistence" / "__init__.py"
 _RUNTIME_TOOL_INVOKER_COMPOSITION = (
-    _REPO_ROOT
-    / "intergrax"
-    / "runtime"
-    / "nexus"
-    / "tools"
-    / "runtime_tool_invoker_composition.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "runtime_tool_invoker_composition.py"
 )
 _APPROVED_RUNTIME_TOOL_INVOKER_OWNERS = (_RUNTIME_TOOL_INVOKER_COMPOSITION,)
 _PRODUCTION_RUNTIME_TOOL_INVOKER_WIRING = (_DECLARATIVE_WIRING,)
@@ -171,9 +150,8 @@ def test_u5_runtime_tool_invoker_construction_sites_are_approved_owners() -> Non
         source = path.read_text(encoding="utf-8-sig")
         if "RuntimeToolInvoker(" in source:
             agent_violations.append(path.relative_to(_REPO_ROOT).as_posix())
-    assert agent_violations == [], (
-        "intergrax/agents must not construct RuntimeToolInvoker locally:\n"
-        + "\n".join(agent_violations)
+    assert agent_violations == [], "intergrax/agents must not construct RuntimeToolInvoker locally:\n" + "\n".join(
+        agent_violations
     )
 
 
@@ -230,6 +208,7 @@ def test_u5_acp_session_host_preserves_harness_tenant_identity() -> None:
     acp_source = _ACP_SESSION_HOST_WIRING.read_text(encoding="utf-8")
     assert 'tenant_id=""' not in acp_source
     assert "tenant_id=runtime.tenant_id" in acp_source
+    assert "resolve_harness_host_declarative_tool_invoker" in acp_source
 
     harness_source = _HARNESS_HOST_RUNTIME.read_text(encoding="utf-8")
     assert "tenant_id: str" in harness_source

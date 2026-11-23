@@ -12,4 +12,4 @@ def test_runner_full_smoke_plans_eighty_five(tmp_path: Path) -> None:
     runner = EnterpriseAuditRunner(root, dry_run=True)
     _, manifest, _ = runner.run(AuditMode.FULL, output_dir=tmp_path / "full")
     checks = load_default_manifest()
-    assert manifest.checks_planned == len(checks) == 85
+    assert manifest.checks_planned == len(checks) == 91

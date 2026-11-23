@@ -15,6 +15,14 @@ AUDIT_REPLICATION_FAILED: Final = "audit_replication_failed"
 RETRIEVAL_POISONING_PROFILE_MALFORMED: Final = "retrieval_poisoning_profile_malformed"
 PLUGIN_TRUST_POLICY_MISSING: Final = "plugin_trust_policy_missing"
 DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE: Final = "demo_seed_forbidden_in_strict_profile"
+INBOUND_VERIFIER_MODE_UNSET: Final = "inbound_verifier_mode_unset"
+INBOUND_VERIFIER_MODE_INVALID: Final = "inbound_verifier_mode_invalid"
+INBOUND_VERIFIER_NONE_FORBIDDEN: Final = "inbound_verifier_none_forbidden"
+INBOUND_VERIFIER_SLACK_SECRET_MISSING: Final = "inbound_verifier_slack_secret_missing"
+INBOUND_VERIFIER_SLACK_VERIFY_DISABLED: Final = "inbound_verifier_slack_verify_disabled"
+INBOUND_VERIFIER_TEAMS_TOKEN_MISSING: Final = "inbound_verifier_teams_token_missing"
+INBOUND_VERIFIER_MISSING: Final = "inbound_verifier_missing"
+INBOUND_VERIFIER_DISABLED: Final = "inbound_verifier_disabled"
 
 
 class SecurityConfigurationError(ValueError):
@@ -51,6 +59,14 @@ __all__ = [
     "AUDIT_REPLICATION_FAILED",
     "AUDIT_SINK_MISSING",
     "DEMO_SEED_FORBIDDEN_IN_STRICT_PROFILE",
+    "INBOUND_VERIFIER_DISABLED",
+    "INBOUND_VERIFIER_MISSING",
+    "INBOUND_VERIFIER_MODE_INVALID",
+    "INBOUND_VERIFIER_MODE_UNSET",
+    "INBOUND_VERIFIER_NONE_FORBIDDEN",
+    "INBOUND_VERIFIER_SLACK_SECRET_MISSING",
+    "INBOUND_VERIFIER_SLACK_VERIFY_DISABLED",
+    "INBOUND_VERIFIER_TEAMS_TOKEN_MISSING",
     "LAB_OPT_IN_FORBIDDEN_IN_PRODUCT",
     "PLUGIN_TRUST_POLICY_MISSING",
     "RETRIEVAL_POISONING_PROFILE_MALFORMED",

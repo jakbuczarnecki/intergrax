@@ -11,12 +11,13 @@
 | File | Auto-loaded | ~tok |
 |------|-------------|------|
 | `AGENTS.md` (root stub) | Yes (Cursor) | ~350 |
-| `agent-env/rules/intergrax-token-budget.md` | Yes (`loading: always` → Cursor adapter `alwaysApply: true`) | ~380 |
+| `.cursor/rules/intergrax-core.mdc` (extract of `agent-env/rules/intergrax-core.md`) | Yes (`loading: always` → `alwaysApply: true`, text inlined) | ~850 |
+| `.cursor/rules/intergrax-english-only-commits.mdc` (full body) | Yes (`loading: always` → `alwaysApply: true`) | ~100 |
 | `agent-env/rules/intergrax-hep-step.md` | On demand / `@` | ~120 |
 | `agent-env/rules/intergrax-iteration.md` | On demand / `@` | ~350 |
 | `docs/project/technical/guides/AGENT_INSTRUCTIONS.md` | No - `@` on demand | ~3,300 |
 
-**Only `intergrax-token-budget.md` is always-on.** All other rules and full guides load on explicit `@` or operator request - see root `AGENTS.md` § Rule loading.
+**Always-on rules are exactly `intergrax-core` and `intergrax-english-only-commits`.** `intergrax-token-budget.md` is a retired tombstone (`loading: retired`, no adapter); its I1/O1 content lives in `intergrax-core.md` § Token use. Cursor does not expand `@` inside a rule body, so `sync_agent_env.py` inlines the `igx:active` blocks of core (and the whole short English-only rule) into the `.mdc` files, together at most 6 KB. All other rules and full guides load on explicit `@` or operator request - see root `AGENTS.md` § Rule loading.
 
 **Do not delete** root `AGENTS.md` via Cursor Settings trash icon.
 
@@ -51,13 +52,13 @@ HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../m
 
 | Always-on | ~tok |
 |-----------|------|
-| I1 + mandatory preflight in `intergrax-token-budget.md` | ~180 |
+| I1 + mandatory preflight in `intergrax-core` § Token use | ~180 |
 
-**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.md`, full hubs, `docs/audit_results/AUDIT_PROTOCOL.md`, or domain guides unless explicitly requested.
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. Reading beyond the listed scope: take the minimum needed (max 3 files), note why and continue. Editing outside the edit scope is a scope change: `ESCALATION: <type>` (one batched message). Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.md`, full hubs, `docs/audit_results/AUDIT_PROTOCOL.md`, or domain guides unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
-**Expand context** (full hub, subagent, >3 files): **STOP** - ask operator once; wait for OK.
+**Expand context** (full hub, >3 files): take the minimum needed and note why; a scope change to edits is an `ESCALATION:`. Typed `igx-*` subagents are the delegation path (`/igx-autonomy`).
 
 Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite - see `intergrax-iteration.md` (on demand only).
 
@@ -67,7 +68,7 @@ Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one 
 
 | Always-on | ~tok |
 |-----------|------|
-| O1 block in `intergrax-token-budget.md` | ~100 |
+| O1 lines in `intergrax-core` § Token use | ~100 |
 | Full 12-point template | `AGENT_INSTRUCTIONS.md` § Operator communication - **not** auto-loaded |
 
 **Default:** terse (≤12 lines) - outcome, paths, tests, blockers. **No** diff recap or doc restatement.
@@ -191,4 +192,14 @@ uv run python scripts/docs/generate_symbol_index.py
 uv run python scripts/ci/check_cursor_token_setup.py
 ```
 
-`check_cursor_token_setup.py` validates AGENTS stub split, bootstrap read budgets, plan read-scope blocks, and rejects broad Cursor access wording in control prompts.
+`check_cursor_token_setup.py` validates the always-on set (core + English-only), that each always-on `.mdc` inlines its text (no `@agent-env` pointer, required phrases, <= 6 KB), the retired token-budget tombstone, AGENTS stub split, bootstrap read budgets, plan read-scope blocks, and rejects broad Cursor access wording in control prompts. It runs in unit CI through `tests/unit/governance/test_agent_env_sync.py`; it is not wired into `doctor` or a workflow.
+
+---
+
+## Cursor hooks and parity limits
+
+- **`.cursor/hooks.json`** registers one event: `subagentStart` with matcher `^generalPurpose$`, `failClosed: true`, script `scripts/hooks/igx_subagent_guard.py` (denies `generalPurpose`, allows `explore` and the `igx-*` roles). It also registers `stop` on `scripts/hooks/igx_stop_guard.py` with `loop_limit: null`. Native Cursor input continues with `followup_message` only; a Claude-shaped `last_assistant_message` still uses `decision: block` and `reason`. The script never emits both keys.
+- The stop guard continues only when a plan is active, `status` is not `error` / `aborted`, a non-empty last assistant message is visible and it does not start with `ESCALATION:`.
+- The bash guard also checks `Get-Content` / `gc` / `type` inside `powershell` / `pwsh` `-Command` strings (files over 80 KiB).
+- `IGX_HOOKS=off` disables every igx guard, including in Cursor (`subagentStart` then answers `allow`). After a sync restart the session; hook calls appear in the Hooks output.
+- Whether the stop and `subagentStart` hooks fire in a given Cursor version is `NOT_VERIFIED` until a probe records it - see [`AGENT_AUTONOMY.md`](AGENT_AUTONOMY.md) and [`AGENT_TOKEN_ECONOMY.md`](AGENT_TOKEN_ECONOMY.md).

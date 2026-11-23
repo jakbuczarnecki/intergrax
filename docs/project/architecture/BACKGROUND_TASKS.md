@@ -210,6 +210,8 @@ Stable `TaskId`/`RunId` across process restart and concurrent workers requires a
 | Dispatcher / broker housekeeping, compensation maintenance | **INTERNAL PLATFORM JOB** | Intake + handler; no business model execution | Transport and reliability mechanics |
 | Test/eval Celery stacks | **TEST/EVAL ONLY** | Same as production wiring with eager backends | Gate and integration proofs |
 
+**Tier-3 queue worker wiring (`wire_optional_queue_execution`):** `INTERGRAX_QUEUE_BACKEND` selects `inline` (default), `celery`, `rabbitmq` or `kafka`. The only worker the Tier-3 wiring builds is an in-process eager Celery worker on a memory broker (`worker_kind == "eager_in_process_lab"`); it is refused with `production_mode=True` (`UnsupportedQueueBackendError`, `EAGER_WORKER_FORBIDDEN_IN_PRODUCTION`). `rabbitmq` and `kafka` are never rewritten to it and raise `BROKER_WIRING_NOT_BUILT`: real-broker Tier-3 wiring is a separate planned feature. Residual: the Tier-3 host factories derive `production_mode` from STRICT only, so a PRODUCT-profile host in BALANCED mode with `include_queue_worker=True` is not covered.
+
 **ACTIVE EXECUTION BYPASSES:** none for production host-task / agent workloads. Remaining `TaskHandler` registrations are provider workloads or platform jobs by design.
 
 **Result decoding owner:** `intergrax/queueing/worker/result_codec.py` (`decode_host_task_result_payload`) — `QueuedHostTaskExecutionAdapter` injects an optional decoder callable; default is the codec (no duck typing on worker boundaries).

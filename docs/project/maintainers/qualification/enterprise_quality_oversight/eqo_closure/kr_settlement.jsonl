@@ -1,0 +1,28 @@
+{"kr_id":"KR-01","draft_class":"ENV","eqo_class_11":"brak_SDK","pin_ref":"TRAIN_PIN 28c27cb + KNOWN_RED@7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-02","draft_class":"ENV","eqo_class_11":"brak_SDK","pin_ref":"TRAIN_PIN 28c27cb","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-03","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"AUDIT_BASELINE_2 7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RW-GATES"}
+{"kr_id":"KR-04","draft_class":"FIX","eqo_class_11":"fixture","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RW-GATES"}
+{"kr_id":"KR-05","draft_class":"ENV","eqo_class_11":"srodowisko","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-06","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-07","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-08","draft_class":"FIX","eqo_class_11":"stale_gate","pin_ref":"TRAIN_PIN 28c27cb; #680 log W0-03","settlement_status":"BLOCKED","owner_node":"IIAC rebind RB-2"}
+{"kr_id":"KR-09","draft_class":"FIX","eqo_class_11":"stale_gate","pin_ref":"7960ae7f","settlement_status":"WAIT_MEP_NODE","owner_node":"PT-Q11"}
+{"kr_id":"KR-10","draft_class":"FIX","eqo_class_11":"stale_gate","pin_ref":"7960ae7f","settlement_status":"WAIT_MEP_NODE","owner_node":"PT-Q04/Q05"}
+{"kr_id":"KR-11","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"WAIT_MEP_NODE","owner_node":"PT-Q06"}
+{"kr_id":"KR-12","draft_class":"UNKNOWN","eqo_class_11":"live_only","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"PT-Q09"}
+{"kr_id":"KR-13","draft_class":"FIX","eqo_class_11":"regresja","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RW-GATES"}
+{"kr_id":"KR-14","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RW-GATES"}
+{"kr_id":"KR-15","draft_class":"FIX","eqo_class_11":"kolejnosc","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-16","draft_class":"FIX","eqo_class_11":"stale_gate","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-17","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-18","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-19","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-20","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-21","draft_class":"ENV","eqo_class_11":"brak_SDK","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"none"}
+{"kr_id":"KR-22","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-23","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RED-CLASSES"}
+{"kr_id":"KR-24","draft_class":"FIX","eqo_class_11":"defekt","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-25","draft_class":"ENV","eqo_class_11":"srodowisko","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"none"}
+{"kr_id":"KR-26","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"T-AF2-RED-CLASSES"}
+{"kr_id":"KR-27","draft_class":"UNKNOWN","eqo_class_11":"nieustalony","pin_ref":"7960ae7f","settlement_status":"BLOCKED","owner_node":"UNASSIGNED"}
+{"kr_id":"KR-28","draft_class":"FIX","eqo_class_11":"stale_gate","pin_ref":"TRAIN_PIN 6b94d202f","settlement_status":"BLOCKED","owner_node":"PT-G01"}

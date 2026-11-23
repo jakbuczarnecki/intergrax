@@ -1,0 +1,71 @@
+{
+  "generated_utc": "2026-11-23T09:25:47Z",
+  "fetch_verified": true,
+  "fetch_provenance": "git fetch origin --prune; T-IGX-069-A isolated worktree t-igx-069-a-w0pub",
+  "historical_bind_2026_11_21": {
+    "generated_utc": "2026-11-21T05:40:00Z",
+    "DOC_PIN": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+    "TRAIN_PIN": "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "match_at_generation": true,
+    "historical_pins_are_ancestors_of_live_refs": true
+  },
+  "DOC_PIN": {
+    "expected": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+    "actual": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
+    "match": false,
+    "actual_ref": "origin/development"
+  },
+  "TRAIN_PIN": {
+    "expected": "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "actual": "68db9c0ef6207b023388eecc460644698a92b895",
+    "match": false,
+    "actual_ref": "origin/arch-freeze/rw-train"
+  },
+  "sha_ladder": {
+    "source_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
+    "execution_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
+    "evidence_sha": "9f40f851f11dc90c2a1c0261e5874d4410ffc133",
+    "publication_sha": "7b175958f795db557b01551a1d8c0d5c0ba398c6"
+  },
+  "FCS": null,
+  "M3": null,
+  "A_BASELINE": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "PR680_TIP": "a6999e97bb46561e1ba578c9364c13ed310f1d54",
+  "PR680_MERGE": {
+    "sha": "65ef1f196d38d673436667230bb59b92158714a2",
+    "ancestor_of_origin_development": true,
+    "ancestor_of_origin_arch_freeze_rw_train": true,
+    "not_fcs": true,
+    "not_c16_pass": true
+  },
+  "rv01": {
+    "artifact": ".tmp/session/eqo-f00/git/EQO_SHA_REVALIDATION.jsonl",
+    "disposition": "TARGETED",
+    "blocker_id": "MISSING_IMPACT_MAP",
+    "replay_scheduled": false
+  },
+  "ancestry_checks": [
+    {
+      "check": "historical DOC_PIN \u2192 origin/development",
+      "result": true
+    },
+    {
+      "check": "historical TRAIN_PIN \u2192 origin/arch-freeze/rw-train",
+      "result": true
+    },
+    {
+      "check": "PR680_MERGE \u2192 origin/development",
+      "result": true
+    },
+    {
+      "check": "PR680_MERGE \u2192 origin/arch-freeze/rw-train",
+      "result": true
+    },
+    {
+      "check": "origin/arch-freeze/rw-train \u2192 LOCAL_HEAD (dev only)",
+      "result": false,
+      "note": "164+ train-only commits not on LOCAL_HEAD ancestry to train tip"
+    }
+  ],
+  "note": "Authorized T-IGX-069-A publication. Inventory W0-05 @ 8ad8aa73 unchanged. publication_sha binds bind refresh commit."
+}

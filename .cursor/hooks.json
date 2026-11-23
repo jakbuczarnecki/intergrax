@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "subagentStart": [
+      {
+        "command": "python scripts/hooks/igx_subagent_guard.py",
+        "matcher": "^(generalPurpose|general-purpose|GeneralPurpose)$",
+        "failClosed": true
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "python scripts/hooks/igx_cursor_integration_guard.py",
+        "matcher": "([gG][iI][tT]|[gG][hH]|[cC][uU][rR][lL])",
+        "failClosed": true
+      }
+    ]
+  }
+}

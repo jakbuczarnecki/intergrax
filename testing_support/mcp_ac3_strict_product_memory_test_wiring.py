@@ -14,20 +14,14 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.memory.contracts.provider_identity import BUILTIN_SQLITE_USER_PROFILE_ID
 
 
-def resolve_memory_platform_wiring_for_strict_product_tests(
+def _strict_product_memory_evidence_kwargs(
     env: ApplicationEnvironmentProfile,
-    *,
-    integration_profile: Any = None,
-    _original_resolve=None,
-    **kwargs: Any,
-):
+    kwargs: dict[str, Any],
+) -> None:
     from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
         _durability_for_provider,
         _evidence_for_provider,
     )
-
-    if _original_resolve is None:
-        raise RuntimeError("strict_product_memory_test_wiring_missing_original_resolver")
 
     if env.application_profile.value == "product" and env.execution_mode.value == "strict":
         kwargs.setdefault(
@@ -38,11 +32,37 @@ def resolve_memory_platform_wiring_for_strict_product_tests(
             "durability_evidence_registry",
             _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID),
         )
+
+
+def resolve_memory_platform_wiring_for_strict_product_tests(
+    env: ApplicationEnvironmentProfile,
+    *,
+    integration_profile: Any = None,
+    _original_resolve=None,
+    **kwargs: Any,
+):
+    if _original_resolve is None:
+        raise RuntimeError("strict_product_memory_test_wiring_missing_original_resolver")
+
+    _strict_product_memory_evidence_kwargs(env, kwargs)
     return _original_resolve(
         env,
         integration_profile=integration_profile,
         **kwargs,
     )
+
+
+def build_session_manager_from_environment_for_strict_product_tests(
+    env: ApplicationEnvironmentProfile,
+    *args: Any,
+    _original_build=None,
+    **kwargs: Any,
+):
+    if _original_build is None:
+        raise RuntimeError("strict_product_memory_test_wiring_missing_original_session_builder")
+
+    _strict_product_memory_evidence_kwargs(env, kwargs)
+    return _original_build(env, *args, **kwargs)
 
 
 def apply_strict_product_memory_test_patches(monkeypatch) -> None:
@@ -51,16 +71,33 @@ def apply_strict_product_memory_test_patches(monkeypatch) -> None:
     import intergrax.applications._shared.memory_wiring as memory_wiring
     import intergrax.applications._shared.runtime_config_bridge as runtime_config_bridge
 
-    original = memory_wiring.resolve_memory_platform_wiring
+    original_resolve = memory_wiring.resolve_memory_platform_wiring
 
-    def _wrapped(env, *, integration_profile=None, **kwargs):
+    def _wrapped_resolve(env, *, integration_profile=None, **kwargs):
         return resolve_memory_platform_wiring_for_strict_product_tests(
             env,
             integration_profile=integration_profile,
-            _original_resolve=original,
+            _original_resolve=original_resolve,
             **kwargs,
         )
 
-    monkeypatch.setattr(memory_wiring, "resolve_memory_platform_wiring", _wrapped)
-    monkeypatch.setattr(environment_wiring, "resolve_memory_platform_wiring", _wrapped)
-    monkeypatch.setattr(runtime_config_bridge, "resolve_memory_platform_wiring", _wrapped)
+    original_session = memory_wiring.build_session_manager_from_environment
+
+    def _wrapped_session(env, *args, **kwargs):
+        return build_session_manager_from_environment_for_strict_product_tests(
+            env,
+            *args,
+            _original_build=original_session,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(memory_wiring, "resolve_memory_platform_wiring", _wrapped_resolve)
+    monkeypatch.setattr(memory_wiring, "build_session_manager_from_environment", _wrapped_session)
+    if hasattr(environment_wiring, "resolve_memory_platform_wiring"):
+        monkeypatch.setattr(environment_wiring, "resolve_memory_platform_wiring", _wrapped_resolve)
+    monkeypatch.setattr(runtime_config_bridge, "resolve_memory_platform_wiring", _wrapped_resolve)
+    monkeypatch.setattr(
+        runtime_config_bridge,
+        "build_session_manager_from_environment",
+        _wrapped_session,
+    )

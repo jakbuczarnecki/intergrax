@@ -7,36 +7,22 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
 )
-from intergrax.applications._shared.memory_wiring import (
-    MemoryPlatformWiring,
-    resolve_memory_platform_wiring,
-)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    MemoryProfile,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
     MemoryProviderDurability,
-    evaluate_production_persistent_user_profile_admission,
     classify_user_profile_store_provider,
-)
-from intergrax.memory.contracts.provider_identity import (
-    BUILTIN_SQLITE_USER_PROFILE_ID,
-    MemoryProviderIdentity,
-    MemoryProviderIdentitySource,
-    builtin_user_profile_store_identity,
-    plugin_user_profile_store_identity,
-)
-from intergrax.memory.contracts.provider_qualification import (
-    MemoryProviderCapabilityKind,
-    MemoryProviderQualificationStatus,
+    evaluate_production_persistent_user_profile_admission,
 )
 from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityEvidence,
@@ -45,26 +31,38 @@ from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityProofKind,
     MemoryProviderTrustedDurabilityStatus,
 )
+from intergrax.memory.contracts.provider_identity import (
+    BUILTIN_SQLITE_USER_PROFILE_ID,
+    MemoryProviderIdentity,
+    MemoryProviderIdentitySource,
+    builtin_user_profile_store_identity,
+)
+from intergrax.memory.contracts.provider_qualification import (
+    MemoryProviderCapabilityKind,
+    MemoryProviderQualificationStatus,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
-    MemoryProviderQualificationEvidenceLookup,
     MemoryProviderQualificationEvidenceResolveStatus,
 )
-from intergrax.memory.provider_qualification import InMemoryMemoryProviderDurabilityEvidenceRegistry
-from intergrax.memory.provider_qualification import InMemoryMemoryProviderQualificationEvidenceRegistry
+from intergrax.memory.provider_qualification import (
+    InMemoryMemoryProviderDurabilityEvidenceRegistry,
+    InMemoryMemoryProviderQualificationEvidenceRegistry,
+)
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
-from intergrax.memory.contracts.memory_store_creation_context import (
-    UserProfileStoreCreationContext,
-)
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from tests.fixtures.memory_durable_session_storage import (
+    DurableDeclaredSessionStoragePlugin,
+    with_durable_session_plugin,
+)
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
-    _DurableSelfCertifiedUserProfilePlugin,
-    _SelfCertifiedDurableUserProfileStore,
     _durability_for_provider,
+    _DurableSelfCertifiedUserProfilePlugin,
     _evidence_for_provider,
     _persistent_memory_profile,
+    _resolve_wiring,
+    _SelfCertifiedDurableUserProfileStore,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -136,7 +134,7 @@ def test_gap_5a_02_evil_plugin_cannot_use_sqlite_trusted_evidence() -> None:
     )
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
-        resolve_memory_platform_wiring(
+        _resolve_wiring(
             env,
             discover_entry_points=False,
             explicit_memory_plugins=(_EvilSqliteImpersonatorPlugin,),
@@ -153,12 +151,13 @@ def test_legitimate_external_plugin_passes_with_plugin_id_evidence() -> None:
     env.memory_profile = env.memory_profile.model_copy(
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
+    env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
-        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
+        explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin, DurableDeclaredSessionStoragePlugin),
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,
     )
@@ -298,10 +297,7 @@ def test_duplicate_qualification_evidence_is_ambiguous_fail_closed() -> None:
         missing_durability,
     )
     assert not evaluation.admitted
-    assert (
-        evaluation.reason_code
-        is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH
-    )
+    assert evaluation.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH
 
 
 def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
@@ -317,7 +313,7 @@ def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
@@ -341,7 +337,7 @@ def test_sqlite_wiring_identity_matches_runner_descriptor(tmp_path: Path) -> Non
     }
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
     durability_registry = _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
-    wiring = resolve_memory_platform_wiring(
+    wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,
         durability_evidence_registry=durability_registry,

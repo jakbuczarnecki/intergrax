@@ -1,0 +1,24 @@
+{
+  "task": "EQO-W4-01",
+  "open_findings_total": 239,
+  "excluded_campaign_b": 51,
+  "excluded_campaign_c": 2,
+  "b2_row_count": 186,
+  "expected_b2_count": 186,
+  "delta": 0,
+  "verification": "PASS",
+  "source_ref": "origin/development:docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a/findings/FINDINGS.jsonl",
+  "doc_pin": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+  "assignment_histogram": {
+    "EQO-W4-02": 95,
+    "EQO-X-02": 2,
+    "EQO-W4-03": 69,
+    "EQO-X-03": 1,
+    "EQO-W4-04": 5,
+    "EQO-W2-02": 2,
+    "EQO-W4-05": 5,
+    "EQO-X-08": 5,
+    "EQO-X-05": 1,
+    "EQO-X-04": 1
+  }
+}

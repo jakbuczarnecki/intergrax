@@ -7,8 +7,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
-
 from intergrax.applications._shared.guardrail_runtime_bridge import resolve_guardrail_backend
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -26,6 +24,7 @@ from intergrax.integrations.providers.llm_guardrail.bundles.bedrock_guardrails i
 )
 from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
+from pydantic import ValidationError
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -235,9 +234,14 @@ def test_c10_bedrock_rejects_unknown_provider_options() -> None:
         BedrockGuardrailOptions.model_validate({"policy_id": "ok", "unknown_key": "bad"})
 
 
-def test_chained_factory_scopes_options_per_slug(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_chained_factory_scopes_options_per_slug(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
     monkeypatch.delenv("INTERGRAX_BEDROCK_GUARDRAIL_POLICY_ID", raising=False)
-    monkeypatch.delenv("INTERGRAX_NEMO_COLANG_CONFIG_PATH", raising=False)
+    nemo_config = tmp_path / "nemo_guardrails.colang"
+    nemo_config.write_text("# readiness fixture\n", encoding="utf-8")
+    monkeypatch.setenv("INTERGRAX_NEMO_COLANG_CONFIG_PATH", str(nemo_config))
 
     bedrock_policies: list[str | None] = []
     nemo_paths: list[str | None] = []
@@ -250,6 +254,10 @@ def test_chained_factory_scopes_options_per_slug(monkeypatch: pytest.MonkeyPatch
         nemo_paths.append(colang_path)
         return {"allowed": True, "detail": "ok"}
 
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.llm_guardrail._factory.vendor_engine_ready",
+        lambda slug: True,
+    )
     monkeypatch.setattr(
         "intergrax.integrations.providers.llm_guardrail.bedrock_guardrails.opens.bedrock_apply_guardrail",
         _bedrock_apply,

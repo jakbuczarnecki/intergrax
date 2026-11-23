@@ -23,6 +23,9 @@
 
 **Pre-freeze approval scope:** W0–W2 only (OD-SFX-15; STOP before SFX-P5). SFX-P4-B01/B02 were moved to W3 by R1 (§15.1: `scripts/` and `governance/agent-control-plane/` are outside OD-SFX-04).
 
+
+**R2 overlay (PROPOSED):** [SFX_R2_WBS_DAG_AMENDMENT.md](./r2/SFX_R2_WBS_DAG_AMENDMENT.md) — extends R1; does not replace task IDs.
+
 ### Pre-freeze (W0–W2; classification in §15.1)
 
 | ID | Description | Files | Deps | Tests | Evidence | Acceptance | Owner·Risk·Par | ticket |

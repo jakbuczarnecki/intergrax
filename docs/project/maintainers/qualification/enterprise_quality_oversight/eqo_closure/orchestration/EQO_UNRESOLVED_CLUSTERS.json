@@ -1,0 +1,695 @@
+{
+  "schema": "eqo.unresolved_clusters.v1",
+  "generated_at": "2026-11-21T12:34:47+00:00",
+  "source_artifact": "EQO_REMAINING_OBLIGATION_VIEW.json",
+  "selection": {
+    "closure_path": "UNRESOLVED_EXACT_BLOCKER",
+    "row_count": 310
+  },
+  "cluster_count": 33,
+  "next_action_totals_by_row": {
+    "ARCH_FREEZE_GATE": 1,
+    "OWNER_SENTENCE_REQUIRED": 4,
+    "STILL_UNRESOLVED": 305
+  },
+  "next_action_totals_by_cluster": {
+    "STILL_UNRESOLVED": 28,
+    "ARCH_FREEZE_GATE": 1,
+    "OWNER_SENTENCE_REQUIRED": 4
+  },
+  "clusters": [
+    {
+      "cluster_key": {
+        "owner_ref": "PROD-Q",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 124,
+      "obligation_ids": [
+        "EDER-D-0277",
+        "EDER-D-0278",
+        "EDER-D-0284",
+        "EDER-D-0285",
+        "EDER-D-0288",
+        "EDER-D-0289",
+        "EDER-D-0292",
+        "EDER-D-0293",
+        "EDER-D-0294",
+        "EDER-D-0295",
+        "EDER-D-0296",
+        "EDER-D-0297",
+        "EDER-D-0298",
+        "EDER-D-0299",
+        "EDER-D-0300",
+        "EDER-D-0301",
+        "EDER-D-0302",
+        "EDER-D-0303",
+        "EDER-D-0304",
+        "EDER-D-0305",
+        "EDER-D-0306",
+        "EDER-D-0307",
+        "EDER-D-0308",
+        "EDER-D-0309",
+        "EDER-D-0310",
+        "EDER-D-0311",
+        "EDER-D-0312",
+        "EDER-D-0313",
+        "EDER-D-0314",
+        "EDER-D-0315",
+        "EDER-D-0316",
+        "EDER-D-0317",
+        "EDER-D-0318",
+        "EDER-D-0319",
+        "EDER-D-0320",
+        "EDER-D-0321",
+        "EDER-D-0322",
+        "EDER-D-0323",
+        "EDER-D-0324",
+        "EDER-D-0325",
+        "EDER-D-0326",
+        "EDER-D-0327",
+        "EDER-D-0328",
+        "EDER-D-0329",
+        "EDER-D-0330",
+        "EDER-D-0331",
+        "EDER-D-0332",
+        "EDER-D-0333",
+        "EDER-D-0334",
+        "EDER-D-0335",
+        "EDER-D-0336",
+        "EDER-D-0337",
+        "EDER-D-0338",
+        "EDER-D-0339",
+        "EDER-D-0340",
+        "EDER-D-0341",
+        "EDER-D-0342",
+        "EDER-D-0343",
+        "EDER-D-0344",
+        "EDER-D-0345",
+        "EDER-D-0346",
+        "EDER-D-0347",
+        "EDER-D-0348",
+        "EDER-D-0349",
+        "EDER-D-0350",
+        "EDER-D-0351",
+        "EDER-D-0352",
+        "EDER-D-0353",
+        "EDER-D-0354",
+        "EDER-D-0355",
+        "EDER-D-0356",
+        "EDER-D-0357",
+        "EDER-D-0358",
+        "EDER-D-0359",
+        "EDER-D-0360",
+        "EDER-D-0361",
+        "EDER-D-0362",
+        "EDER-D-0363",
+        "EDER-D-0364",
+        "EDER-D-0365",
+        "EDER-D-0366",
+        "EDER-D-0367",
+        "EDER-D-0368",
+        "EDER-D-0369",
+        "EDER-D-0370",
+        "EDER-D-0371",
+        "EDER-D-0372",
+        "EDER-D-0373",
+        "EDER-D-0374",
+        "EDER-D-0375",
+        "EDER-D-0376",
+        "EDER-D-0377",
+        "EDER-D-0378",
+        "EDER-D-0379",
+        "EDER-D-0380",
+        "EDER-D-0381",
+        "EDER-D-0382",
+        "EDER-D-0383",
+        "EDER-D-0384",
+        "EDER-D-0385",
+        "EDER-D-0386",
+        "EDER-D-0387",
+        "EDER-D-0388",
+        "EDER-D-0389",
+        "EDER-D-0390",
+        "EDER-D-0391",
+        "EDER-D-0392",
+        "EDER-D-0393",
+        "EDER-D-0394",
+        "EDER-D-0395",
+        "EDER-D-0396",
+        "EDER-D-0460",
+        "EDER-D-0461",
+        "EDER-D-0462",
+        "EDER-D-0463",
+        "EDER-D-0464",
+        "EDER-D-0465",
+        "EDER-D-0474",
+        "EDER-D-0475",
+        "EDER-D-0543",
+        "EDER-D-0544",
+        "EDER-D-0545",
+        "EDER-D-0546",
+        "EDER-D-0547"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "ARCH-FREEZE",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 16,
+      "obligation_ids": [
+        "EDER-D-0174",
+        "EDER-D-0175",
+        "EDER-D-0176",
+        "EDER-D-0177",
+        "EDER-D-0178",
+        "EDER-D-0229",
+        "EDER-D-0230",
+        "EDER-D-0435",
+        "EDER-D-0436",
+        "EDER-D-0437",
+        "EDER-D-0580",
+        "EDER-D-0581",
+        "EDER-D-0587",
+        "EDER-D-0588",
+        "EDER-D-0589",
+        "EDER-D-0590"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "HARNESS",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 16,
+      "obligation_ids": [
+        "EDER-D-0472",
+        "EDER-D-0501",
+        "EDER-D-0502",
+        "EDER-D-0503",
+        "EDER-D-0504",
+        "EDER-D-0505",
+        "EDER-D-0506",
+        "EDER-D-0507",
+        "EDER-D-0524",
+        "EDER-D-0525",
+        "EDER-D-0526",
+        "EDER-D-0527",
+        "EDER-D-0528",
+        "EDER-D-0529",
+        "EDER-D-0530",
+        "EDER-D-0531"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:TOOLS",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 15,
+      "obligation_ids": [
+        "EDER-D-0480",
+        "EDER-D-0481",
+        "EDER-D-0482",
+        "EDER-D-0483",
+        "EDER-D-0484",
+        "EDER-D-0485",
+        "EDER-D-0486",
+        "EDER-D-0487",
+        "EDER-D-0488",
+        "EDER-D-0489",
+        "EDER-D-0548",
+        "EDER-D-0549",
+        "EDER-D-0550",
+        "EDER-D-0551",
+        "EDER-D-0552"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "SCENARIO-FACTORY-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 14,
+      "obligation_ids": [
+        "EDER-D-0412",
+        "EDER-D-0413",
+        "EDER-D-0414",
+        "EDER-D-0415",
+        "EDER-D-0420",
+        "EDER-D-0421",
+        "EDER-D-0422",
+        "EDER-D-0423",
+        "EDER-D-0424",
+        "EDER-D-0425",
+        "EDER-D-0426",
+        "EDER-D-0582",
+        "EDER-D-0583",
+        "EDER-D-0584"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "PRE-ENT",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 12,
+      "obligation_ids": [
+        "EDER-D-0261",
+        "EDER-D-0262",
+        "EDER-D-0263",
+        "EDER-D-0264",
+        "EDER-D-0265",
+        "EDER-D-0266",
+        "EDER-D-0267",
+        "EDER-D-0591",
+        "EDER-D-0592",
+        "EDER-D-0593",
+        "EDER-D-0594",
+        "EDER-D-0595"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "OPERATOR",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 10,
+      "obligation_ids": [
+        "EDER-D-0290",
+        "EDER-D-0291",
+        "EDER-D-0416",
+        "EDER-D-0417",
+        "EDER-D-0418",
+        "EDER-D-0419",
+        "EDER-D-0459",
+        "EDER-D-0585",
+        "EDER-D-0586",
+        "EDER-D-0596"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "TRACE-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 10,
+      "obligation_ids": [
+        "EDER-D-0452",
+        "EDER-D-0453",
+        "EDER-D-0454",
+        "EDER-D-0455",
+        "EDER-D-0456",
+        "EDER-D-0457",
+        "EDER-D-0458",
+        "EDER-D-0535",
+        "EDER-D-0536",
+        "EDER-D-0537"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:AW-7C-INTEGRATIONS",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0181",
+        "EDER-D-0182",
+        "EDER-D-0183",
+        "EDER-D-0184",
+        "EDER-D-0473",
+        "EDER-D-0515",
+        "EDER-D-0516",
+        "EDER-D-0517"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "QUAL-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 8,
+      "obligation_ids": [
+        "EDER-D-0402",
+        "EDER-D-0403",
+        "EDER-D-0404",
+        "EDER-D-0405",
+        "EDER-D-0406",
+        "EDER-D-0407",
+        "EDER-D-0470",
+        "EDER-D-0476"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "MCP-SERVER-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 7,
+      "obligation_ids": [
+        "EDER-D-0572",
+        "EDER-D-0573",
+        "EDER-D-0574",
+        "EDER-D-0575",
+        "EDER-D-0576",
+        "EDER-D-0577",
+        "EDER-D-0578"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:INTEGRATIONS",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 6,
+      "obligation_ids": [
+        "EDER-D-0490",
+        "EDER-D-0491",
+        "EDER-D-0492",
+        "EDER-D-0512",
+        "EDER-D-0513",
+        "EDER-D-0514"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "EBH-3/4",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 6,
+      "obligation_ids": [
+        "EDER-D-0518",
+        "EDER-D-0519",
+        "EDER-D-0520",
+        "EDER-D-0521",
+        "EDER-D-0522",
+        "EDER-D-0523"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DIST-SCALE-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0553",
+        "EDER-D-0554",
+        "EDER-D-0555",
+        "EDER-D-0556",
+        "EDER-D-0557"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:GOVERNANCE",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0236",
+        "EDER-D-0508",
+        "EDER-D-0509",
+        "EDER-D-0510",
+        "EDER-D-0511"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "EBH-6",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0558",
+        "EDER-D-0559",
+        "EDER-D-0560",
+        "EDER-D-0561",
+        "EDER-D-0562"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "EBH-7",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0567",
+        "EDER-D-0568",
+        "EDER-D-0569",
+        "EDER-D-0570",
+        "EDER-D-0571"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "PDC-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0257",
+        "EDER-D-0258",
+        "EDER-D-0259",
+        "EDER-D-0260",
+        "EDER-D-0579"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "TENANT-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 5,
+      "obligation_ids": [
+        "EDER-D-0538",
+        "EDER-D-0539",
+        "EDER-D-0540",
+        "EDER-D-0541",
+        "EDER-D-0542"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "ROADMAP-REPLAY-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 4,
+      "obligation_ids": [
+        "EDER-D-0563",
+        "EDER-D-0564",
+        "EDER-D-0565",
+        "EDER-D-0566"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:BACKGROUND-EXECUTION",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0532",
+        "EDER-D-0533",
+        "EDER-D-0534"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:CONTEXT-ENGINEERING",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0466",
+        "EDER-D-0467",
+        "EDER-D-0468"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:LLM-BOUNDARY",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0477",
+        "EDER-D-0478",
+        "EDER-D-0479"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:MEMORY",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0496",
+        "EDER-D-0497",
+        "EDER-D-0498"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "DOMAIN:RAG",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 3,
+      "obligation_ids": [
+        "EDER-D-0493",
+        "EDER-D-0494",
+        "EDER-D-0495"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "EBH",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 2,
+      "obligation_ids": [
+        "EDER-D-0499",
+        "EDER-D-0500"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "ARCH-FREEZE",
+        "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+        "next_track": "ACCEPTED_LIMITATION"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0024"
+      ],
+      "next_action": "ARCH_FREEZE_GATE"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "CONFIG-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-D-0469"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "EVOL-X",
+        "disposition": "TRIAGE_PENDING",
+        "next_track": "UNCLASSIFIED"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-D-0471"
+      ],
+      "next_action": "STILL_UNRESOLVED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "HARNESS",
+        "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+        "next_track": "ACCEPTED_LIMITATION"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0043"
+      ],
+      "next_action": "OWNER_SENTENCE_REQUIRED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "OPERATOR",
+        "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+        "next_track": "ACCEPTED_LIMITATION"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0015"
+      ],
+      "next_action": "OWNER_SENTENCE_REQUIRED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "OPERATOR",
+        "disposition": "DECISION_PENDING",
+        "next_track": "DECISION"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0117"
+      ],
+      "next_action": "OWNER_SENTENCE_REQUIRED"
+    },
+    {
+      "cluster_key": {
+        "owner_ref": "PDC-X:D6",
+        "disposition": "ACCEPTED_AS_STATED_RECORD_REQUIRED",
+        "next_track": "ACCEPTED_LIMITATION"
+      },
+      "count": 1,
+      "obligation_ids": [
+        "EDER-F-0169"
+      ],
+      "next_action": "OWNER_SENTENCE_REQUIRED"
+    }
+  ]
+}

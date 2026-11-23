@@ -7,19 +7,18 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from types import FunctionType
-from typing import ClassVar, List
+from typing import ClassVar
 
 from intergrax.agents.authoring.acp_run import run_acp_session
 from intergrax.agents.authoring.state_access import load_session_state, session_state_delta
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.agents.authoring.uaep_linear_bridge import (
-    linear_agent_decide_after_step,
     linear_agent_get_steps,
     linear_ordered_step_ids,
     linear_step_methods,
 )
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.contracts.acp_state import AcpSessionState
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_contract_section12 import (
@@ -28,10 +27,10 @@ from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_OUTPUT_SCHEMA,
     DEFAULT_VALIDATION_RULES,
 )
-from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
@@ -192,7 +191,7 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
     def _ordered_step_ids(self) -> list[str]:
         return linear_ordered_step_ids(self)
 
-    def get_steps(self) -> List[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         """UAEP internal — authors use ``@step`` + ``on_next_step``, not override."""
         return linear_agent_get_steps(self)
 

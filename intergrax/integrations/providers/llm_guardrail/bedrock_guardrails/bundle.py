@@ -7,13 +7,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from intergrax.integrations.providers.llm_guardrail.bundles.bedrock_guardrails import create_bedrock_guardrails_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.providers.llm_guardrail.bedrock_guardrails.integration import (
     BEDROCK_GUARDRAILS_PROVIDER_ID,
     BedrockGuardrailsLlmGuardrailIntegration,
     BedrockGuardrailsLlmGuardrailIntegrationConfig,
 )
+from intergrax.integrations.providers.llm_guardrail.bundles.bedrock_guardrails import create_bedrock_guardrails_backend
 
 __all__ = [
     "create_bedrock_guardrails_llm_guardrail",

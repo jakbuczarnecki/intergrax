@@ -1,0 +1,82 @@
+{
+  "schema": "eqo.replay_rest.v1",
+  "recorded_at": "2026-11-21T13:00:00+00:00",
+  "pin_sha": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+  "worktree_read_only": "D:\\Projekty\\_wt\\intergrax\\eqo-w2-fc3",
+  "prior_named_test_replay": {
+    "status": "GREEN",
+    "exit_code": 0,
+    "passed": 64,
+    "failed": 0,
+    "test_files": [
+      "tests/qualification/prod_q/_p0_audit_gate.py",
+      "tests/unit/runtime/architecture/test_npsc4_2_residual_compatibility_gate.py",
+      "tests/qualification/trace_x/_trace_x_p6_restart_resume_classification.py",
+      "tests/unit/runtime/architecture/test_faudit_remediation.py",
+      "tests/qualification/config_x/_config_x_semantic_production_scan.py",
+      "tests/qualification/governance/strategy/test_gr10_gates.py"
+    ],
+    "mapped_obligation_ids": [
+      "EDER-F-0054",
+      "EDER-F-0060",
+      "EDER-F-0078",
+      "EDER-F-0112",
+      "EDER-F-0134",
+      "EDER-F-0159"
+    ],
+    "note": "Evidence only; obligation rows stay EXISTING_IMPLEMENTATION_REQUIRES_REPLAY."
+  },
+  "remainder_batch": {
+    "obligation_count": 34,
+    "pytest_ran": false,
+    "new_explicit_test_files": [],
+    "per_obligation": {
+      "EDER-F-0016": "NO_NAMED_TEST",
+      "EDER-F-0020": "NO_NAMED_TEST",
+      "EDER-F-0023": "NO_NAMED_TEST",
+      "EDER-F-0059": "NO_NAMED_TEST",
+      "EDER-F-0076": "NO_NAMED_TEST",
+      "EDER-F-0080": "NO_NAMED_TEST",
+      "EDER-F-0084": "NO_NAMED_TEST",
+      "EDER-F-0091": "NO_NAMED_TEST",
+      "EDER-F-0107": "NO_NAMED_TEST",
+      "EDER-F-0116": "NO_NAMED_TEST",
+      "EDER-F-0124": "NO_NAMED_TEST",
+      "EDER-F-0154": "NO_NAMED_TEST",
+      "EDER-F-0158": "NO_NAMED_TEST",
+      "EDER-F-0171": "NO_NAMED_TEST",
+      "EDER-F-0182": "NO_NAMED_TEST",
+      "EDER-F-0186": "NO_NAMED_TEST",
+      "EDER-F-0188": "NO_NAMED_TEST",
+      "EDER-F-0192": "NO_NAMED_TEST",
+      "EDER-F-0200": "NO_NAMED_TEST",
+      "EDER-F-0207": "NO_NAMED_TEST",
+      "EDER-F-0209": "NO_NAMED_TEST",
+      "EDER-F-0210": "NO_NAMED_TEST",
+      "EDER-F-0222": "NO_NAMED_TEST",
+      "EDER-F-0236": "NO_NAMED_TEST",
+      "EDER-D-0001": "NO_NAMED_TEST",
+      "EDER-D-0002": "NO_NAMED_TEST",
+      "EDER-D-0003": "NO_NAMED_TEST",
+      "EDER-D-0004": "NO_NAMED_TEST",
+      "EDER-D-0005": "NO_NAMED_TEST",
+      "EDER-D-0006": "NO_NAMED_TEST",
+      "EDER-D-0007": "NO_NAMED_TEST",
+      "EDER-D-0008": "NO_NAMED_TEST",
+      "EDER-D-0085": "NO_NAMED_TEST",
+      "EDER-D-0086": "NO_NAMED_TEST"
+    },
+    "register_note": "EDER-D-0086 title cites tests/.../test_cli_verification_hardening.py (ellipsis); not an explicit tests/*.py path."
+  },
+  "view_and_register_confirmation": {
+    "all_34_present_in_EQO_REMAINING_OBLIGATION_VIEW": true,
+    "all_34_present_in_register_jsonl": true
+  },
+  "development_named_replay": {
+    "recorded_at": "2026-11-21T18:05:00+01:00",
+    "development_sha": "e0e19a332cbb7b376caf2491edebcf5aba5151d3",
+    "six_file_replay": "64 passed, exit 0",
+    "governance_replay": "27 passed, exit 0",
+    "lifecycle_unchanged": true
+  }
+}

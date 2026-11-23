@@ -2,5 +2,15 @@
 $ErrorActionPreference = "Stop"
 $Root = git rev-parse --show-toplevel
 Set-Location $Root
-& uv run python -u scripts/ci/run_push_gate.py
+$uvLocal = Join-Path $env:USERPROFILE ".local\bin"
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    $uvExe = Join-Path $uvLocal "uv.exe"
+    if (Test-Path -LiteralPath $uvExe) {
+        $env:Path = "$uvLocal;$env:Path"
+    }
+}
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Write-Error "pre-push: uv not found on PATH (install Astral uv or add %USERPROFILE%\.local\bin)"
+}
+& uv run --no-sync python -u scripts/ci/run_push_gate.py
 exit $LASTEXITCODE

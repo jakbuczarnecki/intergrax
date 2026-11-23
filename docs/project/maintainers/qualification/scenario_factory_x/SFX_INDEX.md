@@ -1,12 +1,16 @@
 # SCENARIO-FACTORY-X — campaign index (SSOT hub)
 
-**Stage ID:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory  
-**Roadmap status:** `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY`  
-**Master plan:** [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — Revision R1, operator-approved 2026-11-12; approval scope W0–W2  
-**Base pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` (`origin/development`)  
-**Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`  
-**Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)  
-**Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md)
+**Stage ID:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory
+**Roadmap status:** `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY`
+**Master plan:** [`SFX-MASTER-PLAN.md`](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) — Revision R1, operator-approved 2026-11-12; approval scope W0–W2
+**Base pin:** `eadb1c2116feb0a2090b234a36fd4182bd6ace8d` (`origin/development`)
+**Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`
+**Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)
+**R2 amendment package (historical — DOCUMENTATION_PREPARED):** [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md) · [T-IGX-070-A](../../../../../governance/tickets/T-IGX-070-A.md) — pre-canonical R2 design artifacts; **not** binding R1 replacement<br>
+**R2 publication:** PR #756–#757 **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` — [SFX_R2_CORRECTIVE_DOSSIER.md](./SFX_R2_CORRECTIVE_DOSSIER.md) · [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)<br>
+**R2 ARCHITECTURE APPROVED:** G2 plan @ `f33501780a62ae82a718834b6521adc856ec9bfb` · G3 operator adoption @ `81c51263ea672e0f4d886dd0dc85bcf646849108` · [`T-IGX-070-C`](../../../../../governance/tickets/T-IGX-070-C.md) · [`OD-SFX-R2-CANONICAL-ADOPTION.md`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) · master plan [**§18**](../../../../../governance/tickets/plans/SFX-MASTER-PLAN.md#18-r2-architectural-overlay-mission--autonomy--business-evaluation)<br>
+**SFX IMPLEMENTATION NOT AUTHORIZED:** `IMPLEMENTATION_AUTHORIZED = NO` — ARCH-FREEZE and GATE-SFX-ENTRY unchanged<br>
+**Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md) · [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)
 
 ## Authority map (one SSOT per concern)
 
@@ -88,3 +92,4 @@ Pre-freeze: `ROADMAP REGISTERED → RESEARCH CITED → ADRs PROPOSED → UX + GE
 Stage: `GATE-SFX-ENTRY → W3..W7 (REBIND per wave) → GATE-SFX-FULL → INDEPENDENT AUDIT → IIAC PRODUCT CERTIFICATION → SCENARIO-FACTORY-X — CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`.
 
 SFX closure certifies the factory only. It admits no generated scenario to production; admission happens outside SFX (OD-SFX-13 owner, SCENARIO-GATE, PROD-Q).
+Corrective: [T-IGX-070-B](../../../../../governance/tickets/T-IGX-070-B.md).

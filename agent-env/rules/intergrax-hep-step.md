@@ -7,7 +7,7 @@ loading: explicit
 
 Use only when operator explicitly asks for a HEP / EVID implementation step.
 
-**Start:** operator prompt should begin with `@agent-env/rules/intergrax-hep-step.md` and require mandatory preflight from `intergrax-token-budget.md` before any read/edit.
+**Start:** operator prompt should begin with `@agent-env/rules/intergrax-hep-step.md` and require mandatory preflight from `intergrax-core.md` (Token use) before any read/edit.
 
 - Operator instruction is the source of truth.
 - Read only listed files.
@@ -16,5 +16,5 @@ Use only when operator explicitly asks for a HEP / EVID implementation step.
 - No subagents.
 - No full test suite unless operator lists it.
 - No `AGENT_INSTRUCTIONS.md` unless explicitly requested.
-- If more context is needed → **STOP** and name exact file.
+- If more context is needed: read the exact file (max 3 beyond the listed scope), name it in the report, and continue; an edit outside scope is a scope change: escalate (`/intergrax-core`).
 - Final report: paths, tests, status, blockers; token usage only if available from Cursor (no guesses).

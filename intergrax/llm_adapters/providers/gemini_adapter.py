@@ -145,7 +145,9 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     history=history,
                     config=config,
                 )
-                api_response = self._execute(lambda: chat_session.send_message(prompt))
+                api_response = self._execute(
+                    lambda: chat_session.send_message(prompt, **self._gemini_call_config_kwargs(config))
+                )
                 text = api_response.text or ""
             else:
                 contents = self._map_contents(convo)
@@ -153,19 +155,23 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     lambda: self.client.models.generate_content(
                         model=self.model,
                         contents=contents,
-                        config=config,
+                        config=self._with_call_timeout(config),
                     )
                 )
                 text = api_response.text or ""
 
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-            response = build_adapter_response(
-                content=text,
-                finish_reason=finish_reason_from_raw(gemini_stop_signal(api_response)),
-                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                model=self.model,
-                provider=self._provider_slug(),
-                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            response = self._served_response(
+                call,
+                build_adapter_response(
+                    content=text,
+                    finish_reason=finish_reason_from_raw(gemini_stop_signal(api_response)),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                ),
+                attribute_access.optional(api_response, "model_version", None),
             )
             success = True
             return response
@@ -199,6 +205,7 @@ class GeminiChatAdapter(BaseLLMAdapter):
         out_tok = 0
         buf: list[str] = []
         signal = StreamFinishSignal()
+        served_model: object = None
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -221,7 +228,10 @@ class GeminiChatAdapter(BaseLLMAdapter):
                     config=config,
                 )
 
-                for chunk in self._execute_streaming(lambda: chat_session.send_message_stream(prompt)):
+                for chunk in self._execute_streaming(
+                    lambda: chat_session.send_message_stream(prompt, **self._gemini_call_config_kwargs(config))
+                ):
+                    served_model = attribute_access.optional(chunk, "model_version", None) or served_model
                     signal.observe_finish(gemini_stop_signal(chunk))
                     txt = chunk.text
                     if txt:
@@ -234,14 +244,18 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 success = True
                 finish, refusal = signal.resolve()
                 yield final_stream_event(
-                    response=build_adapter_response(
-                        content="".join(buf),
-                        finish_reason=finish,
-                        refusal=refusal,
-                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                        model=self.model,
-                        provider=self._provider_slug(),
-                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    response=self._served_response(
+                        call,
+                        build_adapter_response(
+                            content="".join(buf),
+                            finish_reason=finish,
+                            refusal=refusal,
+                            usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                            model=self.model,
+                            provider=self._provider_slug(),
+                            provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                        ),
+                        served_model,
                     )
                 )
                 return
@@ -258,9 +272,10 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 lambda: stream_fn(
                     model=self.model,
                     contents=contents,
-                    config=config,
+                    config=self._with_call_timeout(config),
                 )
             ):
+                served_model = attribute_access.optional(chunk, "model_version", None) or served_model
                 signal.observe_finish(gemini_stop_signal(chunk))
                 txt = attribute_access.optional(chunk, "text", None)
                 if txt:
@@ -271,14 +286,18 @@ class GeminiChatAdapter(BaseLLMAdapter):
             success = True
             finish, refusal = signal.resolve()
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    ),
+                    served_model,
                 )
             )
             return
@@ -350,22 +369,28 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 tools=openai_tools_to_gemini(tools_schema),
             )
             contents = self._map_contents(convo)
-            api_response = self.client.models.generate_content(
-                model=self.model,
-                contents=contents,
-                config=config,
+            api_response = self._execute(
+                lambda: self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=self._with_call_timeout(config),
+                )
             )
             text, tool_calls = self._parse_gemini_response(api_response)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
             finish = finish_reason_from_raw(gemini_stop_signal(api_response), has_tool_calls=bool(tool_calls))
-            response = build_adapter_response(
-                content=text,
-                finish_reason=finish,
-                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                model=self.model,
-                provider=self._provider_slug(),
-                tool_calls=tool_calls,
-                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            response = self._served_response(
+                call,
+                build_adapter_response(
+                    content=text,
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                ),
+                attribute_access.optional(api_response, "model_version", None),
             )
             success = True
             return response
@@ -424,7 +449,11 @@ class GeminiChatAdapter(BaseLLMAdapter):
                 return
 
             tool_calls_acc: tuple[LLMToolCall, ...] = ()
-            for chunk in self._execute_streaming(lambda: stream_fn(model=self.model, contents=contents, config=config)):
+            served_model: object = None
+            for chunk in self._execute_streaming(
+                lambda: stream_fn(model=self.model, contents=contents, config=self._with_call_timeout(config))
+            ):
+                served_model = attribute_access.optional(chunk, "model_version", None) or served_model
                 txt = attribute_access.optional(chunk, "text", None)
                 if txt:
                     buf.append(txt)
@@ -438,15 +467,19 @@ class GeminiChatAdapter(BaseLLMAdapter):
             finish, refusal = signal.resolve(has_tool_calls=bool(tool_calls_acc))
             success = True
             yield final_stream_event(
-                response=build_adapter_response(
-                    content="".join(buf),
-                    finish_reason=finish,
-                    refusal=refusal,
-                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    tool_calls=tool_calls_acc,
-                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                response=self._served_response(
+                    call,
+                    build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        refusal=refusal,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        tool_calls=tool_calls_acc,
+                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    ),
+                    served_model,
                 )
             )
         except Exception as e:
@@ -514,6 +547,20 @@ class GeminiChatAdapter(BaseLLMAdapter):
                         }
                     )
         return "".join(text_parts), tool_calls_from_openai_dicts(tool_calls_raw)
+
+    def _with_call_timeout(self, config: types.GenerateContentConfig) -> types.GenerateContentConfig:
+        """``config`` with ``http_options.timeout`` (milliseconds) set to the effective call timeout (EX-D3-01)."""
+        timeout = self._effective_call_timeout_sec()
+        if timeout is None:
+            return config
+        millis = max(1, round(timeout * 1000.0))
+        return config.model_copy(update={"http_options": types.HttpOptions(timeout=millis)})
+
+    def _gemini_call_config_kwargs(self, config: types.GenerateContentConfig) -> dict[str, Any]:
+        """``{"config": ...}`` for a chat ``send_message`` call that carries the timeout, or nothing."""
+        if self._effective_call_timeout_sec() is None:
+            return {}
+        return {"config": self._with_call_timeout(config)}
 
     def _build_generation_config(
         self,

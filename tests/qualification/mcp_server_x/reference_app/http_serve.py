@@ -50,7 +50,7 @@ class ReferenceHostParts:
 def build_reference_host_parts(registry: AgentRegistry | None = None) -> ReferenceHostParts:
     """Canonical harness host task execution over a fresh (or shared) ``AgentRegistry``."""
     reg = registry if registry is not None else AgentRegistry()
-    nexus = NexusLoop(reg)
+    nexus = NexusLoop(reg, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus, orchestration_triggers=frozenset())
     return ReferenceHostParts(registry=reg, host_execution=host_execution)
 

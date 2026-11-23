@@ -203,3 +203,14 @@ HARNESS-FINAL = NEXT / NOT ENTERED
 GOV-X2 = NOT ENTERED
 SCHED-01 = NOT ENTERED (dependency/future workstream)
 ```
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`. Quotations omit the markdown emphasis of the source.
+
+- Status of this record: L3 reads "READY FOR AUDIT (Cursor session evidence — not closure)".
+- Roadmap (wording quoted, not asserted here): ledger row L1993 (`HARNESS-W8`) reads "CLOSED / independently accepted" with `3a9b58e6fa1e14ddc9786bd9a447a1d76552d196`.
+- What this record says about the failure: L152 reports run #4 as "39 passed, 1 failed" for `test_npsc42_orchestration_backend_access_confined_to_allowlist` ("EE allowlist drift on current HEAD; not BG-01 regression"); L176 rates "Regression protection" as `PARTIAL` ("npsc42 allowlist gate failure tracked"); L192 lists the test under "TRACKED FREEZE DEBT".
+- Gap: this record does not state where or when the failure was resolved or accepted, by whom, or at which SHA the test passes. `HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md` L166 lists the same test with the owner "HARNESS-FINAL / QUAL-X"; `HARNESS_FINAL_CURRENT_HEAD_CERTIFICATION.md` contains no occurrence of `npsc42`, `npsc4_2` or `npsc4.2` (case-insensitive search at the head named above).
+- Related finding: EQOA-A2-046 (EQO-A Campaign A dossier, PR #589), register row `EDER-F-0075` in `docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl` (as the register reads at the head named above: owner_ref `HARNESS`, owner_status `SINGLE_PROPOSED`; the owner vocabulary is confirmed, the row-level owner is not, and no person is assigned).
+- This note does not establish whether the test passes or fails at any commit, or that the failure was resolved or accepted anywhere. It adds no closure or independence claim.

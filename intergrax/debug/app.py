@@ -6,34 +6,39 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
 
-from intergrax.debug.hitl_service import DebugHitlResumeService
-from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.debug.adaptive_debug_router import create_adaptive_debug_router
+from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.integration_health_debug_router import create_integration_health_debug_router
+from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.router import create_debug_router
 from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
     open_runtime_event_persistence,
 )
 from intergrax.fastapi_core.routers.health import health_router
+from intergrax.integrations.contracts.base import LabSelectorOptIn
 from intergrax.runtime.adaptive.proposal_store import ProposalStore
 from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.execution.debug_lab_nexus_loop import build_debug_minimal_nexus_loop
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
-from intergrax.contracts.host_orchestration_application_wiring_target import (
-    HostOrchestrationApplicationWiringTarget,
-)
-from intergrax.runtime.execution.debug_lab_nexus_loop import build_debug_minimal_nexus_loop
-from intergrax.contracts.run_trace_store import RunTraceReader
+from intergrax.runtime.interactions.verification.factory import InboundVerifierMode, create_inbound_verifier
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+_LAB_DEBUG_INBOUND_VERIFIER_OPT_IN = LabSelectorOptIn(
+    selector=InboundVerifierMode.NONE.value,
+    reason="laboratory debug API inbound verifier",
+)
 
 
 def create_debug_app(
@@ -45,7 +50,7 @@ def create_debug_app(
     runtime_event_store: RuntimeEventPersistence | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
     trace_store: RunTraceReader | None = None,
-    registry: Optional[AgentRegistry] = None,
+    registry: AgentRegistry | None = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
     host_execution: HostTaskExecutionPort | None = None,
@@ -86,13 +91,13 @@ def create_debug_app(
                 checkpoint_store=resolved_checkpoint_store,
             )
         elif registry is not None and resolved_loop is not None:
-            from intergrax.runtime.governance.execution_admission_composition import (
-                build_reference_allowing_root_execution_authority_admission,
-            )
             from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
                 admit_certified_internal_harness_root_governance_identity,
             )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+            from intergrax.runtime.governance.execution_admission_composition import (
+                build_reference_allowing_root_execution_authority_admission,
+            )
 
             resolved_hitl = DebugHitlResumeService(
                 host_execution=build_host_task_execution(
@@ -109,16 +114,16 @@ def create_debug_app(
         if host_execution is not None:
             resolved_interaction = DebugInteractionIntakeService(
                 task_executor=HostTaskExecutionExecutor(host_execution),
-                verifier=create_inbound_verifier(),
+                verifier=create_inbound_verifier(lab_opt_in=_LAB_DEBUG_INBOUND_VERIFIER_OPT_IN),
             )
         elif resolved_loop is not None:
-            from intergrax.runtime.governance.execution_admission_composition import (
-                build_reference_allowing_root_execution_authority_admission,
-            )
             from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
                 admit_certified_internal_harness_root_governance_identity,
             )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+            from intergrax.runtime.governance.execution_admission_composition import (
+                build_reference_allowing_root_execution_authority_admission,
+            )
 
             resolved_interaction = DebugInteractionIntakeService(
                 task_executor=HostTaskExecutionExecutor(
@@ -129,15 +134,14 @@ def create_debug_app(
                         admit_root_governance_identity=admit_certified_internal_harness_root_governance_identity,
                     )
                 ),
-                verifier=create_inbound_verifier(),
+                verifier=create_inbound_verifier(lab_opt_in=_LAB_DEBUG_INBOUND_VERIFIER_OPT_IN),
             )
 
     app = FastAPI(
         title="Intergrax Debug API",
         version="0.2.0",
         description=(
-            "Inspect Nexus runs/traces, runtime events, checkpoints, "
-            "and manage experiments (Phase D + G.6, §19, §35)."
+            "Inspect Nexus runs/traces, runtime events, checkpoints, and manage experiments (Phase D + G.6, §19, §35)."
         ),
     )
     app.include_router(health_router)

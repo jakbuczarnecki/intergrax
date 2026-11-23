@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition,
     build_scenario_runtime_from_environment,
@@ -24,6 +23,9 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from testing_support.dependency_concurrency_admission_config import (
     tool_dependency_concurrency_admission_configuration,
 )
+from tests.fixtures.fc3_vector_store_profile import attach_inmemory_vector_store_slug
+
+from echo.echo_agent import EchoAgent
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,7 @@ def production_attached_environment(profile_id: str) -> ApplicationEnvironmentPr
                 ),
             },
         )
+    attach_inmemory_vector_store_slug(environment)
     return environment
 
 

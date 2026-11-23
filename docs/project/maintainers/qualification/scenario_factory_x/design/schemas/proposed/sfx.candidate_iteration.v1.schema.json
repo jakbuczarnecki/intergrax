@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.candidate_iteration.v1",
+  "title": "CandidateIteration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mission_id",
+    "candidate_id",
+    "candidate_revision",
+    "phase",
+    "goal_digest",
+    "canonical_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sfx.candidate_iteration.v1"
+    },
+    "mission_id": {
+      "type": "string"
+    },
+    "candidate_id": {
+      "type": "string"
+    },
+    "candidate_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "phase": {
+      "enum": [
+        "PLAN",
+        "HANDOFF_PENDING",
+        "BUILD_BOUND",
+        "EVAL_PENDING",
+        "EVALUATED",
+        "ARCHIVED"
+      ]
+    },
+    "goal_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "blueprint_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "improvement_hypothesis": {
+      "type": "string"
+    },
+    "engineering_job_id": {
+      "type": "string"
+    },
+    "handoff_request_ref": {
+      "type": "string"
+    },
+    "evaluation_suite_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "verdict_ref": {
+      "type": "string"
+    },
+    "cost_counters": {
+      "type": "object"
+    },
+    "canonical_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "phase": {
+            "enum": [
+              "BUILD_BOUND",
+              "EVAL_PENDING",
+              "EVALUATED",
+              "ARCHIVED"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "engineering_job_id",
+          "handoff_request_ref"
+        ]
+      }
+    }
+  ]
+}

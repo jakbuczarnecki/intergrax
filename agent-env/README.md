@@ -22,15 +22,25 @@ CLAUDE.md                  Claude-only rules + generated import block
 
 | `loading` | Cursor | Claude Code |
 |-----------|--------|-------------|
+| `cursor-always` | `.mdc`, `alwaysApply: true` | not imported (Cursor-only) |
 | `always` | `.cursor/rules/<id>.mdc`, `alwaysApply: true` | `@agent-env/rules/<id>.md` import block in `CLAUDE.md` |
 | `explicit` | `.mdc`, `alwaysApply: false` (use `@`) | skill `/<id>`, `disable-model-invocation: true` (operator only) |
 | `auto` | `.mdc`, `alwaysApply: false` (agent decides) | skill `/<id>`, model may invoke |
 
 | Rule | `loading` |
 |------|-----------|
-| `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-env-vendor-qualification`, `intergrax-no-ai-attribution` | always |
+| `intergrax-core` | always |
+| `intergrax-english-only-commits` | always |
+| `igx-cursor-direct-execution` | cursor-always |
 | `intergrax-iteration`, `intergrax-hep-step`, `intergrax-ci-hotfix`, `intergrax-micro-implement` | explicit |
-| `intergrax-agent-roles`, `intergrax-independent-audit` | auto |
+| `intergrax-agent-roles`, `intergrax-independent-audit`, `intergrax-env-vendor-qualification`, `intergrax-scenario-factory` | auto |
+| `loading: retired` (tombstone, no adapters) | `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-no-ai-attribution` |
+
+**Old rule -> new section (W1-P01):** token-budget -> core "Token use"; test-process-budget -> core "Test budget"; session-artifacts -> core "Session artifacts"; git-branch-safety -> core "Branch safety"; no-ai-attribution -> core "Attribution"; env-vendor-qualification -> on-demand skill, core "Environment (C10/C15)" keeps a 2-line note. Worktree rules from `CLAUDE.md` -> skill `igx-worktree`.
+
+**Always-on extract (Cursor).** Cursor does not expand `@` inside a rule body, so the generator inlines the text between `<!-- igx:active:start -->` and `<!-- igx:active:end -->` of every `loading: always` rule into its `.mdc` (a short always-on rule without markers is inlined whole; a long one without markers fails the generator). The extract is a projection of the SSOT, not a second source of law: edit only `agent-env/rules/`, re-run the sync, and keep the combined always-on `.mdc` bodies <= 6 KB. Skills with `disable-model-invocation: true` in the canonical frontmatter (`igx-run-plan`, `sfx-*`) carry the flag in both the `.cursor` and `.claude` adapters.
+
+**Size gates** (`sync_agent_env.py --check`): L0 (CLAUDE.md + AGENTS.md + always-on rules) <= 8 KB, CLAUDE.md <= 25 lines, AGENTS.md <= 60 lines, descriptions <= 300 chars, skill body <= 120 lines unless listed in `size_exemptions.yaml`.
 
 Skills (`igx-devos-*`) are routed to roles by [`governance/agent-control-plane/skill_routing_registry.yaml`](../governance/agent-control-plane/skill_routing_registry.yaml) and exist in both tools under the same id.
 

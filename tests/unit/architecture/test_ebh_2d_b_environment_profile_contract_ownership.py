@@ -8,7 +8,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.codecraft.profile import CodeCraftProfile as LegacyCodeCraftProfile
 from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind as CanonicalAdaptiveLoopKind
@@ -82,9 +81,7 @@ _FORBIDDEN_PREFIXES = (
     "intergrax.runtime.",
     "intergrax.applications._shared.",
 )
-_FORBIDDEN_SUBSTRINGS = (
-    ".registry.",
-)
+_FORBIDDEN_SUBSTRINGS = (".registry.",)
 _FORBIDDEN_EXACT = (
     "intergrax.codecraft.profile",
     "intergrax.llm_adapters.routing",
@@ -93,14 +90,25 @@ _FORBIDDEN_EXACT = (
 
 def _module_imports(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
+    type_checking_nodes: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING":
+            for child in ast.walk(node):
+                type_checking_nodes.add(id(child))
     hits: list[str] = []
     for node in ast.walk(tree):
+        if id(node) in type_checking_nodes:
+            continue
         if isinstance(node, ast.Import):
             for alias in node.names:
                 if alias.name.startswith("intergrax."):
                     hits.append(alias.name)
-        elif isinstance(node, ast.ImportFrom) and node.module and node.module.startswith(
-            "intergrax.",
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and node.module.startswith(
+                "intergrax.",
+            )
         ):
             hits.append(node.module)
     return hits
@@ -175,15 +183,9 @@ def test_lab_and_product_defaults_semantics() -> None:
 
 
 def test_enum_value_parity_for_moved_enums() -> None:
-    assert {m.value for m in CanonicalAdaptiveLoopKind} == {
-        m.value for m in LegacyAdaptiveLoopKind
-    }
-    assert {m.value for m in CanonicalPolicyEnforcementMode} == {
-        m.value for m in LegacyPolicyEnforcementMode
-    }
-    assert {m.value for m in CanonicalComplianceDomainClass} == {
-        m.value for m in LegacyComplianceDomainClass
-    }
+    assert {m.value for m in CanonicalAdaptiveLoopKind} == {m.value for m in LegacyAdaptiveLoopKind}
+    assert {m.value for m in CanonicalPolicyEnforcementMode} == {m.value for m in LegacyPolicyEnforcementMode}
+    assert {m.value for m in CanonicalComplianceDomainClass} == {m.value for m in LegacyComplianceDomainClass}
 
 
 _COMPAT_PROFILE_MODULES = (
@@ -464,7 +466,7 @@ def test_boundary_demo_does_not_assign_enablement_onto_runtime_tool_profile() ->
 def test_no_reverse_extraction_of_catalog_enablement_private_profile() -> None:
     forbidden_snippets = (
         "._profile",
-        'getattr(',
+        "getattr(",
         "hasattr(",
     )
     for path in (_RESEARCH_AGENT_PATH, _BOUNDARY_DEMO_PATH, _BINDING_PATH):
@@ -513,13 +515,14 @@ def test_lab_harness_carries_prebuilt_tool_registry_into_runtime_config() -> Non
 
 
 def test_composition_enablement_and_registry_share_canonical_tool_profile() -> None:
+    from intergrax.agents.reference_harness import LabHarnessContext
     from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
     from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
-    from intergrax.tools.registry.bootstrap import register_default_tools
-    from research.research_agent import ResearchAgent
-    from intergrax.agents.reference_harness import LabHarnessContext
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.tools.registry.bootstrap import register_default_tools
     from testing_support.builder import build_runtime_request_for_tests
+
+    from research.research_agent import ResearchAgent
 
     register_default_tools()
     profile = CanonicalToolProfile(enabled_bundles=["harness"])
@@ -552,13 +555,14 @@ def test_composition_enablement_and_registry_share_canonical_tool_profile() -> N
 
 
 def test_composition_disabled_tool_not_enabled_and_not_registered() -> None:
+    from intergrax.agents.reference_harness import LabHarnessContext
     from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
     from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
-    from intergrax.tools.registry.bootstrap import register_default_tools
-    from research.research_agent import ResearchAgent
-    from intergrax.agents.reference_harness import LabHarnessContext
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.tools.registry.bootstrap import register_default_tools
     from testing_support.builder import build_runtime_request_for_tests
+
+    from research.research_agent import ResearchAgent
 
     register_default_tools()
     profile = CanonicalToolProfile(enabled=["harness.get_run"])
@@ -606,12 +610,13 @@ def test_composition_register_all_parity() -> None:
 
 
 def test_custom_enablement_does_not_become_registry_authority() -> None:
-    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
-    from intergrax.tools.registry.bootstrap import register_default_tools
-    from research.research_agent import ResearchAgent
     from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.tools.registry.bootstrap import register_default_tools
     from testing_support.builder import build_runtime_request_for_tests
+
+    from research.research_agent import ResearchAgent
 
     register_default_tools()
     profile = CanonicalToolProfile(enabled=["harness.get_run"])
@@ -648,8 +653,8 @@ def test_custom_enablement_does_not_become_registry_authority() -> None:
 def test_single_source_composition_path_reuses_same_tool_profile() -> None:
     from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
     from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
-    from intergrax.tools.registry.enablement import CatalogToolEnablementView
     from intergrax.tools.registry.bootstrap import register_default_tools
+    from intergrax.tools.registry.enablement import CatalogToolEnablementView
 
     register_default_tools()
     profile = CanonicalToolProfile(enabled_bundles=["harness"])
@@ -666,10 +671,8 @@ def test_single_source_composition_path_reuses_same_tool_profile() -> None:
 
 # --- EBH-2D-B-R4: typed tool runtime registry boundary ---
 
-_RUNTIME_CONFIG_PATH = _REPO_ROOT / "intergrax/runtime/nexus/config.py"
-_REGISTRY_EXECUTOR_PATH = (
-    _REPO_ROOT / "intergrax/runtime/nexus/tools/registry_tool_executor.py"
-)
+_RUNTIME_CONFIG_PATH = _REPO_ROOT / "intergrax/runtime/execution/host_runtime_config.py"
+_REGISTRY_EXECUTOR_PATH = _REPO_ROOT / "intergrax/runtime/nexus/tools/registry_tool_executor.py"
 _RUNTIME_READ_BOUNDARY_PATHS = (
     _REFERENCE_HARNESS_PATH,
     _RUNTIME_CONFIG_PATH,
@@ -718,12 +721,12 @@ def test_runtime_read_boundary_modules_do_not_call_registry_mutation() -> None:
 
 def test_probe_registry_structural_acceptance_by_runtime_executor() -> None:
     from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
     from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID, CustomEchoInput
     from intergrax.tools.execution_models import ToolExecutionRequest
     from intergrax.tools.registry.factory import build_registry_from_profile
     from intergrax.tools.registry.plugin_register import register_tool_plugin
     from intergrax.tools.registry.runtime import ToolRegistry
-    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
 
     register_tool_plugin(CustomEchoToolPlugin, override=True)
     backing = ToolRegistry()

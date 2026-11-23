@@ -13,13 +13,14 @@ from intergrax.model_inference.contracts import (
     VisionInferenceResult,
     VisionOcrRegion,
     VisionOcrResult,
+    VisionResultProvenance,
     VisionSegment,
     VisionSegmentationResult,
 )
 
 
 class StubVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
-    slug = "yolo_ultralytics"
+    slug = "stub_vision"
 
     def detect(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionInferenceResult:
         return VisionInferenceResult(
@@ -32,6 +33,7 @@ class StubVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
                     bbox=VisionBoundingBox(x_min=0.0, y_min=0.0, x_max=1.0, y_max=1.0),
                 )
             ],
+            provenance=VisionResultProvenance.STUB,
         )
 
     def segment(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionSegmentationResult:
@@ -45,6 +47,7 @@ class StubVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
                     bbox=VisionBoundingBox(x_min=0.1, y_min=0.1, x_max=0.9, y_max=0.9),
                 )
             ],
+            provenance=VisionResultProvenance.STUB,
         )
 
     def ocr_regions(self, request: VisionInferenceRequest, *, artifact: ModelArtifact) -> VisionOcrResult:
@@ -58,4 +61,5 @@ class StubVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
                     bbox=VisionBoundingBox(x_min=0.0, y_min=0.0, x_max=1.0, y_max=0.2),
                 )
             ],
+            provenance=VisionResultProvenance.STUB,
         )

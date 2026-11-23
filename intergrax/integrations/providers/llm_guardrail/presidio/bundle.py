@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.providers.llm_guardrail.bundles.presidio import create_presidio_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.presidio import create_presidio_backend
 from intergrax.integrations.providers.llm_guardrail.presidio.integration import (
     PRESIDIO_PROVIDER_ID,
     PresidioLlmGuardrailIntegration,

@@ -12,7 +12,11 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-050-J.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING. <<OPERATOR: the approval line goes here after plan review, written by the Operator or a commissioned session; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).>>
+Approved: operator @ 2026-11-16T18:52:40+01:00
+
+Personal operator approval (ARCH-FREEZE batch); register cites T-IGX-050-B delegate row.
+
+
 
 ## Test contract
 
@@ -28,4 +32,4 @@ Code under `intergrax/`, `agents/`, `applications/`; dependency files; IIAC scri
 
 ## Lifecycle state
 
-`plan_pending`
+plan_approved

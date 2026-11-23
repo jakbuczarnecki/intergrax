@@ -97,3 +97,23 @@ Four first-pass rates. The denominator of each is the number of scenarios that r
 - G-3c depends on an HO-4 conformance entry point for `applications/` packages (ADR-SFX-002 OQ-002-2).
 - G-5 and M-7 cost attribution per stage needs run and execution IDs to be propagated into usage records. The required field mapping is to be confirmed at SFX-P5.
 - All targets are PROPOSED — OD-SFX-07 (operator, at P3 exit).
+
+
+## 4. R2 mission metrics AUTO-01..AUTO-12 (PROPOSED)
+
+| ID | Definition | Status |
+|---|---|---|
+| AUTO-01 | Statement to first spec passing acceptance validation | PROPOSED — OD-SFX-07 |
+| AUTO-02 | First approved goal to first runnable L2 business-logic candidate | PROPOSED |
+| AUTO-03 | First independent sandbox acceptance (excl. human wait) | PROPOSED |
+| AUTO-04 | Autonomous iterations, repairs, escalations | PROPOSED |
+| AUTO-05 | Acceptance criteria pass rate vs safety failures | PROPOSED |
+| AUTO-06 | Champion delta vs prior; cost/security non-regression | PROPOSED |
+| AUTO-07 | Cost per candidate and per iteration | PROPOSED |
+| AUTO-08 | Human minutes to accepted POC | PROPOSED |
+| AUTO-09 | Recovery after forced crash | PROPOSED |
+| AUTO-10 | GEN vs REF independent scores | PROPOSED |
+| AUTO-11 | Platform capability reuse ratio (extends G-1) | PROPOSED |
+| AUTO-12 | Commercial conversion observations (real data only) | PROPOSED |
+
+Full narrative: external blueprint §11; implement per MS-1..MS-8.

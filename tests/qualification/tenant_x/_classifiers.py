@@ -11,7 +11,6 @@ from tests.qualification.tenant_x._carrier_semantics import (
     carrier_family_for_class_field,
     provenance_requirement_for_family,
 )
-from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind
 from tests.qualification.tenant_x._discovery import discover_candidates_from_source
 from tests.qualification.tenant_x._evidence import TenantAstEvidenceKind, evidence_kinds, has_kind
 from tests.qualification.tenant_x._types import (
@@ -81,7 +80,15 @@ _GLOBAL_NON_TENANT_MARKERS: frozenset[str] = frozenset(
     }
 )
 
-_CANONICAL_ANCHOR_PROFILES: dict[str, tuple[TenantPropagationRole, TenantAuthorityRole, TenantIdentitySource, bool, TenantFailClosedDisposition, str]] = {
+_CanonicalAnchorRow = tuple[
+    TenantPropagationRole,
+    TenantAuthorityRole,
+    TenantIdentitySource,
+    bool,
+    TenantFailClosedDisposition,
+    str,
+]
+_CANONICAL_ANCHOR_PROFILES: dict[str, _CanonicalAnchorRow] = {
     "canonical.runtime_request": (
         TenantPropagationRole.IDENTITY_CARRIER,
         TenantAuthorityRole.NON_TENANT_ADVISORY,
@@ -195,7 +202,11 @@ def _semantic_owner(module_path: str, domain: TenantDomain) -> str:
         return "GOVERNANCE"
     if domain == TenantDomain.RUNTIME_REQUEST_EXECUTION:
         return "EXECUTION"
-    if domain in {TenantDomain.INTEGRATION_RESOLUTION, TenantDomain.PROVIDER_INVOCATION, TenantDomain.PROVIDER_EXTENSIONS}:
+    if domain in {
+        TenantDomain.INTEGRATION_RESOLUTION,
+        TenantDomain.PROVIDER_INVOCATION,
+        TenantDomain.PROVIDER_EXTENSIONS,
+    }:
         return "INTEGRATIONS"
     if domain == TenantDomain.CONFIGURATION_PROFILES:
         return "CONFIGURATION_REALIZATION"
@@ -431,9 +442,7 @@ def _classify_class_field_tenant(
         return replace(
             unknown,
             carrier_family=TenantCarrierFamily.CREDENTIAL_REFERENCE,
-            carrier_provenance_requirement=provenance_requirement_for_family(
-                TenantCarrierFamily.CREDENTIAL_REFERENCE
-            ),
+            carrier_provenance_requirement=provenance_requirement_for_family(TenantCarrierFamily.CREDENTIAL_REFERENCE),
         )
 
     persistence, evidence, blocker, persistence_note = _persistence_from_evidence(candidate)
@@ -585,6 +594,8 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
             ev = ("TENANT-X-P0:mint:silent_substitution",)
         elif TenantAstEvidenceKind.TENANT_SCOPE_WIDENING_ASSIGN.value in kinds:
             ev = ("TENANT-X-P0:mint:scope_widening",)
+        elif TenantAstEvidenceKind.MINT_OR_REWRITE_POSITIVE.value in kinds:
+            ev = ("TENANT-X-P0:mint:positive",)
         elif TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value in kinds:
             ev = ("TENANT-X-P0:mint:literal_rewrite_kwarg",)
         elif TenantAstEvidenceKind.VALIDATOR_RETURNS_SAME_INPUT.value in kinds:
@@ -623,7 +634,12 @@ def classify_candidate(candidate: TenantDiscoveryCandidate) -> TenantSurfaceReco
         identity = TenantIdentitySource.DERIVED_FROM_PARENT
         blocker = TenantBlockerClass.NONE
         note = "Tenant kwarg construction site"
-        if TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value in kinds:
+        if TenantAstEvidenceKind.MINT_OR_REWRITE_POSITIVE.value in kinds:
+            propagation = TenantPropagationRole.IDENTITY_DERIVATION
+            identity = TenantIdentitySource.DERIVED_FROM_PARENT
+            ev = ("TENANT-X-P0:mint:positive",)
+            note = "Host composition propagates normalized tenant to sandbox session"
+        elif TenantAstEvidenceKind.TENANT_KWARG_LITERAL_REWRITE.value in kinds:
             propagation = TenantPropagationRole.IDENTITY_DERIVATION
             identity = TenantIdentitySource.UNKNOWN
             ev = ("TENANT-X-P0:mint:literal_rewrite_kwarg",)

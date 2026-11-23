@@ -67,12 +67,12 @@ def assert_certifying_publication_eligible(manifest: AuditExecutionManifest) -> 
         from intergrax.platform.enterprise_audit.manifest import checks_for_mode, load_default_manifest
 
         expected_checks = checks_for_mode(load_default_manifest(), manifest.audit_mode)
-        if len(expected_checks) != 85:
-            raise ValueError(f"closed-world FULL/FREEZE requires 85 planned checks, got {len(expected_checks)}")
-        if manifest.checks_planned != 85:
-            raise ValueError(f"execution manifest must plan 85 checks for FULL/FREEZE, got {manifest.checks_planned}")
-        if len(manifest.outcomes) != 85:
-            raise ValueError(f"execution manifest must include 85 outcomes, got {len(manifest.outcomes)}")
+        if len(expected_checks) != 91:
+            raise ValueError(f"closed-world FULL/FREEZE requires 91 planned checks, got {len(expected_checks)}")
+        if manifest.checks_planned != 91:
+            raise ValueError(f"execution manifest must plan 91 checks for FULL/FREEZE, got {manifest.checks_planned}")
+        if len(manifest.outcomes) != 91:
+            raise ValueError(f"execution manifest must include 91 outcomes, got {len(manifest.outcomes)}")
         by_id = {o.check_id: o for o in manifest.outcomes}
         for check in expected_checks:
             outcome = by_id.get(check.check_id)

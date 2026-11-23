@@ -15,19 +15,19 @@ from intergrax.agents.authoring.patterns.types import (
     ReasoningResult,
 )
 from intergrax.agents.authoring.step_outcome import StepOutcome
+from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import (
     AgentRunErrorCode,
     CognitivePattern,
     TerminalReason,
 )
-from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
-from intergrax.contracts.acp_state import AcpSessionState
-from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+
 PATTERN_VERSION: str = "acp.v1"
 
 
@@ -117,7 +117,7 @@ class CognitiveAgent(IntergraxAgent, ABC):
     def _ordered_step_ids(self) -> list[str]:
         return [self.main_step_id]
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         contract = self.get_contract()
         return [
             AgentStep(

@@ -1,17 +1,17 @@
 # ARCH-FREEZE known-red register (T-AF2-RED-CLASSES)
 
-Ticket `T-IGX-050-J` (`plan_pending`). Draft by the implementer. This register lists reds that are **known**; it does not say any of them passes, and it closes nothing. Machine-readable twin: [`known_red_register.v1.json`](known_red_register.v1.json) (schema `af2.known_red_register.v1`).
+Ticket `T-IGX-050-J` (`plan_pending`); row KR-28 added by ticket `T-IGX-050-M` (`plan_pending`). Draft by the implementer. This register lists reds that are **known**; it does not say any of them passes, and it closes nothing. Machine-readable twin: [`known_red_register.v1.json`](known_red_register.v1.json) (schema `af2.known_red_register.v1`).
 
 ## 1. Rules
 
-- **FIX**: a defect or stale artefact that needs a change. **ENV**: red only because of the environment, and proven so (column *How to prove ENV*). **OUT**: outside the frozen scope by a cited Operator decision. **UNKNOWN**: the evidence read does not decide it.
-- A row is ENV only with a proving run at the qualification SHA. `PENDING` means the cause is visible in a log but no proving run exists yet; `QUOTED` means the figure comes from a source that this draft did not re-run.
+- **FIX**: a defect or stale artefact that needs a change. **ENV**: red only because of the environment; provisional until proven (see below and the column *How to prove ENV*). **OUT**: outside the frozen scope by a cited Operator decision. **UNKNOWN**: the evidence read does not decide it.
+- ENV is provisional until a proving run at the qualification SHA: rows with `env_proof` `PENDING` (cause visible in a log, no proving run yet) or `QUOTED` (figure from a source this draft did not re-run) are ENV candidates, not proven. Only a proven ENV row may stay in the expected-red set at M3.
 - No row is OUT in this draft: OUT needs a cited Operator decision that excludes the class from the ARCH-FREEZE scope, and none was found in the sources read (the PDC decisions exclude scope from PDC-X, not from ARCH-FREEZE).
 - No skip or xfail may hide a red. This register adds none. Two strict xfails that already exist are named (KR-19, KR-24) because they hide reds.
 - Proposed M3 rule (from the plan's known-red policy): the red set at M3 equals the ENV and OUT rows exactly. FIX and UNKNOWN rows must be gone, or the freeze qualification fails.
 - Baseline for the W0 rows: `AUDIT_BASELINE_2 = 7960ae7f6c82da60ca9acdc0ceebf63810002a42`, dispatch run `43858238803`. Counts are quoted with their source.
 
-Totals: 27 rows. FIX 15, ENV 5, OUT 0, UNKNOWN 7.
+Totals: 28 rows. FIX 16, ENV 5, OUT 0, UNKNOWN 7.
 
 ## 2. Register
 
@@ -44,6 +44,7 @@ Totals: 27 rows. FIX 15, ENV 5, OUT 0, UNKNOWN 7.
 | KR-25 | 27 `test_agent_distribution_materialization*.py` reds from worktree MAX_PATH | **ENV** | Debt register K-04: 27 reds from the worktree MAX_PATH; '57 passed with a short base temp' (PR bodies #574, #575). Quoted, not re-run here. _Note:_ The 27 node ids are not enumerated here. Nodes (files): 2 listed in the JSON. | none needed (environment) | Run `tests/unit/agent_distribution/test_agent_distribution_materialization.py` and `..._adapter.py` with a short `--basetemp` (for example `D:/w4a/...`): all pass proves ENV; reds that remain are FIX. (env_proof: QUOTED) |
 | KR-26 | F-W3-001: FREEZE B5 directory naming (`verify_b5_publication_tree` expects `qualification_at_<TES>`) | **UNKNOWN** | Disposition document: 'SCOPED LIMITATION (not a mandatory closure blocker)'; replay: FREEZE tree gives 1 naming-prefix error only. Not a pytest node. The ENT-AUDIT handoff lists it among scoped limitations and says not to waive them at ARCH-FREEZE entry, so a limitation label is not an OUT decision for ARCH-FREEZE. Whether it is a red at M3 and whether it needs a validator change (deferred by the disposition) is not decided by the sources read. | T-AF2-RED-CLASSES (plan section E) registers it; disposition UNASSIGNED | n/a (not environmental) |
 | KR-27 | `embedding_provider` tests failing with `UnknownIntegrationError` for slug `ollama` (2) inside `VBN-REACHABILITY` | **UNKNOWN** | Handoff: 'probably the known B-REG-P / ollama item, not confirmed as such'; no owner named. Debt register A-13 also mentions an unknown embedding slug `ollama` for `test_harness_evaluation_wiring`. | UNASSIGNED | Not environmental on its face (catalog registration); a run on the baseline SHA would show whether it still fails. |
+| KR-28 | M-1 (PT-WB review of PR #654): two `tests/acceptance/llm_routing` nodes patch a name that the train no longer has | **FIX** | Listed as known-red candidates by the independent review of PR #654 (PT-WB) and by the orchestrator: both files patch `intergrax.applications._shared.llm_resolver._create_base_llm_adapter` (`:61` and `:60`), outside PT-WB's write set; neither node is in `expected_red_A01.json` or this register before this row. Static reading, not a run: that name is defined at `origin/development@cb60f683f` and at `arch-freeze/rw-train@05699b633` (after PT-WA) and is absent from the module at `arch-freeze/rw-train@6b94d202f` (after PT-WB, PR #654), so `monkeypatch.setattr` would raise `AttributeError` there. The PR #654 body is quoted as saying the nodes were already red at the train head; the static reading shows the break at `6b94d202f`, so the exact train SHA at which they first went red is not established here. The nodes do not run in the CI jobs of PR #654. On `development` they are not affected. _Note:_ Registered by T-IGX-050-M. Related residuals of PT-WB that need no node id here: NT-OWN-05-1 guards 1 of 5 responsibilities, and a stale `host/factory.py` entry in the closed provider list (owner PT-G01). Nodes (node_ids): 2 listed in the JSON. | PT-G01 (EQO-A node; PT-WB merged without editing the two files) | not ENV |
 
 ## 3. Open points
 

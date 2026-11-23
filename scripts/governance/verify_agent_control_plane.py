@@ -18,8 +18,8 @@ def main() -> int:
     role_path = _ACP / "role_registry.yaml"
     data = yaml.safe_load(role_path.read_text(encoding="utf-8"))
     roles = data.get("roles") if isinstance(data, dict) else None
-    if not isinstance(roles, dict) or len(roles) != 7:
-        print("[ERROR] role_registry: expected exactly 7 roles", file=sys.stderr)
+    if not isinstance(roles, dict) or len(roles) != 8 or roles.get("integrator", {}).get("runtime") != "cursor":
+        print("[ERROR] role_registry: seven legacy roles plus exactly one Cursor-only integrator required", file=sys.stderr)
         return 1
     if data.get("default_role") != "orchestrator":
         print("[ERROR] role_registry: default_role must be orchestrator", file=sys.stderr)

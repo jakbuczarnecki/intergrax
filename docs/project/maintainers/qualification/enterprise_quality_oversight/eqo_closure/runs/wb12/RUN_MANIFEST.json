@@ -1,0 +1,33 @@
+﻿{
+    "schema":  "eqo_w3_run_manifest.v1",
+    "workstream":  "WB12",
+    "task_ids":  [
+                     "EQO-W3-WB12-DES",
+                     "EQO-W3-WB12-EXE",
+                     "EQO-W3-WB12-EVD",
+                     "EQO-W3-WB12-DIS"
+                 ],
+    "evidence_pin":  "28c27cb896d02e0185b9fa02047411fa152f6469",
+    "worktree":  "d:/Projekty/_wt/intergrax/eqo-w3",
+    "pytest_command_sha256":  "cee7f64c024da3331c708a8f6482e8317f79709c9af49bae9a32ae81b3c400ea",
+    "pytest_command":  "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_01.py tests/qualification/dup_x/test_dup_x_closed_world_integrity.py tests/qualification/dup_x/test_dup_x_wave_b_authority_gates.py tests/unit/proofs/receipts/test_proof_receipts_contract.py tests/qualification/pdc_x/p6_repair/test_p6r_trace_alias_callers.py -q --tb=line",
+    "finding_ids":  [
+                        "EQOA-A3-019",
+                        "EQOA-A4-039",
+                        "EQOA-A4-047",
+                        "EQOA-A5-010",
+                        "EQOA-A8-020",
+                        "EQOA-A2-031"
+                    ],
+    "log_path":  "eqo_closure/runs/wb12/pytest_wb12_exe.log",
+    "des_path":  "eqo_closure/runs/wb12/DES_PREREG.json",
+    "disposition_path":  "eqo_closure/runs/wb12/DUP_PROOF_SCENARIO_EVIDENCE.md",
+    "blockers":  [
+
+                 ],
+    "executed_utc":  "2026-11-21T09:46:00Z",
+    "pytest_exit_code":  0,
+    "pytest_summary":  "33 passed, 1 skipped in 48.97s",
+    "rerun_lane":  "eqo/wave-13/exe-wb12",
+    "pytest_env_note":  "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock"
+}

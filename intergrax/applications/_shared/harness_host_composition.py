@@ -13,43 +13,59 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
-from intergrax.runtime.decision_flow import DecisionFlowGate
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
-from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationPluginBootstrapTarget,
 )
 from intergrax.contracts.run_trace_store import RunTraceReader
+from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
+from intergrax.runtime.execution.harness_host_internal_composition import (
+    HarnessHostInternalCapabilities,
+    HarnessHostPluginSurface,
+)
+from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
+from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
+
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+    from intergrax.runtime.execution.application_declarative_tool_composition import (
+        CatalogDeclarativeToolInvoker,
+    )
 
 
 @dataclass(frozen=True, slots=True)
-class HarnessHostPluginRegistrationSurface:
+class HarnessHostPluginRegistrationSurface(HarnessHostPluginSurface):
     """Narrow plugin registration inputs owned by harness host composition."""
 
-    event_bus: RuntimeEventBus
-
 
 @dataclass(frozen=True, slots=True)
-class HarnessHostInternalComposition:
+class HarnessHostInternalComposition(HarnessHostInternalCapabilities):
     """Private orchestration capabilities assembled by harness host composition root."""
 
-    execution_terminal: ExecutionTerminalService
-    event_bus: RuntimeEventBus
-    decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None
-    middleware_pipeline: MiddlewarePipeline
-    lifecycle_hook_coordinator: NexusLifecycleHookCoordinator
-    plugin_surface: HarnessHostPluginRegistrationSurface
-    runtime_event_persistence: RuntimeEventPersistence | None
-    plugin_bootstrap_target: HostOrchestrationPluginBootstrapTarget
+    @classmethod
+    def from_capabilities(
+        cls,
+        capabilities: HarnessHostInternalCapabilities,
+    ) -> HarnessHostInternalComposition:
+        """Adopt the Execution Engine assembled capabilities (same fields, Tier-3 owner)."""
+        return cls(
+            execution_terminal=capabilities.execution_terminal,
+            event_bus=capabilities.event_bus,
+            decision_flow_gate=capabilities.decision_flow_gate,
+            middleware_pipeline=capabilities.middleware_pipeline,
+            lifecycle_hook_coordinator=capabilities.lifecycle_hook_coordinator,
+            plugin_surface=HarnessHostPluginRegistrationSurface(
+                event_bus=capabilities.plugin_surface.event_bus,
+            ),
+            runtime_event_persistence=capabilities.runtime_event_persistence,
+            plugin_bootstrap_target=capabilities.plugin_bootstrap_target,
+        )
 
 
 def _require_internal_composition(runtime: HarnessHostRuntime) -> HarnessHostInternalComposition:
@@ -71,6 +87,13 @@ def resolve_harness_host_decision_flow_gate(
 ) -> DecisionFlowGate[AgentExecutionResult] | None:
     """Resolve decision flow gate for ACP session host composition."""
     return _require_internal_composition(runtime).decision_flow_gate
+
+
+def resolve_harness_host_declarative_tool_invoker(
+    runtime: HarnessHostRuntime,
+) -> CatalogDeclarativeToolInvoker | None:
+    """Resolve host-owned catalog declarative tool invoker for ACP session host composition."""
+    return runtime._owned_declarative_tool_invoker
 
 
 def resolve_harness_host_plugin_bootstrap_target(
@@ -157,6 +180,7 @@ __all__ = [
     "bootstrap_harness_host_application_plugins",
     "bootstrap_harness_host_platform",
     "resolve_harness_host_decision_flow_gate",
+    "resolve_harness_host_declarative_tool_invoker",
     "resolve_harness_host_execution_budget_ledger_factory",
     "resolve_harness_host_event_bus",
     "resolve_harness_host_execution_terminal",

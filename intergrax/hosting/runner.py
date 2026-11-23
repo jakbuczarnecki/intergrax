@@ -39,7 +39,12 @@ from intergrax.hosting.instance.contracts import (
     InstanceAcquisitionClassification,
 )
 from intergrax.hosting.instance.file_guard import FileHostedApplicationInstanceGuard
-from intergrax.hosting.shutdown import MonotonicClock, SystemMonotonicClock
+from intergrax.hosting.shutdown import (
+    HostedApplicationActiveWorkController,
+    HostedApplicationFlushService,
+    MonotonicClock,
+    SystemMonotonicClock,
+)
 from intergrax.hosting.signals import HostedApplicationSignalBridge, PortableForegroundSignalAdapter
 from intergrax.hosting.supervisor.supervisor import (
     HostedApplicationEngineFactory,
@@ -190,6 +195,8 @@ class _RunnerFactories:
     ]
     create_signal_adapter: Callable[[HostedApplicationControlCoordinator], HostedApplicationSignalBridge]
     instance_id_generator: InstanceIdGenerator | None = None
+    create_active_work_controller: Callable[[], HostedApplicationActiveWorkController | None] = lambda: None
+    create_flush_services: Callable[[], tuple[HostedApplicationFlushService, ...]] = lambda: ()
 
 
 def _default_runner_factories() -> _RunnerFactories:
@@ -225,6 +232,8 @@ def _build_engine_factory(
         [HostedApplicationDefinition, HostedApplicationPaths, HostedApplicationProcessIdentity, HostedApplicationClock],
         HostedApplicationInstanceGuardPort,
     ],
+    active_work_controller: HostedApplicationActiveWorkController | None = None,
+    flush_services: tuple[HostedApplicationFlushService, ...] = (),
 ) -> HostedApplicationEngineFactory:
     def factory(launch: HostedApplicationSupervisorLaunchContext) -> HostedApplicationEngine:
         guard = create_instance_guard(
@@ -244,6 +253,8 @@ def _build_engine_factory(
             event_publisher=event_publisher,
             instance_guard=guard,
             monotonic_clock=monotonic_clock,
+            active_work_controller=active_work_controller,
+            flush_services=flush_services,
         )
 
     return factory
@@ -271,6 +282,8 @@ async def _run_resolved_hosted_application(
         logger=logger,
         event_publisher=event_publisher,
         create_instance_guard=factories.create_instance_guard,
+        active_work_controller=factories.create_active_work_controller(),
+        flush_services=factories.create_flush_services(),
     )
 
     supervisor_kwargs: dict[str, Any] = {}
@@ -298,8 +311,16 @@ def run_hosted_application(
     profile: HostedApplicationProfile,
     *,
     event_publisher_factory: Callable[[], HostedApplicationEventPublisher] | None = None,
+    active_work_controller_factory: Callable[[], HostedApplicationActiveWorkController | None] | None = None,
+    flush_services_factory: Callable[[], tuple[HostedApplicationFlushService, ...]] | None = None,
 ) -> HostedApplicationSupervisorResult:
-    """Run one hosted application in the foreground until terminal exit."""
+    """Run one hosted application in the foreground until terminal exit.
+
+    ``active_work_controller_factory`` and ``flush_services_factory`` are called once per run; the
+    results are handed to every engine instance the supervisor builds, so the shutdown executor
+    stops intake, drains, cancels and flushes through them (EX-D4-01). Without them the drain,
+    cancel and flush phases are recorded as skipped, as before.
+    """
     definition = resolve_hosted_application_definition(profile)
 
     try:
@@ -307,11 +328,13 @@ def run_hosted_application(
     except RuntimeError:
         pass
     else:
-        raise HostedApplicationConfigurationError(
-            "run_hosted_application() cannot be called from an active event loop"
-        )
+        raise HostedApplicationConfigurationError("run_hosted_application() cannot be called from an active event loop")
 
     factories = _default_runner_factories()
     if event_publisher_factory is not None:
         factories = replace(factories, create_event_publisher=event_publisher_factory)
+    if active_work_controller_factory is not None:
+        factories = replace(factories, create_active_work_controller=active_work_controller_factory)
+    if flush_services_factory is not None:
+        factories = replace(factories, create_flush_services=flush_services_factory)
     return asyncio.run(_run_resolved_hosted_application(definition, factories))

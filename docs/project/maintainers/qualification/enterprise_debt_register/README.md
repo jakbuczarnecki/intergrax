@@ -124,3 +124,13 @@ Three draft IIAC audit-session manifests remain in the evidence tree next to val
 The register is to record them as superseded drafts. This change does not move or edit the files; other records cite their paths. Which certified manifest supersedes each draft is not stated here. Teaching tools to treat these three files as known drafts (a corpus-verifier allowlist) is a script change and is outside this document.
 
 A point-in-time record with the per-draft facts, the validator output, the citations that must keep resolving and the later manifests of the same evidence line is [`ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md`](../ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md) (ticket `T-IGX-044-A`). It declares no supersession.
+
+## 10. Owner vocabulary confirmation (note, 2026-11-17)
+
+On 2026-11-17 the Operator's chat decision on DP-47, option a (recorded as addendum 4, item "DP-47 owner model and vocabulary", in [`../eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`](../eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md); an orchestrator transcription, not an Operator signature) confirmed the 55-ID vocabulary in `owner_vocabulary.proposed.json` as canonical: one program- or stage-level accountable owner per row, optional co-owners, named persons only where the Operator assigns them.
+
+- The file keeps its name (no schema or script reads the name, and other records cite the path); its `status` now reads `CONFIRMED`.
+- `owner_vocabulary_status` of every register row now reads `CONFIRMED` (1069 of 1069 rows; it read `PROPOSED_UNCONFIRMED`). `reconciliation.json` carries the new status and the count.
+- Not changed: the row-level `owner_status` (no row is `CONFIRMED` at row level), `accountable_person` (empty on every row; no Operator assignment of a person is published), the lifecycle state (every row is `INGESTED`), severities, dispositions and impact classes. No row is closed, accepted as an exception or independently verified.
+- Findings `EQOA-A7-023` and `EQOA-A7-033` (rows without a named owner) are not handled by this change: they need per-row owner assignments that follow the DP-34 classification (DP-48) and, for the 14 `OWNER_MISSING` entries, assignments by the Operator.
+- The sentence in section 4 that the vocabulary file and the owner-naming rows are not part of this change describes the earlier, structure-only change.

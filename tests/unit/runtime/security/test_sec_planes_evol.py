@@ -7,8 +7,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
-from intergrax.contracts.data_classification import DataClassification
 from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
 from intergrax.core.security_bootstrap import bootstrap_security_providers
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
@@ -26,15 +24,14 @@ from intergrax.runtime.security.defense_registry import (
     reset_security_defense_registry_for_tests,
 )
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
-from testing_support.builder import canonical_execution_identity_scope
 from intergrax.runtime.security.encryption_transform import (
-    HarnessEnvelopeEncryptor,
     SecretsStorePayloadEncryptor,
 )
 from intergrax.runtime.security.security_events import (
     KIND_DEFENSE_BLOCKED,
     KIND_ENCRYPTION_DENIED,
 )
+from testing_support.builder import canonical_execution_identity_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -102,10 +99,13 @@ def test_security_bootstrap_discovers_security_defense_entry_point() -> None:
 async def test_defense_blocked_emits_platform_signal() -> None:
     bus = RuntimeEventBus()
     middleware = PluginSecurityDefenseMiddleware(_BlockDefensePlugin(), event_bus=bus)
-    from tests.support.middleware_hook_test_context import tool_hook_context_for_test
+    from tests.support.middleware_hook_test_context import (
+        DEFAULT_HOOK_RUN,
+        tool_hook_context_for_test,
+    )
 
-    ctx = tool_hook_context_for_test(tool_id="echo", agent_id="agent-1", run_id="run-1")
-    with canonical_execution_identity_scope("run-1"):
+    ctx = tool_hook_context_for_test(tool_id="echo", agent_id="agent-1", run_id=DEFAULT_HOOK_RUN)
+    with canonical_execution_identity_scope(DEFAULT_HOOK_RUN):
         result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action.value == "block"
     kinds = [event.event_kind for event in bus.history]
@@ -120,10 +120,13 @@ async def test_encryption_denied_emits_platform_signal() -> None:
         secrets_store_configured=False,
         event_bus=bus,
     )
-    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+    from tests.support.middleware_hook_test_context import (
+        DEFAULT_HOOK_RUN,
+        data_protection_hook_context_for_test,
+    )
 
-    ctx = data_protection_hook_context_for_test(agent_id="agent-1", run_id="run-1")
-    with canonical_execution_identity_scope("run-1"):
+    ctx = data_protection_hook_context_for_test(agent_id="agent-1", run_id=DEFAULT_HOOK_RUN)
+    with canonical_execution_identity_scope(DEFAULT_HOOK_RUN):
         result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "block"
     kinds = [event.event_kind for event in bus.history]

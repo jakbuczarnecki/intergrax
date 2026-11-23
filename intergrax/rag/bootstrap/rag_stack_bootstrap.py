@@ -6,39 +6,38 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.integrations.contracts.base import IntegrationCategory, LabSelectorOptIn
 from intergrax.integrations.contracts.graph_store import GraphStore as IntegrationGraphStore
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.bootstrap.hierarchical_bootstrap import resolve_toc_vectorstore_for_profile
-from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
-from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
-from intergrax.rag.graph.contracts.graph_store import GraphStore
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
-from intergrax.rag.profiles.rag_profile_validator import assert_rag_profile_wiring
-from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.bootstrap.entry_point_load import (
+    RagPluginLoadEvidence,
     bootstrap_rag_chunker_plugin_load_report,
     compose_rag_plugin_load_evidence,
     empty_rag_plugin_load_evidence,
-    RagPluginLoadEvidence,
 )
-from intergrax.core.plugin_env import discover_plugins_enabled
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
-    create_default_retriever_manager_with_load_report,
-)
-from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.bootstrap.hierarchical_bootstrap import resolve_toc_vectorstore_for_profile
+from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
+from intergrax.rag.graph.contracts.graph_store import GraphStore
+from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
+from intergrax.rag.profiles.rag_profile_validator import assert_rag_profile_wiring
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
     create_default_reranker_registry,
 )
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
+from intergrax.rag.retrieval.retrieval_service import RetrievalService
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
+    create_default_retriever_manager_with_load_report,
+)
+from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -51,24 +50,26 @@ class RagStack:
     retriever_manager: BaseRetrieverManager
     reranker_manager: BaseRerankerManager
     retrieval_service: RetrievalService
-    contextual_enricher: Optional[ContextualChunkEnricher] = None
-    graph_store: Optional[GraphStore] = None
-    toc_vectorstore_manager: Optional[BaseVectorstoreManager] = None
-    plugin_load_evidence: Optional[RagPluginLoadEvidence] = None
+    contextual_enricher: ContextualChunkEnricher | None = None
+    graph_store: GraphStore | None = None
+    toc_vectorstore_manager: BaseVectorstoreManager | None = None
+    plugin_load_evidence: RagPluginLoadEvidence | None = None
 
 
 def create_default_rag_stack(
     *,
-    integration_profile: Optional[IntegrationProfile] = None,
-    tenant_id: Optional[str] = None,
-    vectorstore_manager: Optional[BaseVectorstoreManager] = None,
-    embedding_manager: Optional[BaseEmbeddingManager] = None,
-    profile: Optional[RagProfile] = None,
-    llm_for_contextual: Optional[LLMAdapter] = None,
-    graph_store: Optional[GraphStore] = None,
+    integration_profile: IntegrationProfile | None = None,
+    tenant_id: str | None = None,
+    vectorstore_manager: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
+    profile: RagProfile | None = None,
+    llm_for_contextual: LLMAdapter | None = None,
+    graph_store: GraphStore | None = None,
+    embedding_lab_opt_in: LabSelectorOptIn | None = None,
+    vectorstore_lab_opt_in: LabSelectorOptIn | None = None,
 ) -> RagStack:
     profile = profile or rag_profile_from_env()
-    graph_slug: Optional[str] = None
+    graph_slug: str | None = None
     if integration_profile is not None:
         graph_slug = integration_profile.slug_for_category(IntegrationCategory.GRAPH_STORE)
         if graph_slug is None:
@@ -87,9 +88,13 @@ def create_default_rag_stack(
         vectorstore_manager = create_vectorstore_manager(
             profile=integration_profile,
             tenant_id=tenant_id,
+            lab_opt_in=vectorstore_lab_opt_in,
         )
     if embedding_manager is None:
-        embedding_manager = create_default_embedding_manager()
+        embedding_manager = create_default_embedding_manager(
+            integration_profile=integration_profile,
+            lab_opt_in=embedding_lab_opt_in,
+        )
 
     if graph_store is None and profile.graph_rag_enabled:
         integration_graph_store: IntegrationGraphStore | None = None
@@ -101,10 +106,7 @@ def create_default_rag_stack(
                     IntegrationCategory.GRAPH_STORE,
                 )
                 if not isinstance(resolved, IntegrationGraphStore):
-                    raise TypeError(
-                        "integration graph store must implement "
-                        f"GraphStore, got {type(resolved).__name__}"
-                    )
+                    raise TypeError(f"integration graph store must implement GraphStore, got {type(resolved).__name__}")
                 integration_graph_store = resolved
         graph_store = create_rag_graph_store(
             integration_graph_store=integration_graph_store,
@@ -116,19 +118,18 @@ def create_default_rag_stack(
         integration_profile=integration_profile,
         tenant_id=tenant_id,
         chunks_store=vectorstore_manager,
+        lab_opt_in=vectorstore_lab_opt_in,
     )
 
     discover_entry_points = discover_plugins_enabled()
-    retriever_manager, retriever_load_report = (
-        create_default_retriever_manager_with_load_report(
-            vector_store=vectorstore_manager,
-            embedding_manager=embedding_manager,
-            graph_store=graph_store,
-            profile=profile,
-            llm_for_query_expansion=llm_for_contextual,
-            toc_vector_store=toc_vectorstore_manager,
-            discover_entry_points=discover_entry_points,
-        )
+    retriever_manager, retriever_load_report = create_default_retriever_manager_with_load_report(
+        vector_store=vectorstore_manager,
+        embedding_manager=embedding_manager,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_contextual,
+        toc_vector_store=toc_vectorstore_manager,
+        discover_entry_points=discover_entry_points,
     )
     registry, reranker_load_report = create_default_reranker_registry(
         embedding_manager=embedding_manager,
@@ -155,7 +156,7 @@ def create_default_rag_stack(
         else empty_rag_plugin_load_evidence()
     )
 
-    contextual: Optional[ContextualChunkEnricher] = None
+    contextual: ContextualChunkEnricher | None = None
     if profile.contextual_enrich == "on" and llm_for_contextual is not None:
         contextual = ContextualChunkEnricher(llm_for_contextual)
 

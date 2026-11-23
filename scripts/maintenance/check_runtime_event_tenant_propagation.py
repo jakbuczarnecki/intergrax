@@ -6,13 +6,12 @@
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 EMITTER_FILES = (
-    REPO_ROOT / "intergrax/agents/uaep.py",
+    REPO_ROOT / "intergrax/runtime/nexus/uaep/uaep_executor.py",
     REPO_ROOT / "intergrax/runtime/middleware/trace_middleware.py",
 )
 
@@ -31,10 +30,7 @@ def _check_file(path: Path) -> list[str]:
         line_no = text.count("\n", 0, start) + 1
         snippet = text[start : start + 600]
         if not TENANT_KWARG.search(snippet):
-            violations.append(
-                f"{path.relative_to(REPO_ROOT).as_posix()}:{line_no}: "
-                "RuntimeEvent missing tenant_id="
-            )
+            violations.append(f"{path.relative_to(REPO_ROOT).as_posix()}:{line_no}: RuntimeEvent missing tenant_id=")
     return violations
 
 

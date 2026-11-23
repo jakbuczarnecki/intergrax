@@ -116,18 +116,33 @@ def require_harness_api_key(
     When no key authority is configured, all requests pass (local dev default).
     """
     expected = _expected_api_key_for_request(request)
-    if expected is None:
+    if expected is not None:
+        if not is_harness_api_key_valid(
+            x_api_key=x_api_key,
+            authorization=authorization,
+            expected_api_key=expected,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing harness API key",
+            )
         return
 
-    if not is_harness_api_key_valid(
-        x_api_key=x_api_key,
-        authorization=authorization,
-        expected_api_key=expected,
-    ):
+    identity_provider = _identity_provider_from_request(request)
+    if identity_provider is not None:
+        if is_harness_identity_token_valid(
+            authorization=authorization,
+            identity_provider=identity_provider,
+        ):
+            return
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing harness API key",
+            detail="Invalid or missing harness credentials",
         )
+
+    state = _harness_auth_state_from_request(request)
+    if _local_dev_auth_bypass_allowed(state):
+        return
 
 
 def _harness_auth_state_from_request(request: Request) -> HarnessAuthState | None:
@@ -176,10 +191,13 @@ def is_harness_identity_token_valid(
     authorization: str | None,
     identity_provider: IdentityProviderBackend,
 ) -> bool:
-    return verify_harness_bearer_identity(
-        authorization=authorization,
-        identity_provider=identity_provider,
-    ) is not None
+    return (
+        verify_harness_bearer_identity(
+            authorization=authorization,
+            identity_provider=identity_provider,
+        )
+        is not None
+    )
 
 
 def _local_dev_auth_bypass_allowed(state: HarnessAuthState | None) -> bool:
@@ -204,11 +222,7 @@ def resolve_harness_authenticated_principal_for_state(
     ``HarnessAuthState`` (for example mounted FastMCP streamable HTTP).
     """
     state = harness_auth
-    expected = (
-        state.resolved_api_key
-        if state is not None
-        else _legacy_default_harness_api_key()
-    )
+    expected = state.resolved_api_key if state is not None else _legacy_default_harness_api_key()
     if expected is not None and is_harness_api_key_valid(
         x_api_key=x_api_key,
         authorization=authorization,
@@ -216,11 +230,7 @@ def resolve_harness_authenticated_principal_for_state(
     ):
         return api_key_service_harness_principal(
             tenant_id=state.api_key_principal_tenant_id if state is not None else None,
-            service_id=(
-                state.api_key_principal_service_id
-                if state is not None
-                else "harness-api-key"
-            ),
+            service_id=(state.api_key_principal_service_id if state is not None else "harness-api-key"),
             tenant_required=state.tenant_required if state is not None else False,
         )
     identity_provider = state.identity_provider if state is not None else None

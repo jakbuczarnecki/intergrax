@@ -1,0 +1,2 @@
+# Skills allowed to exceed the skill body limit (120 lines). Add the skill id with a reason.
+skill_body_lines: []

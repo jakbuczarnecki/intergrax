@@ -186,20 +186,47 @@ def build_test_registry_projection(
     agent_contract_authority: object | None = None,
 ) -> MaterializedRegistryProjection:
     """Build a revision-bound projection for harness/factory integration tests."""
-    bundle = build_test_registry_projection_bundle(
-        manifest,
-        environment,
-        enabled_bindings=enabled_bindings,
-        enabled_contract_stems=enabled_contract_stems,
-        builders=builders,
-        revision_id=revision_id,
-        release_id=release_id,
-        package_digest=package_digest,
-        artifact_digest=artifact_digest,
-        settings=settings,
-        agent_contract_authority=agent_contract_authority,
-    )
-    return build_registry_projection(bundle)
+    import pytest
+
+    patcher: pytest.MonkeyPatch | None = None
+    if settings is not None:
+        from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
+            apply_strict_product_memory_test_patches,
+        )
+
+        patcher = pytest.MonkeyPatch()
+        apply_strict_product_memory_test_patches(patcher)
+    try:
+        bundle = build_test_registry_projection_bundle(
+            manifest,
+            environment,
+            enabled_bindings=enabled_bindings,
+            enabled_contract_stems=enabled_contract_stems,
+            builders=builders,
+            revision_id=revision_id,
+            release_id=release_id,
+            package_digest=package_digest,
+            artifact_digest=artifact_digest,
+            settings=settings,
+            agent_contract_authority=agent_contract_authority,
+        )
+        return build_registry_projection(bundle)
+    finally:
+        if patcher is not None:
+            patcher.undo()
+
+
+def _ac3_test_tenant_id(settings: object) -> str:
+    host_tenant_id = getattr(settings, "host_tenant_id", None)
+    if isinstance(host_tenant_id, str) and host_tenant_id.strip():
+        return host_tenant_id.strip()
+    api_keys_map = getattr(settings, "api_keys_map", None)
+    if isinstance(api_keys_map, dict) and api_keys_map:
+        identity = next(iter(api_keys_map.values()))
+        tenant_id = getattr(identity, "tenant_id", None)
+        if isinstance(tenant_id, str) and tenant_id.strip():
+            return tenant_id.strip()
+    return "ac3-projection-test-tenant"
 
 
 def build_test_registry_projection_bundle(
@@ -253,26 +280,17 @@ def build_test_registry_projection_bundle(
         from intergrax.applications._shared.roster_agent_contract_authority import (
             materialize_manifest_contract_authority_lab_compat,
         )
-        from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
-            apply_strict_product_memory_test_patches,
-        )
 
         resolved_authority = agent_contract_authority
         if resolved_authority is None:
             resolved_authority = materialize_manifest_contract_authority_lab_compat(manifest)
-        import pytest
-
-        patcher = pytest.MonkeyPatch()
-        try:
-            apply_strict_product_memory_test_patches(patcher)
-            ctx = wire_application_environment(
-                manifest,
-                environment,
-                settings=settings,
-                agent_contract_authority=resolved_authority,
-            ).build_context
-        finally:
-            patcher.undo()
+        ctx = wire_application_environment(
+            manifest,
+            environment,
+            settings=settings,
+            tenant_id=_ac3_test_tenant_id(settings),
+            agent_contract_authority=resolved_authority,
+        ).build_context
     return RegistryProjectionInputBundle(
         runtime_revision=revision,
         effective_roster=roster,

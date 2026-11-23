@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
@@ -23,25 +22,23 @@ class GlobalSettings:
 
     Local modules (runtime, memory, tools) should import and use these
     defaults instead of hardcoding values.
+
+    Persistent storage and audit timestamps use UTC unless a tenant or host
+    profile supplies an explicit override. Presentation locale/timezone may
+    differ per tenant via environment or host configuration.
     """
 
     # ------------------------------------------------------------------
-    # Language, locale, timezone defaults
+    # Language, locale, timezone defaults (neutral platform baseline)
     # ------------------------------------------------------------------
 
-    # Default language for prompts, instructions, extracted content, etc.
-    # May be overridden by environment variable.
-    default_language: str = os.getenv("INTERGRAX_DEFAULT_LANGUAGE", "pl")
+    default_language: str = os.getenv("INTERGRAX_DEFAULT_LANGUAGE", "en")
 
-    # Default locale (used when no user/org override is available).
-    default_locale: str = os.getenv("INTERGRAX_DEFAULT_LOCALE", "pl-PL")
+    default_locale: str = os.getenv("INTERGRAX_DEFAULT_LOCALE", "en-US")
 
-    # Default region (country/market context), used only as a fallback.
-    default_region: str = os.getenv("INTERGRAX_DEFAULT_REGION", "pl-PL")
+    default_region: str = os.getenv("INTERGRAX_DEFAULT_REGION", "en-US")
 
-    # Default timezone (used if no user/org-specific value is configured).
-    default_timezone: str = os.getenv("INTERGRAX_DEFAULT_TIMEZONE", "Europe/Warsaw")
-
+    default_timezone: str = os.getenv("INTERGRAX_DEFAULT_TIMEZONE", "UTC")
 
     # ------------------------------------------------------------------
     # Session memory / consolidation defaults
@@ -53,13 +50,13 @@ class GlobalSettings:
     # strings, we cast to int when possible; otherwise None.
     raw_interval = os.getenv("INTERGRAX_DEFAULT_USER_TURNS_CONSOLIDATION_INTERVAL", None)
 
-    default_user_turns_consolidation_interval: Optional[int] = (
+    default_user_turns_consolidation_interval: int | None = (
         int(raw_interval) if raw_interval and raw_interval.isdigit() else None
     )
 
     raw_cooldown_sec = os.getenv("INTERGRAX_DEFAULT_CONSOLIDATION_COOLDOWN_SECONDS", None)
 
-    default_consolidation_cooldown_seconds: Optional[int] = (
+    default_consolidation_cooldown_seconds: int | None = (
         int(raw_cooldown_sec) if raw_cooldown_sec and raw_cooldown_sec.isdigit() else None
     )
 

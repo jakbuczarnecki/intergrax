@@ -12,12 +12,13 @@ from intergrax.integrations.contracts.base import (
 )
 from intergrax.integrations.registry.catalog import get_entry
 
-_DEFAULT_EMBEDDING_PROVIDER = "ollama"
+_LAB_EMBEDDING_PROVIDER = "ollama"
 _EMBEDDING_CATEGORY = IntegrationCategory.EMBEDDING_PROVIDER
 
 
-def default_embedding_provider_slug() -> str:
-    return _DEFAULT_EMBEDDING_PROVIDER
+def lab_embedding_provider_slug() -> str:
+    """Named laboratory default slug; reachable only through an explicit LAB opt-in."""
+    return _LAB_EMBEDDING_PROVIDER
 
 
 def validate_embedding_provider_slug(slug: str) -> str:
@@ -29,18 +30,16 @@ def validate_embedding_provider_slug(slug: str) -> str:
         entry = get_entry(normalized)
     except UnknownIntegrationError as exc:
         raise ValueError(
-            f"unknown embedding provider slug {normalized!r}; "
-            "slug is not registered in the Integrations catalog"
+            f"unknown embedding provider slug {normalized!r}; slug is not registered in the Integrations catalog"
         ) from exc
     if _EMBEDDING_CATEGORY not in entry.categories:
         raise ValueError(
-            f"integration slug {normalized!r} is not registered for "
-            f"category {_EMBEDDING_CATEGORY.value!r}"
+            f"integration slug {normalized!r} is not registered for category {_EMBEDDING_CATEGORY.value!r}"
         )
     return normalized
 
 
 __all__ = [
-    "default_embedding_provider_slug",
+    "lab_embedding_provider_slug",
     "validate_embedding_provider_slug",
 ]

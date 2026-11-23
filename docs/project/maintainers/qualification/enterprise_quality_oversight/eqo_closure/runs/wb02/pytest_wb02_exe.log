@@ -1,0 +1,10 @@
+...s...FF............................................................... [ 96%]
+...                                                                      [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\eqo-w3\intergrax\integrations\_shared\p3\configs.py:64: intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_LANCEDB_TENANT_ID
+D:\Projekty\_wt\intergrax\eqo-w3\intergrax\integrations\_shared\p3\configs.py:64: intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_TYPESENSE_TENANT_ID
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:258: PgVector requires the explicit Docker-backed runtime in integration tests
+FAILED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[lancedb]
+FAILED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[typesense]
+2 failed, 72 passed, 1 skipped in 16.05s

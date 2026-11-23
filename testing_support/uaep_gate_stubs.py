@@ -3,7 +3,6 @@
 """UAEP-compatible gate stubs for graph, orchestration, and debug intake tests."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -11,15 +10,17 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_handoff import AgentHandoff
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.task_envelope import CAPABILITY_ROUTING_METADATA_KEY, TaskEnvelope
-from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.utils import attribute_access
+
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
@@ -92,9 +93,7 @@ class UaepPipelineStubAgent(Agent):
             self.last_metadata = dict(request.metadata)
             self.last_request = request
         config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(
-                fixed_text=f"{self._prefix}{self._answer_separator}{request.message}"
-            ),
+            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}{self._answer_separator}{request.message}"),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
@@ -111,7 +110,7 @@ class UaepPipelineStubAgent(Agent):
         answer = f"{self._prefix}{self._answer_separator}{message}"
         return AgentRunResult(status=AgentRunStatus.COMPLETED, output=answer)
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         _ = self
         return [
             AgentStep(
@@ -136,11 +135,7 @@ class UaepPipelineStubAgent(Agent):
         _ = step, output, ctx
         raw_handoff = self._route_extra.get("pending_handoff")
         if raw_handoff is not None:
-            handoff = (
-                raw_handoff
-                if isinstance(raw_handoff, AgentHandoff)
-                else AgentHandoff.model_validate(raw_handoff)
-            )
+            handoff = raw_handoff if isinstance(raw_handoff, AgentHandoff) else AgentHandoff.model_validate(raw_handoff)
             return AgentDecision(
                 type=AgentDecisionType.MODIFY_PLAN,
                 reason="gate stub handoff",

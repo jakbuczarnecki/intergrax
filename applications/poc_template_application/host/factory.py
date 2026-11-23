@@ -5,37 +5,32 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
-
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.workspace_cleanup_wiring import (
-    apply_factory_lifespans,
-    build_factory_lifespans,
-)
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     HostTaskExecutionExecutor,
     wire_harness_host_long_running_scheduler,
 )
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+)
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
+)
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
-)
+
 from poc_template_application.host.agent_builders import POC_TEMPLATE_AGENT_BUILDERS
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.manifest import build_poc_template_manifest
@@ -44,7 +39,7 @@ from poc_template_application.serving.fastapi_router import mount_poc_template_r
 
 def create_poc_template_application(
     *,
-    settings: Optional[PocTemplateApplicationSettings] = None,
+    settings: PocTemplateApplicationSettings | None = None,
     db_path: Path | None = None,
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -53,6 +48,10 @@ def create_poc_template_application(
     settings = settings or PocTemplateApplicationSettings.from_env()
     manifest = build_poc_template_manifest()
     env = manifest.resolved_environment()
+    host_notification_adapter = resolve_host_notification_adapter(
+        env,
+        integration_profile=env.integration_profile,
+    )
     runtime = build_harness_host_runtime(
         manifest.model_copy(update={"environment": env}),
         env,
@@ -62,6 +61,7 @@ def create_poc_template_application(
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
         builders=POC_TEMPLATE_AGENT_BUILDERS,
+        notification_adapter=host_notification_adapter,
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
@@ -78,11 +78,12 @@ def create_poc_template_application(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
         task_enricher=task_enricher,
-        notification_adapter=None,
+        notification_adapter=host_notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
     interaction_service = wire_interaction_intake_service(
+        env=env,
         interaction_surface=settings.interaction_surface,
         task_executor=HostTaskExecutionExecutor(host_execution),
         task_enricher=task_enricher,
@@ -135,6 +136,7 @@ def create_poc_template_application(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+
         from poc_template_application.mcp.server import build_poc_template_mcp_server
 
         mcp = build_poc_template_mcp_server(

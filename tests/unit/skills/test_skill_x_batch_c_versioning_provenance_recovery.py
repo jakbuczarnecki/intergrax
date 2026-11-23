@@ -10,19 +10,6 @@ import threading
 from unittest.mock import MagicMock
 
 import pytest
-
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
-from intergrax.integrations.contracts.document_store import ConditionalDocumentStore, DocumentRecord
-from intergrax.skills.contribution_provenance import SkillContributionKind, contributors_for
-from intergrax.skills.contracts.skill_runtime_binding_metadata import SkillRuntimeBindingMetadata
-from intergrax.skills.core.contracts import SkillManifest
-from intergrax.contracts.execution_identity import (
-    bind_active_execution_identity,
-    mint_attempt_id,
-    mint_execution_id,
-    mint_run_id,
-    reset_active_execution_identity,
-)
 from intergrax.contracts.execution_continuation import (
     ContinuationReason,
     ExecutionContinuationError,
@@ -31,6 +18,15 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
     PendingExecutionContinuation,
 )
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore, DocumentRecord
 from intergrax.runtime.execution.active_execution_continuation_store import (
     bind_active_execution_continuation_state_store,
     reset_active_execution_continuation_state_store,
@@ -42,6 +38,9 @@ from intergrax.runtime.nexus.tools.tool_selection import (
     SkillPackSelectionStrategy,
     ToolSelectionContext,
 )
+from intergrax.skills.contracts.skill_runtime_binding_metadata import SkillRuntimeBindingMetadata
+from intergrax.skills.contribution_provenance import SkillContributionKind, contributors_for
+from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.execution_binding import (
     BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1,
     BINDING_INTEGRITY_RUNTIME_CONTENT_V2,
@@ -60,12 +59,6 @@ from intergrax.skills.execution_binding import (
     resolve_bound_skill_pack,
     verify_skill_execution_binding_integrity,
 )
-from intergrax.skills.skill_execution_recovery import (
-    active_execution_requires_skill_recovery,
-    resolve_skill_execution_recovery_required,
-)
-from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import canonical_task_id_for_tests
 from intergrax.skills.execution_pinning_durability import (
     DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG,
     validate_skill_execution_pinning_durability_for_composition,
@@ -80,8 +73,14 @@ from intergrax.skills.execution_pinning_persistence import (
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.skills.resolver import SkillResolutionError, SkillResolver
-from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
 from intergrax.skills.skill_execution_pinning_wiring import resolve_skill_execution_pinning_wiring
+from intergrax.skills.skill_execution_recovery import (
+    active_execution_requires_skill_recovery,
+    resolve_skill_execution_recovery_required,
+)
+from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
+from intergrax.tools.registry import ToolRegistry
+from testing_support.builder import canonical_task_id_for_tests
 
 pytestmark = pytest.mark.unit
 
@@ -438,10 +437,23 @@ def test_production_mode_requires_durable_pinning() -> None:
 
 
 def test_production_wiring_uses_kv_when_available() -> None:
-    backing = InMemoryKVStore()
+    # T-IGX-043-D: node kept, assertion inverted. An in-memory KV no longer passes the production guard.
+    with pytest.raises(SkillResolutionError, match=DURABLE_SKILL_EXECUTION_PINNING_REQUIRED_MSG):
+        resolve_skill_execution_pinning_wiring(
+            production_mode=True,
+            kv_store=InMemoryKVStore(),
+        )
+
+
+def test_production_wiring_uses_durable_kv_when_available() -> None:
+    class DurableInMemoryKVStore(InMemoryKVStore):
+        @property
+        def survives_process_restart(self) -> bool:
+            return True
+
     wiring = resolve_skill_execution_pinning_wiring(
         production_mode=True,
-        kv_store=backing,
+        kv_store=DurableInMemoryKVStore(),
     )
     assert wiring.pinning_store.is_durable is True
 
@@ -480,11 +492,14 @@ def test_concurrent_identical_bind_single_winner() -> None:
     for thread in threads:
         thread.join()
     assert not any(isinstance(exc, SkillExecutionPinningConflictError) for exc in errors)
-    assert recover_bound_skill_pack(
-        tenant_id="tenant-a",
-        execution_id=execution_id,
-        pinning_store=store,
-    ).snapshot_digest == composition.pack.snapshot_digest
+    assert (
+        recover_bound_skill_pack(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            pinning_store=store,
+        ).snapshot_digest
+        == composition.pack.snapshot_digest
+    )
 
 
 def test_forged_trace_payload_does_not_grant_execution_permission() -> None:
@@ -1100,11 +1115,14 @@ def test_cas_committed_ack_lost_idempotent_success() -> None:
     )
     store.pin(binding)
     store.pin(binding)
-    assert recover_bound_skill_pack(
-        tenant_id="tenant-a",
-        execution_id=execution_id,
-        pinning_store=store,
-    ).snapshot_digest == composition.pack.snapshot_digest
+    assert (
+        recover_bound_skill_pack(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            pinning_store=store,
+        ).snapshot_digest
+        == composition.pack.snapshot_digest
+    )
 
 
 def test_conflict_read_wrong_execution_scope_rejected() -> None:

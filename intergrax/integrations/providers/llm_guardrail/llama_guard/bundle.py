@@ -7,8 +7,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from intergrax.integrations.providers.llm_guardrail.bundles.llama_guard import create_llama_guard_backend
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.integrations.providers.llm_guardrail.bundles.llama_guard import create_llama_guard_backend
 from intergrax.integrations.providers.llm_guardrail.llama_guard.integration import (
     LLAMA_GUARD_PROVIDER_ID,
     LlamaGuardLlmGuardrailIntegration,

@@ -8,7 +8,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from intergrax.integrations._shared.conformance import (
     assert_interaction_surface,
     assert_notification_channel,
@@ -157,11 +156,18 @@ def test_long_running_resolve_notification_delegates_teams(monkeypatch: pytest.M
 
 
 def test_inbound_verifier_teams_mode_uses_integration() -> None:
-    from intergrax.runtime.interactions.verification.factory import create_inbound_verifier, resolve_inbound_verifier_settings
+    from intergrax.runtime.interactions.verification.factory import (
+        create_inbound_verifier,
+        resolve_inbound_verifier_settings,
+    )
     from intergrax.runtime.interactions.verification.teams_signature import TeamsSignatureVerifier
 
     verifier = create_inbound_verifier(
-        resolve_inbound_verifier_settings(mode="teams", teams_security_token="secret"),
+        resolve_inbound_verifier_settings(
+            mode="teams",
+            teams_security_token="secret",
+            teams_verify_enabled=True,
+        ),
     )
     assert isinstance(verifier, TeamsSignatureVerifier)
 

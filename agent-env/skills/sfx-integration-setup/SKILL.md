@@ -1,6 +1,7 @@
 ---
 name: sfx-integration-setup
 description: SFX Configure step - drafts integration_setup_plan.v1.json and integration_notes.md under .tmp/sfx/<slug>/ with secret_ref names only, fixture or stub adapters, egress DENY_ALL and the PROD-Q obligations (proposal-only, L1; touches no credential or endpoint).
+disable-model-invocation: true
 ---
 
 # SFX integration setup (Configure)

@@ -269,3 +269,13 @@ HARNESS-W8 = NEXT / NOT ENTERRED
 HARNESS-FINAL = NOT ENTERED
 GOV-X2 = NOT ENTERED
 ```
+
+---
+
+Note (EQO-A remediation, as of 2026-11-17): gap statement only. The record text above is unchanged (append-only note). This note supplies none of the missing facts, adds no acceptance stamp, audit SHA, closure, PASS, verification or independence claim and changes no status; the roadmap remains the status owner. Lines of this record and roadmap rows are cited as they read at `origin/development` `44d1e5d105beb9b62d0a12e693066b0b26c125eb`. Quotations omit the markdown emphasis of the source.
+
+- Status of this record: L3 reads "READY FOR AUDIT (Cursor session evidence — not closure)".
+- Roadmap (wording quoted, not asserted here): ledger row L1992 (`HARNESS-W7`) reads "CLOSED / independently accepted" with `5d5442dae7769671a7532a973428c8203b492ec6`.
+- Gap: L119 reports run #4 (tenant / identity smoke) as "80 passed, 7 failed" and refers to the unresolved findings. This record does not list the node IDs of the 7 failed tests and does not classify them. The unresolved-findings table (L132-L139) has four rows (L136-L139), the section ends with "IN-SCOPE BLOCKER = 0" and "unclassified findings = 0" (L141), and the record does not state which row, if any, corresponds to the 7 failed tests.
+- Related finding: EQOA-A2-046 (EQO-A Campaign A dossier, PR #589), register row `EDER-F-0075` in `docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl` (as the register reads at the head named above: owner_ref `HARNESS`, owner_status `SINGLE_PROPOSED`; the owner vocabulary is confirmed, the row-level owner is not, and no person is assigned).
+- This note does not establish which tests failed, whether they still fail, or how they would be classified. It adds no closure or independence claim.

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sfx.source_intake_manifest.v1",
+  "title": "SourceIntakeManifest",
+  "description": "PROPOSED SFX R2. Metadata-only intake manifest; no secret values or full payload bodies.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "workspace_id",
+    "mission_id",
+    "sources",
+    "canonical_digest"
+  ],
+  "properties": {
+    "schema_version": { "const": "sfx.source_intake_manifest.v1" },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "workspace_id": { "type": "string", "minLength": 1 },
+    "mission_id": { "type": "string", "minLength": 1 },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "source_kind",
+          "origin",
+          "data_classification",
+          "allowed_use_scope",
+          "content_digest",
+          "validation_status"
+        ],
+        "properties": {
+          "source_id": { "type": "string" },
+          "source_kind": {
+            "type": "string",
+            "enum": ["TEXT", "PDF", "CSV", "JSON", "API_SAMPLE", "SYNTHETIC_FIXTURE", "OTHER"]
+          },
+          "origin": { "type": "string" },
+          "data_classification": {
+            "type": "string",
+            "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "SYNTHETIC_LAB"]
+          },
+          "allowed_use_scope": {
+            "type": "string",
+            "enum": ["DISCOVERY_ONLY", "FIXTURE_ONLY", "READ_ONLY_SNAPSHOT"]
+          },
+          "artifact_ref": { "type": "string" },
+          "integration_ref": { "type": "string" },
+          "content_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "validation_status": {
+            "type": "string",
+            "enum": ["PENDING", "SCAN_PASS", "SCAN_FAIL", "QUARANTINED"]
+          },
+          "retention_policy_ref": { "type": "string" }
+        }
+      }
+    },
+    "canonical_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

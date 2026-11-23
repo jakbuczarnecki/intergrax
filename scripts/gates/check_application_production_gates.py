@@ -227,9 +227,15 @@ def check_capability_alias_registry() -> list[str]:
 
 
 def check_application_migrations() -> list[str]:
+    from intergrax.applications._shared.import_policy import guarded_import_policy
     from intergrax.applications._shared.migration_wiring import check_application_migrations as _check
 
-    return _check(APPLICATIONS_ROOT)
+    policy = guarded_import_policy()
+    return _check(
+        APPLICATIONS_ROOT,
+        allowed_prefixes=policy.application_packages,
+        fail_closed=policy.fail_closed,
+    )
 
 
 def check_tier3_scenario_matrix() -> list[str]:
@@ -255,6 +261,7 @@ def check_application_health_score() -> list[str]:
 def check_application_package() -> list[str]:
     from intergrax.applications._shared.environment_wiring import wire_application_environment
     from intergrax.applications._shared.package_wiring import (
+        PACKAGE_GATE_TENANT_ID,
         build_application_package,
         package_gate_environment,
         validate_application_package_closure,
@@ -270,7 +277,12 @@ def check_application_package() -> list[str]:
     for product_id, manifest in iter_strict_product_manifests():
         gate_env = package_gate_environment(manifest.resolved_environment())
         try:
-            wiring = wire_application_environment(manifest, gate_env, conformance_check=False)
+            wiring = wire_application_environment(
+                manifest,
+                gate_env,
+                conformance_check=False,
+                tenant_id=PACKAGE_GATE_TENANT_ID,
+            )
         except Exception as exc:
             violations.append(f"{product_id}: wire failed: {exc}")
             continue

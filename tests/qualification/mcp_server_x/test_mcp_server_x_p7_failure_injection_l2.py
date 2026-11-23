@@ -366,7 +366,9 @@ async def test_acc_14_canonical_execution_deadline_is_not_reachable_from_run_age
     properties = tools["run_agent"].inputSchema["properties"]
     assert not [name for name in properties if "timeout" in name.lower() or "deadline" in name.lower()], properties
 
-    host = build_harness_host_task_execution(NexusLoop(AgentRegistry()), orchestration_triggers=frozenset())
+    host = build_harness_host_task_execution(
+        NexusLoop(AgentRegistry(), production_mode=False), orchestration_triggers=frozenset()
+    )
     before = host._deadline_authority_resolver
     _reference_server(host, max_call_seconds=5.0)  # composing with a call bound must not touch the host
     assert host._deadline_authority_resolver is before is None

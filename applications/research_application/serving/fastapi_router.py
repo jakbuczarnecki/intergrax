@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
-
 from intergrax.applications._shared.harness_auth import (
     HarnessAuthenticatedPrincipal,
     require_harness_auth,
@@ -19,6 +17,7 @@ from intergrax.applications._shared.harness_principal import (
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
+
 from research_application.serving.schemas import ResearchRunRequestV1, ResearchRunResponseV1
 
 
@@ -50,7 +49,12 @@ class ResearchRunService:
             tenant_id = canonical.tenant_id
             user_id = canonical.user_id or body.user_id
         else:
-            tenant_id = body.tenant_id
+            tenant_id = body.tenant_id.strip()
+            if not tenant_id:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="tenant_id_required",
+                )
             user_id = body.user_id
 
         task = Task(

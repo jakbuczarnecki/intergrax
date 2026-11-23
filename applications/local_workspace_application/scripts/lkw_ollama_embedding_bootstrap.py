@@ -5,12 +5,19 @@
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 EMBEDDING_PROFILE_RESOLUTION_CODE = (
+    "from intergrax.integrations.contracts.base import LabSelectorOptIn; "
     "from intergrax.rag.embedding.registry.profile import embedding_profile_from_env; "
-    "profile = embedding_profile_from_env(); "
+    "from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug; "
+    "profile = embedding_profile_from_env("
+    "lab_opt_in=LabSelectorOptIn("
+    "selector=lab_embedding_provider_slug(), "
+    "reason='lkw ollama embedding bootstrap script',"
+    "),"
+    "); "
     "print(profile.provider); "
     "print(profile.model or '')"
 )

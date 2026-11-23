@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, Protocol, cast
 
 from intergrax.llm.messages import ChatMessage
@@ -41,6 +41,11 @@ from intergrax.llm_adapters.contracts.tool_call import (
 )
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
+)
+from intergrax.llm_adapters.providers._per_call_client import (
+    CallClient,
+    call_on_client,
+    stream_on_client,
 )
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilities,
@@ -89,6 +94,7 @@ class NativeOllamaAdapter(BaseLLMAdapter):
         self._apply_defaults_call_config(defaults)
 
         resolved_model = model or self.DEFAULT_MODEL
+        client_factory: Callable[[float], CallClient[_NativeOllamaClient]] | None = None
         if client is None:
             try:
                 from ollama import Client
@@ -110,7 +116,18 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 Client(host=base_url) if base_url else Client(),
             )
 
+            def _client_with_timeout(timeout: float) -> CallClient[_NativeOllamaClient]:
+                built = Client(host=base_url, timeout=timeout) if base_url else Client(timeout=timeout)
+                # ``ollama.Client`` has no ``close`` of its own; its ``httpx.Client`` transport is closed.
+                return CallClient(client=cast(_NativeOllamaClient, built), release=built._client.close)
+
+            client_factory = _client_with_timeout
+
         self._client = client
+        # The official client takes its timeout at construction only, so a call that carries an effective
+        # timeout runs on a client built for that call and closed after it (EX-D3-01). An injected client
+        # cannot be rebuilt.
+        self._client_factory: Callable[[float], CallClient[_NativeOllamaClient]] | None = client_factory
         self.defaults = dict(defaults)
         if context_window_tokens is not None and int(context_window_tokens) > 0:
             self.defaults["context_window_tokens"] = int(context_window_tokens)
@@ -293,7 +310,24 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             kwargs["tools"] = tools
         if format is not None:
             kwargs["format"] = format
-        return self._client.chat(**kwargs)  # type: ignore[arg-type]
+
+        def _send(client: _NativeOllamaClient) -> object:
+            return client.chat(**kwargs)  # type: ignore[arg-type]
+
+        timeout = self._effective_call_timeout_sec()
+        if stream:
+            # The per-call client stays open until the stream is exhausted, fails or is closed.
+            return stream_on_client(
+                shared=self._client,
+                derive=self._client_factory,
+                timeout=timeout,
+                open_stream=lambda client: cast(Iterable[object], _send(client)),
+            )
+        return call_on_client(shared=self._client, derive=self._client_factory, timeout=timeout, call=_send)
+
+    def supports_call_timeout(self) -> bool:
+        """Only an adapter-built client can be rebuilt with the call timeout; an injected one cannot."""
+        return self._client_factory is not None
 
     @classmethod
     def _provider_counts(cls, response: object) -> tuple[int, int] | None:
@@ -368,13 +402,17 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 messages,
                 model_hint=self.model_name_for_token_estimation,
             )
-            native_response = self._chat(
-                self._map_messages(messages),
-                stream=False,
-                options=self._generation_options(
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                ),
+            mapped_messages = self._map_messages(messages)
+            options = self._generation_options(
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            native_response = self._execute(
+                lambda: self._chat(
+                    mapped_messages,
+                    stream=False,
+                    options=options,
+                )
             )
             content = self._response_content(native_response)
             usage, usage_source = self._usage_for_response(
@@ -382,11 +420,15 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 input_tokens=input_tokens,
                 output_text=content,
             )
-            response = self._build_response(
-                content=content,
-                finish_reason=finish_reason_from_raw(self._field(native_response, "done_reason", None)),
-                usage=usage,
-                usage_source=usage_source,
+            response = self._served_response(
+                call,
+                self._build_response(
+                    content=content,
+                    finish_reason=finish_reason_from_raw(self._field(native_response, "done_reason", None)),
+                    usage=usage,
+                    usage_source=usage_source,
+                ),
+                self._field(native_response, "model", None),
             )
             success = True
             return response
@@ -471,11 +513,15 @@ class NativeOllamaAdapter(BaseLLMAdapter):
             output_tokens = usage.output_tokens
             success = True
             yield final_stream_event(
-                response=self._build_response(
-                    content=content,
-                    finish_reason=finish_reason_from_raw(self._field(last_response, "done_reason", None)),
-                    usage=usage,
-                    usage_source=usage_source,
+                response=self._served_response(
+                    call,
+                    self._build_response(
+                        content=content,
+                        finish_reason=finish_reason_from_raw(self._field(last_response, "done_reason", None)),
+                        usage=usage,
+                        usage_source=usage_source,
+                    ),
+                    self._field(last_response, "model", None),
                 )
             )
         except Exception as exc:
@@ -607,15 +653,19 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 input_tokens=input_tokens,
                 output_text=output_text,
             )
-            response = self._build_response(
-                content=content,
-                finish_reason=finish_reason_from_raw(
-                    self._field(native_response, "done_reason", None),
-                    has_tool_calls=bool(tool_calls),
+            response = self._served_response(
+                call,
+                self._build_response(
+                    content=content,
+                    finish_reason=finish_reason_from_raw(
+                        self._field(native_response, "done_reason", None),
+                        has_tool_calls=bool(tool_calls),
+                    ),
+                    usage=usage,
+                    usage_source=usage_source,
+                    tool_calls=tool_calls,
                 ),
-                usage=usage,
-                usage_source=usage_source,
-                tool_calls=tool_calls,
+                self._field(native_response, "model", None),
             )
             success = True
             return response
@@ -654,14 +704,18 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 model_hint=self.model_name_for_token_estimation,
             )
             schema = prepare_ollama_generation_schema(output_model)
-            native_response = self._chat(
-                self._map_messages(messages),
-                stream=False,
-                options=self._generation_options(
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                ),
-                format=schema,
+            mapped_messages = self._map_messages(messages)
+            options = self._generation_options(
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            native_response = self._execute(
+                lambda: self._chat(
+                    mapped_messages,
+                    stream=False,
+                    options=options,
+                    format=schema,
+                )
             )
             raw_text = self._response_content(native_response)
             data = json.loads(raw_text)
@@ -677,10 +731,14 @@ class NativeOllamaAdapter(BaseLLMAdapter):
                 input_tokens=input_tokens,
                 output_text=raw_text,
             )
-            response = self._build_response(
-                content=raw_text,
-                usage=usage,
-                usage_source=usage_source,
+            response = self._served_response(
+                call,
+                self._build_response(
+                    content=raw_text,
+                    usage=usage,
+                    usage_source=usage_source,
+                ),
+                self._field(native_response, "model", None),
             )
             success = True
             return LLMStructuredResult(parsed=parsed, response=response)

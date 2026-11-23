@@ -31,3 +31,16 @@ Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x` asserts **unscoped
 | reopened_historical_stages | 0 | no **unscoped** prod drift |
 | historical_evidence_invalidated_by_later_changes | 0 | scoped path excluded; accepted §5 SHAs intact elsewhere |
 | unresolved_replay_blockers | 0 | `_replay_blocker_register.py` (empty register @ handoff) |
+
+## Wave 06 addendum (T-IGX-066-A)
+
+| Scope | git diff a7d83925..HEAD | Reopen? |
+| --- | --- | --- |
+| **Scoped (PRE-ENT L3 + W06 EQO)** | 88 historical + **418** W06 paths — [W06_REPLAY_PROD_DELTA.md](pre_ent_enterprise_certification/W06_REPLAY_PROD_DELTA.md) | **no** |
+| **Unscoped** | **empty** @ mechanical replay | **no** |
+
+| Counter | Value @ W06 mechanical replay |
+| --- | --- |
+| historical_evidence_invalidated_by_later_changes | 0 |
+| vendor_neutrality_replay_failures | 0 |
+| B6 R2 ecap_counter_vs_mechanical | **empty** |

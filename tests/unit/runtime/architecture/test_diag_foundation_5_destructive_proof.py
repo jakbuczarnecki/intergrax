@@ -53,6 +53,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from tests.fixtures.g09_tenant_evaluation_registry import CI_SMOKE_PRODUCT_TENANT
 from tests.unit.applications.scenario_runtime_test_support import (
     MinimalProductionScenarioTestConfig,
     build_valid_minimal_production_scenario_fixture,
@@ -63,7 +64,7 @@ from echo.echo_agent import EchoAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_TENANT = "df5-destructive"
+_TENANT = CI_SMOKE_PRODUCT_TENANT
 
 
 @pytest.fixture(autouse=True)
@@ -71,6 +72,7 @@ def _df5_close_host_owned_runtime_resources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[None, None, None]:
     """Release dependency-admission threads so pytest and CI smoke can exit cleanly."""
+    monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "ollama")
     from intergrax.applications._shared import declarative_tool_wiring as declarative_tool_wiring_module
     from intergrax.applications._shared import harness_host_runtime as harness_host_runtime_module
     from intergrax.applications._shared.declarative_tool_wiring import (
@@ -205,6 +207,7 @@ def test_df5_case_a_product_without_document_store_fails(
             env,
             registry=_echo_registry(),
             registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+            tenant_id=_TENANT,
             trace_db_path=tmp_path / "trace.db",
             runtime_events_db_path=tmp_path / "events.db",
             document_store=None,
@@ -227,6 +230,7 @@ def test_df5_case_b_product_without_runtime_event_persistence_fails(
             env,
             registry=_echo_registry(),
             registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+            tenant_id=_TENANT,
             document_store=InMemoryDocumentStore(),
             use_in_memory_trace=True,
             runtime_events_db_path=None,
@@ -251,6 +255,7 @@ def test_df5_case_c_product_without_attached_diagnostics_fails_closed(
             env,
             registry=_echo_registry(),
             registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+            tenant_id=_TENANT,
             document_store=InMemoryDocumentStore(),
             trace_db_path=tmp_path / "trace.db",
             runtime_events_db_path=tmp_path / "events.db",
@@ -261,6 +266,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     _stub_llm: None,
+    df5_production_memory_tenant_binding: None,
 ) -> None:
     monkeypatch.setattr(
         "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_port",
@@ -281,6 +287,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
 def test_df5_case_d_production_scenario_with_diagnostics_attaches(
     tmp_path: Path,
     _stub_llm: None,
+    df5_production_memory_tenant_binding: None,
 ) -> None:
     composition = build_valid_minimal_production_scenario_fixture(
         tmp_path,
@@ -330,6 +337,7 @@ def test_df5_health_gate_fails_on_real_runtime_when_diagnostics_unavailable(
         env,
         registry=_echo_registry(),
         registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+        tenant_id=_TENANT,
         document_store=InMemoryDocumentStore(),
         trace_db_path=tmp_path / "trace.db",
         runtime_events_db_path=tmp_path / "events.db",
@@ -365,6 +373,7 @@ def test_df5_observability_gate_fails_when_central_diagnostics_not_attached(
     assert env is not None
 
     def _runtime_without_attached_diagnostics(*args: object, **kwargs: object) -> object:
+        kwargs.setdefault("tenant_id", _TENANT)
         runtime = build_harness_host_runtime(*args, **kwargs)  # type: ignore[arg-type]
         object.__setattr__(
             runtime,

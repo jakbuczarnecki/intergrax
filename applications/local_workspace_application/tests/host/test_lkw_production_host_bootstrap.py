@@ -2,20 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
-from fastapi import FastAPI
 from pathlib import Path
 
+import pytest
+from fastapi import FastAPI
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
-from intergrax.applications._shared.reliability_assembly_resolver import (
-    assert_reliability_assembly_valid,
-)
-from intergrax.applications._shared.reliability_wiring import wire_application_reliability
-from intergrax.contracts.persistence_topology import (
-    PersistenceTopology,
-    resolve_idempotency_store_topology,
-)
-from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -26,6 +17,16 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+)
+from intergrax.applications._shared.reliability_wiring import wire_application_reliability
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    resolve_idempotency_store_topology,
+)
+from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
+
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -34,9 +35,6 @@ from local_workspace_application.host.main import (
     create_app,
     create_local_workspace_process_app,
     run_reference_production,
-)
-from local_workspace_application.host.reference_lifecycle_input import (
-    build_local_workspace_reference_lifecycle_input,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
@@ -66,6 +64,7 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     launcher_calls: list[tuple[object, object]] = []
     served_app: list[FastAPI] = []
+    served_compositions: list[ProductionProcessComposition] = []
     composition_holder: list[ProductionProcessComposition] = []
 
     original_deploy = ReferenceProductionLifecycleLauncher.deploy_and_activate
@@ -84,8 +83,20 @@ def test_run_reference_production_activates_composition_before_uvicorn(
         launcher_calls.append((projection_input, activation_request))
         return original_deploy(self, projection_input, activation_request)
 
-    def _capture_uvicorn_run(asgi_app: FastAPI, **_kwargs: object) -> None:
-        served_app.append(asgi_app)
+    def _capture_hosted_run(
+        *,
+        process_composition: ProductionProcessComposition,
+        settings: LocalWorkspaceBackendSettings | None = None,
+        **_kwargs: object,
+    ) -> None:
+        # The hosted runner must receive the composition that was activated, not another one.
+        served_compositions.append(process_composition)
+        served_app.append(
+            create_local_workspace_process_app(
+                process_composition=process_composition,
+                settings=settings,
+            )
+        )
 
     monkeypatch.setattr(
         "local_workspace_application.host.main.create_reference_production_process_composition",
@@ -96,7 +107,10 @@ def test_run_reference_production_activates_composition_before_uvicorn(
         "deploy_and_activate",
         _track_deploy,
     )
-    monkeypatch.setattr("uvicorn.run", _capture_uvicorn_run)
+    monkeypatch.setattr(
+        "local_workspace_application.host.main.run_local_workspace_hosted_application",
+        _capture_hosted_run,
+    )
 
     run_reference_production()
 
@@ -111,6 +125,8 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     )
     assert resolved.evidence.runtime_revision_id == "local-workspace-reference-runtime-revision"
     assert len(served_app) == 1
+    assert len(served_compositions) == 1
+    assert served_compositions[0] is composition_holder[0]
     assert served_app[0].title
     assert "Local Workspace" in served_app[0].title
 
@@ -126,6 +142,7 @@ def test_run_reference_production_uses_same_composition_stores(
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     composition_holder: list[ProductionProcessComposition] = []
     served_app: list[FastAPI] = []
+    served_compositions: list[ProductionProcessComposition] = []
 
     original_create = create_reference_production_process_composition
 
@@ -134,14 +151,29 @@ def test_run_reference_production_uses_same_composition_stores(
         composition_holder.append(composition)
         return composition
 
-    def _capture_uvicorn_run(asgi_app: FastAPI, **_kwargs: object) -> None:
-        served_app.append(asgi_app)
+    def _capture_hosted_run(
+        *,
+        process_composition: ProductionProcessComposition,
+        settings: LocalWorkspaceBackendSettings | None = None,
+        **_kwargs: object,
+    ) -> None:
+        # The hosted runner must receive the composition that was activated, not another one.
+        served_compositions.append(process_composition)
+        served_app.append(
+            create_local_workspace_process_app(
+                process_composition=process_composition,
+                settings=settings,
+            )
+        )
 
     monkeypatch.setattr(
         "local_workspace_application.host.main.create_reference_production_process_composition",
         _track_create,
     )
-    monkeypatch.setattr("uvicorn.run", _capture_uvicorn_run)
+    monkeypatch.setattr(
+        "local_workspace_application.host.main.run_local_workspace_hosted_application",
+        _capture_hosted_run,
+    )
 
     run_reference_production()
 
@@ -156,10 +188,15 @@ def test_run_reference_production_uses_same_composition_stores(
     )
     assert resolved.evidence.runtime_revision_id == "local-workspace-reference-runtime-revision"
     assert len(served_app) == 1
-    assert create_local_workspace_process_app(
-        process_composition=composition,
-        settings=settings,
-    ).title == served_app[0].title
+    assert len(served_compositions) == 1
+    assert served_compositions[0] is composition_holder[0]
+    assert (
+        create_local_workspace_process_app(
+            process_composition=composition,
+            settings=settings,
+        ).title
+        == served_app[0].title
+    )
 
 
 def test_lkw_product_wiring_uses_durable_idempotency_store_under_data_home(
@@ -176,9 +213,7 @@ def test_lkw_product_wiring_uses_durable_idempotency_store_under_data_home(
     )
 
     assert wiring.idempotency_store is not None
-    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (
-        PersistenceTopology.DURABLE_SINGLE_HOST
-    )
+    assert resolve_idempotency_store_topology(wiring.idempotency_store) is (PersistenceTopology.DURABLE_SINGLE_HOST)
     assert_reliability_assembly_valid(wiring, env)
     assert settings.idempotency_db_path.endswith(f"data/sqlite/{IDEMPOTENCY_DB_NAME}")
     assert Path(settings.idempotency_db_path).exists()

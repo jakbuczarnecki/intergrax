@@ -14,12 +14,13 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
 )
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID
-from intergrax.tools.providers.rag.source_scope_transport import (
+from intergrax.contracts.rag_retrieval_source_scope import (
     bind_rag_retrieval_source_scope,
     parse_task_metadata_allowed_source_ids,
     reset_rag_retrieval_source_scope,
 )
+from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID
+
 from local_search.diagnostics import SearchSummaryReason
 from local_search.rag_functional_evidence import emit_search_functional_evidence
 from local_search.retrieval_selection import (
@@ -53,9 +54,7 @@ def _optional_int(metadata: dict[str, Any], key: str) -> int | None:
 
 
 def _resolve_query(step_ctx: AgentStepContext, metadata: dict[str, Any]) -> str:
-    run_input = step_ctx.metadata.get(
-        AcpRunContextKey.RUN_INPUT, metadata.get("message", "")
-    )
+    run_input = step_ctx.metadata.get(AcpRunContextKey.RUN_INPUT, metadata.get("message", ""))
     if isinstance(run_input, dict):
         run_input = str(run_input.get("message") or run_input.get("summary") or "")
     return str(metadata.get("query") or run_input or step_ctx.message or "").strip()
@@ -111,9 +110,7 @@ def _format_evidence(
         metadata = chunk.get("metadata")
         meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
         provenance = chunk.get("provenance")
-        provenance_map: dict[str, Any] = (
-            provenance if isinstance(provenance, dict) else {}
-        )
+        provenance_map: dict[str, Any] = provenance if isinstance(provenance, dict) else {}
         source_path = meta.get("source_path") or meta.get("source") or meta.get("file")
         file_name = meta.get("file_name")
         if not file_name and source_path:
@@ -121,15 +118,8 @@ def _format_evidence(
         raw_score = chunk.get("score")
         if not isinstance(raw_score, (int, float)):
             raw_score = meta.get("score")
-        raw_document_id = (
-            provenance_map.get("root_document_id")
-            or meta.get("document_id")
-        )
-        item_workspace = (
-            str(meta["workspace_id"])
-            if meta.get("workspace_id")
-            else workspace_id
-        )
+        raw_document_id = provenance_map.get("root_document_id") or meta.get("document_id")
+        item_workspace = str(meta["workspace_id"]) if meta.get("workspace_id") else workspace_id
         item = _format_evidence_item(
             text=str(chunk.get("text") or ""),
             source_path=str(source_path) if source_path else None,
@@ -165,9 +155,7 @@ def _format_evidence(
         item = _format_evidence_item(
             text=str(citation.get("excerpt") or ""),
             source_path=str(source_path) if source_path else None,
-            chunk_id=str(citation.get("chunk_id"))
-            if citation.get("chunk_id") is not None
-            else None,
+            chunk_id=str(citation.get("chunk_id")) if citation.get("chunk_id") is not None else None,
             score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
             document_id=str(meta["document_id"]) if meta.get("document_id") else None,
             source_id=str(meta["source_id"]) if meta.get("source_id") else None,
@@ -225,9 +213,7 @@ def _output(
 async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     """LKW.1.2 — rag.retrieve via catalog tool; evidence-first search_summary."""
     exec_ctx = exec_ctx_from_step(step_ctx)
-    metadata = request_metadata(
-        exec_ctx, step_ctx, fallback_keys=_LKW_SEARCH_METADATA_KEYS
-    )
+    metadata = request_metadata(exec_ctx, step_ctx, fallback_keys=_LKW_SEARCH_METADATA_KEYS)
     try:
         scope = resolve_request_scope(exec_ctx)
     except RequestScopeError as exc:
@@ -242,9 +228,7 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     query = _resolve_query(step_ctx, metadata)
     collection_id_raw = metadata.get("collection_id")
     collection_id = (
-        str(collection_id_raw).strip()
-        if collection_id_raw is not None and str(collection_id_raw).strip()
-        else None
+        str(collection_id_raw).strip() if collection_id_raw is not None and str(collection_id_raw).strip() else None
     )
     workspace_id_raw = metadata.get("workspace_id")
     workspace_id = (

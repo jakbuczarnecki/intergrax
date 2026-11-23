@@ -21,8 +21,14 @@ Environment prefix `INTERGRAX_NEO4J`:
 | `INTERGRAX_NEO4J_PASSWORD` | Database password |
 | `INTERGRAX_NEO4J_TIMEOUT` | Optional connection timeout (seconds) |
 
-Enable the RAG graph backend with `INTERGRAX_RAG_GRAPH_STORE=neo4j` (or
-`RagProfile.graph_store_backend`).
+Select Neo4j as the RAG graph store through the Integration profile. Integrations owns
+provider discovery, selection and materialization for the `graph_store` category: bind the
+provider in the profile (`IntegrationProfile(graph_store=IntegrationBinding.from_slug("neo4j"))`)
+and pass that profile to `create_default_rag_stack(...)`, which resolves the
+`GRAPH_STORE` category through `resolve_from_profile`. Set `RagProfile.graph_rag_enabled=True`
+to use GraphRAG. `RagProfile` has no `graph_store_backend` field and the RAG composition
+modules do not read `INTERGRAX_RAG_GRAPH_STORE` (both were removed by EBH-2G-R2-R1; gate:
+`tests/unit/rag/graph/test_ebh_2g_r2_graph_store_ownership_gate.py`).
 
 ## Health and connectivity
 

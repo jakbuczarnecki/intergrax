@@ -72,6 +72,19 @@ class DeploymentInstanceRecord(BaseModel):
         return _strip_required(value)
 
 
+_EMERGENCY_FAILURE_EVIDENCE_PREFIX = "emergency-revocation:"
+
+
+def prior_instance_permits_traffic_cutover(instance: DeploymentInstanceRecord) -> bool:
+    """Whether a new activation may take traffic from this prior deployment instance."""
+    if instance.instance_state is DeploymentInstanceState.SERVING:
+        return True
+    if instance.instance_state is DeploymentInstanceState.FAILED:
+        ref = instance.failure_evidence_ref or ""
+        return ref.startswith(_EMERGENCY_FAILURE_EVIDENCE_PREFIX)
+    return False
+
+
 class PreparedDeployment(BaseModel):
     """Adapter output after serving unit allocation (§20.2 step 4)."""
 
@@ -312,9 +325,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         self._drain_pending.discard(serving_unit_ref)
         record = self._units.get(serving_unit_ref)
         if record is not None:
-            self._units[serving_unit_ref] = record.model_copy(
-                update={"state": DeploymentInstanceState.DRAINING}
-            )
+            self._units[serving_unit_ref] = record.model_copy(update={"state": DeploymentInstanceState.DRAINING})
 
     def _unit_key(self, revision: RuntimeRevision) -> str:
         digest = revision.materialization_artifact_digest or "missing"
@@ -341,9 +352,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             materialization_artifact_digest=digest,
             artifact_locator=artifact_locator,
         )
-        self._prepare_count[revision.runtime_revision_id] = (
-            self._prepare_count.get(revision.runtime_revision_id, 0) + 1
-        )
+        self._prepare_count[revision.runtime_revision_id] = self._prepare_count.get(revision.runtime_revision_id, 0) + 1
         return PreparedDeployment(
             serving_unit_ref=unit_ref,
             materialization_artifact_digest=digest,
@@ -360,9 +369,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         record = self._units.get(serving_unit_ref)
         if record is None:
             raise RuntimeError("unknown serving unit for readiness")
-        self._units[serving_unit_ref] = record.model_copy(
-            update={"state": DeploymentInstanceState.READY}
-        )
+        self._units[serving_unit_ref] = record.model_copy(update={"state": DeploymentInstanceState.READY})
         return f"readiness:{serving_unit_ref}"
 
     def begin_drain(
@@ -376,9 +383,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
         record = self._units.get(serving_unit_ref)
         if record is None:
             raise RuntimeError("unknown serving unit for drain")
-        self._units[serving_unit_ref] = record.model_copy(
-            update={"state": DeploymentInstanceState.DRAINING}
-        )
+        self._units[serving_unit_ref] = record.model_copy(update={"state": DeploymentInstanceState.DRAINING})
         self._drain_pending.add(serving_unit_ref)
 
     def close_serving_unit_execution_admission(
@@ -414,9 +419,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
     ) -> None:
         record = self._units.get(serving_unit_ref)
         if record is not None:
-            self._units[serving_unit_ref] = record.model_copy(
-                update={"state": DeploymentInstanceState.STOPPED}
-            )
+            self._units[serving_unit_ref] = record.model_copy(update={"state": DeploymentInstanceState.STOPPED})
         self._drain_pending.discard(serving_unit_ref)
 
     def resume_serving(
@@ -434,9 +437,7 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             DeploymentInstanceState.DRAINING,
             DeploymentInstanceState.STOPPED,
         }:
-            self._units[serving_unit_ref] = record.model_copy(
-                update={"state": DeploymentInstanceState.READY}
-            )
+            self._units[serving_unit_ref] = record.model_copy(update={"state": DeploymentInstanceState.READY})
             self._drain_pending.discard(serving_unit_ref)
             return f"readiness:resume:{serving_unit_ref}"
         raise RuntimeError("serving unit cannot be resumed")
@@ -501,4 +502,3 @@ class FakeInMemoryRuntimeDeploymentAdapter:
             evidence_ref=f"attest:{request.serving_unit_ref}",
             attested_at=datetime.now(UTC),
         )
-

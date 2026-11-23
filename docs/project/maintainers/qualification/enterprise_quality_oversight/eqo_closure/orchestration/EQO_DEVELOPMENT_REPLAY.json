@@ -1,0 +1,278 @@
+{
+  "schema": "eqo.development_replay.v1",
+  "updated_at": "2026-11-21T18:30:00+00:00",
+  "development_pin": "dbaa771ac2e58391dfb0c7c3f4d241b031302b7c",
+  "train_evidence_pin": "8e146e21cd8c63a47d621edc05d5f0036ba0c9ee",
+  "train_not_ancestor_of_development": false,
+  "summary_counts": {
+    "ABSENT_ON_DEVELOPMENT": 16,
+    "STILL_PRESENT": 0,
+    "ALREADY_MATCHES_TICKET": 7,
+    "NO_EXACT_FILES": 1,
+    "CHERRY_PICK_CONFLICT": 0,
+    "MERGE_CONFLICT": 0,
+    "PORTED": 0,
+    "STILL_PRESENT_NO_PORT_ATTEMPT": 0
+  },
+  "rows": [
+    {
+      "root_cause_id": "EQOA-A2-009",
+      "obligation_id": "EDER-F-0039",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope: EBH-3 scan extension and boundary gates belong to PT-G01; ticket write set does not require widening this test beyond intergrax/.",
+      "cited_files": [
+        "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+      ],
+      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged.",
+      "ticket_delta_evidence": "043-A Out of scope lists validator/scripts/gates; A2-009 follow-on scan is PT-G01 (PLAN_T-IGX-043-G section 7)."
+    },
+    {
+      "root_cause_id": "EQOA-A2-038",
+      "obligation_id": "EDER-F-0067",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope explicitly excludes validator code and scripts/; IIAC identity hardening is T-IGX-044-F/C, not this ticket write set.",
+      "cited_files": [
+        "scripts/governance/iiac_common.py",
+        "scripts/governance/verify_iiac_role_separation.py"
+      ],
+      "ticket_delta_evidence": "043-A Out of scope: validator code, scripts/, .github/ — no mandated edit to iiac_common or verify_iiac_role_separation."
+    },
+    {
+      "root_cause_id": "EQOA-A4-002",
+      "obligation_id": "EDER-F-0111",
+      "ticket_ref": "governance/tickets/T-IGX-043-D.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Pin stores derive is_durable from backing-store capability (origin merge; prior cherry-pick conflict obsolete).",
+      "cited_files": [
+        "intergrax/skills/execution_pinning_persistence.py"
+      ],
+      "post_merge_replay": "Kv and document pin stores use capability-based is_durable."
+    },
+    {
+      "root_cause_id": "EQOA-A4-004",
+      "obligation_id": "EDER-F-0113",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "No agents/* direct import of intergrax.integrations.tools at development pin (bypass predicate absent in tree).",
+      "cited_files": [
+        "scripts/maintenance/check_agent_registry_bypass.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-005",
+      "obligation_id": "EDER-F-0114",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Dependency ownership gate replayed green on merged development.",
+      "cited_files": [
+        "scripts/maintenance/check_dependency_ownership.py",
+        "tests/unit/test_dependency_governance.py"
+      ],
+      "post_merge_replay": "pytest tests/unit/test_dependency_governance.py: 6 passed."
+    },
+    {
+      "root_cause_id": "EQOA-A4-009",
+      "obligation_id": "EDER-F-0118",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "AgentRouter first-routable fallback is default-deny with typed LAB opt-in (origin merge).",
+      "cited_files": [
+        "intergrax/runtime/nexus/agent_router.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-011",
+      "obligation_id": "EDER-F-0120",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "NO_EXACT_FILES",
+      "reason": "CERT_DRIFT finding is documentation ownership split; no single product write set in ticket for this slice.",
+      "cited_files": [
+        "docs/project/architecture/PLATFORM_FOUNDATION.md"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-017",
+      "obligation_id": "EDER-F-0126",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "DP-28 requires an explicit LAB stub with non-impersonating slug and provenance=STUB; file implements slug stub_vision and VisionResultProvenance.STUB on fabricated detections.",
+      "cited_files": [
+        "intergrax/model_inference/adapters/stub_vision.py"
+      ],
+      "ticket_delta_evidence": "PLAN_T-IGX-043-C 3.4: stub adapter slug stub_vision, provenance flag; silent Triton/HF substitution is in triton_vision.py, not deletion of StubVision provider."
+    },
+    {
+      "root_cause_id": "EQOA-A4-018",
+      "obligation_id": "EDER-F-0127",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Direct ollama SDK import absent from intergrax/multimedia/images_loader.py on merged development.",
+      "cited_files": [
+        "intergrax/multimedia/images_loader.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-019",
+      "obligation_id": "EDER-F-0128",
+      "ticket_ref": "governance/tickets/T-IGX-043-F.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Cited embedding/vector/notification registries lack silent ollama/in-memory/log string defaults at development pin.",
+      "cited_files": [
+        "intergrax/rag/embedding/registry.py",
+        "intergrax/rag/vector_store/registry.py",
+        "intergrax/notifications/backend_registry.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-026",
+      "obligation_id": "EDER-F-0135",
+      "ticket_ref": "governance/tickets/T-IGX-043-C.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Inbound verifier factory is fail-closed (no silent map to NONE on unset/invalid).",
+      "cited_files": [
+        "intergrax/runtime/interactions/verification/factory.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-030",
+      "obligation_id": "EDER-F-0139",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-B mandates PRODUCT/STRICT fail-closed org/session admission via wiring_fails_closed validators in code; ticket does not require a docstring-only priority-list edit.",
+      "cited_files": [
+        "intergrax/applications/_shared/memory_wiring.py"
+      ],
+      "ticket_delta_evidence": "PLAN_T-IGX-043-B memory_wiring.py row: raise ORG_STORE_UNSUPPORTED_BACKEND / session admission under wiring_fails_closed — implemented at merge pin; Priority docstring tier 3 describes LAB path only."
+    },
+    {
+      "root_cause_id": "EQOA-A4-031",
+      "obligation_id": "EDER-F-0140",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "production_mode NexusLoop refuses missing context engine / LLM adapter (nexus_loop.py).",
+      "cited_files": [
+        "intergrax/runtime/nexus/uaep/uaep_executor.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-032",
+      "obligation_id": "EDER-F-0141",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "FC-2 composition wiring present on merged development.",
+      "cited_files": [
+        "intergrax/applications/_shared/runtime_event_delivery_wiring.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-035",
+      "obligation_id": "EDER-F-0144",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Queue worker eager lab path refused under production_mode (queue_worker_wiring.py).",
+      "cited_files": [
+        "intergrax/applications/_shared/queue_worker_wiring.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-036",
+      "obligation_id": "EDER-F-0145",
+      "ticket_ref": "governance/tickets/T-IGX-043-B.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Bounded event delivery package on development matches train FC-2 posture.",
+      "cited_files": [
+        "intergrax/runtime/observability/event_delivery/runtime_event_delivery.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-037",
+      "obligation_id": "EDER-F-0146",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Human-decision durable store guard in NexusLoop production_mode composition.",
+      "cited_files": [
+        "intergrax/runtime/nexus/orchestration/human_response.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A4-044",
+      "obligation_id": "EDER-F-0153",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "Implementer notes R-6: attestation_demo is LAB-only and was intentionally not edited; factory is conditional write set only when STRICT-capable.",
+      "cited_files": [
+        "applications/attestation_demo/host/factory.py"
+      ],
+      "ticket_delta_evidence": "043-A Part A firm scope is host-task router/NexusLoop production_mode; attestation_demo/host/factory.py is conditional (plan section 4) — no 215-call sweep required for this file."
+    },
+    {
+      "root_cause_id": "EQOA-A5-001",
+      "obligation_id": "EDER-F-0157",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "A5-001 EBH-3 Tier-2/3 scan extension is PT-G01 follow-on, not T-IGX-043-A product write set; test correctly scans intergrax/ per ticket boundary.",
+      "cited_files": [
+        "tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py"
+      ],
+      "post_merge_replay": "pytest test_ebh_3_dependency_ownership_gate.py: 13 passed; scan scope unchanged.",
+      "ticket_delta_evidence": "043-A Out of scope: gates PT-G01; PLAN_T-IGX-043-G NT-RW-WA-01 is separate from 043-A firm paths."
+    },
+    {
+      "root_cause_id": "EQOA-A6-002",
+      "obligation_id": "EDER-F-0173",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ALREADY_MATCHES_TICKET",
+      "reason": "T-IGX-043-A Out of scope excludes scripts/governance validators; strict approval grammar is T-IGX-044-C write set, not 043-A.",
+      "cited_files": [
+        "scripts/governance/verify_plan_approval.py"
+      ],
+      "ticket_delta_evidence": "043-A Out of scope: validator code, scripts/; A6-002 closure targets verify_ticket_approvals.py in T-IGX-044-C."
+    },
+    {
+      "root_cause_id": "EQOA-A6-003",
+      "obligation_id": "EDER-F-0174",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "igx_gov ticket push-fast replay passed on merged development.",
+      "cited_files": [
+        "scripts/governance/igx_gov/__main__.py"
+      ],
+      "post_merge_replay": "uv run python -m scripts.governance.igx_gov ticket: PASS"
+    },
+    {
+      "root_cause_id": "EQOA-A6-005",
+      "obligation_id": "EDER-F-0176",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Ticket Ref trailer CI mode tests replayed green.",
+      "cited_files": [
+        "tests/unit/governance/test_ticket_ref_ci_mode.py"
+      ],
+      "post_merge_replay": "pytest test_ticket_ref_ci_mode.py: 8 passed."
+    },
+    {
+      "root_cause_id": "EQOA-A6-007",
+      "obligation_id": "EDER-F-0178",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "trust.py matches train pin at merged development.",
+      "cited_files": [
+        "intergrax/agent_distribution/trust.py"
+      ]
+    },
+    {
+      "root_cause_id": "EQOA-A6-008",
+      "obligation_id": "EDER-F-0179",
+      "ticket_ref": "governance/tickets/T-IGX-043-A.md",
+      "verdict": "ABSENT_ON_DEVELOPMENT",
+      "reason": "Admin distribution service includes train fail-closed posture via origin merge.",
+      "cited_files": [
+        "intergrax/agent_distribution/admin_service.py"
+      ]
+    }
+  ],
+  "origin_development_merged": true,
+  "origin_development_is_ancestor_of_development": true
+}

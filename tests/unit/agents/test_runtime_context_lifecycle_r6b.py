@@ -7,17 +7,13 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from intergrax.agents.agent_contract import Agent
-from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
-from intergrax.runtime.nexus.agents.acp_uaep_shim import close_acp_catalog_exec_ctx
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
-from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult, RequestIdentity
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_enums import AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -32,10 +28,13 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.nexus.agents.acp_uaep_shim import close_acp_catalog_exec_ctx
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
@@ -103,7 +102,7 @@ class _UaepStubAgent(Agent):
         runtime_context.close = tracked_close  # type: ignore[method-assign]
         return runtime_context
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         if self.fail_in_steps:
             raise RuntimeError("step resolution failed")
         return [AgentStep(step_id="s1", step_name="only", step_index=0)]
@@ -236,7 +235,7 @@ async def test_agent_engine_acp_branch_does_not_build_post_hoc_context() -> None
     )
     with patch.object(agent, "build_context", build_context_mock):
         with patch.object(agent, "run", AsyncMock(return_value=acp_result)):
-            answer = await AgentEngine.run_agent(agent, request)
+            _answer = await AgentEngine.run_agent(agent, request)
 
     build_context_mock.assert_not_called()
 
@@ -275,7 +274,8 @@ def test_close_acp_catalog_exec_ctx_closes_runtime_context_once() -> None:
         ),
         run_id=run_id,
     )
-    step_ctx = AgentStepContext(tenant_id="tenant-test", 
+    step_ctx = AgentStepContext(
+        tenant_id="tenant-test",
         step_index=0,
         run_id=run_id,
         agent_id="counter-r6b",
@@ -291,7 +291,8 @@ def test_close_acp_catalog_exec_ctx_closes_runtime_context_once() -> None:
 
 @pytest.mark.unit
 def test_close_acp_catalog_exec_ctx_noop_when_missing() -> None:
-    step_ctx = AgentStepContext(tenant_id="tenant-test", 
+    step_ctx = AgentStepContext(
+        tenant_id="tenant-test",
         step_index=0,
         run_id=mint_run_id(),
         agent_id="counter-r6b",
@@ -313,13 +314,13 @@ def test_runtime_context_closes_owned_tool_invoker() -> None:
 
 @pytest.mark.unit
 def test_host_managed_tool_invoker_survives_runtime_context_close() -> None:
+    from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_tool_invoker
     from intergrax.runtime.nexus.agents.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+    from intergrax.tools.registry import ToolRegistry
+    from intergrax.tools.registry.bootstrap import register_default_tools
     from testing_support.catalog_declarative_invoker import (
         build_catalog_declarative_invoker_from_registry,
     )
-    from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_tool_invoker
-    from intergrax.tools.registry import ToolRegistry
-    from intergrax.tools.registry.bootstrap import register_default_tools
 
     register_default_tools()
     catalog = build_catalog_declarative_invoker_from_registry(ToolRegistry())

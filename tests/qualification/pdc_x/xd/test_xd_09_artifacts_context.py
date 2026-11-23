@@ -74,6 +74,7 @@ from tests.qualification.pdc_x.d2._support import (
     provider_context,
 )
 from tests.qualification.pdc_x.d8._d8_support import (
+    DEFAULT_D8_RUN_ID,
     T0,
     TENANT_A,
     MutableClock,
@@ -103,7 +104,7 @@ def _spiller(store: ArtifactStore, clock: MutableClock) -> ToolOutputSpiller:
 def _spill(spiller: ToolOutputSpiller) -> ArtifactReferenceToken:
     result = spiller.spill_if_large(
         tenant_id=TENANT_A,
-        run_id="run-1",
+        run_id=str(DEFAULT_D8_RUN_ID),
         task_id="task-1",
         tool_id="sql.query",
         agent_id="agent-1",
@@ -265,7 +266,7 @@ async def test_xd09_evidence_artifact_survives_compaction_and_cannot_be_deleted(
     with pytest.raises(ArtifactDeletionRefused):
         store.delete_artifact(TENANT_A, "evidence-1")
     with pytest.raises(ArtifactDeletionRefused):
-        store.delete_for_run(TENANT_A, "run-1")
+        store.delete_for_run(TENANT_A, str(DEFAULT_D8_RUN_ID))
     clock.advance(hours=2)  # past both the evidence expiry and the ephemeral spill TTL
     sweep_ctx = make_context(agent_id="artifact_retention_sweep")
     report = ArtifactRetentionSweeper(store, clock=clock, audit=harness.recorder).sweep(TENANT_A, context=sweep_ctx)
@@ -320,7 +321,7 @@ async def test_xd09_session_compaction_keeps_source_evidence_and_leaves_evidence
         repository.close()
     # ... and the evidence plane (artifact store) did not change as a side effect of compaction
     assert store.get(TENANT_A, evidence.artifact_id).content_digest == evidence.content_digest
-    assert [a.artifact_id for a in store.list_for_run(TENANT_A, "run-1")] == ["evidence-1"]
+    assert [a.artifact_id for a in store.list_for_run(TENANT_A, str(DEFAULT_D8_RUN_ID))] == ["evidence-1"]
 
 
 # ----------------------------------------------------------------------- TTL as background work

@@ -1,6 +1,6 @@
 {
- "status": "PROPOSED_NOT_CANONICAL",
- "confirmation": "UNCONFIRMED (Operator decision DP-47: the Operator confirms the vocabulary once; no confirmation is recorded)",
+ "status": "CONFIRMED",
+ "confirmation": "CONFIRMED by Operator decision DP-47 option a on 2026-11-17 (addendum 4 of eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md; the orchestrator's transcription of the Operator's chat decision, not an Operator signature): one program- or stage-level accountable owner per row from this vocabulary; named persons only where the Operator assigns them; no person is assigned by this confirmation",
  "note": "IDs only; canonical definitions stay in the roadmap and domain documents.",
  "owner_refs": [
   "ARCH-FREEZE",

@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+from intergrax.applications._shared.import_allowlist import ImportPrefixAllowlist, require_import_allowed
 from intergrax.utils import attribute_access
 
 _F = TypeVar("_F", bound=Callable[..., Any])
@@ -52,8 +53,23 @@ def load_mcp_harness_mount() -> Callable[..., Any]:
     return couple_mcp_fastmcp_on_harness_host
 
 
-def load_mcp_server_builder(import_path: str, *, symbol: str) -> Callable[..., Any]:
-    """Import an application MCP server builder after verifying MCP dependencies."""
+def load_mcp_server_builder(
+    import_path: str,
+    *,
+    symbol: str,
+    allowed_prefixes: ImportPrefixAllowlist | None = None,
+    fail_closed: bool = False,
+) -> Callable[..., Any]:
+    """Import an application MCP server builder after verifying MCP dependencies.
+
+    ``import_path`` is checked against ``allowed_prefixes`` before any import runs.
+    """
+    require_import_allowed(
+        import_path,
+        allowed_prefixes,
+        fail_closed=fail_closed,
+        purpose="load_mcp_server_builder",
+    )
     ensure_mcp_dependencies()
     from importlib import import_module
 

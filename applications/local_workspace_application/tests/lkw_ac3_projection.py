@@ -4,9 +4,14 @@
 
 from __future__ import annotations
 
+import os
+
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
     create_reference_production_process_composition,
+)
+from intergrax.applications._shared.reference_production_governance_wiring import (
+    wire_governed_reference_production_launcher,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.registry_projection_input_bundle import (
@@ -14,17 +19,15 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_registry_projection_input_bundle,
     reference_admission_mutation_id,
 )
-from intergrax.applications._shared.reference_production_governance_wiring import (
-    wire_governed_reference_production_launcher,
-)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection
+
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
-from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection
 
 
 def build_lkw_test_registry_projection(
@@ -33,6 +36,7 @@ def build_lkw_test_registry_projection(
     revision_id: str = "lkw-test-runtime-revision",
 ) -> MaterializedRegistryProjection:
     """Revision-bound projection covering the full LKW manifest roster."""
+    os.environ.setdefault("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     env = build_local_workspace_environment_profile(resolved_settings)
     return build_test_registry_projection(
@@ -76,8 +80,6 @@ def create_lkw_hosted_test_process_composition(
         projection_input,
         activation_request,
         principal=governance.principal,
-        admission_mutation_id=reference_admission_mutation_id(
-            projection_input.runtime_revision.runtime_revision_id
-        ),
+        admission_mutation_id=reference_admission_mutation_id(projection_input.runtime_revision.runtime_revision_id),
     )
     return composition

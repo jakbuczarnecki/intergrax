@@ -1,0 +1,28 @@
+{
+  "schema": "eqo_w3_run_manifest.v1",
+  "workstream": "WB06",
+  "task_ids": [
+    "EQO-W3-WB06-DES",
+    "EQO-W3-WB06-EXE",
+    "EQO-W3-WB06-EVD",
+    "EQO-W3-WB06-DIS"
+  ],
+  "evidence_pin": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "worktree": "d:/Projekty/_wt/intergrax/eqo-w3",
+  "executed_utc": "2026-11-21T09:20:00Z",
+  "rerun_lane": "eqo/wave-10/exe",
+  "pytest_command_sha256": "51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e",
+  "pytest_command": "uv run pytest tests/qualification/config_x/test_config_x_qualification_gates.py tests/qualification/config_x/test_config_x_adversarial_cx_gates.py tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed -q --tb=line",
+  "pytest_exit_code": 0,
+  "pytest_summary": "32 passed in 188.25s (0:03:08)",
+  "pytest_env_note": "uv sync --all-extras on eqo-w3 @ TRAIN_PIN; shared pytest.lock",
+  "finding_ids": [
+    "EQOA-A4-025",
+    "EQOA-A4-042",
+    "EQOA-A5-002"
+  ],
+  "log_path": "eqo_closure/runs/wb06/pytest_wb06_exe.log",
+  "des_path": "eqo_closure/runs/wb06/DES_PREREG.json",
+  "disposition_path": "eqo_closure/runs/wb06/CONFIGURATION_EVIDENCE.md",
+  "blockers": []
+}

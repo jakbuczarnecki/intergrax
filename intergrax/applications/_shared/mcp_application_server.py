@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from fastmcp import FastMCP
 
 from intergrax.agents.tool_enablement import ToolEnablementProfile
+from intergrax.applications._shared.mcp_harness_principal import assert_mcp_identity_composition
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
 from intergrax.applications._shared.mcp_nexus_server import (
     execute_mcp_agent_task,
@@ -65,8 +66,15 @@ def compose_application_mcp_server(
     enable_cross_loop_catalog_child: bool = False,
     identity_mode: McpIdentityMode | str | None = None,
     max_call_seconds: float | None = None,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """Compose FastMCP from ``McpServerDefinition`` — preferred Tier-3 entry over ad-hoc decorators."""
+    coerced_mode = coerce_mcp_identity_mode(identity_mode)
+    assert_mcp_identity_composition(
+        identity_mode=coerced_mode,
+        harness_auth=None,
+        fails_closed=fails_closed,
+    )
     catalog_tool_ids: list[str] = []
     if tool_registry is not None:
         catalog_tool_ids = [item.contract.tool_id for item in tool_registry.list()]
@@ -108,7 +116,7 @@ def compose_application_mcp_server(
         catalog_root_child_work_ingress=catalog_root_child_work_ingress,
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         custom_host_tools=custom_host_tools,
-        identity_mode=coerce_mcp_identity_mode(identity_mode),
+        identity_mode=coerced_mode,
         max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)

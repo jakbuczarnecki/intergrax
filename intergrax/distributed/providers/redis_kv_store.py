@@ -11,9 +11,12 @@ Do not instantiate directly from application code.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
-from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.distributed.contracts.kv_store import (
+    DistributedKVStore,
+    KVDurabilityAttestation,
+)
 
 
 class RedisKVStore(DistributedKVStore):
@@ -29,9 +32,22 @@ class RedisKVStore(DistributedKVStore):
         client: Any,
         *,
         key_prefix: str = "intergrax",
+        durability_attestation: KVDurabilityAttestation | None = None,
     ) -> None:
+        if durability_attestation is not None and not isinstance(durability_attestation, KVDurabilityAttestation):
+            raise TypeError("durability_attestation must be a KVDurabilityAttestation or None")
         self._client = client
         self._key_prefix = key_prefix
+        self._durability_attestation = durability_attestation
+
+    @property
+    def durability_attestation(self) -> KVDurabilityAttestation | None:
+        return self._durability_attestation
+
+    @property
+    def survives_process_restart(self) -> bool:
+        """True only when the operator supplied a typed attestation (declared, not probed)."""
+        return self._durability_attestation is not None
 
     def _build_key(
         self,
@@ -44,7 +60,7 @@ class RedisKVStore(DistributedKVStore):
         self,
         tenant_id: str,
         key: str,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         redis_key = self._build_key(tenant_id, key)
         return self._client.get(redis_key)
 
@@ -54,7 +70,7 @@ class RedisKVStore(DistributedKVStore):
         key: str,
         value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         redis_key = self._build_key(tenant_id, key)
 
@@ -71,15 +87,14 @@ class RedisKVStore(DistributedKVStore):
         redis_key = self._build_key(tenant_id, key)
         self._client.delete(redis_key)
 
-    
     def compare_and_set(
         self,
         tenant_id: str,
         key: str,
-        expected: Optional[bytes],
+        expected: bytes | None,
         new_value: bytes,
         *,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         """
         Atomic compare-and-set using Redis Lua script.

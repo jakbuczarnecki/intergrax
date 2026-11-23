@@ -45,7 +45,7 @@ def test_compose_invalid_definition_fails_at_startup() -> None:
         exposure_policy=McpExposurePolicy(enabled=True, allowed_binding_ids=("missing",)),
     )
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     deps = McpServerCompositionDeps(
         host_execution=build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset()),
         registry=registry,
@@ -65,7 +65,7 @@ def test_couple_engine_mount_serves_mcp_and_api() -> None:
         return {"ok": "1"}
 
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     host_execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     mcp = build_nexus_mcp_server(
         name="MountTest",
@@ -82,7 +82,7 @@ def test_couple_engine_mount_serves_mcp_and_api() -> None:
 def test_compose_legacy_definition_mount_roundtrip() -> None:
     api = FastAPI()
     registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry)
+    nexus_loop = NexusLoop(registry, production_mode=False)
     definition = nexus_legacy_server_definition(
         server_id="demo",
         display_name="Demo",

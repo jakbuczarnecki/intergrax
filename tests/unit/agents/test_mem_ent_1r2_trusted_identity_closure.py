@@ -7,34 +7,32 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-
 from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
-from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult, RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
-from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.memory.contracts.memory_control import (
     MemoryControlPlaneScope,
     MemoryControlRecallRequest,
     MemoryControlRecallResult,
     MemoryControlScopeRef,
 )
-from testing_support.memory_control_plane_test_stub import MemoryControlPlaneTestStub
+from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
+from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.builder import (
     FakeLLMAdapter,
     build_in_memory_session_manager,
     build_runtime_request_for_tests,
     canonical_execution_identity_scope,
 )
+from testing_support.memory_control_plane_test_stub import MemoryControlPlaneTestStub
 
 pytestmark = pytest.mark.gate
 
@@ -97,12 +95,10 @@ class _MemoryProbeAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self) -> list[AgentStep]:
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:
         return [AgentStep(step_id="s1", step_name="s1", step_index=0)]
 
-    async def run_step(
-        self, step: AgentStep, ctx: RuntimeExecutionContext
-    ) -> StepOutput:
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = step
         if self._expect_memory:
             assert ctx.memory_view is not None

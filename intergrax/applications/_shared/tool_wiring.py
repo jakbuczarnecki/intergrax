@@ -12,10 +12,11 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry import ToolProfile, ToolRegistry
 from intergrax.tools.registry.factory import build_registry_from_profile
@@ -42,8 +43,7 @@ def tool_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, .
     for item in report.rejected:
         if item.fail_closed:
             errors.append(
-                "tool plugin admission rejected: "
-                f"{item.spec.name}: {item.reason_code.value}",
+                f"tool plugin admission rejected: {item.spec.name}: {item.reason_code.value}",
             )
     if not errors:
         errors.append("tool plugin bootstrap admission is not acceptable")
@@ -80,6 +80,7 @@ def build_application_tool_wiring(
     sandbox_session: Any | None = None,
     security_profile: Any | None = None,
     extras: dict[str, Any] | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
 ) -> ApplicationToolWiring:
     """
     Build a catalog registry for Tier-3 hosts (lab, product, MCP export).
@@ -88,9 +89,7 @@ def build_application_tool_wiring(
     ``ToolWiringContext`` from integrations + runtime managers, then enable tools via
     ``ToolProfile``.
     """
-    tool_bundle_ids = (
-        tuple(profile.enabled_bundles) if profile.enabled_bundles else None
-    )
+    tool_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
     if catalog_bootstrap is None:
         bootstrap_catalogs(
             register_shipped=True,
@@ -136,7 +135,7 @@ def build_application_tool_wiring(
         collaboration_suite=ctx.collaboration_suite,
         key_value_cache=ctx.key_value_cache,
         shadow_workspace=ctx.shadow_workspace,
-        human_decision_store=ctx.human_decision_store,
+        human_decision_store=human_decision_store or ctx.human_decision_store,
         session_storage=ctx.session_storage,
         scheduled_notification_store=ctx.scheduled_notification_store,
         memory_view=ctx.memory_view,

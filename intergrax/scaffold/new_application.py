@@ -13,25 +13,19 @@ from textwrap import dedent
 from intergrax.applications._shared.build_deploy_doc import render_build_deploy_doc
 from intergrax.applications._shared.docker_templates import write_application_docker
 from intergrax.scaffold.adr_templates import write_application_adr_scaffold
-from intergrax.scaffold.signal_templates import write_application_signal_scaffold
-from intergrax.scaffold.tracing_templates import write_application_tracing_scaffold
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
 from intergrax.scaffold.application_configuration_doc import (
     render_application_configuration_doc,
     render_application_env_example,
 )
-from intergrax.scaffold.doc_templates import (
-    render_application_architecture_doc,
-    render_application_implementation_plan,
-)
-from intergrax.scaffold.application_layout import (
-    write_application_journal_scaffold,
-    write_sample_docs_scaffold,
-)
 from intergrax.scaffold.application_extension_templates import (
     extensions_readme,
     local_prefix_echo_plugin_py,
     tool_wiring_local_extension_block,
+)
+from intergrax.scaffold.application_layout import (
+    write_application_journal_scaffold,
+    write_sample_docs_scaffold,
 )
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
@@ -44,8 +38,13 @@ from intergrax.scaffold.application_pyproject import (
     platform_extras_for_profile,
     render_application_pyproject,
 )
+from intergrax.scaffold.doc_templates import (
+    render_application_architecture_doc,
+    render_application_implementation_plan,
+)
 from intergrax.scaffold.package_emit import write_scaffold_package_json
-from intergrax.integrations.registry.presets import lab_stack
+from intergrax.scaffold.signal_templates import write_application_signal_scaffold
+from intergrax.scaffold.tracing_templates import write_application_tracing_scaffold
 
 _PROFILES = ("lab", "product")
 
@@ -63,9 +62,7 @@ def _write(path: Path, content: str, *, force: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _manifest_py(
-    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
-) -> str:
+def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
     route_prefix = names.route_prefix
@@ -75,9 +72,7 @@ def _manifest_py(
     for s in specs:
         caps = ", ".join(repr(c) for c in s.capabilities)
         cap_arg = f", capabilities=[{caps}]" if s.capabilities else ""
-        mounts.append(
-            f'        AgentBinding.mount({s.class_name}, contract_id="{s.contract_id}"{cap_arg}),'
-        )
+        mounts.append(f'        AgentBinding.mount({s.class_name}, contract_id="{s.contract_id}"{cap_arg}),')
     mounts_block = "\n".join(mounts)
     body = dedent(
         f'''\
@@ -114,14 +109,10 @@ def _manifest_py(
     return body.replace("# __AGENT_IMPORTS__", agent_imports)
 
 
-def _agent_builders_py(
-    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
-) -> str:
+def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     builders_const = names.builders_const
     agent_imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
-    entries = "\n".join(
-        f"        {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs
-    )
+    entries = "\n".join(f"        {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs)
     body = dedent(
         f"""\
         # © Artur Czarnecki. All rights reserved.
@@ -149,9 +140,7 @@ def _agent_builders_py(
         }}
         """
     )
-    return body.replace("# __AGENT_IMPORTS__", agent_imports).replace(
-        "# __BUILDER_ENTRIES__", entries
-    )
+    return body.replace("# __AGENT_IMPORTS__", agent_imports).replace("# __BUILDER_ENTRIES__", entries)
 
 
 def _settings_py(names: ScaffoldApplicationNames) -> str:
@@ -709,9 +698,7 @@ def _serving_router_py(names: ScaffoldApplicationNames) -> str:
     return render_canonical_lab_serving_router_py(names)
 
 
-def _mcp_server_py(
-    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
-) -> str:
+def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     from intergrax.scaffold.canonical_host_templates import (
         render_canonical_mcp_server_py,
     )
@@ -719,9 +706,7 @@ def _mcp_server_py(
     return render_canonical_mcp_server_py(names, specs)
 
 
-def _env_example(
-    env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]
-) -> str:
+def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return render_application_env_example(
         env_prefix=env_prefix,
@@ -738,7 +723,6 @@ def _agent_dirs(specs: list[ScaffoldAgentSpec]) -> list[str]:
 
 def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
-    short = names.short
     display = names.display
     env_prefix_value = names.env_prefix
     route_prefix = names.route_prefix
@@ -799,7 +783,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
         - Engine: `intergrax/applications/USAGE.md`
         - Layout: `applications/USAGE.md`
         - Agent + app: `python -m intergrax.scaffold new-stack <slug> --profile lab`
-        '''
+        '''  # noqa: E501 - generated markdown, long lines are part of the emitted text
     )
 
 
@@ -1136,9 +1120,7 @@ def _create_product_application(
     _write(target / "host" / "main.py", product_tpl.main_py(names), force=force)
 
     _write(target / "serving" / "__init__.py", "", force=force)
-    _write(
-        target / "serving" / "schemas.py", product_tpl.schemas_py(names), force=force
-    )
+    _write(target / "serving" / "schemas.py", product_tpl.schemas_py(names), force=force)
     _write(
         target / "serving" / "fastapi_router.py",
         product_tpl.serving_router_py(names, specs),
@@ -1226,9 +1208,7 @@ def create_application(
     minimal: bool = False,
 ) -> Path:
     if profile not in _PROFILES:
-        raise ValueError(
-            f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}"
-        )
+        raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
 
     names = ScaffoldApplicationNames.resolve(
         name,
@@ -1272,9 +1252,7 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         "new-application",
         help="Create applications/<name>_application/ (lab or product profile, Tier-3)",
     )
-    parser.add_argument(
-        "name", help="Application name (e.g. my_lab → my_lab_application)"
-    )
+    parser.add_argument("name", help="Application name (e.g. my_lab → my_lab_application)")
     parser.add_argument(
         "--agents",
         default="echo",
@@ -1350,9 +1328,7 @@ def run_new_application(args: argparse.Namespace) -> int:
     mode = "minimal" if args.minimal else args.profile
     print(f"Created Tier-3 application at {path}  (profile={mode})")
     print(f"  Package: {names.pkg}  (app_id={names.short!r}, env={names.env_prefix})")
-    print(
-        f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}"
-    )
+    print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}")
     print(f"  Test:   uv run pytest {path / names.tests_pkg} -q")
     if args.profile == "product":
         print(f"  Health: GET http://127.0.0.1:{names.port}/health")
