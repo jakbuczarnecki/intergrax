@@ -7,7 +7,8 @@
 **Sequencing:** OD-SFX-15 — pre-freeze SFX-P0..P4 open; **STOP before SFX-P5**; target `PRE_IMPLEMENTATION_READY`  
 **Closeout campaign:** [`T-IGX-037-F`](../../../../../governance/tickets/T-IGX-037-F.md) — documentation reconciliation before ARCH-FREEZE; target status `SFX_PRE_FREEZE_DOCS_CLOSED` (not `SFX_PRE_IMPLEMENTATION_READY`)  
 **R2 amendment (PROPOSED — not canonical):** [SFX_R2_AMENDMENT_DOSSIER.md](./SFX_R2_AMENDMENT_DOSSIER.md) · [T-IGX-070-A](../../../../../governance/tickets/T-IGX-070-A.md) — DOCUMENTATION_PREPARED; does not replace R1 or authorize implementation  
-**R2 corrective (PROPOSED — PR #756 open):** [SFX_R2_CORRECTIVE_DOSSIER.md](./SFX_R2_CORRECTIVE_DOSSIER.md) · [`T-IGX-070-B`](../../../../../governance/tickets/T-IGX-070-B.md) — `plan_approved`; merge blocked on platform CI
+**R2 publication:** PR #756–#757 **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` — [SFX_R2_CORRECTIVE_DOSSIER.md](./SFX_R2_CORRECTIVE_DOSSIER.md) · [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md)  
+**R2 canonical overlay adoption:** [`T-IGX-070-C`](../../../../../governance/tickets/T-IGX-070-C.md) · [`OD-SFX-R2-CANONICAL-ADOPTION.md`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) — **PENDING SIGNATURE** (not implementation auth)
 **Tickets:** [`T-IGX-037-A`](../../../../../governance/tickets/T-IGX-037-A.md) · [`T-IGX-037-B`](../../../../../governance/tickets/T-IGX-037-B.md) · [`T-IGX-037-C`](../../../../../governance/tickets/T-IGX-037-C.md) · [`T-IGX-037-D`](../../../../../governance/tickets/T-IGX-037-D.md) · [`T-IGX-037-E`](../../../../../governance/tickets/T-IGX-037-E.md) · [`T-IGX-070-A`](../../../../../governance/tickets/T-IGX-070-A.md)
 
 ## Authority map (one SSOT per concern)

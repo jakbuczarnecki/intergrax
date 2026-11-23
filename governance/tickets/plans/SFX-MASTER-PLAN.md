@@ -24,7 +24,7 @@ isProject: false
 
 **Stage:** `SCENARIO-FACTORY-X` — Enterprise Scenario Factory  
 **Roadmap status:** `[ ] PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY`  
-**Revision:** **R1** (corrective review of R0), operator-approved **2026-11-12** in the planning session. R1 supersedes R0 wherever the two differ.  
+**Revision:** **R1** (corrective review of R0), operator-approved **2026-11-12** in the planning session. R1 supersedes R0 wherever the two differ.   **R2 overlay:** section 18 (additive; publication `7ddd53266d32ce47f059456e110e414b92248453`); effective when [`OD-SFX-R2-CANONICAL-ADOPTION.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) is signed — does not authorize implementation.
 **Approval scope:** **W0–W2 only** (SFX-P0..P4, with P4 limited to SFX-P4-A01/A02; classification in §15.1). Waves W3+ need `ARCH-FREEZE` = CLOSED, `GATE-SFX-ENTRY` and their own ticket approvals. **This plan is not an authorization for post-freeze implementation.**  
 **Sequencing:** **OD-SFX-15** — the pre-freeze campaign SFX-P0..P4 runs now, in parallel with MCP-SERVER-X, PDC-X and ARCH-FREEZE; work **STOPs before SFX-P5**; the pre-freeze target is `PRE_IMPLEMENTATION_READY`.  
 **Tickets:** [`T-IGX-037-A`](../T-IGX-037-A.md) (W0 / P0) · [`T-IGX-037-B`](../T-IGX-037-B.md) (W1 / P1) · [`T-IGX-037-C`](../T-IGX-037-C.md) (W1 / P2) · [`T-IGX-037-D`](../T-IGX-037-D.md) (W2 / P3) · [`T-IGX-037-E`](../T-IGX-037-E.md) (W2 / P4-A). W0 plan: [`PLAN_T-IGX-037-A.md`](PLAN_T-IGX-037-A.md).  
@@ -151,6 +151,7 @@ sequenceDiagram
 **Handoff certification criteria (HO-1..HO-7):**
 - **HO-1** Lineage: the bundle references `D_bp`, and every artifact digest in `DeliveryManifest` is reproducible.
 - **HO-2** Only a human submits an intent; SFX never auto-submits.
+- **HO-2 (R2 overlay, §18):** Bounded autonomous multi-submit is **PROPOSED** only via scoped delegation grant on the SEF track ([`SFX_R2_SEF_CROSS_PROGRAM_AMENDMENT.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_SEF_CROSS_PROGRAM_AMENDMENT.md)); **HO-2 remains binding** until operator **OD-SEF-R2** and SEF acceptance. SFX does not reinterpret HO-2 unilaterally.
 - **HO-3** The SFX job record links to the SEF `job_id` by reference only. SFX does not copy the SEF state machine.
 - **HO-4** The generated package passes `scenario_architecture_conformance` and the SFX gates (§9).
 - **HO-5** Failure states map one-to-one: SEF `failed` / `paused` become the SFX job's `FAILED` / `WAITING`, and there are no silent retries.
@@ -602,6 +603,8 @@ R1 requirements (▼new):
 
 The full per-requirement matrix, mapped to R1 unit IDs, is [`SFX_REQUIREMENTS_TRACEABILITY.json`](../../../docs/project/maintainers/qualification/scenario_factory_x/SFX_REQUIREMENTS_TRACEABILITY.json) (created in W0).
 
+**R2 overlay requirements (PROPOSED until OD signature; §18):** REQ-R2-001..018 in [`SFX_REQUIREMENTS_TRACEABILITY_R2_PROPOSAL.json`](../../../docs/project/maintainers/qualification/scenario_factory_x/proposals/SFX_REQUIREMENTS_TRACEABILITY_R2_PROPOSAL.json). R2 rows extend R1; they do not replace REQ-SFX-001..054.
+
 ---
 
 ## 10. Master WBS (▲ split into auditable units)
@@ -640,6 +643,11 @@ The full per-requirement matrix, mapped to R1 unit IDs, is [`SFX_REQUIREMENTS_TR
 | SFX-P3-02 | GEN set authored and sealed by an independent session | `…/SFX_GEN_SET_SEAL.md` (digest only) | P2-02 | digest verify | seal record | sealed before W3 | independent · L |
 | SFX-P4-A01 | IDE v0 declarative: rule `intergrax-scenario-factory` (`loading: auto`), skills `sfx-session`, `sfx-discover`, `sfx-specify`, `sfx-resolve`, `sfx-blueprint`, `sfx-integration-setup`, `sfx-test-plan`, `sfx-present`; L1 output to `.tmp/sfx/<slug>/` against the P2-02 schemas | `agent-env/rules/intergrax-scenario-factory.md`, `agent-env/skills/sfx-*/SKILL.md` + regenerated adapters `.claude/skills/*`, `.cursor/{rules,skills}/*` (no `CLAUDE.md` block change because the rule is `auto`) | P2-02 | `test_agent_env_sync.py`, `check_cursor_token_setup.py` | logs | `--check` clean; operator walkthrough on REF-1 text | implementer · L |
 | SFX-P4-A02 | Agent persona briefs (declarative, consumed by skills as subagent briefs; not synced) | `agent-env/agents/sfx-{discovery-analyst,scenario-architect,capability-resolver,integration-advisor,test-designer,critic}.md` | P4-A01 | `--check` unaffected (directory not globbed) | log | personas read-only except architect drafts | implementer · L · ∥ |
+
+### R2 WBS overlay (section 18; maps to SFX-P5..P13 when authorized)
+
+The **37-unit** R2 task registry (W3–W8), ENTRY vs CERTIFICATION gates, and acyclic DAG: [`SFX_R2_WBS_DAG_AMENDMENT.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_WBS_DAG_AMENDMENT.md). R2 units are specification overlay only until ARCH-FREEZE CLOSED and GATE-SFX-ENTRY.
+
 
 ### Gate: GATE-SFX-ENTRY
 
@@ -776,7 +784,7 @@ No runtime results are claimed. All values are measured in P12. REF-2 and REF-3 
 
 | Aspect | REF-1 Invoice automation | REF-2 API-to-API workflow | REF-3 RAG decision support + HITL |
 |---|---|---|---|
-| Objective | Extract and validate supplier invoices, match them to the PO, and route them. Exceptions go to a human. | Sync order events from system A to system B with schema mapping and drift handling. | Answer policy/decision questions over a document corpus with cited evidence. A human approves the decision. |
+| Objective | Extract and validate supplier invoices, match them to the **existing** PO, and route them (R2 §18: no PO creation, no ERP writes in LAB). Exceptions go to a human. | Sync order events from system A to system B with schema mapping and drift handling. | Answer policy/decision questions over a document corpus with cited evidence. A human approves the decision. |
 | Requirements | Typed invoice schema. Deterministic rules come first; the LLM extracts only unstructured fields. 3-way match. | Typed contracts, idempotent delivery, retry and DLQ, schema-drift detection. | Tenant-scoped retrieval, mandatory citations, a confidence threshold, approval before any effect. |
 | Dataset | Synthetic invoices (PDF + JSON truth), including duplicates, wrong VAT and a missing PO. No real customer data. | Fixture APIs (local stub servers) with versioned schemas, including a drift case. | Synthetic policy corpus, a Q/A truth set, and documents with injected instructions. |
 | Platform reuse | NexusLoop, ToolRuntime, EvalRunner, decision bindings, Collaborative Work artifacts, LAB profile. | IntegrationProfile, LongRunningScheduler/queueing, UCA, #24 `external_api_schema_drift` patterns. Must not duplicate the READINESS settlement reference. | RAG + tenant isolation contract, `indirect_prompt_injection` proof patterns, HITL. |
@@ -979,6 +987,50 @@ R0 was approved on 2026-11-12. R1 corrected it along 12 operator findings and wa
 | 12 | Product certification and scenario admission conflated (PRODUCTION_ADMITTED inside SFX FSM) | R0 §7.6, §12, §14 | FSM ends at ADMISSION_DOSSIER_READY; §14.1 vs §14.3; A1/A4 wording | SFX-P11-04, P13-03, A1/A4/A6 | SFX closure text states no admission | OD-SFX-13 |
 
 Section numbers in the ORIGINAL_PLAN_SECTION column refer to R0.
+
+---
+
+## 18. R2 architectural overlay (mission / autonomy / business evaluation)
+
+**Authority:** Additive overlay on R1. **Publication SSOT:** [`SFX_R2_AMENDMENT_DOSSIER.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/SFX_R2_AMENDMENT_DOSSIER.md). **Adoption gate:** signed [`OD-SFX-R2-CANONICAL-ADOPTION.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md). **Implementation:** **NOT AUTHORIZED** by this section.
+
+### 18.1 Preserved R1 boundaries
+
+Option B placement; SEF-X owns engineering execution (replaceable backends via existing handoff); Intergrax Runtime owns scenario execution; external SCENARIO-GATE and PROD-Q own production admission; no second engine, FSM, or approval authority in SFX.
+
+### 18.2 Business mission lifecycle (SFX-owned semantics)
+
+Normative behavior: [`SFX_R2_AUTONOMOUS_MISSION_SPEC.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_AUTONOMOUS_MISSION_SPEC.md) and [`SFX_R2_LIFECYCLE_STAGE_SPEC.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_LIFECYCLE_STAGE_SPEC.md). Modes: `MANUAL`, `ASSISTED`, `BOUNDED_AUTONOMOUS` (last requires envelope grant + OD-SEF-R2). Mission states are **projections** of artifact versions and SEF job refs — not a second runtime FSM.
+
+### 18.3 Six R2 typed contracts (PROPOSED schemas)
+
+Under `design/schemas/proposed/`: `sfx.mission_record.v1`, `sfx.autonomy_envelope.v1`, `sfx.candidate_iteration.v1`, `sfx.scenario_evaluation_verdict.v1`, `sfx.candidate_comparison.v1`, `sfx.source_intake_manifest.v1`. Catalog: [`SFX_R2_CONTRACT_CATALOG.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_CONTRACT_CATALOG.md).
+
+### 18.4 Business-outcome evaluation
+
+SFX owns business oracles and `ScenarioEvaluationVerdict` (**code pass ≠ business pass**). Engineering pass/fail remains SEF evidence consumed by qualification views (R2-W5-01).
+
+### 18.5 First sandbox POC (assisted REF-1)
+
+**Authorized planning path only:** ARCH-FREEZE CLOSED → GATE-SFX-ENTRY → R2-W3 → W4-CORE → **R2-W4-06** (HO-2) → R2-W5-01 → R2-W7-01. **Excludes** R2-W5-03 autonomous driver until SEF OD. REF oracles: [`SFX_R2_REF_GEN_EVALUATION_PLAN.md`](../../../docs/project/maintainers/qualification/scenario_factory_x/r2/SFX_R2_REF_GEN_EVALUATION_PLAN.md). Labels: **NOT PRODUCTION**; L2 sandbox; no production credentials.
+
+### 18.6 Unresolved operator / cross-track decisions
+
+| ID | Topic | Status |
+|---|---|---|
+| OD-SEF-R2 / OD-SEF-04 | Delegated derived intents under grant | **OPEN** (SEF owner) |
+| OD-ECAP-16 / C-ECAP-01 | ECAP §16 applicability to Tier-2 SFX | **OPEN** |
+| OD-SFX-R2-01 | Bounded autonomy envelope | **OPEN** |
+| T-IGX-070-A | Parent dossier plan approval | **plan_pending** (separate from 070-B) |
+
+### 18.7 Publication evidence (immutable)
+
+| Event | SHA |
+|---|---|
+| PR #756 merge | `67b127f3b4a919c13d5d156ef792f359943cfe3f` |
+| PR #757 reviewed head | `e2b2a2b7e72f35f1e6da4dad4d850d278a4f3e5d` |
+| PR #757 merge | `7ddd53266d32ce47f059456e110e414b92248453` |
+| Independent audit verdict | **ACCEPT_WITH_FINDINGS** (matrix SSOT) |
 
 ---
 

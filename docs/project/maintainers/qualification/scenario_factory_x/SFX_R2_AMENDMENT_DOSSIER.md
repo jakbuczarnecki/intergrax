@@ -71,10 +71,10 @@ HO-2 blocks **autonomous multi-submit** until [`SFX_R2_SEF_CROSS_PROGRAM_AMENDME
 | --- | --- |
 | R2 documentation commit (070-A) | `10cf95df89e806191d5ff801917ece91ff144bad` on `origin/development` |
 | Environment-only commit (out of SFX scope) | `d53be07acac08c20d8f4ac8b00746c27d709d071` |
-| R2 corrective + finalization batch | **PR #756** branch `integ/sfx-r2-corr-001` — **not merged** |
-| `REMOTE_PUBLICATION_SHA` | **NONE** until PR merge |
-| `CANONICAL_R2_APPROVED` | **NO** |
-| Canonical master plan merge | **Blocked** — requires operator R2 adoption |
+| R2 corrective + finalization | PR #756–#757 **MERGED** @ `7ddd53266d32ce47f059456e110e414b92248453` |
+| `REMOTE_PUBLICATION_SHA` | `7ddd53266d32ce47f059456e110e414b92248453` |
+| `CANONICAL_R2_APPROVED` | **NO** — [`OD-SFX-R2-CANONICAL-ADOPTION`](./operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md) **PENDING SIGNATURE** |
+| Master plan §18 overlay | **Published text** under T-IGX-070-C; effective on OD signature |
 | `SFX_PRE_IMPLEMENTATION_READY` | **Not granted** |
 
 Handoff SSOT: [SFX_R2_PUBLICATION_HANDOFF.md](./SFX_R2_PUBLICATION_HANDOFF.md).
