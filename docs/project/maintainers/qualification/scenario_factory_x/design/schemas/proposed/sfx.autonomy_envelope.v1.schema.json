@@ -67,8 +67,9 @@
           "maxLength": 3
         },
         "max_amount": {
-          "type": "number",
-          "minimum": 0
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minor units (CF-4); 0 = no paid budget available, never unlimited."
         }
       }
     },
