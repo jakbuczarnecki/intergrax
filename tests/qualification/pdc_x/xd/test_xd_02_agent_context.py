@@ -24,6 +24,7 @@ from intergrax.context.contracts import (
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.contracts.artifact_ref import ArtifactClass
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.memory.contracts.memory_control import (
@@ -262,15 +263,16 @@ async def test_xd02_context_engine_does_not_admit_a_foreign_tenant_fragment() ->
 
 
 def test_xd02_revoked_agent_loses_context_access_and_the_denial_is_audited(tmp_path: Path) -> None:
+    bound_run_id = mint_run_id()
     store = sqlite_store(tmp_path)
-    store.put(make_artifact(tenant_id=TENANT_A, data=b"tenant-a context record"))
+    store.put(make_artifact(tenant_id=TENANT_A, data=b"tenant-a context record", run_id=bound_run_id))
     request = ArtifactReadRequest(
         artifact_class=ArtifactClass.EXECUTION_EVIDENCE,
         tenant_id=TENANT_A,
         artifact_id="art-1",
         workspace_id="ws-1",
     )
-    agent = make_context(tenant_id=TENANT_A, agent_id="agent-reader")
+    agent = make_context(tenant_id=TENANT_A, agent_id="agent-reader", run_id=bound_run_id)
 
     granted = make_governance(granted=reader_grants(tenant_id=TENANT_A, agent_id="agent-reader"))
     port, _ = make_port(store, harness=granted)
@@ -285,6 +287,7 @@ def test_xd02_revoked_agent_loses_context_access_and_the_denial_is_audited(tmp_p
     # A different, still-granted agent of the same tenant is not affected by the revocation.
     other = make_governance(granted=reader_grants(tenant_id=TENANT_A, agent_id="agent-other"))
     other_port, _ = make_port(store, harness=other)
-    assert other_port.read(make_context(tenant_id=TENANT_A, agent_id="agent-other"), request).content == (
-        b"tenant-a context record"
-    )
+    assert other_port.read(
+        make_context(tenant_id=TENANT_A, agent_id="agent-other", run_id=bound_run_id),
+        request,
+    ).content == (b"tenant-a context record")
