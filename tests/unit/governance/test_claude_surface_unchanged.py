@@ -58,7 +58,10 @@ def test_claude_settings_do_not_reference_factory_scripts() -> None:
 
 
 def test_no_claude_file_mentions_the_factory() -> None:
-    files = [p for p in CLAUDE.rglob("*") if p.is_file()] + [ROOT / "CLAUDE.md"]
+    skip_dirs = frozenset({"worktrees", "pytest-cache", ".pytest_cache"})
+    files = [
+        p for p in CLAUDE.rglob("*") if p.is_file() and not skip_dirs.intersection(p.relative_to(CLAUDE).parts)
+    ] + [ROOT / "CLAUDE.md"]
     assert files
     for path in files:
         text = path.read_text(encoding="utf-8", errors="replace")
