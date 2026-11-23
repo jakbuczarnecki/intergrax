@@ -307,6 +307,8 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/scaffold",
     # Slice 4 (Wave 06): Campaign B compat tree touched since PDC baseline (FULL per prefix).
     "intergrax/compat",
+    # Slice 5 (Wave 06 AUTH-03): globals settings touched on development (T-IGX-066-B).
+    "intergrax/globals",
 )
 
 

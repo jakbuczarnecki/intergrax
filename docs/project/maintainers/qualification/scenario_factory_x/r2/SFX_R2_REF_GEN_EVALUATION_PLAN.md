@@ -2,47 +2,45 @@
 
 **GEN seal:** Do **not** read sealed content. Use [`SFX_GEN_SET_SEAL.md`](../SFX_GEN_SET_SEAL.md) digest only until independent reveal (SFX-P12-04).
 
-## REF-1 (invoice automation) — priority vertical slice
+## REF-1 — invoice validation vs existing PO (priority vertical slice)
 
-### Business oracles (independent)
+**Business problem (corrected):** Match inbound invoices against **existing purchase orders** (optional goods-receipt / 3-way match fixtures) in **LAB with simulated ERP effects**. **No** creation of real POs, postings, payments, or ERP writes.
 
-| Oracle ID | Assertion | Failure class |
-| --- | --- | --- |
-| REF1-O-01 | Valid invoice → PO created with correct totals | BUSINESS_FAIL |
-| REF1-O-02 | Duplicate invoice → no second PO | IDEMPOTENCY |
-| REF1-O-03 | Missing PO reference → explicit HITL/escalation, no silent approve | SAFETY |
-| REF1-O-04 | Malformed input → reject without side effects | SECURITY |
+### Oracles
 
-### Autonomy effectiveness (R2)
+| Oracle ID | Expected business outcome | Failure class | Inputs (synthetic LAB) | Verification method |
+| --- | --- | --- | --- | --- |
+| REF1-O-01 | Valid invoice matches existing PO; amounts, qty, tax, PO ref consistent | BUSINESS_FAIL | PO fixture + matching invoice | Deterministic oracle + runtime trace |
+| REF1-O-02 | Duplicate invoice idempotently rejected; no duplicate booking/effect | IDEMPOTENCY | same invoice twice | replay + simulated effect counter |
+| REF1-O-03 | Missing/unknown PO → HITL/escalation; no silent approve | SAFETY | invoice without PO | escalation record |
+| REF1-O-04 | Malformed/corrupt doc rejected; zero sandbox effects | SECURITY | bad PDF/CSV | fail-closed run |
+| REF1-O-05 | Qty/unit/line-total mismatch → FAIL with classified reason | BUSINESS_FAIL | mismatch fixtures | oracle assertions |
+| REF1-O-06 | VAT rule violation detected deterministically | BUSINESS_FAIL | wrong VAT tables | rule fixtures |
+| REF1-O-07 | Prompt-like text in invoice treated as untrusted data | INJECTION | embedded instructions | no policy bypass |
+| REF1-O-08 | Each outcome links to source digests + evaluation evidence | INSUFFICIENT_EVIDENCE | full slice | evidence_refs required |
 
-| Metric | Source | Pass threshold |
-| --- | --- | --- |
-| AUTO-02 time-to-first business-logic candidate | mission events | PROPOSED — OD-SFX-07 + AUTO targets |
-| AUTO-04 iteration/escalation counts | mission + SEF refs | recorded, not fabricated |
-| AUTO-06 champion delta | compare view | non-regression security suite |
+**3-way match (optional):** With goods-receipt fixture, require receipt before MATCH_COMPLETE; else document TWO_WAY_ONLY in CON-07 plan.
 
-### Modes under test
+**Forbidden in LAB:** real PO creation, ERP mutation, payments, production credentials.
 
-1. `DETERMINISTIC_SCAFFOLD` baseline (R1 requirement).
-2. `ASSISTED` + human HO-2 submits.
-3. `BOUNDED_AUTONOMOUS` only after grant OD — **NOT_RUN** until authorized.
+### Modes
 
-### Evidence layout
+1. DETERMINISTIC_SCAFFOLD (R1).
+2. ASSISTED + HO-2 per intent.
+3. BOUNDED_AUTONOMOUS — NOT_RUN until SEF delegation OD.
 
-`.tmp/proof/sfx/ref-1/<run-id>/` — oracles, verdicts, costs, SHA, grant_ref (if any).
+### Evidence
+
+`.tmp/proof/sfx/ref-1/<run-id>/`
 
 ## REF-2 / REF-3
 
-Reuse R1 §12 acceptance; add R2 oracles for API idempotency (REF-2) and citation grounding (REF-3). Subject to OD-SFX-08.
+R1 §12 + R2 oracles. OD-SFX-08.
 
-## GEN set (six sealed)
+## GEN
 
-| Rule | Action |
-| --- | --- |
-| Pre-reveal | Zero tuning against GEN content |
-| Reveal authority | Independent session SFX-P12-04 only |
-| Post-change | MS-6 full rerun REF-1..3 + GEN @ new SHA |
+No content access pre-reveal. MS-6 rerun after changes.
 
-## Performance plan
+## Performance
 
-Record G-1..G-5, M-1..M-9, AUTO-01..12 per [`design/SFX_METRICS.md`](../design/SFX_METRICS.md) R2 appendix. No SLA claims without measured artifacts.
+AUTO/G/M per metrics appendix; measured artifacts only.

@@ -4,7 +4,7 @@
 
 | ADR | PROPOSED change |
 | --- | --- |
-| ADR-SFX-001 | Note R2 mission records remain Tier-2 product; ECAP §16 non-applicability unchanged |
+| ADR-SFX-001 | Note R2 mission records remain Tier-2 product; **C-ECAP-01: OPEN** — ECAP §16 applicability to Tier-2 SFX must be decided in ADR/OD-SFX-06 review (not RESOLVED here) |
 | ADR-SFX-002 | Add artifact kinds: mission, envelope, iteration, verdict — CW only |
 | ADR-SFX-004 | Import path for offline L1 includes mission read models |
 | ADR-SFX-006 | Dossier export requires champion `ScenarioEvaluationVerdict` PASS on business oracles |

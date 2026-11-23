@@ -47,6 +47,7 @@ from intergrax.runtime.background_execution.admission_wiring import (
     validate_background_execution_admission_durability,
     wire_background_execution_admission_dependencies,
 )
+from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume
 from intergrax.runtime.long_running.scheduler import LongRunningScheduler
 from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeClaim
@@ -338,7 +339,15 @@ def _schedule_due(persistence):  # type: ignore[no-untyped-def]
 
 
 def _scheduler(store, executor, owner: str) -> LongRunningScheduler:  # type: ignore[no-untyped-def]
-    return LongRunningScheduler(store, executor, schedule_store=store, ledger=store, owner_id=owner, lease_seconds=1)
+    return LongRunningScheduler(
+        store,
+        executor,
+        schedule_store=store,
+        ledger=store,
+        owner_id=owner,
+        lease_seconds=1,
+        notification_adapter=LoggingNotificationAdapter(),
+    )
 
 
 async def test_xd05_shutdown_drains_an_in_flight_scheduled_resume_and_releases_the_lease(tmp_path: Path) -> None:

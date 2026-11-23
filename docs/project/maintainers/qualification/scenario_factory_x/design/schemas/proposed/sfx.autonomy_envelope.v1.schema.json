@@ -2,36 +2,108 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "sfx.autonomy_envelope.v1",
   "title": "AutonomyEnvelope",
-  "description": "PROPOSED SFX R2. Bounded L2 scope; bound to DecisionBinding approval. Not an authority grant by itself.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "tenant_id",
     "mission_id",
-    "goal_digest",
     "approval_ref",
+    "blueprint_digest_pin",
+    "goal_digest",
     "max_iterations",
+    "max_parallel_candidates",
     "cost_budget",
-    "deadline",
+    "mission_deadline",
+    "allowed_asset_refs",
+    "allowed_effect_classes",
     "deny_egress",
+    "stop_on_stagnation_rounds",
     "canonical_digest"
   ],
   "properties": {
-    "schema_version": { "const": "sfx.autonomy_envelope.v1" },
-    "tenant_id": { "type": "string" },
-    "mission_id": { "type": "string" },
-    "goal_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "blueprint_digest_pin": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "approval_ref": { "type": "string" },
-    "delegation_grant_ref": { "type": "string" },
-    "max_iterations": { "type": "integer", "minimum": 1 },
-    "max_parallel_candidates": { "type": "integer", "minimum": 1, "default": 1 },
-    "cost_budget": { "type": "object", "additionalProperties": false, "properties": { "currency": { "type": "string" }, "max_amount": { "type": "number", "minimum": 0 } } },
-    "deadline": { "type": "string", "format": "date-time" },
-    "allowed_asset_refs": { "type": "array", "items": { "type": "string" } },
-    "deny_egress": { "const": true },
-    "stop_on_stagnation_rounds": { "type": "integer", "minimum": 1 },
-    "canonical_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    "schema_version": {
+      "const": "sfx.autonomy_envelope.v1"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "mission_id": {
+      "type": "string"
+    },
+    "goal_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "blueprint_digest_pin": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "approval_ref": {
+      "type": "string"
+    },
+    "delegation_grant_ref": {
+      "type": "string"
+    },
+    "max_iterations": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_parallel_candidates": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cost_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "max_amount"
+      ],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "max_amount": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "mission_deadline": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "allowed_asset_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_effect_classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "CW_WRITE",
+          "SANDBOX_RUN",
+          "SEF_JOB_SANDBOX"
+        ]
+      }
+    },
+    "deny_egress": {
+      "const": true
+    },
+    "stop_on_stagnation_rounds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "canonical_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
   }
 }
