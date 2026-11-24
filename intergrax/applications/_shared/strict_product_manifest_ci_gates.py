@@ -9,11 +9,11 @@ runtime serving or activation paths.
 
 from __future__ import annotations
 
-from intergrax.applications._shared.capability_graph_deploy_gate import (
-    validate_strict_capability_graph_deploy,
-)
 from intergrax.applications._shared.agent_certification_wiring import (
     validate_strict_roster_agent_certification,
+)
+from intergrax.applications._shared.capability_graph_deploy_gate import (
+    validate_strict_capability_graph_deploy,
 )
 from intergrax.applications._shared.roster_agent_contract_authority import (
     ManifestAgentContractAuthority,
@@ -22,18 +22,6 @@ from intergrax.applications._shared.roster_agent_contract_authority import (
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
-
-
-def _gate_wiring_environment(env):
-    from intergrax.applications.contracts.application_host import ApplicationProfile
-    from intergrax.integrations.registry.profile import IntegrationProfile
-
-    return env.model_copy(
-        update={
-            "integration_profile": IntegrationProfile.lab(),
-            "application_profile": ApplicationProfile.LAB,
-        }
-    )
 
 
 def manifest_ci_contract_authority(
@@ -49,6 +37,10 @@ def check_strict_product_capability_graph(
 ) -> list[str]:
     """Return deploy-gate violations for one STRICT product manifest (CI only)."""
     from intergrax.applications._shared.environment_wiring import wire_application_environment
+    from intergrax.applications._shared.package_wiring import (
+        PACKAGE_GATE_TENANT_ID,
+        package_gate_environment,
+    )
 
     env = manifest.resolved_environment()
     if env.execution_mode is not ExecutionMode.STRICT:
@@ -56,9 +48,14 @@ def check_strict_product_capability_graph(
     if manifest.profile is not ApplicationProfile.PRODUCT:
         return []
 
-    gate_env = _gate_wiring_environment(env)
+    gate_env = package_gate_environment(env)
     try:
-        wiring = wire_application_environment(manifest, gate_env, conformance_check=False)
+        wiring = wire_application_environment(
+            manifest,
+            gate_env,
+            conformance_check=False,
+            tenant_id=PACKAGE_GATE_TENANT_ID,
+        )
     except Exception as exc:  # noqa: BLE001 — gate surfaces wiring failures
         return [f"{product_id}: wire_application_environment failed: {exc}"]
 
