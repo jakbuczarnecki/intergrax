@@ -12,3 +12,5 @@ Operator recorded `Approved: OD-AF-INT A` on 2026-11-22. This overrides the gene
 - Direct `git push` / `gh pr create` / `gh pr merge` from any Cursor agent are forbidden. Use the guarded runner; failures are BLOCKED, never bypassed.
 - No permission change is made to Claude Code. Shared core rules apply without exception to every other role.
 - This approval is not a waiver of required checks, an IIAC PASS, or authorization for an ARCH-FREEZE CLOSED claim.
+
+ChatGPT Direct Execution is a separate candidate-only publication path defined by the always-on Cursor Direct Execution rule. This legacy integration exception does not apply to candidate draft publication and is not a prerequisite for it. No legacy merge or independent-review requirement is changed.

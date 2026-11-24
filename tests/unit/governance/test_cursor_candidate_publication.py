@@ -130,3 +130,65 @@ def test_ready_pr_is_refused(mod, monkeypatch):
     )
     with pytest.raises(mod.Blocked, match="draft"):
         mod.verify_draft(p, 17)
+
+
+def test_authorization_must_come_from_canonical_development(mod, monkeypatch):
+    import base64
+    import json
+
+    p = packet()
+    requested = []
+
+    def api(path):
+        requested.append(path)
+        return {
+            "type": "file",
+            "encoding": "base64",
+            "content": base64.b64encode(json.dumps(p).encode()).decode(),
+        }
+
+    monkeypatch.setattr(mod, "gh_api", api)
+    assert mod.read_authorization(p["wave"]) == p
+    assert requested == ["contents/.cursor/publication/EC-V3-W01.json?ref=development"]
+    monkeypatch.setattr(mod, "gh_api", lambda _: {"type": "file", "encoding": "base64", "content": "!"})
+    with pytest.raises(mod.Blocked):
+        mod.read_authorization(p["wave"])
+
+
+@pytest.mark.parametrize("path", ["scripts/Governance/hidden.py", "intergrax/foo.py:stream", "intergrax/dir./x.py"])
+def test_windows_alias_paths_are_refused(mod, path):
+    p = packet()
+    p["write_set"] = [path]
+    with pytest.raises(mod.Blocked):
+        mod.validate_authorization(p, p["wave"])
+
+
+def test_draft_wrong_target_or_head_is_refused(mod, monkeypatch):
+    p = packet()
+    repo = {"full_name": mod.REPO}
+    pr = {
+        "state": "open",
+        "draft": True,
+        "head": {"ref": p["branch"], "sha": HEAD, "repo": repo},
+        "base": {"ref": "main", "repo": repo},
+    }
+    monkeypatch.setattr(mod, "gh_api", lambda _: pr)
+    with pytest.raises(mod.Blocked, match="draft"):
+        mod.verify_draft(p, 17, HEAD)
+    pr["base"]["ref"] = p["target"]
+    with pytest.raises(mod.Blocked, match="head"):
+        mod.verify_draft(p, 17, SHA)
+
+
+def test_direct_mutations_still_denied():
+    path = ROOT / "scripts/hooks/igx_cursor_integration_guard.py"
+    spec = importlib.util.spec_from_file_location("cursor_candidate_guard_test", path)
+    assert spec and spec.loader
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    assert guard.decide({"command": "git push origin ec-v3/w01-vision-fix"})["permission"] == "deny"
+    assert guard.decide({"command": "gh pr create --draft --base arch-freeze/rw-train"})["permission"] == "deny"
+    assert guard.decide({"command": "gh pr merge 17 --admin"})["permission"] == "deny"
+    assert guard.decide({"command": "python scripts/cursor/igx_publish_candidate.py --wave EC-V3-W01"})[
+        "permission"
+    ] == "allow"

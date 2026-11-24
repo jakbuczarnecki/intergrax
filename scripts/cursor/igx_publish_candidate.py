@@ -39,7 +39,7 @@ REMOTE = re.compile(
 
 
 def validate_authorization(p: Any, wave: str) -> None:
-    if not isinstance(p, dict) or p.get("schema") != 1 or p.get("wave") != wave:
+    if not isinstance(p, dict) or type(p.get("schema")) is not int or p["schema"] != 1 or p.get("wave") != wave:
         raise Blocked("invalid candidate authorization schema or wave")
     if p.get("mode") != "CHATGPT_DIRECT_IMPLEMENTATION":
         raise Blocked("candidate publication not authorized")
@@ -65,10 +65,15 @@ def validate_authorization(p: Any, wave: str) -> None:
     paths = p.get("write_set")
     if not isinstance(paths, list) or not paths or not all(isinstance(x, str) for x in paths):
         raise Blocked("missing exact write set")
-    if len(paths) != len(set(paths)) or any(not valid_path(x, kind) for x in paths):
+    if len(paths) != len({x.casefold() for x in paths}) or any(not valid_path(x, kind) for x in paths):
         raise Blocked("duplicate or protected write-set path")
     # Candidate publication must never carry approval, governance or workflow mutations.
-    if any(x.startswith(("governance/", ".github/")) for x in paths):
+    if any(
+        not valid_path(x.casefold(), kind)
+        or x.casefold().startswith(("governance/", ".github/"))
+        or any(part.endswith((".", " ")) or ":" in part for part in x.split("/"))
+        for x in paths
+    ):
         raise Blocked("candidate publication cannot change governance or workflows")
     title = p.get("pr_title")
     if not isinstance(title, str) or not 8 <= len(title) <= 160 or "\n" in title or "\r" in title:
@@ -82,7 +87,7 @@ def read_authorization(wave: str) -> dict[str, Any]:
     if not isinstance(data, dict) or data.get("type") != "file" or data.get("encoding") != "base64":
         raise Blocked("canonical candidate authorization missing")
     try:
-        p = json.loads(base64.b64decode(data["content"]).decode("utf-8"))
+        p = json.loads(base64.b64decode("".join(data["content"].split()), validate=True).decode("utf-8"))
     except (KeyError, ValueError, UnicodeError) as exc:
         raise Blocked("invalid canonical candidate authorization") from exc
     validate_authorization(p, wave)
@@ -168,7 +173,7 @@ def open_prs(p: dict[str, Any]) -> list[dict[str, Any]]:
         command(["gh", "pr", "list", "-R", REPO, "--head", p["branch"], "--state", "open",
                  "--json", "number", "--limit", "100"])
     )
-    if not isinstance(result, list) or len(result) > 1:
+    if not isinstance(result, list) or len(result) > 1 or any(not isinstance(x, dict) for x in result):
         raise Blocked("ambiguous open candidate PR")
     return result
 
@@ -204,7 +209,7 @@ def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
     existing = open_prs(p)
     if existing:
         number = existing[0].get("number")
-        if not isinstance(number, int) or number <= 0:
+        if type(number) is not int or number <= 0:
             raise Blocked("invalid existing PR number")
         verify_draft(p, number)
     remote = remote_sha(checkout, p["branch"])
@@ -222,7 +227,7 @@ def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
                  f"Candidate for external acceptance. Wave: {p['wave']}. Ref: {p['ticket']}."],
                 cwd=checkout)
         created = open_prs(p)
-        if len(created) != 1 or not isinstance(created[0].get("number"), int):
+        if len(created) != 1 or type(created[0].get("number")) is not int or created[0]["number"] <= 0:
             raise Blocked("candidate draft PR creation not confirmed")
         number = created[0]["number"]
     pr = verify_draft(p, number, head)
