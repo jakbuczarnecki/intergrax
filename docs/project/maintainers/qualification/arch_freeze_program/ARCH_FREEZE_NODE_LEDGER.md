@@ -3,7 +3,7 @@
 Packet: P-R0-A (factual recount). Prior packet: P-R0-3W draft (2026-11-24).
 DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
 
-**Recount pins (2026-11-24):** `origin/development` = `51edb2a7c3399cc03f82173b255602efcb208ecf`; `origin/arch-freeze/rw-train` = `be0ce70d39b0d811e96177410ac5f9d27c770c5c`. Local `arch-freeze/rw-train` ref may be stale — use `origin/` only.
+**Recount pins (2026-11-24):** `origin/development` = `51edb2a7c3399cc03f82173b255602efcb208ecf`; `origin/arch-freeze/rw-train` = `be0ce70d39b0d811e96177410ac5f9d27c770c5c`. Local `arch-freeze/rw-train` ref may be stale â€” use `origin/` only.
 
 Status vocabulary: `DONE-FORMAL`, `REQ`, `PARTIAL`, `UNK`, `OPEN`, `VOID` (optional DAG nodes not activated).
 REQ flag: `Y` iff status is `REQ`. SHA: acceptance or merge SHA when cited in tracked evidence; otherwise `NONE`.
@@ -59,7 +59,7 @@ Row count: 149
 | PT-E03 | UNK | - | NONE | RC0 L20-32 (NOT_MERGED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | REG |
 | PT-E04 | UNK | T-IGX-044-E | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-E05 | REQ | T-IGX-044-F | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-044-F=plan_approved | Y | - |
-| PT-FC1 | REQ | T-IGX-043-A/N | 65ef1f196 | PR #680 train merge SHA; CHECKPOINT.md L120 (#680); CHECKPOINT header stale (e69e1ff58) — P-R0-A annex; T-IGX-043-A=plan_approved; @dev 51edb2a7 / train be0ce70d (P-R0-A) | Y | PRD |
+| PT-FC1 | REQ | T-IGX-043-A/N | 65ef1f196 | PR #680 train merge SHA; CHECKPOINT.md L120 (#680); CHECKPOINT header stale (e69e1ff58) â€” P-R0-A annex; T-IGX-043-A=plan_approved; @dev 51edb2a7 / train be0ce70d (P-R0-A) | Y | PRD |
 | PT-FC2 | PARTIAL | T-IGX-043-B/E | 711ee4a11 | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-B=quality_gate | N | REL |
 | PT-FC3 | PARTIAL | T-IGX-043-C/F | NONE | CHECKPOINT.md L33 (413fb9186); RC0 L44-55; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-C=plan_approved | N | PRD |
 | PT-FC4 | REQ | T-IGX-043-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-D=plan_approved | Y | - |
