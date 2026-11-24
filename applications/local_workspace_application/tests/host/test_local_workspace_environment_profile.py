@@ -222,7 +222,7 @@ def test_lkw_docker_compose_uses_persistent_otel_collector_storage_contract() ->
     assert '"4318:4318"' in text
 
 
-def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
         apply_strict_product_memory_test_patches,
     )
@@ -231,6 +231,12 @@ def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.
     apply_strict_product_memory_test_patches(monkeypatch)
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = build_local_workspace_environment_profile()
+    env.observability_profile = env.observability_profile.model_copy(
+        update={"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"},
+    )
+    from intergrax.contracts.sandbox_profile import SandboxProfile
+
+    env = env.model_copy(update={"sandbox": SandboxProfile(root=tmp_path / "sandbox", enable_exec_tool=True)})
     wiring = wire_application_environment(
         manifest,
         env,
