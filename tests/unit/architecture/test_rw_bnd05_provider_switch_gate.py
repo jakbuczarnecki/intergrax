@@ -20,7 +20,7 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_SCAN_ROOTS = ("intergrax/runtime", "intergrax/applications", "applications")
+_SCAN_ROOTS = ("intergrax/runtime", "intergrax/applications", "applications", "agents")
 _AREA_PREFIX = "intergrax/runtime/vendor_knowledge/"
 _PROVIDER_PREFIXES = ("intergrax.integrations.providers", "intergrax.integrations._shared")
 
