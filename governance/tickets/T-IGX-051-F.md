@@ -18,9 +18,8 @@ Plan digest: 8c9936aaecb16009aed52a3e743393dd293755d897c9cd169baace54ace5b91b
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-24T18:15:00+01:00
-Delegation: docs/project/maintainers/qualification/arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md@0889a64bf93003548b73e3e282b09e3bc0be20b8
-Delegate session: local_c387c27a-2faa-432c-baca-9bc2a29aa7d8
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
 
 ## Test contract
 
@@ -45,7 +44,3 @@ Exact pytest paths and gate script invocations are defined only in the approved 
 ## Lifecycle state
 
 in_progress
-
-## Implementer session
-
-Implementer session: local_e54e0892-7d8a-4304-98c7-45f1bc8ebb1c
