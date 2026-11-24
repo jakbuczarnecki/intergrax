@@ -63,6 +63,49 @@ SERIALIZED_PAIRS = [
     ("T-IGX-043-J", "T-IGX-043-I", "split PT-WD shared files"),
 ]
 
+# Source-backed CODE_FIX ownership (MEP-AF2 v2.1 / WP12 DAG); exact FRZ ids only.
+EXPLICIT_CODE_FIX_OWNERSHIP: dict[str, dict[str, object]] = {
+    "FRZ-TYP-01": {
+        "owner_ticket": "T-IGX-051-G",
+        "owner_node": "T-AF2-RW-TYP",
+        "owner_wave": "W3",
+        "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
+    },
+    "FRZ-TYP-03": {
+        "owner_ticket": "T-IGX-051-G",
+        "owner_node": "T-AF2-RW-TYP",
+        "owner_wave": "W3",
+        "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
+    },
+    "FRZ-RPL-04": {
+        "owner_ticket": "T-IGX-051-G",
+        "owner_node": "T-AF2-RW-TYP",
+        "owner_wave": "W3",
+        "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
+    },
+    "FRZ-TEN-02": {
+        "owner_ticket": "T-IGX-044-A",
+        "owner_node": "PT-T01",
+        "owner_wave": "W3",
+        "owner_source": "WP12 DAG / PT-T01 / A4-006",
+    },
+    "FRZ-TEN-07": {
+        "owner_ticket": "T-IGX-044-A",
+        "owner_node": "PT-T01",
+        "owner_wave": "W3",
+        "owner_source": "WP12 DAG / PT-T01 / A4-006",
+    },
+    "FRZ-FRZ-10": {
+        "owner_ticket": None,
+        "owner_node": "T-B7-PFP-ACTIVATE",
+        "owner_wave": "W5",
+        "verification_node": "T-B7-PFP-VERIFY",
+        "verification_wave": "W8",
+        "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+        "owner_ticket_family": "T-IGX-052-*",
+    },
+}
+
 
 @dataclass
 class CodeFixRow:
@@ -120,6 +163,32 @@ def _extract_owner_ticket(cert_col: str, fix_col: str) -> str | None:
         if m and "*" not in m.group(1):
             return m.group(1)
     return None
+
+
+def apply_explicit_ownership(frz_id: str, row: CodeFixRow) -> dict[str, object]:
+    """Merge matrix parse with canonical explicit ownership for six FRZ rows."""
+    explicit = EXPLICIT_CODE_FIX_OWNERSHIP.get(frz_id)
+    if explicit is None:
+        return {"owner_ticket": row.owner_ticket}
+    out: dict[str, object] = {"owner_provenance": "explicit_mep_wp12"}
+    ticket = explicit.get("owner_ticket")
+    if ticket is not None:
+        out["owner_ticket"] = ticket
+    else:
+        out["owner_ticket"] = None
+    for key in (
+        "owner_node",
+        "owner_wave",
+        "owner_source",
+        "verification_node",
+        "verification_wave",
+        "owner_ticket_family",
+    ):
+        if key in explicit:
+            out[key] = explicit[key]
+    if row.owner_ticket and row.owner_ticket != out.get("owner_ticket"):
+        out["matrix_owner_ticket_parse"] = row.owner_ticket
+    return out
 
 
 def _code_fix_row_key(row: CodeFixRow) -> tuple:
@@ -246,21 +315,24 @@ def build() -> dict[str, object]:
             rf_status = "EVIDENCE_MISSING"
             rf_ref = None
         reg_scope = r.regression_scope if r.regression_scope else "MAPPING_MISSING"
-        inventory.append(
-            {
-                "frz_id": r.frz_id,
-                "summary": r.summary,
-                "owner_ticket": r.owner_ticket,
-                "negative_test_id": r.negative_test,
-                "red_first_prefix_sha": rf_sha,
-                "red_first_status": rf_status,
-                "red_first_evidence_ref": rf_ref,
-                "regression_scope": reg_scope,
-                "regression_scope_source": "matrix_tests_column" if r.regression_scope else "MAPPING_MISSING",
-                "delta_findings": r.delta_findings,
-                "remediation_track": r.remediation_track,
-            }
-        )
+        ownership = apply_explicit_ownership(r.frz_id, r)
+        entry: dict[str, object] = {
+            "frz_id": r.frz_id,
+            "summary": r.summary,
+            "owner_ticket": ownership.get("owner_ticket", r.owner_ticket),
+            "negative_test_id": r.negative_test,
+            "red_first_prefix_sha": rf_sha,
+            "red_first_status": rf_status,
+            "red_first_evidence_ref": rf_ref,
+            "regression_scope": reg_scope,
+            "regression_scope_source": "matrix_tests_column" if r.regression_scope else "MAPPING_MISSING",
+            "delta_findings": r.delta_findings,
+            "remediation_track": r.remediation_track,
+        }
+        for key, val in ownership.items():
+            if key != "owner_ticket":
+                entry[key] = val
+        inventory.append(entry)
 
     payload: dict[str, object] = {
         "schema": "rw_plan.v1",
@@ -326,8 +398,12 @@ def _render_md(payload: dict[str, object]) -> str:
     ]
     for r in rows:
         sha_disp = r.get("red_first_prefix_sha") or "—"
+        owner = r.get("owner_ticket")
+        if not owner and r.get("owner_node"):
+            owner = str(r["owner_node"])
+        owner_disp = owner or "UNASSIGNED"
         lines.append(
-            f"| `{r['frz_id']}` | {r.get('owner_ticket') or 'UNASSIGNED'} | "
+            f"| `{r['frz_id']}` | {owner_disp} | "
             f"{r.get('negative_test_id') or '—'} | {r['red_first_status']} @ {sha_disp} | {r['regression_scope']} |"
         )
     lines.extend(

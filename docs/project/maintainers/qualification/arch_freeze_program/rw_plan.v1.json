@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-24T11:04:06.976638+00:00",
-  "execution_sha": "86974b6d41d7859a0212265816248f468f3e3802",
+  "generated_at": "2026-11-24T11:19:28.395812+00:00",
+  "execution_sha": "1daeab559ad0094f0334c584ea2738484126e3c0",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -190,7 +190,14 @@
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX: Appendix C, T-IGX-052-*"
+      "remediation_track": "CODE_FIX: Appendix C, T-IGX-052-*",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "T-B7-PFP-ACTIVATE",
+      "owner_wave": "W5",
+      "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+      "verification_node": "T-B7-PFP-VERIFY",
+      "verification_wave": "W8",
+      "owner_ticket_family": "T-IGX-052-*"
     },
     {
       "frz_id": "FRZ-OWN-02",
@@ -390,7 +397,7 @@
     {
       "frz_id": "FRZ-RPL-04",
       "summary": "vendor/backend switch does not modify consumers",
-      "owner_ticket": null,
+      "owner_ticket": "T-IGX-051-G",
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -398,7 +405,11 @@
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2"
+      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "T-AF2-RW-TYP",
+      "owner_wave": "W3",
+      "owner_source": "MEP-AF2 v2.1 / section G / DP-36"
     },
     {
       "frz_id": "FRZ-SEC-04",
@@ -442,7 +453,7 @@
     {
       "frz_id": "FRZ-TEN-02",
       "summary": "end-to-end tenant propagation across relevant semantic and runtime boundaries",
-      "owner_ticket": null,
+      "owner_ticket": "T-IGX-044-A",
       "negative_test_id": "NEG-0",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -450,12 +461,16 @@
       "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)"
+      "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "PT-T01",
+      "owner_wave": "W3",
+      "owner_source": "WP12 DAG / PT-T01 / A4-006"
     },
     {
       "frz_id": "FRZ-TEN-07",
       "summary": "evidence, events, traces and diagnostics preserve tenant identity; cannot establish truth for another tenant",
-      "owner_ticket": null,
+      "owner_ticket": "T-IGX-044-A",
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -463,7 +478,11 @@
       "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)"
+      "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "PT-T01",
+      "owner_wave": "W3",
+      "owner_source": "WP12 DAG / PT-T01 / A4-006"
     },
     {
       "frz_id": "FRZ-TEN-10",
@@ -481,7 +500,7 @@
     {
       "frz_id": "FRZ-TYP-01",
       "summary": "semantic boundaries strongly typed",
-      "owner_ticket": null,
+      "owner_ticket": "T-IGX-051-G",
       "negative_test_id": "NEG-0",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -489,12 +508,16 @@
       "regression_scope": "ENT-A-TYP-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2"
+      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "T-AF2-RW-TYP",
+      "owner_wave": "W3",
+      "owner_source": "MEP-AF2 v2.1 / section G / DP-36"
     },
     {
       "frz_id": "FRZ-TYP-03",
       "summary": "generic object semantic seams = 0",
-      "owner_ticket": null,
+      "owner_ticket": "T-IGX-051-G",
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -502,7 +525,11 @@
       "regression_scope": "ENT-A-TYP-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
-      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2"
+      "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
+      "owner_provenance": "explicit_mep_wp12",
+      "owner_node": "T-AF2-RW-TYP",
+      "owner_wave": "W3",
+      "owner_source": "MEP-AF2 v2.1 / section G / DP-36"
     },
     {
       "frz_id": "FRZ-TYP-05",

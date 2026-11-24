@@ -1,4 +1,4 @@
-# T-IGX-073-E — W2-RECOVERY-01: RW-PLAN, phase-check-3, PT-V04, Campaign B alpha
+﻿# T-IGX-073-E — W2-RECOVERY-01: RW-PLAN, phase-check-3, PT-V04, Campaign B alpha
 
 ## Scope
 
@@ -27,8 +27,14 @@ python scripts/qualification/run_campaign_b_w2_alpha.py --phase b1
 python scripts/qualification/run_campaign_b_w2_alpha.py --phase b2
 ```
 
-Evidence logs: `.tmp/session/w2-recovery-02/` (W2-RECOVERY-02); `.tmp/session/w2-recovery-01/` (W2-RECOVERY-01)
+Evidence logs: `.tmp/session/w2-recovery-03/` (W2-RECOVERY-03); `.tmp/session/w2-recovery-02/` (W2-RECOVERY-02); `.tmp/session/w2-recovery-01/` (W2-RECOVERY-01)
+
+## W2-RECOVERY-03 corrective scope (AF-W2-RECOVERY-03)
+
+- Six source-backed CODE_FIX ownership mappings (TYP/RPL/TEN/FRZ-10) in `build_rw_plan.py`.
+- Phase-check-3 accepts node-based FRZ-FRZ-10 ownership; emits `CODE_FIX_OWNERSHIP=39/39`.
+- Campaign B runner: pytest node paths, output-arg handling, historical B-2 worktree, `HEAD_DIAGNOSTIC`, coverage metadata.
 
 ## Lifecycle state
 
-in_progress — W2-RECOVERY-02 implementation complete; formal qualification dimensions not closed
+in_progress — W2-RECOVERY-03 implementation complete; formal qualification dimensions not closed

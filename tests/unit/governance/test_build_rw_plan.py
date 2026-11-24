@@ -183,3 +183,54 @@ def test_pt_wa_precedes_pt_wb():
     mod = _import_build()
     labels = [e[2] for e in mod.LANE_ORDER if isinstance(e, (list, tuple)) and len(e) >= 3 and isinstance(e[2], str)]
     assert labels.index("PT-WA") < labels.index("PT-WB")
+
+
+def _blank_row(frz: str):
+    mod = _import_build()
+    return mod.CodeFixRow(
+        frz_id=frz,
+        summary="s",
+        negative_test="NEG-0",
+        remediation_track="CODE_FIX:",
+        owner_ticket=None,
+        regression_scope="ENT-A",
+    )
+
+
+@pytest.mark.parametrize(
+    ("frz", "ticket"),
+    [
+        ("FRZ-TYP-01", "T-IGX-051-G"),
+        ("FRZ-TYP-03", "T-IGX-051-G"),
+        ("FRZ-RPL-04", "T-IGX-051-G"),
+        ("FRZ-TEN-02", "T-IGX-044-A"),
+        ("FRZ-TEN-07", "T-IGX-044-A"),
+    ],
+)
+def test_explicit_frz_ownership_ticket(frz: str, ticket: str):
+    mod = _import_build()
+    applied = mod.apply_explicit_ownership(frz, _blank_row(frz))
+    assert applied["owner_ticket"] == ticket
+    assert applied["owner_provenance"] == "explicit_mep_wp12"
+
+
+def test_frz_frz_10_canonical_node_ownership():
+    mod = _import_build()
+    applied = mod.apply_explicit_ownership("FRZ-FRZ-10", _blank_row("FRZ-FRZ-10"))
+    assert applied["owner_ticket"] is None
+    assert applied["owner_node"] == "T-B7-PFP-ACTIVATE"
+    assert applied["verification_node"] == "T-B7-PFP-VERIFY"
+
+
+def test_unrelated_frz_without_explicit_has_no_provenance():
+    mod = _import_build()
+    row = mod.CodeFixRow(
+        frz_id="FRZ-BND-04",
+        summary="s",
+        negative_test="NT",
+        remediation_track="CODE_FIX:",
+        owner_ticket="T-IGX-043-G",
+        regression_scope="ENT-A",
+    )
+    applied = mod.apply_explicit_ownership("FRZ-BND-04", row)
+    assert applied == {"owner_ticket": "T-IGX-043-G"}

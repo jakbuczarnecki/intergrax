@@ -83,7 +83,7 @@ def test_missing_owner_detected():
     plan = _minimal_plan()
     plan["code_fix_inventory"][0].pop("owner_ticket")
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
-    assert any("missing owner_ticket" in e for e in errors)
+    assert any("ownership not verified" in e for e in errors)
 
 
 def test_missing_regression_mapping():
@@ -127,7 +127,7 @@ def test_mechanical_pass_does_not_imply_audit_pass():
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
     assert not errors
     audit = mod.validate_rw_plan_audit(plan)
-    assert any("not established" in n for n in audit)
+    assert any("not performed" in n for n in audit)
 
 
 def test_red_first_evidence_missing_sha_rejected():
@@ -147,6 +147,53 @@ def test_red_at_prefix_requires_sha_and_ref():
     assert any("evidence reference" in e for e in errors)
 
 
+def test_frz_frz_10_node_ownership_accepted():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0] = {
+        "frz_id": "FRZ-FRZ-10",
+        "summary": "s",
+        "owner_ticket": None,
+        "owner_node": "T-B7-PFP-ACTIVATE",
+        "owner_wave": "W5",
+        "verification_node": "T-B7-PFP-VERIFY",
+        "verification_wave": "W8",
+        "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+        "negative_test_id": "NT-FRZ-10",
+        "red_first_status": "EVIDENCE_MISSING",
+        "regression_scope": "ENT-A",
+        "remediation_track": "CODE_FIX:",
+    }
+    errors = mod.validate_plan_structure(plan, {"FRZ-FRZ-10"})
+    assert not errors
+
+
+def test_contradictory_ownership_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["owner_node"] = "T-AF2-RW-TYP"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("contradictory" in e for e in errors)
+
+
+def test_ownership_validation_independent_of_red_first():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["red_first_prefix_sha"] = "a" * 40
+    struct = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    red = mod.validate_red_first_evidence(plan)
+    assert struct == []
+    assert any("EVIDENCE_MISSING must not carry prefix SHA" in e for e in red)
+
+
+def test_code_fix_ownership_count_on_built_plan():
+    mod = _load_verify()
+    data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
+    verified, total = mod.count_verified_ownership(data)
+    assert total == 39
+    assert verified == 39
+
+
 def test_phase_check3_cli_emits_separate_dimensions():
     proc = subprocess.run(
         [sys.executable, str(_VERIFY)],
@@ -157,4 +204,4 @@ def test_phase_check3_cli_emits_separate_dimensions():
     )
     assert "PLAN_STRUCTURE=" in proc.stdout
     assert "RED_FIRST_EVIDENCE=INCOMPLETE" in proc.stdout
-    assert "RW_PLAN_AUDIT=INCOMPLETE" in proc.stdout
+    assert "RW_PLAN_AUDIT=NOT_PERFORMED" in proc.stdout

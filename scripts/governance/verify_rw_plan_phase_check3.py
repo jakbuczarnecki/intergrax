@@ -12,6 +12,13 @@ _REPO = Path(__file__).resolve().parents[2]
 _RW_JSON = _REPO / "docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json"
 REQUIRED_AUDIT_FLAGS = {"A4-005", "A4-018", "A6-005", "A4-006", "A3-018", "A4-016"}
 SCOPE_DEPS = {"T-AF2-RW-PLAN", "T-AF2-RW-PLAN-AUDIT", "PT-V04", "PT-B01", "PT-B02", "REV-MASTER"}
+FRZ_FRZ_10_NODE_CONTRACT = {
+    "owner_node": "T-B7-PFP-ACTIVATE",
+    "owner_wave": "W5",
+    "verification_node": "T-B7-PFP-VERIFY",
+    "verification_wave": "W8",
+    "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+}
 
 
 def _canonical_code_fix_ids() -> set[str]:
@@ -28,6 +35,32 @@ def _canonical_code_fix_ids() -> set[str]:
     spec.loader.exec_module(mod)
     parse = getattr(mod, "parse_appendix_a_code_fix_inventory")
     return {r.frz_id for r in parse()}
+
+
+def _frz10_node_ownership_valid(row: dict) -> bool:
+    for key, expected in FRZ_FRZ_10_NODE_CONTRACT.items():
+        if row.get(key) != expected:
+            return False
+    if row.get("owner_ticket"):
+        return False
+    return bool(row.get("owner_node"))
+
+
+def _ownership_verified(row: dict) -> bool:
+    frz = str(row.get("frz_id", ""))
+    ticket = row.get("owner_ticket")
+    node = row.get("owner_node")
+    if frz == "FRZ-FRZ-10":
+        if ticket:
+            return False
+        return _frz10_node_ownership_valid(row)
+    if ticket and node and row.get("owner_provenance") != "explicit_mep_wp12":
+        return False
+    if ticket:
+        return True
+    if node and row.get("owner_provenance") == "explicit_mep_wp12":
+        return True
+    return False
 
 
 def _lane_pt_indices(lane_order: list) -> dict[str, int]:
@@ -60,8 +93,11 @@ def validate_plan_structure(data: dict[str, object], canonical: set[str]) -> lis
         if frz in seen:
             errors.append(f"duplicate frz_id {frz}")
         seen.add(str(frz))
-        if not row.get("owner_ticket"):
-            errors.append(f"{frz}: missing owner_ticket")
+        if row.get("owner_ticket") and row.get("owner_node") and frz != "FRZ-FRZ-10":
+            if not row.get("owner_provenance"):
+                errors.append(f"{frz}: contradictory ticket and node attribution without provenance")
+        if not _ownership_verified(row):
+            errors.append(f"{frz}: ownership not verified (missing ticket or canonical node contract)")
         nt = row.get("negative_test_id")
         if not nt and "gate extension" not in str(row.get("remediation_track", "")):
             errors.append(f"{frz}: missing negative_test_id (strict)")
@@ -139,27 +175,37 @@ def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
 
 
 def validate_rw_plan_audit(data: dict[str, object]) -> list[str]:
-    notes: list[str] = []
+    return ["independent RW-PLAN acceptance not performed by mechanical validator"]
+
+
+def count_verified_ownership(data: dict[str, object]) -> tuple[int, int]:
     inventory = data.get("code_fix_inventory") or []
-    missing_evidence = sum(
-        1 for r in inventory if isinstance(r, dict) and r.get("red_first_status") == "EVIDENCE_MISSING"
-    )
-    if missing_evidence:
-        notes.append(f"historical red-first evidence incomplete for {missing_evidence} CODE_FIX rows")
-    notes.append("independent RW-PLAN acceptance not established by mechanical validator")
-    return notes
+    verified = sum(1 for r in inventory if isinstance(r, dict) and _ownership_verified(r))
+    return verified, len(inventory)
 
 
-def _emit(plan_errors: list[str], red_first: list[str], audit_notes: list[str], plan_status: str) -> None:
+def _emit(
+    plan_errors: list[str],
+    red_first: list[str],
+    audit_notes: list[str],
+    plan_status: str,
+    *,
+    ownership_verified: int,
+    ownership_total: int,
+) -> None:
     for e in plan_errors:
         print(f"[PLAN_STRUCTURE] {e}", file=sys.stderr)
     print(f"PLAN_STRUCTURE={plan_status}")
+    print(f"CODE_FIX_OWNERSHIP={ownership_verified}/{ownership_total}")
     for e in red_first:
         print(f"[RED_FIRST_EVIDENCE] {e}")
-    print("RED_FIRST_EVIDENCE=INCOMPLETE")
+    if red_first:
+        print("RED_FIRST_EVIDENCE=INCOMPLETE")
+    else:
+        print("RED_FIRST_EVIDENCE=INCOMPLETE")
     for e in audit_notes:
         print(f"[RW_PLAN_AUDIT] {e}")
-    print("RW_PLAN_AUDIT=INCOMPLETE")
+    print("RW_PLAN_AUDIT=NOT_PERFORMED")
     print(f"CHECK3_STRUCTURE_GREEN={'YES' if plan_status == 'PASS' else 'NO'}")
 
 
@@ -167,7 +213,7 @@ def main() -> int:
     plan_errors: list[str] = []
     if not _RW_JSON.is_file():
         plan_errors.append(f"missing {_RW_JSON.relative_to(_REPO)}")
-        _emit(plan_errors, [], ["audit blocked: missing rw plan"], "FAIL")
+        _emit(plan_errors, [], ["audit blocked: missing rw plan"], "FAIL", ownership_verified=0, ownership_total=0)
         return 1
 
     data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
@@ -175,14 +221,22 @@ def main() -> int:
         canonical = _canonical_code_fix_ids()
     except SystemExit as exc:
         plan_errors.append(f"matrix parse failed: {exc}")
-        _emit(plan_errors, [], ["audit blocked: matrix parse failed"], "FAIL")
+        _emit(plan_errors, [], ["audit blocked: matrix parse failed"], "FAIL", ownership_verified=0, ownership_total=0)
         return 1
 
+    ownership_verified, ownership_total = count_verified_ownership(data)
     plan_errors.extend(validate_plan_structure(data, canonical))
     red_first_errors = validate_red_first_evidence(data)
     audit_notes = validate_rw_plan_audit(data)
     plan_status = "PASS" if not plan_errors else "FAIL"
-    _emit(plan_errors, red_first_errors + audit_notes, audit_notes, plan_status)
+    _emit(
+        plan_errors,
+        red_first_errors,
+        audit_notes,
+        plan_status,
+        ownership_verified=ownership_verified,
+        ownership_total=ownership_total,
+    )
     return 0 if plan_status == "PASS" else 1
 
 
