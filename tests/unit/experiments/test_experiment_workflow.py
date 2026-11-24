@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from intergrax.experiments.models import ExperimentDecision, RegisterExperimentRequest
+from intergrax.experiments.models import ExperimentDecision, ExperimentRecord, RegisterExperimentRequest
 from intergrax.experiments.workflow import (
     ExperimentSession,
     ensure_repo_root_on_path,
@@ -235,9 +235,221 @@ def test_wf_session_matching_tenant_preserves_workflow(two_tenant_experiment_sto
     assert decided.decision == ExperimentDecision.KEEP
 
 
-def test_evaluate_against_criteria_expected_output():
-    from intergrax.experiments.models import ExperimentRecord
+class _ScopedTypeErrorStore:
+    """Backend that rejects tenant_id keyword — exercises fail-closed scoped calls."""
 
+    def __init__(self) -> None:
+        self.get_calls: list[dict[str, object]] = []
+        self.link_calls: list[dict[str, object]] = []
+        self.decision_calls: list[dict[str, object]] = []
+
+    def get(self, experiment_id: str, *, tenant_id: str | None = None):
+        self.get_calls.append({"experiment_id": experiment_id, "tenant_id": tenant_id})
+        raise TypeError("unexpected keyword argument 'tenant_id'")
+
+    def link_run(self, experiment_id: str, run_id: str, *, tenant_id: str | None = None):
+        self.link_calls.append({"experiment_id": experiment_id, "run_id": run_id, "tenant_id": tenant_id})
+        raise TypeError("unexpected keyword argument 'tenant_id'")
+
+    def set_decision(
+        self,
+        experiment_id: str,
+        decision: ExperimentDecision,
+        *,
+        notes: str | None = None,
+        tenant_id: str | None = None,
+    ):
+        self.decision_calls.append(
+            {
+                "experiment_id": experiment_id,
+                "decision": decision,
+                "tenant_id": tenant_id,
+            }
+        )
+        raise TypeError("unexpected keyword argument 'tenant_id'")
+
+    def register(self, request: RegisterExperimentRequest):
+        raise NotImplementedError
+
+    def list_experiments(self, **kwargs: object):
+        return []
+
+
+class _AuthoritativeMismatchStore:
+    def __init__(self, *, authoritative: ExperimentRecord) -> None:
+        self._authoritative = authoritative
+
+    def get(self, experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord:
+        return self._authoritative
+
+    def link_run(self, experiment_id: str, run_id: str, *, tenant_id: str | None = None):
+        raise NotImplementedError
+
+    def set_decision(
+        self,
+        experiment_id: str,
+        decision: ExperimentDecision,
+        *,
+        notes: str | None = None,
+        tenant_id: str | None = None,
+    ):
+        raise NotImplementedError
+
+    def register(self, request: RegisterExperimentRequest):
+        return ExperimentRecord.new_from_request(
+            request,
+            created_at_utc="2026-01-01T00:00:00Z",
+            updated_at_utc="2026-01-01T00:00:00Z",
+        )
+
+    def list_experiments(self, **kwargs: object):
+        return []
+
+
+def test_wf_session_store_get_typeerror_single_scoped_call_no_unscoped_retry() -> None:
+    store = _ScopedTypeErrorStore()
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(TypeError, match="tenant_id"):
+        session._experiment_store_get("exp-1")
+    assert len(store.get_calls) == 1
+    assert store.get_calls[0]["tenant_id"] == "tenant-a"
+
+
+def test_wf_session_store_link_run_typeerror_single_scoped_call_no_unscoped_retry() -> None:
+    store = _ScopedTypeErrorStore()
+
+    def get_ok(experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord:
+        store.get_calls.append({"experiment_id": experiment_id, "tenant_id": tenant_id})
+        return ExperimentRecord(
+            experiment_id=experiment_id,
+            tenant_id="tenant-a",
+            hypothesis="h",
+            capability="echo.basic",
+            created_at_utc="2026-01-01T00:00:00Z",
+            updated_at_utc="2026-01-01T00:00:00Z",
+        )
+
+    store.get = get_ok  # type: ignore[method-assign]
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(TypeError, match="tenant_id"):
+        session.link_run("exp-1", "run-1")
+    assert len(store.link_calls) == 1
+    assert store.link_calls[0]["tenant_id"] == "tenant-a"
+
+
+def test_wf_session_store_set_decision_typeerror_single_scoped_call_no_unscoped_retry() -> None:
+    store = _ScopedTypeErrorStore()
+
+    def get_ok(experiment_id: str, *, tenant_id: str | None = None) -> ExperimentRecord:
+        store.get_calls.append({"experiment_id": experiment_id, "tenant_id": tenant_id})
+        return ExperimentRecord(
+            experiment_id=experiment_id,
+            tenant_id="tenant-a",
+            hypothesis="h",
+            capability="echo.basic",
+            created_at_utc="2026-01-01T00:00:00Z",
+            updated_at_utc="2026-01-01T00:00:00Z",
+        )
+
+    store.get = get_ok  # type: ignore[method-assign]
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(TypeError, match="tenant_id"):
+        session.decide("exp-1", ExperimentDecision.KEEP, notes="n")
+    assert len(store.decision_calls) == 1
+    assert store.decision_calls[0]["tenant_id"] == "tenant-a"
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_persistence_foreign_tenant_record_no_execution(
+    two_tenant_experiment_store,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    _, record_a, _ = two_tenant_experiment_store
+    foreign = record_a.model_copy(update={"tenant_id": "tenant-b"})
+    store = _AuthoritativeMismatchStore(authoritative=foreign)
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    run_called = {"count": 0}
+    original = UnifiedTaskRunner.run_task
+
+    async def guarded(self, *args, **kwargs):
+        run_called["count"] += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(UnifiedTaskRunner, "run_task", guarded)
+    with pytest.raises(ValueError, match="not authorized"):
+        await session.run(loop=loop, record=record_a, message="hello")
+    assert run_called["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_persistence_mismatched_experiment_id_no_execution(
+    two_tenant_experiment_store,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    _, record_a, _ = two_tenant_experiment_store
+    mismatched = record_a.model_copy(update={"experiment_id": "other-exp"})
+    store = _AuthoritativeMismatchStore(authoritative=mismatched)
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    run_called = {"count": 0}
+    original = UnifiedTaskRunner.run_task
+
+    async def guarded(self, *args, **kwargs):
+        run_called["count"] += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(UnifiedTaskRunner, "run_task", guarded)
+    with pytest.raises(ValueError, match="experiment_id"):
+        await session.run(loop=loop, record=record_a, message="hello")
+    assert run_called["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_persistence_empty_tenant_identity_no_execution(
+    two_tenant_experiment_store,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    _, record_a, _ = two_tenant_experiment_store
+    empty_tenant = record_a.model_copy(update={"tenant_id": "   "})
+    store = _AuthoritativeMismatchStore(authoritative=empty_tenant)
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    run_called = {"count": 0}
+    original = UnifiedTaskRunner.run_task
+
+    async def guarded(self, *args, **kwargs):
+        run_called["count"] += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(UnifiedTaskRunner, "run_task", guarded)
+    with pytest.raises(ValueError, match="tenant_id"):
+        await session.run(loop=loop, record=record_a, message="hello")
+    assert run_called["count"] == 0
+
+
+def test_evaluate_against_criteria_expected_output():
     record = ExperimentRecord(
         experiment_id="exp1",
         hypothesis="test",

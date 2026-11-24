@@ -411,3 +411,190 @@ def test_wf_debug_handlers_reject_foreign_query_tenant(
         )
     assert response.status_code == 403, (method, path, response.status_code, response.text)
     assert recording.calls == []
+
+
+def test_wf_debug_authenticated_tenant_a_explicit_default_tenant_rejected(
+    monkeypatch_harness_env: None,
+) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="tenant-a")
+    recording = _RecordingExperimentStore(
+        _SpyExperimentStore(
+            backend=type(
+                "Empty",
+                (),
+                {
+                    "list_experiments": lambda *a, **k: [],
+                    "get": lambda *a, **k: (_ for _ in ()).throw(AssertionError("get")),
+                    "register": lambda *a, **k: (_ for _ in ()).throw(AssertionError("register")),
+                    "set_decision": lambda *a, **k: (_ for _ in ()).throw(AssertionError("set_decision")),
+                    "link_run": lambda *a, **k: (_ for _ in ()).throw(AssertionError("link_run")),
+                },
+            )()
+        )
+    )
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            api_key_principal_tenant_id="tenant-a",
+            require_api_key=True,
+            resolved_api_key="secret",
+        ),
+        trace_store=store,
+        experiment_store=recording,
+    )
+    with TestClient(app) as client:
+        response = client.get(
+            "/debug/tasks",
+            headers={"X-Api-Key": "secret"},
+            params={"tenant": "default"},
+        )
+    assert response.status_code == 403
+    assert recording.calls == []
+
+
+def test_wf_debug_authenticated_omitted_tenant_resolves_principal(
+    monkeypatch_harness_env: None,
+) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="tenant-a")
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            api_key_principal_tenant_id="tenant-a",
+            require_api_key=True,
+            resolved_api_key="secret",
+        ),
+        trace_store=store,
+    )
+    with TestClient(app) as client:
+        response = client.get("/debug/tasks", headers={"X-Api-Key": "secret"})
+    assert response.status_code == 200, response.text
+
+
+def test_wf_debug_authenticated_default_principal_explicit_default_accepted(
+    monkeypatch_harness_env: None,
+) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="default")
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            api_key_principal_tenant_id="default",
+            require_api_key=True,
+            resolved_api_key="secret",
+        ),
+        trace_store=store,
+    )
+    with TestClient(app) as client:
+        response = client.get(
+            "/debug/tasks",
+            headers={"X-Api-Key": "secret"},
+            params={"tenant": "default"},
+        )
+    assert response.status_code == 200, response.text
+
+
+def test_wf_debug_explicit_empty_tenant_query_rejected(monkeypatch_harness_env: None) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="tenant-a")
+    recording = _RecordingExperimentStore(
+        _SpyExperimentStore(
+            backend=type(
+                "Empty",
+                (),
+                {
+                    "list_experiments": lambda *a, **k: [],
+                    "get": lambda *a, **k: (_ for _ in ()).throw(AssertionError("get")),
+                    "register": lambda *a, **k: (_ for _ in ()).throw(AssertionError("register")),
+                    "set_decision": lambda *a, **k: (_ for _ in ()).throw(AssertionError("set_decision")),
+                    "link_run": lambda *a, **k: (_ for _ in ()).throw(AssertionError("link_run")),
+                },
+            )()
+        )
+    )
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            api_key_principal_tenant_id="tenant-a",
+            require_api_key=True,
+            resolved_api_key="secret",
+        ),
+        trace_store=store,
+        experiment_store=recording,
+    )
+    with TestClient(app) as client:
+        response = client.get(
+            "/debug/tasks",
+            headers={"X-Api-Key": "secret"},
+            params={"tenant": "   "},
+        )
+    assert response.status_code == 403
+    assert recording.calls == []
+
+
+def test_wf_debug_require_api_key_without_credential_authority_rejected(
+    monkeypatch_harness_env: None,
+) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="default")
+    recording = _RecordingExperimentStore(
+        _SpyExperimentStore(
+            backend=type(
+                "Empty",
+                (),
+                {
+                    "list_experiments": lambda *a, **k: [],
+                    "get": lambda *a, **k: (_ for _ in ()).throw(AssertionError("get")),
+                    "register": lambda *a, **k: (_ for _ in ()).throw(AssertionError("register")),
+                    "set_decision": lambda *a, **k: (_ for _ in ()).throw(AssertionError("set_decision")),
+                    "link_run": lambda *a, **k: (_ for _ in ()).throw(AssertionError("link_run")),
+                },
+            )()
+        )
+    )
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            require_api_key=True,
+            resolved_api_key=None,
+            identity_provider=None,
+        ),
+        trace_store=store,
+        experiment_store=recording,
+    )
+    with TestClient(app) as client:
+        response = client.get("/debug/tasks")
+    assert response.status_code == 403
+    assert recording.calls == []
+
+
+def test_wf_debug_tenant_required_without_verified_principal_rejected(
+    monkeypatch_harness_env: None,
+) -> None:
+    store = InMemoryRunTraceStore()
+    _seed_trace(store, run_id="run-1", tenant_id="tenant-a")
+    recording = _RecordingExperimentStore(
+        _SpyExperimentStore(
+            backend=type(
+                "Empty",
+                (),
+                {
+                    "list_experiments": lambda *a, **k: [],
+                    "get": lambda *a, **k: (_ for _ in ()).throw(AssertionError("get")),
+                    "register": lambda *a, **k: (_ for _ in ()).throw(AssertionError("register")),
+                    "set_decision": lambda *a, **k: (_ for _ in ()).throw(AssertionError("set_decision")),
+                    "link_run": lambda *a, **k: (_ for _ in ()).throw(AssertionError("link_run")),
+                },
+            )()
+        )
+    )
+    app = _auth_app(
+        harness_auth=HarnessAuthState(
+            require_api_key=False,
+            tenant_required=True,
+            resolved_api_key=None,
+            identity_provider=None,
+        ),
+        trace_store=store,
+        experiment_store=recording,
+    )
+    with TestClient(app) as client:
+        response = client.get("/debug/tasks")
+    assert response.status_code == 403
+    assert recording.calls == []

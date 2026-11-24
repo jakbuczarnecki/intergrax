@@ -160,41 +160,41 @@ def _checkpoint_store_factory(
 _LABORATORY_DEFAULT_TENANT = "default"
 
 
+def _resolve_laboratory_query_tenant(query_tenant: str | None) -> str:
+    if query_tenant is None:
+        return _LABORATORY_DEFAULT_TENANT
+    explicit = query_tenant.strip()
+    if not explicit:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant query must not be empty",
+        )
+    return explicit
+
+
 def _resolve_debug_route_tenant(
     request: Request,
     *,
-    query_tenant: str,
+    query_tenant: str | None,
     x_api_key: str | None = None,
     authorization: str | None = None,
 ) -> str:
     """Resolve authoritative tenant for tenant-scoped debug handlers."""
     state = _harness_auth_state_from_request(request)
-    if _local_dev_auth_bypass_allowed(state):
-        return query_tenant
-
     credential_authority_configured = state is not None and (
         state.resolved_api_key is not None or state.identity_provider is not None
     )
-    if credential_authority_configured and state is not None and state.tenant_required:
-        principal = resolve_harness_authenticated_principal_for_state(
-            harness_auth=state,
-            x_api_key=x_api_key,
-            authorization=authorization,
+    auth_required = state is not None and state.require_api_key
+    tenant_authority_required = state is not None and state.tenant_required
+
+    if auth_required and not credential_authority_configured:
+        raise HTTPException(
+            status_code=403,
+            detail="Authenticated tenant authority is required",
         )
-        if principal is None:
-            raise HTTPException(
-                status_code=403,
-                detail="Authenticated tenant authority is required",
-            )
-        explicit = (query_tenant or "").strip()
-        if not explicit or explicit == _LABORATORY_DEFAULT_TENANT:
-            return principal.tenant_id
-        if explicit != principal.tenant_id:
-            raise HTTPException(
-                status_code=403,
-                detail="tenant query conflicts with authenticated principal",
-            )
-        return principal.tenant_id
+
+    if _local_dev_auth_bypass_allowed(state) and not tenant_authority_required:
+        return _resolve_laboratory_query_tenant(query_tenant)
 
     principal = resolve_harness_authenticated_principal_for_state(
         harness_auth=state,
@@ -202,9 +202,14 @@ def _resolve_debug_route_tenant(
         authorization=authorization,
     )
     if principal is not None:
-        explicit = (query_tenant or "").strip()
-        if not explicit or explicit == _LABORATORY_DEFAULT_TENANT:
+        if query_tenant is None:
             return principal.tenant_id
+        explicit = query_tenant.strip()
+        if not explicit:
+            raise HTTPException(
+                status_code=403,
+                detail="tenant query must not be empty",
+            )
         if explicit != principal.tenant_id:
             raise HTTPException(
                 status_code=403,
@@ -212,17 +217,17 @@ def _resolve_debug_route_tenant(
             )
         return principal.tenant_id
 
-    if credential_authority_configured:
+    if tenant_authority_required or auth_required:
         raise HTTPException(
             status_code=403,
             detail="Authenticated tenant authority is required",
         )
-    return query_tenant
+    return _resolve_laboratory_query_tenant(query_tenant)
 
 
 def _debug_tenant_scope(
     request: Request,
-    tenant: str = Query(default="default", description="Tenant id filter"),
+    tenant: str | None = Query(default=None, description="Tenant id filter"),
     x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
     authorization: Annotated[str | None, Header()] = None,
 ) -> str:

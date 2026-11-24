@@ -171,20 +171,14 @@ class ExperimentSession:
         return self._trace_db
 
     def _experiment_store_get(self, experiment_id: str) -> ExperimentRecord:
-        try:
-            return self._experiment_store.get(experiment_id, tenant_id=self.tenant_id)
-        except TypeError:
-            return self._experiment_store.get(experiment_id)
+        return self._experiment_store.get(experiment_id, tenant_id=self.tenant_id)
 
     def _experiment_store_link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
-        try:
-            return self._experiment_store.link_run(
-                experiment_id,
-                run_id,
-                tenant_id=self.tenant_id,
-            )
-        except TypeError:
-            return self._experiment_store.link_run(experiment_id, run_id)
+        return self._experiment_store.link_run(
+            experiment_id,
+            run_id,
+            tenant_id=self.tenant_id,
+        )
 
     def _experiment_store_set_decision(
         self,
@@ -193,19 +187,12 @@ class ExperimentSession:
         *,
         notes: str | None,
     ) -> ExperimentRecord:
-        try:
-            return self._experiment_store.set_decision(
-                experiment_id,
-                decision,
-                notes=notes,
-                tenant_id=self.tenant_id,
-            )
-        except TypeError:
-            return self._experiment_store.set_decision(
-                experiment_id,
-                decision,
-                notes=notes,
-            )
+        return self._experiment_store.set_decision(
+            experiment_id,
+            decision,
+            notes=notes,
+            tenant_id=self.tenant_id,
+        )
 
     def register(self, request: RegisterExperimentRequest) -> ExperimentRecord:
         bound_tenant = _resolve_register_tenant(self.tenant_id, request.tenant_id)
@@ -233,6 +220,9 @@ class ExperimentSession:
             raise ValueError(
                 f"Experiment {record.experiment_id!r} is not available for tenant {self.tenant_id!r}"
             ) from exc
+        if authoritative.experiment_id != record.experiment_id:
+            raise ValueError("Persisted experiment_id does not match requested experiment")
+        _assert_record_tenant_authorized(self.tenant_id, authoritative)
         _assert_record_matches_persisted(record, authoritative)
 
         task = Task(
