@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "wave": "EC-V3-W02-CORRECTIVE-01",
+  "mode": "CHATGPT_DIRECT_IMPLEMENTATION",
+  "target": "arch-freeze/rw-train",
+  "kind": "product",
+  "branch": "ec-v3/w02-corrective-authorized",
+  "base_sha": "be0ce70d39b0d811e96177410ac5f9d27c770c5c",
+  "ticket": "governance/tickets/T-IGX-074-A.md",
+  "write_set": [
+    "applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py",
+    "intergrax/applications/_shared/runtime_event_delivery_wiring.py",
+    "intergrax/applications/_shared/sandbox_wiring.py",
+    "scripts/maintenance/check_sandbox_policy_wiring.py",
+    "tests/unit/applications/task_control_product_host_test_support.py",
+    "tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py",
+    "tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py",
+    "intergrax/applications/_shared/environment_wiring.py",
+    "tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py",
+    "tests/unit/applications/scenario_runtime_test_support.py",
+    "scripts/maintenance/check_harness_observability_wiring.py"
+  ],
+  "pr_title": "fix(wiring): complete guarded OTLP and sandbox composition"
+}
