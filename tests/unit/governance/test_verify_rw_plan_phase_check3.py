@@ -24,6 +24,15 @@ def _load_verify():
     return mod
 
 
+def _known_red_inventory() -> list[dict]:
+    path = _REPO / "scripts/governance/known_red_fix_rows.py"
+    spec = importlib.util.spec_from_file_location("known_red_fix_rows", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return list(mod.KNOWN_RED_FIX_INVENTORY)
+
+
 def _base_plan_row(frz: str = "FRZ-BND-04") -> dict:
     return {
         "frz_id": frz,
@@ -83,6 +92,7 @@ def _minimal_plan(extra_rows: list[dict] | None = None) -> dict:
             ],
             "W3": [],
         },
+        "known_red_fix_inventory": _known_red_inventory(),
     }
 
 

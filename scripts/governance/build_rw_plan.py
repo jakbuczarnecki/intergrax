@@ -312,6 +312,18 @@ def _reconcile_35_vs_45(rows: list[CodeFixRow]) -> dict[str, object]:
     }
 
 
+def _load_known_red_fix_inventory() -> list[dict[str, object]]:
+    import importlib.util
+
+    path = Path(__file__).with_name("known_red_fix_rows.py")
+    spec = importlib.util.spec_from_file_location("known_red_fix_rows", path)
+    if spec is None or spec.loader is None:
+        raise SystemExit("cannot load known_red_fix_rows")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return list(getattr(mod, "KNOWN_RED_FIX_INVENTORY"))
+
+
 def build() -> dict[str, object]:
     head = _git_head()
     prior_rf = _load_prior_red_first()
@@ -391,6 +403,7 @@ def build() -> dict[str, object]:
             "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
             "qualified_at_head": "Not claimed — diagnostic W2 outputs only",
         },
+        "known_red_fix_inventory": _load_known_red_fix_inventory(),
     }
     return payload
 
@@ -428,6 +441,23 @@ def _render_md(payload: dict[str, object]) -> str:
             f"| `{r['frz_id']}` | {owner_disp} | "
             f"{r.get('negative_test_id') or '—'} | {r['red_first_status']} @ {sha_disp} | {r['regression_scope']} |"
         )
+    kr_rows = payload.get("known_red_fix_inventory") or []
+    if kr_rows:
+        lines.extend(
+            [
+                "",
+                "## 1b. Known-red FIX inventory (20)",
+                "",
+                "| KR | Owner node | Negative test | File scope (summary) |",
+                "|----|------------|---------------|----------------------|",
+            ]
+        )
+        for r in kr_rows:
+            scope = r.get("file_scope") or []
+            scope_disp = "; ".join(scope[:2])
+            if len(scope) > 2:
+                scope_disp += f" (+{len(scope) - 2})"
+            lines.append(f"| `{r['kr_id']}` | {r['owner_node']} | {r['negative_test_id']} | {scope_disp} |")
     lines.extend(
         [
             "",

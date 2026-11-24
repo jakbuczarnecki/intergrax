@@ -1,7 +1,7 @@
 # RW-PLAN — T-AF2-RW-PLAN (canonical)
 
-**Generated:** 2026-11-24T11:55:23.254210+00:00
-**Execution SHA:** `80fef89fec10b45efe15efb612111793b6ffebdc`
+**Generated:** 2026-11-24T16:49:22.654721+00:00
+**Execution SHA:** `deea67621120403edb2d9bdd33e3eed8903199de`
 **Node:** T-AF2-RW-PLAN (W2, DOC)
 
 ## 0. Reconciliation (35 vs 45 CODE_FIX)
@@ -54,6 +54,31 @@
 | `FRZ-TYP-01` | T-IGX-051-G | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
 | `FRZ-TYP-03` | T-IGX-051-G | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
 | `FRZ-TYP-05` | T-IGX-051-G | NT-TYP-05 | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
+
+## 1b. Known-red FIX inventory (20)
+
+| KR | Owner node | Negative test | File scope (summary) |
+|----|------------|---------------|----------------------|
+| `KR-03` | T-AF2-RW-GATES | NT-KR-03-01 | tests/unit/runtime/nexus/test_reference_harness_strict.py |
+| `KR-04` | T-AF2-RW-GATES | NT-KR-04-01 | tests/unit/runtime/policy/test_acp_token_budget_enforcement.py |
+| `KR-07` | T-AF2-RW-SUPPLY | NT-KR-07-01 | scripts/ci/durable_diagnostics_external_proof.py |
+| `KR-08` | PT-Q03 | NT-KR-08-01 | scripts/governance/iiac_activation_gate.py |
+| `KR-09` | PT-Q11 | NT-KR-09-01 | scripts/qualification/render_ebh7_f10_normative_matrix.py |
+| `KR-10` | PT-Q04 | NT-KR-10-01 | tests/qualification/roadmap_replay_x/test_replay_x_closure_counters_computed.py |
+| `KR-11` | PT-Q06 | NT-KR-11-01 | tests/qualification/trace_x/test_txp6_q02_restart_resume_closed_world_parity.py; intergrax/platform/enterprise_audit/impact_map.py |
+| `KR-13` | T-AF2-RW-GATES | NT-KR-13-01 | tests/qualification/platform_domain_completeness/ |
+| `KR-14` | T-AF2-RW-GATES | NT-KR-14-01 | tests/unit/applications/test_scenario_runtime_baseline.py |
+| `KR-15` | T-B7-CMP-REVAL | NT-KR-15-01 | tests/qualification/compat_x/ |
+| `KR-16` | PT-WB | NT-KR-16-01 | tests/unit/applications/test_fixture_dataset_ingestion.py; tests/unit/applications/test_image_smart_document_handler.py |
+| `KR-17` | T-AF2-RW-RUNTIME | NT-KR-17-01 | intergrax/integrations/providers/relational_store/mongodb/client.py |
+| `KR-18` | PT-WA | NT-KR-18-01 | intergrax/applications/contracts/environment_profile/root.py |
+| `KR-19` | PT-WF | NT-KR-19-01 | intergrax/runtime/observability_otlp/export_boundary.py |
+| `KR-20` | PT-WF | NT-KR-20-01 | tests/qualification/trace_x/; intergrax/applications/local_workspace_application/ |
+| `KR-23` | PT-Q07 | NT-KR-23-01 | tests/unit/applications/test_mcp_surface_opt_in.py; tests/unit/applications/test_mcp_surface_opt_in_runtime.py (+1) |
+| `KR-24` | T-IGX-039-A | NT-KR-24-01 | tests/unit/applications/test_mcp_surface_opt_in.py |
+| `KR-26` | PT-WD | NT-KR-26-01 | intergrax/platform/enterprise_audit/validators.py |
+| `KR-27` | PT-G01 | NT-KR-27-01 | intergrax/integrations/providers/embedding_provider/ollama/register.py |
+| `KR-28` | PT-G01 | NT-KR-28-01 | tests/acceptance/llm_routing/test_llm_routing_acceptance.py; tests/acceptance/llm_routing/test_llm_routing_resolver_acceptance.py |
 
 ## 2. Audit-flag conflicts (6)
 
