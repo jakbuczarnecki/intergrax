@@ -17,14 +17,17 @@ module does not depend on the owners of those artifacts.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import math
 import re
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.agent_step import AgentStep
 from intergrax.contracts.canonical_payload_hash import stable_payload_hash
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 
 EVAL_CONTRACT_SCHEMA_VERSION = "eval_contracts.v1"
 
@@ -38,6 +41,17 @@ class EvalContractError(ValueError):
 
 class EvalDigestMismatchError(EvalContractError):
     """A declared content digest does not match the recomputed digest."""
+
+
+class EvalScenarioStepSignatureError(EvalContractError):
+    """Agent ``get_steps`` does not implement the canonical ``(self, context)`` signature."""
+
+
+@runtime_checkable
+class EvalScenarioStepProvider(Protocol):
+    """Canonical evaluation scenario step list (EX-D3-04 / T-AF2-RW-GATES)."""
+
+    def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]: ...
 
 
 class EvalTenantBoundaryError(EvalContractError):
@@ -504,3 +518,66 @@ class EvalComparison(BaseModel):
     @property
     def comparison_digest(self) -> str:
         return stable_payload_hash(self.model_dump(mode="json"))
+
+
+def resolve_eval_scenario_steps(
+    agent: object,
+    context: RuntimeExecutionContext,
+) -> tuple[AgentStep, ...]:
+    """Resolve scenario steps; refuse legacy ``get_steps()`` without context (no reflection bypass)."""
+    method = getattr(agent, "get_steps", None)
+    if method is None or not callable(method):
+        raise EvalScenarioStepSignatureError(f"{type(agent).__name__} has no callable get_steps")
+    class_method = getattr(agent.__class__, "get_steps", None)
+    if class_method is None:
+        raise EvalScenarioStepSignatureError(f"{type(agent).__name__} has no class-level get_steps")
+    parameters = [name for name in inspect.signature(class_method).parameters if name != "self"]
+    if len(parameters) != 1:
+        raise EvalScenarioStepSignatureError(
+            f"{type(agent).__name__}.get_steps must accept exactly one context argument "
+            f"(canonical signature get_steps(self, context)); found {parameters!r}"
+        )
+    steps = method(context)
+    if not isinstance(steps, (list, tuple)) or not steps:
+        raise EvalScenarioStepSignatureError(
+            f"{type(agent).__name__}.get_steps(context) must return a non-empty list of AgentStep"
+        )
+    return tuple(steps)
+
+
+def enforce_eval_run_digests(
+    run: EvalRun,
+    *,
+    declared_inputs_digest: str,
+    declared_result_digest: str,
+) -> None:
+    """Fail closed when pinned digests do not match recomputed run digests."""
+    if declared_inputs_digest != run.inputs_digest:
+        raise EvalDigestMismatchError(
+            f"eval run inputs digest mismatch: declared {declared_inputs_digest} != {run.inputs_digest}"
+        )
+    if declared_result_digest != run.result_digest:
+        raise EvalDigestMismatchError(
+            f"eval run result digest mismatch: declared {declared_result_digest} != {run.result_digest}"
+        )
+
+
+def verify_eval_comparison_digests(
+    comparison: EvalComparison,
+    *,
+    baseline_run: EvalRun,
+    candidate_run: EvalRun,
+) -> None:
+    """Bind comparison records to concrete runs; tamper on any of the three digests is denied."""
+    if comparison.baseline_run_id != baseline_run.run_id:
+        raise EvalDigestMismatchError("comparison baseline_run_id does not match baseline run")
+    if comparison.candidate_run_id != candidate_run.run_id:
+        raise EvalDigestMismatchError("comparison candidate_run_id does not match candidate run")
+    if comparison.baseline_result_digest != baseline_run.result_digest:
+        raise EvalDigestMismatchError("comparison baseline_result_digest does not match baseline run")
+    if comparison.candidate_result_digest != candidate_run.result_digest:
+        raise EvalDigestMismatchError("comparison candidate_result_digest does not match candidate run")
+    if comparison.dataset_digest != baseline_run.dataset_digest:
+        raise EvalDigestMismatchError("comparison dataset_digest does not match baseline run dataset")
+    if comparison.tenant_id != baseline_run.tenant_id or comparison.tenant_id != candidate_run.tenant_id:
+        raise EvalTenantBoundaryError("comparison tenant_id does not match evaluation runs")
