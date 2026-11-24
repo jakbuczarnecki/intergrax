@@ -1,0 +1,139 @@
+# Canonical mechanical seam ledger (PT-G01 / AR-26).
+# Cross-boundary imports are declared here; closed lists load from existing gate modules (no second copy).
+
+version: 1
+schema_id: intergrax.seam_ledger.v1
+
+seam_types:
+  contract:
+    owner: T-IGX-046-H
+    source_layer: tier2_agents
+    target_layer: tier0_integrations_contracts
+    contract: "Tier-2 imports integration types only from intergrax.integrations.contracts leaves (DP-14)."
+    validation_mechanism: scripts/maintenance/check_agent_registry_bypass.py
+    allowed_use: "Contract leaf imports under agents/ for ports and DTOs."
+  di:
+    owner: T-IGX-043-H
+    source_layer: tier3_composition
+    target_layer: tier0_integration_profile
+    contract: "Resolve providers via IntegrationProfile and resolve_from_profile; not via ad-hoc provider packages outside composition roots."
+    validation_mechanism: intergrax/integrations/registry/factory.py
+    allowed_use: "Host wiring and registry composition."
+  provider_composition:
+    owner: T-IGX-043-H
+    source_layer: tier1_tier3_roots
+    target_layer: tier1_integrations_providers
+    contract: "Closed list of composition roots (DP-18); list may shrink, not grow without Operator ruling."
+    validation_mechanism: tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py
+    allowed_use: "Factory and wiring modules on the closed provider-root list only."
+  runtime_assembly:
+    owner: T-IGX-043-A
+    source_layer: tier3_manifest
+    target_layer: tier1_runtime_graph
+    contract: "Assemble harness via build_harness_host_runtime with explicit construction posture (DP-27)."
+    validation_mechanism: tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py
+    allowed_use: "Sanctioned construction sites for NexusLoop and AgentRouter."
+  application_hosting:
+    owner: T-IGX-043-H
+    source_layer: tier3_serving
+    target_layer: tier1_hosting_engine
+    contract: "Production strict serving through run_hosted_application and resolved hosted definition (DP-19)."
+    validation_mechanism: intergrax/hosting/runner.py
+    allowed_use: "Hosted supervisor foreground entry with optional runner factories."
+  lifecycle_activation:
+    owner: T-IGX-051-E
+    source_layer: tier1_hosting_supervisor
+    target_layer: tier1_lifecycle_state_machine
+    contract: "HostedApplicationLifecycleState transitions via HostedApplicationLifecycleController (APP-HOST-2A)."
+    validation_mechanism: intergrax/hosting/engine/lifecycle.py
+    allowed_use: "Engine and supervisor drive valid lifecycle transitions and metrics."
+  dynamic_import:
+    owner: T-IGX-051-I
+    source_layer: tier3_loaders
+    target_layer: tier2_agents_packages
+    contract: "importlib loaders call require_import_allowed before importlib.import_module (DP-21, A4-007)."
+    validation_mechanism: intergrax/applications/_shared/import_allowlist.py
+    allowed_use: "Manifest-driven agent, factory, and package loading under import_policy."
+  policy_enforcement:
+    owner: T-IGX-043-B
+    source_layer: tier3_environment_profile
+    target_layer: tier3_shared_wiring
+    contract: "wiring_fails_closed when PRODUCT profile or STRICT execution mode (DP-24)."
+    validation_mechanism: intergrax/applications/_shared/wiring_posture.py
+    allowed_use: "Guarded import policy derivation and fail-closed composition."
+    co_owners:
+      - T-IGX-043-G
+
+import_rules:
+  - id: agents_no_direct_integrations
+    seam_type: contract
+    owner: T-IGX-046-H
+    direction: tier2_to_tier0_contract_leaves
+    scan_roots:
+      - agents
+    allowed_module_prefixes:
+      - intergrax.integrations.contracts
+    denied_module_prefixes:
+      - intergrax.integrations.providers
+      - intergrax.integrations._shared
+      - intergrax.integrations
+      - intergrax.tools
+    exclude_paths:
+      - agents/__init__.py
+  - id: lower_layers_no_applications
+    seam_type: policy_enforcement
+    owner: T-IGX-043-G
+    direction: tier01_to_tier3_forbidden
+    scan_roots:
+      - agents
+      - intergrax/agents
+      - intergrax/runtime
+      - intergrax/contracts
+      - intergrax/rag
+      - intergrax/tools
+      - intergrax/skills
+      - intergrax/llm_adapters
+    denied_module_prefixes:
+      - intergrax.applications
+      - applications
+
+external_registries:
+  - id: closed_provider_roots
+    seam_type: provider_composition
+    owner: T-IGX-043-H
+    module: tests.unit.architecture.test_rw_bnd05_provider_switch_gate
+    symbol: CLOSED_PROVIDER_ROOTS
+    provider_import_scan_module: tests.unit.architecture.test_rw_bnd05_provider_switch_gate
+    provider_import_scan_callable: _provider_importing_modules
+
+symbol_anchors:
+  - id: harness_assembly_entry
+    seam_type: runtime_assembly
+    owner: T-IGX-043-A
+    module: intergrax.applications._shared.harness_host_runtime
+    symbol: build_harness_host_runtime
+  - id: hosted_application_entry
+    seam_type: application_hosting
+    owner: T-IGX-043-H
+    module: intergrax.hosting.runner
+    symbol: run_hosted_application
+  - id: lifecycle_controller
+    seam_type: lifecycle_activation
+    owner: T-IGX-051-E
+    module: intergrax.hosting.engine.lifecycle
+    symbol: HostedApplicationLifecycleController
+  - id: resolve_from_profile_entry
+    seam_type: di
+    owner: T-IGX-043-H
+    module: intergrax.integrations.registry.factory
+    symbol: resolve_from_profile
+  - id: wiring_fails_closed_predicate
+    seam_type: policy_enforcement
+    owner: T-IGX-043-B
+    module: intergrax.applications._shared.wiring_posture
+    symbol: wiring_fails_closed
+  - id: require_import_allowed_guard
+    seam_type: dynamic_import
+    owner: T-IGX-051-I
+    module: intergrax.applications._shared.import_allowlist
+    symbol: require_import_allowed
