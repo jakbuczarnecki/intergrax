@@ -34,6 +34,11 @@ _SANCTIONED_PRODUCTION_CALLERS = (
 )
 
 
+def _is_application_docker_runtime_context_mirror(parts: tuple[str, ...]) -> bool:
+    """Distribution mirrors are vendored copies, not composition roots (W3 C1-R)."""
+    return len(parts) >= 4 and parts[0] == "applications" and parts[2] == "docker" and parts[3] == "runtime-context"
+
+
 @dataclass(frozen=True, slots=True)
 class Violation:
     relative_path: str
@@ -104,6 +109,8 @@ def _product_sources() -> list[tuple[str, str]]:
         for path in sorted((_REPO / root).rglob("*.py")):
             relative = path.relative_to(_REPO)
             if _EXCLUDED_PARTS.intersection(relative.parts):
+                continue
+            if _is_application_docker_runtime_context_mirror(relative.parts):
                 continue
             sources.append((relative.as_posix(), path.read_text(encoding="utf-8")))
     return sources

@@ -34,6 +34,11 @@ _CONTRACT_FORBIDDEN_IMPORT_PREFIXES = (
 )
 
 
+def _is_application_docker_runtime_context_mirror(parts: tuple[str, ...]) -> bool:
+    """Distribution mirrors are vendored copies, not production composition roots."""
+    return len(parts) >= 4 and parts[0] == "applications" and parts[2] == "docker" and parts[3] == "runtime-context"
+
+
 def _is_tier23_production_module(path: Path) -> bool:
     """Tier-2/3 trees co-locate tests; production-only scan matches NT-RW-WA-01 layout."""
     rel_parts = path.relative_to(_REPO_ROOT).parts
@@ -55,6 +60,8 @@ def _platform_python_files() -> list[Path]:
                 continue
             rel = path.relative_to(_REPO_ROOT).as_posix()
             if rel.startswith(_INTEGRATIONS_PREFIX):
+                continue
+            if _is_application_docker_runtime_context_mirror(path.relative_to(_REPO_ROOT).parts):
                 continue
             if root_name in {"agents", "applications"} and not _is_tier23_production_module(path):
                 continue
@@ -200,6 +207,8 @@ def test_ebh_3_circuit_breaker_config_has_single_class_definition() -> None:
         if not root.is_dir():
             continue
         for path in root.rglob("*.py"):
+            if _is_application_docker_runtime_context_mirror(path.relative_to(_REPO_ROOT).parts):
+                continue
             try:
                 tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             except OSError:
@@ -233,6 +242,8 @@ def test_ebh_3_applications_must_not_construct_private_integration_breaker() -> 
         if not root.is_dir():
             continue
         for path in sorted(root.rglob("*.py")):
+            if _is_application_docker_runtime_context_mirror(path.relative_to(_REPO_ROOT).parts):
+                continue
             violations.extend(_collect_applications_private_breaker_violations(path))
     assert not violations, violations
 
