@@ -21,8 +21,6 @@ EMBEDDING_MODEL_VERSION_METADATA_KEY = "embedding_model_version"
 
 ReindexQueueHook = Callable[["ReindexQueueRequest"], None]
 
-_reindex_queue_hooks: list[ReindexQueueHook] = []
-
 
 @dataclass(frozen=True)
 class ReindexQueueRequest:
@@ -30,6 +28,16 @@ class ReindexQueueRequest:
     current_version: str | None
     target_version: str
     reason: str
+    tenant_id: str | None = None
+
+
+@dataclass(frozen=True)
+class _RegisteredReindexHook:
+    callback: ReindexQueueHook
+    tenant_id: str | None = None
+
+
+_reindex_queue_hooks: list[_RegisteredReindexHook] = []
 
 
 @dataclass
@@ -38,9 +46,9 @@ class EmbeddingVersionPolicyResult:
     reindex_enqueued: bool = False
 
 
-def register_reindex_queue_hook(callback: ReindexQueueHook) -> None:
+def register_reindex_queue_hook(callback: ReindexQueueHook, *, tenant_id: str | None = None) -> None:
     """Register a Tier-3/workflow hook for stale-index reindex requests."""
-    _reindex_queue_hooks.append(callback)
+    _reindex_queue_hooks.append(_RegisteredReindexHook(callback=callback, tenant_id=tenant_id))
 
 
 def clear_reindex_queue_hooks() -> None:
@@ -60,6 +68,7 @@ def evaluate_ingest_embedding_version(
     base_metadata: Mapping[str, Any],
     source_path: str,
     indexed_version_hint: str | None = None,
+    tenant_id: str | None = None,
 ) -> EmbeddingVersionPolicyResult:
     """
     Warn when ingest metadata or indexed corpus version disagrees with profile.
@@ -83,6 +92,7 @@ def evaluate_ingest_embedding_version(
                 current_version=incoming,
                 target_version=target,
                 reason="incoming_metadata_version_mismatch",
+                tenant_id=tenant_id,
             )
             or result.reindex_enqueued
         )
@@ -96,6 +106,7 @@ def evaluate_ingest_embedding_version(
                 current_version=indexed,
                 target_version=target,
                 reason="indexed_version_mismatch",
+                tenant_id=tenant_id,
             )
             or result.reindex_enqueued
         )
@@ -142,12 +153,21 @@ def filter_chunks_by_embedding_version[TChunk](
     return kept, filtered_count, warnings
 
 
+def _hook_runs_for_request(*, hook_tenant_id: str | None, request_tenant_id: str | None) -> bool:
+    if hook_tenant_id is None:
+        return True
+    if request_tenant_id is None or not str(request_tenant_id).strip():
+        return False
+    return hook_tenant_id == request_tenant_id
+
+
 def _notify_reindex_needed(
     *,
     source_path: str,
     current_version: str | None,
     target_version: str,
     reason: str,
+    tenant_id: str | None = None,
 ) -> bool:
     if not _reindex_queue_hooks:
         return False
@@ -156,13 +176,19 @@ def _notify_reindex_needed(
         current_version=current_version,
         target_version=target_version,
         reason=reason,
+        tenant_id=tenant_id,
     )
     accepted = False
     # A failing operator hook must neither break retrieval or ingest nor starve the other hooks
     # (PDC-D2-R005): each hook runs isolated; the failure is logged and the request is not "enqueued".
-    for hook in list(_reindex_queue_hooks):
+    for registration in list(_reindex_queue_hooks):
+        if not _hook_runs_for_request(
+            hook_tenant_id=registration.tenant_id,
+            request_tenant_id=request.tenant_id,
+        ):
+            continue
         try:
-            hook(request)
+            registration.callback(request)
         except Exception:  # noqa: BLE001 - hook failures are isolated by design
             logger.warning(
                 "reindex queue hook failed for source=%s reason=%s",

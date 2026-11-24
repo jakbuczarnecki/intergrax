@@ -272,6 +272,7 @@ class IngestPipeline:
                 base_metadata=base_metadata,
                 source_path=str(path),
                 indexed_version_hint=base_metadata.get("indexed_embedding_model_version"),
+                tenant_id=tenant_id,
             )
             if self._profile.embedding_model_version:
                 base_metadata["embedding_model_version"] = self._profile.embedding_model_version
