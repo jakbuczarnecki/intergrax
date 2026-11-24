@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    PersistedTraceCompletionAlignmentPayload,
+    PersistedTraceReconciliationPhase,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -16,19 +20,15 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_run_id,
 )
-from intergrax.contracts.deferred_persisted_trace_finalize_port import (
-    PersistedTraceCompletionAlignmentPayload,
-    PersistedTraceReconciliationPhase,
+from intergrax.contracts.tracing import (
+    TraceComponent,
+    TraceLevel,
 )
 from intergrax.runtime.execution.trace_persistence_models_bridge import (
     CompletionAlignmentDiagV1,
     EvaluatorModelAttemptDiagV1,
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
-)
-from intergrax.contracts.tracing import (
-    TraceComponent,
-    TraceLevel,
 )
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_trace import (
@@ -49,6 +49,14 @@ O2_SUPPORTED_TRACE_SCHEMA_IDS: tuple[str, ...] = (
     *O1_SUPPORTED_TRACE_SCHEMA_IDS,
     CompletionAlignmentDiagV1.schema_id(),
 )
+
+# Canonical runtime-event envelope for qualification trace diagnostics (trace_bridge.v1).
+TRACE_BRIDGE_PAYLOAD_SCHEMA_ID = "trace_bridge.v1"
+
+
+def qualification_runtime_trace_diagnostic_schema_ids() -> tuple[str, ...]:
+    """Diagnostic schema IDs emitted through qualification trace ports (O1/O2)."""
+    return O2_SUPPORTED_TRACE_SCHEMA_IDS
 
 
 class RuntimeDiagnosticTracePort(Protocol):
