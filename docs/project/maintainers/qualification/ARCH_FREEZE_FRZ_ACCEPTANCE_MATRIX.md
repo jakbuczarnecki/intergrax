@@ -636,7 +636,7 @@ Quoted from plan section D. Path B never holds a tenant, fail-closed, contract o
 | `FRZ-SEC-05` | sandbox admission and isolation gates PASS at M3; logical egress deny-all PASS; AW-7C PHYSQ reference-substrate replay needs a qualified Linux environment and an explicit authorisation under C10/C15 (FRZ_RR) | physical egress and live isolation strength of E2B/Modal/Daytona: NOT_CLAIMED in the contract manifest, N/A WITH EVIDENCE for that part | T-AF2-RW-SUPPLY (T-IGX-051-B), T-AF2-MANIFESTS (T-IGX-050-G), PT-D10 (row text 'PROD-Q still required' needs a DOC_PATCH), T-B7-PROMOTE-SEC | OD-AF-18; not L66; PDC-D6-R010 'provider live = Path B' superseded (FRZ_RR flag 1) |
 | `FRZ-SEC-06` | provider/plugin trust admission (digest, attestation) PASS at M3; plugin trust model stays mandatory (PDC-D6-R016, D1-R003, D1-R013 per FRZ_RR) | live qualification of E2B/Modal/Daytona as production providers: NOT_CLAIMED, frozen-scope exclusion, N/A WITH EVIDENCE; the wording must not cover plugin trust | T-AF2-RW-SUPPLY (T-IGX-051-B), T-AF2-MANIFESTS, PT-D10 (checklist text L223 'remains OPEN (PROD-Q)'), T-B7-PROMOTE-SEC | OD-AF-18; not L66 |
 
-SEC-05 and SEC-06 are not Path B rows (checklist L66); their `NOT_CLAIMED` part is a frozen-scope exclusion with its own decision, OD-AF-18, and the alternative is to build and qualify those providers. FRZ_RR also records that the checklist has no `NOT_CLAIMED` text yet.
+SEC-05 and SEC-06 are not Path B rows (checklist L66). Per **OD-AF-18**, the live qualification of E2B, Modal and Daytona as production sandbox **providers** is **`NOT_CLAIMED`** (frozen-scope exclusion, N/A WITH EVIDENCE for that slice only). **Architecture** admission, isolation and plugin trust gates remain mandatory and are **not** waived by Path B or OD-AF-18 (AF-02A-G6 F-PT-003). This matrix and MEP split text record `NOT_CLAIMED`; the Operator-only checklist row text is still amended via PT-D10.
 
 A/B chain of 14 rows (EQOA-A7-019, FRZ_RR counts 14; FRZ-PRD-05 is tagged too but is architecture and gets no live sub-row): FRZ-PRD-04, FRZ-PRD-11, FRZ-PRD-12, FRZ-REG-08, FRZ-REL-03, FRZ-REL-05, FRZ-REL-08, FRZ-REL-09, FRZ-REL-10, FRZ-REL-11, FRZ-SEC-01, FRZ-SEC-05, FRZ-SEC-06, FRZ-SEC-09. Their split is a checklist amendment (PT-D10); this matrix records it in `operator_decision` and does not apply it.
 
@@ -1039,8 +1039,8 @@ Applied as notes only; no row is promoted and the checklist is untouched.
 
 | # | Flag | Applied in |
 | ---: | --- | --- |
-| 1 | SEC-05: PDC text 'provider live = Path B' versus OD-AF-18 | `path_B` and `operator_decision` of FRZ-SEC-05; Appendix B |
-| 2 | SEC-05/06 in the DP-34 chain versus OD-AF-18; WP-4 owner and vehicle stale | `operator_decision` of FRZ-SEC-05/06; Appendix B |
+| 1 | SEC-05: PDC text 'provider live = Path B' versus OD-AF-18 | **Disposition (AD-AF-PTFRZ-001):** PDC live wording is non-authoritative; OD-AF-18 `NOT_CLAIMED` applies to named providers only — see Appendix B and [`arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md`](./arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md) |
+| 2 | SEC-05/06 in the DP-34 chain versus OD-AF-18; WP-4 owner and vehicle stale | **Disposition:** DP-34 A/B split stands; not L66 whole-row Path B; architecture sub-rows mandatory; provider slice `NOT_CLAIMED` per OD-AF-18 — Appendix B |
 | 3 | RPL-02: PDC-D3-R017 'live parity = Path B' while the row is not on L66 | `operator_decision` of FRZ-RPL-02; `path_B` = NONE |
 | 4 | N/A_WITH_EVIDENCE on live parts (PDC-D3-R021 to PRD-01, PDC-D6-R026 to SEC-04) must not propagate | `operator_decision` / `NA_condition` of FRZ-PRD-01 and FRZ-SEC-04 |
 | 5 | Wide Path B wording in FRZ-FRZ-02 and roadmap L499 | `operator_decision` of FRZ-FRZ-02 (roadmap edit is Operator-only, PT-D09) |

@@ -41,6 +41,7 @@
   - (f) PT-D08 and PT-E05 depend on SCOPE, because they ride in the RW train (REV-MASTER RM-07);
   - (g) **SCOPE ← REV-MASTER, T-AF2-RW-PLAN and T-AF2-RW-PLAN-AUDIT** (REV-MASTER RM-02/RM-03);
   - (h) **M3 is in W6**: it is the EBH-7 pin, the last event of W6. W7 starts with LOCK = M3 (REV-MASTER RM-04).
+  - (i) **PT-FRZ-RR Path B (AD-AF-PTFRZ-001, AF-02B).** When WP-4 primary artefacts are irrecoverably absent, PT-FRZ-RR meets its **substantive** obligation through an independent **225-row** FRZ census and Path B protection audit at a pinned SHA (not a WP-4 row-level re-read). Evidence: dossier `.tmp/session/arch-freeze/frz-rr/FRZ_RR.md`, audit SHA `aaabfc6c8d3a0f7dd43ebd43f47d830bdf1c7a20`, verdict **PASS_WITH_FINDINGS**, findings F-PT-001..003. Normative text: [`PT_FRZ_RR_PATH_B_AMENDMENT.md`](./PT_FRZ_RR_PATH_B_AMENDMENT.md). **`PT_FRZ_RR_CLOSED`**, **DS-4** admission and FRZ row promotion are **unchanged** formal gates.
 
   T-AF2-DAG-REGEN (W0) applies these in `WP-12/plan_data.py`, re-runs the **full** WP-12 pipeline (`reconcile.py`, `blockers.py`, `build_plan.py`, `gen_auth.py`, `gen_master.py`), and re-checks acyclicity, phase check 1 and ENTRY reachability before W0 exits (REV-MASTER RM-01).
 - **Ticket series (OD-AF-01a, packet 2).** EQO-A owns `T-IGX-042-*` through `T-IGX-049-*` (its drafts already use `T-IGX-043-A..F` for FC-1..FC-4 and E/F). New tickets use **`T-IGX-050-*`** (W0–W2), **`T-IGX-051-*`** (RW product train) and **`T-IGX-052-*`** (W4–W8).
@@ -109,7 +110,7 @@ This plan joins both into one executable program. It ends at `ARCH-FREEZE CLOSED
 | `origin/development` | `7960ae7f6` (PR #604); the local checkout `76516c4dd` is 44 behind |
 | PDC-X | CLOSED: closure `feaa2a87d` (PR #603), SHA fill-in `399d194e5` (PR #604); global audit PASS_SCOPED @ `969cbd964`; OD-PDC-X-CLOSE signed in chat; the handoff still carries DRAFT headers, but its effective status is HANDOFF READY (SCOPED) and its limitations bind |
 | IIAC | IN_FORCE; policy `IIAC-2026-11-05.1`; effective_from `9f05749bc`; corrective `969cbd964`; audit_execution `a73d15ab3`. **ACT-N11 is measured from `audit_execution_sha` `a73d15ab3`** (`iiac_activation_gate.py`); zero product changes since |
-| EQO-A phase 2 | W0 decision sessions DS-1..DS-6 answered (DP-01..DP-68); DS-EXC, DS-Q, REV-MASTER and PT-FRZ-RR still open; W1/W2 docs batches in flight (#605, #606, #607, drafts) |
+| EQO-A phase 2 | W0 decision sessions DS-1..DS-6 answered (DP-01..DP-68); DS-EXC, DS-Q, REV-MASTER still open; **PT-FRZ-RR**: substantive basis **Path B accepted** (AD-AF-PTFRZ-001); **formal node closure open**; W1/W2 docs batches in flight (#605, #606, #607, drafts) |
 | Branch protection | none on `development` (404); ruleset "Protect development" has `deletion` + `non_fast_forward` and no bypass actors |
 | CI on `development` | "Regression gate" failed on the last 12 runs (`governance-fast`: IIAC A-01 tests from before the rebind); no run at HEAD |
 | FRZ | 225 / 26; PASS 108 + 8 variants; OPEN 109 |

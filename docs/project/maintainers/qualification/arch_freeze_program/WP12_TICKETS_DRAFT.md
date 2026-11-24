@@ -52,7 +52,7 @@ Placeholders `PT-*`; the Operator allocates real `T-IGX-NN-L` ids. Commit traile
 | DS-1 | DEC | W0 | Decision session DS-1: ground rules, impact definition, labels, delegation, ONE wave, exact-SHA meaning (DP-01..DP-12) | - | - |
 | DS-2 | DEC | W0 | Decision session DS-2: seams and layer boundaries (DP-13..DP-23) | - | - |
 | DS-3 | DEC | W0 | Decision session DS-3: fail-closed design and reachability-first checks (DP-24..DP-33) | - | - |
-| DS-4 | DEC | W0 | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); answered after the independent re-read PT-FRZ-RR | - | - |
+| DS-4 | DEC | W0 | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); after PT-FRZ-RR (Path B substitute per AD-AF-PTFRZ-001; formal node closure still required) | - | - |
 | DS-5 | DEC | W0 | Decision session DS-5: register, ownership, domains (DP-46..DP-57) | - | - |
 | DS-6 | DEC | W0 | Decision session DS-6: requalification schedule, pins, enforcement activation (DP-58..DP-68) | - | - |
 | AUTH-PRE | DEC | W0 | Intake of PRE authorizations: read scope AR-62, read-only/static probes AR-01..03, AR-11..13 | AR-62, AR-01, AR-02, AR-03, AR-11, AR-12, AR-13 | - |
@@ -92,7 +92,7 @@ Placeholders `PT-*`; the Operator allocates real `T-IGX-NN-L` ids. Commit traile
 | PT-AUD-ENF12 | AUD | W2 | AUD-ENF-A (part 1): independent audit of the trial and enforcement Stages 1 and 2 (ruleset JSON, verifier output, trial evidence N1..N10, read-only GETs) BEFORE Stage 3 may start; rollback rule: Stage 1/2 are live from W1/W2 without independent audit until this node passes - if it fails, or has not run when Stage 3 is due, the ruleset is disabled per WP-7 s4.6 and FRZ-AUD-10 stays COMPENSATING ... | AR-12-06 | is the audit |
 | PT-AUD-ENFA | AUD | W5 | AUD-ENF-A (part 2): independent audit of Stages 3-5, the boundary-gate required checks (PT-S06) and the optional auto-merge setting (PT-S07) before FRZ-AUD-10 may be called LIVE | AR-12-02, AR-25 | is the audit |
 | PT-AUD-DOC | AUD | W5 | Independent review of the statement-changing hunks of DB-A (roadmap) and DB-B (FRZ checklist) before the F10 render and the pin (88 hunks across WP-9 change certification statements) | AR-12-03 | is the review |
-| PT-FRZ-RR | AUD | W0 | Independent re-read of WP-4's 14 LOW-confidence OPEN classifications and the 28 would-be-hidden-obligation rows (one WP, three shards, never re-read); runs BEFORE the Path-B decisions DP-34..DP-40 so the Operator decides on re-read classifications (DR-05) | AR-12-04 | is the review |
+| PT-FRZ-RR | AUD | W0 | **Design:** WP-4 re-read (14 LOW + 28 hide-risk) before DP-34..DP-40 (DR-05). **Substitute (AD-AF-PTFRZ-001):** Path B full census @ audit SHA + FRZ_RR.md PASS_WITH_FINDINGS; WP-4 primary absent. Formal node closure and DS-4 remain separate gates | AR-12-04 | is the review |
 | PT-VBN | AUD | W7 | T-B7-VBN-INDEPENDENT-ACCEPT: independent acceptance that closes FIND-VBN-PARTIAL (EDER-D-0010; A7-005 stays a BLOCKER until it); runs after T-B7-LOCK-FREEZE-SHA (= M3) and T-B7-ECAP-2C in the merged DAG (WP-12 keeps M3 and PT-Q13 as the hard minimum) | AR-12-05 | is the audit |
 | PT-S07 | SET | W1 | Optional: enable repository auto-merge (separate authorization; not part of Stage 1) | AR-51 | AUD-ENF-A part 2 |
 

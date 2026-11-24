@@ -36,13 +36,13 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE
 | DS-1 | DEC | Decision session DS-1: ground rules, impact definition, labels, delegation, ONE wave, exact-SHA meaning (DP-01..DP-12) | M-NOW | - | - | - | - | DP-01..12 | - |
 | DS-2 | DEC | Decision session DS-2: seams and layer boundaries (DP-13..DP-23) | DS-1 | - | - | - | - | DP-13..23 | - |
 | DS-3 | DEC | Decision session DS-3: fail-closed design and reachability-first checks (DP-24..DP-33) | DS-1 | DS-2 | - | - | - | DP-24..33 | - |
-| DS-4 | DEC | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); answered after the independent re-read PT-FRZ-RR | DS-1, PT-FRZ-RR | - | - | - | - | DP-34..45 | - |
+| DS-4 | DEC | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); answered after PT-FRZ-RR (WP-4 re-read design or Path B substitute per AD-AF-PTFRZ-001; formal PT-FRZ-RR closure still required) | DS-1, PT-FRZ-RR | - | - | - | - | DP-34..45 | - |
 | DS-5 | DEC | Decision session DS-5: register, ownership, domains (DP-46..DP-57) | DS-4 | - | - | - | - | DP-46..57 | - |
 | DS-6 | DEC | Decision session DS-6: requalification schedule, pins, enforcement activation (DP-58..DP-68) | DS-1, DS-4 | - | - | - | - | DP-58..68 | - |
 | AUTH-PRE | DEC | Intake of PRE authorizations: read scope AR-62, read-only/static probes AR-01..03, AR-11..13 | M-NOW | - | - | - | AR-62, AR-01, AR-02, AR-03, AR-11, AR-12, AR-13 | - | - |
 | DS-EXC | DEC | Operator decision per PDC-X declared exception (EX-G-*, EX-L-01..14, EX-D*): in RW / deferred with an ARCH-FREEZE class / accepted as limitation; input of SCOPE (RV-05) | DS-1 | - | - | - | - | new: WP12-Q11 | - |
 | DS-Q | DEC | Queued ARCH-FREEZE decisions that can and must be answered BEFORE the entry check: EVOL auditor (EDER-D-0167), EVOL closure publication (0168), EVOL dependency for ENT (0169), branch protection (0171) | DS-1 | - | - | - | - | - | - |
-| PT-FRZ-RR | AUD | Independent re-read of WP-4's 14 LOW-confidence OPEN classifications and the 28 would-be-hidden-obligation rows (one WP, three shards, never re-read); runs BEFORE the Path-B decisions DP-34..DP-40 so the Operator decides on re-read classifications (DR-05) | M-NOW | - | SESSION | - | AR-12-04 | - | - |
+| PT-FRZ-RR | AUD | **Design:** independent WP-4 re-read (14 LOW + 28 hide-risk) before DP-34..DP-40. **Accepted substitute (AD-AF-PTFRZ-001 / Path B):** independent 225-row FRZ census + Path B audit @ `aaabfc6c8…`; dossier `.tmp/session/arch-freeze/frz-rr/FRZ_RR.md`; verdict PASS_WITH_FINDINGS; WP-4 primary absent — no row-level WP-4 diff. **Formal closure:** independent gate + amendment in force; does not set DS4_READY | M-NOW | - | SESSION | - | AR-12-04 | - | - |
 
 ### W1 In PDC window (non-product only; the window is now closed, see PDC-TAIL)
 

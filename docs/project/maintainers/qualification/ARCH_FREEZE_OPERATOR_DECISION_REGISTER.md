@@ -1,6 +1,6 @@
 # ARCH-FREEZE operator decision register
 
-**Updated:** 2026-11-16 by ticket [`T-IGX-050-A`](../../../../governance/tickets/T-IGX-050-A.md) (node T-AF2-OD-RECORD), lifecycle `plan_pending`. Rows of 2026-11-16/17 added and two rows corrected by ticket [`T-IGX-050-M`](../../../../governance/tickets/T-IGX-050-M.md) (node T-AF2-REGISTER-UPDATE-1), lifecycle `plan_pending`. Planning record only: it certifies nothing, promotes no FRZ row and signs nothing.
+**Updated:** 2026-11-16 by ticket [`T-IGX-050-A`](../../../../governance/tickets/T-IGX-050-A.md) (node T-AF2-OD-RECORD), lifecycle `plan_pending`. Rows of 2026-11-16/17 added and two rows corrected by ticket [`T-IGX-050-M`](../../../../governance/tickets/T-IGX-050-M.md) (node T-AF2-REGISTER-UPDATE-1), lifecycle `plan_pending`. Row **AD-AF-PTFRZ-001** added 2026-11-24 by ticket [`T-IGX-073-A`](../../../../governance/tickets/T-IGX-073-A.md) (AF-02B). Planning record only: it certifies nothing, promotes no FRZ row and signs nothing.
 
 ## How to read this register
 
@@ -10,6 +10,7 @@
 - **Row history.** The eight original rows (OD-IC-01 .. OD-ARCH-FREEZE-01) are kept. Their previous status is shown in the `Status` cell after `was`. The original columns PURPOSE / PREREQUISITES / EVIDENCE / ROLE / SIGNATURE / TIMING / CONSEQUENCE are folded into `Question` and `Authority / record`.
 - **Record published by PR #615.** Rows OD-REM-01..08, C1–C10 and DS-1..DS-6 (DP-01..DP-68) are one-line pointers to the Operator decision record `docs/project/maintainers/qualification/eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md@743087d57`, merged via #615 (companions `OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md` and `README.md` in the same folder).
 - **Signing.** No agent signs any decision (plan section M). Rows marked `OPEN` stay with the Operator or a recorded delegate.
+- **Architecture decisions.** Rows prefixed `AD-AF-` record Architecture Authority rulings for the ARCH-FREEZE program (not Operator chat decisions). They do not substitute for independent audit PASS, FRZ promotion or formal node closure.
 
 ## Register
 
@@ -91,6 +92,7 @@
 | OD-AF-14 | M3 confirmation. | Not yet decided. | — | MEP-AF2 v2.1 M5 | **OPEN** |
 | OD-AF-15 | Closure text and acceptance of the FRZ promotions. | Not yet decided. | — | MEP-AF2 v2.1 M5 | **OPEN** |
 | OD-AF-16b | Post-freeze baseline promotion and the section 16 handoff. | Not yet decided. | — | MEP-AF2 v2.1 M5 | **OPEN** |
+| AD-AF-PTFRZ-001 | PT-FRZ-RR: irrecoverable absence of WP-4 primary artefacts; substitute substantive basis for the audit node. | **ACCEPTED — Path B.** The irreversible lack of historical WP-4 artefacts for PT-FRZ-RR is settled by the current full FRZ census at audit SHA `aaabfc6c8d3a0f7dd43ebd43f47d830bdf1c7a20` and the documented Path B assessment (AF-02A-G6 dossier `.tmp/session/arch-freeze/frz-rr/FRZ_RR.md`, verdict **PASS_WITH_FINDINGS**, findings F-PT-001..003). This is the Architecture-Authority-approved substitute substantive basis. Independence, reproducibility and formal closure remain under the existing contract. Normative amendment: [`arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md`](./arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md). Does not set `PT_FRZ_RR_CLOSED`, `DS4_READY`, or promote FRZ rows. | 2026-11-24 | Architecture Authority (ChatGPT, ARCH-FREEZE program); independent evidence AF-02A-G6 @ `aaabfc6c8…`; execution [`T-IGX-073-A`](../../../../governance/tickets/T-IGX-073-A.md) | **ACCEPTED** (record only) |
 
 ## Decisions named by the plan but not re-recorded here
 
