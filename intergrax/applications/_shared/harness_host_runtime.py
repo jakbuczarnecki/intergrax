@@ -405,6 +405,7 @@ def build_harness_host_runtime(
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
         agent_contract_authority=resolved_agent_contract_authority,
+        human_decision_store=human_decision_store,
     )
     from intergrax.skills.skill_execution_pinning_wiring import (
         resolve_skill_execution_pinning_wiring,

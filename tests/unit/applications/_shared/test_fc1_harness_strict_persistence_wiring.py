@@ -220,6 +220,16 @@ def test_acknowledgement_is_refused_when_hitl_tools_are_wired(tmp_path: Path) ->
         )
 
 
+def test_injected_human_decision_store_reaches_tool_wiring_context(tmp_path: Path) -> None:
+    """NT-FC1-26 (case 2): harness store is the same object on ToolWiringContext."""
+    from intergrax.runtime.persistence.sqlite_composition import create_sqlite_human_decision_store
+
+    store = create_sqlite_human_decision_store(db_path=tmp_path / "human_decisions.db")
+    runtime = _strict_harness(tmp_path, human_decision_store=store)
+    ctx_store = runtime.env_wiring.tool_wiring.wiring_context.human_decision_store
+    assert ctx_store is store
+
+
 def test_tier2_build_context_takes_posture_from_the_host(monkeypatch: pytest.MonkeyPatch) -> None:
     """NT-FC1-24 (Part C1): the three Tier-2 sites report production_mode from the composing host.
 
