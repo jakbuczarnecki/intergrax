@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-24T11:19:28.395812+00:00",
-  "execution_sha": "1daeab559ad0094f0334c584ea2738484126e3c0",
+  "generated_at": "2026-11-24T11:55:23.254210+00:00",
+  "execution_sha": "80fef89fec10b45efe15efb612111793b6ffebdc",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -453,7 +453,7 @@
     {
       "frz_id": "FRZ-TEN-02",
       "summary": "end-to-end tenant propagation across relevant semantic and runtime boundaries",
-      "owner_ticket": "T-IGX-044-A",
+      "owner_ticket": null,
       "negative_test_id": "NEG-0",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -470,7 +470,7 @@
     {
       "frz_id": "FRZ-TEN-07",
       "summary": "evidence, events, traces and diagnostics preserve tenant identity; cannot establish truth for another tenant",
-      "owner_ticket": "T-IGX-044-A",
+      "owner_ticket": null,
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
@@ -563,7 +563,10 @@
     },
     {
       "finding_id": "A4-006",
-      "owner_ticket": "T-IGX-044-A",
+      "owner_ticket": null,
+      "owner_node": "PT-T01",
+      "owner_wave": "W3",
+      "owner_source": "WP12 DAG / PT-T01 / A4-006",
       "disposition": "PT-T01 gate emitter / tenant propagation"
     },
     {
@@ -1371,12 +1374,18 @@
       "T-AF2-BND-CLOSURE"
     ],
     "SCOPE": [
-      "T-AF2-RW-PLAN",
-      "T-AF2-RW-PLAN-AUDIT",
+      "M1",
+      "DS-1",
+      "DS-2",
+      "DS-3",
+      "DS-4",
+      "DS-EXC",
       "PT-V04",
       "PT-B01",
       "PT-B02",
-      "REV-MASTER"
+      "REV-MASTER",
+      "T-AF2-RW-PLAN",
+      "T-AF2-RW-PLAN-AUDIT"
     ],
     "W3": [
       "SCOPE",

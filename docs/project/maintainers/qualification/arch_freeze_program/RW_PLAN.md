@@ -1,7 +1,7 @@
 # RW-PLAN — T-AF2-RW-PLAN (canonical)
 
-**Generated:** 2026-11-24T11:19:28.395812+00:00
-**Execution SHA:** `1daeab559ad0094f0334c584ea2738484126e3c0`
+**Generated:** 2026-11-24T11:55:23.254210+00:00
+**Execution SHA:** `80fef89fec10b45efe15efb612111793b6ffebdc`
 **Node:** T-AF2-RW-PLAN (W2, DOC)
 
 ## 0. Reconciliation (35 vs 45 CODE_FIX)
@@ -48,8 +48,8 @@
 | `FRZ-SEC-04` | T-IGX-043-C | NT-SEC-04 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
 | `FRZ-SEC-06` | T-IGX-051-B | NEG-0 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
 | `FRZ-TEN-01` | T-IGX-043-J | NT-TEN-01 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TEN-02` | T-IGX-044-A | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TEN-07` | T-IGX-044-A | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-02` | PT-T01 | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-07` | PT-T01 | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
 | `FRZ-TEN-10` | T-IGX-051-A | NT-TEN-10 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
 | `FRZ-TYP-01` | T-IGX-051-G | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
 | `FRZ-TYP-03` | T-IGX-051-G | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
@@ -62,7 +62,7 @@
 | A4-005 | T-IGX-051-H | T-AF2-DEPS-BATCH; PT-WF overlap |
 | A4-018 | T-IGX-051-D | T-AF2-RW-RUNTIME; shares PT-WF / FRZ-CTR rows |
 | A6-005 | T-IGX-043-I | PT-WD; ENT manifest engine scope |
-| A4-006 | T-IGX-044-A | PT-T01 gate emitter / tenant propagation |
+| A4-006 | None | PT-T01 gate emitter / tenant propagation |
 | A3-018 | T-IGX-046-G | PT-G02 STATE-X citation repair |
 | A4-016 | T-IGX-043-H | PT-WB dual host LLM resolver |
 
@@ -84,7 +84,7 @@ See `rw_plan.v1.json` → `lane_order`, `serialization_pairs`, `overlap_hotspots
 ## 6. Dependencies (SCOPE / W3)
 
 W2 preds: ['T-AF2-FRZ-MATRIX', 'T-AF2-DS-EXC-PACKAGE', 'T-AF2-BND-CLOSURE']
-SCOPE preds (partial): ['T-AF2-RW-PLAN', 'T-AF2-RW-PLAN-AUDIT', 'PT-V04', 'PT-B01', 'PT-B02', 'REV-MASTER']
+SCOPE preds: ['M1', 'DS-1', 'DS-2', 'DS-3', 'DS-4', 'DS-EXC', 'PT-V04', 'PT-B01', 'PT-B02', 'REV-MASTER', 'T-AF2-RW-PLAN', 'T-AF2-RW-PLAN-AUDIT']
 W3: ['SCOPE', 'PT-WA']
 
 ## 7. Write sets (from approved plans; mechanical scan)

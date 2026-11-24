@@ -11,17 +11,41 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parents[2]
 _RW_JSON = _REPO / "docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json"
 REQUIRED_AUDIT_FLAGS = {"A4-005", "A4-018", "A6-005", "A4-006", "A3-018", "A4-016"}
-SCOPE_DEPS = {"T-AF2-RW-PLAN", "T-AF2-RW-PLAN-AUDIT", "PT-V04", "PT-B01", "PT-B02", "REV-MASTER"}
-FRZ_FRZ_10_NODE_CONTRACT = {
-    "owner_node": "T-B7-PFP-ACTIVATE",
-    "owner_wave": "W5",
-    "verification_node": "T-B7-PFP-VERIFY",
-    "verification_wave": "W8",
-    "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+CANONICAL_SCOPE_PREDECESSORS = frozenset(
+    {
+        "M1",
+        "DS-1",
+        "DS-2",
+        "DS-3",
+        "DS-4",
+        "DS-EXC",
+        "PT-V04",
+        "PT-B01",
+        "PT-B02",
+        "REV-MASTER",
+        "T-AF2-RW-PLAN",
+        "T-AF2-RW-PLAN-AUDIT",
+    }
+)
+
+A4_006_AUDIT_CONTRACT: dict[str, object] = {
+    "owner_ticket": None,
+    "owner_node": "PT-T01",
+    "owner_wave": "W3",
+    "owner_source": "WP12 DAG / PT-T01 / A4-006",
 }
 
+EXPLICIT_OWNERSHIP_CONTRACT_KEYS = (
+    "owner_ticket",
+    "owner_node",
+    "owner_wave",
+    "owner_source",
+    "verification_node",
+    "verification_wave",
+)
 
-def _canonical_code_fix_ids() -> set[str]:
+
+def _load_build_rw_plan():
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -33,34 +57,55 @@ def _canonical_code_fix_ids() -> set[str]:
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
+    return mod
+
+
+def _canonical_code_fix_ids() -> set[str]:
+    mod = _load_build_rw_plan()
     parse = getattr(mod, "parse_appendix_a_code_fix_inventory")
     return {r.frz_id for r in parse()}
 
 
-def _frz10_node_ownership_valid(row: dict) -> bool:
-    for key, expected in FRZ_FRZ_10_NODE_CONTRACT.items():
-        if row.get(key) != expected:
-            return False
-    if row.get("owner_ticket"):
+def _matrix_owners_by_frz() -> dict[str, str | None]:
+    mod = _load_build_rw_plan()
+    parse = getattr(mod, "parse_appendix_a_code_fix_inventory")
+    return {r.frz_id: r.owner_ticket for r in parse()}
+
+
+def _explicit_ownership_contracts() -> dict[str, dict[str, object]]:
+    mod = _load_build_rw_plan()
+    return dict(mod.EXPLICIT_CODE_FIX_OWNERSHIP)
+
+
+def _explicit_contract_satisfied(row: dict, contract: dict[str, object]) -> bool:
+    if row.get("owner_provenance") != "explicit_mep_wp12":
         return False
-    return bool(row.get("owner_node"))
+    for key in EXPLICIT_OWNERSHIP_CONTRACT_KEYS:
+        if key not in contract:
+            continue
+        if row.get(key) != contract[key]:
+            return False
+    if contract.get("owner_ticket") is None and row.get("owner_ticket"):
+        return False
+    return True
 
 
-def _ownership_verified(row: dict) -> bool:
+def _ownership_verified(
+    row: dict, matrix_owners: dict[str, str | None], explicit: dict[str, dict[str, object]]
+) -> bool:
     frz = str(row.get("frz_id", ""))
-    ticket = row.get("owner_ticket")
+    contract = explicit.get(frz)
+    if contract is not None:
+        return _explicit_contract_satisfied(row, contract)
+
     node = row.get("owner_node")
-    if frz == "FRZ-FRZ-10":
-        if ticket:
-            return False
-        return _frz10_node_ownership_valid(row)
-    if ticket and node and row.get("owner_provenance") != "explicit_mep_wp12":
+    if node:
         return False
-    if ticket:
-        return True
-    if node and row.get("owner_provenance") == "explicit_mep_wp12":
-        return True
-    return False
+    ticket = row.get("owner_ticket")
+    expected = matrix_owners.get(frz)
+    if expected is not None:
+        return ticket == expected
+    return bool(ticket)
 
 
 def _lane_pt_indices(lane_order: list) -> dict[str, int]:
@@ -72,8 +117,90 @@ def _lane_pt_indices(lane_order: list) -> dict[str, int]:
     return idx
 
 
-def validate_plan_structure(data: dict[str, object], canonical: set[str]) -> list[str]:
+def _validate_scope_dependencies(deps: dict[str, object]) -> list[str]:
     errors: list[str] = []
+    for key in ("W2", "SCOPE", "W3"):
+        if key not in deps:
+            errors.append(f"dependencies missing {key}")
+    scope = deps.get("SCOPE")
+    if scope is None:
+        errors.append("SCOPE dependency collection missing")
+        return errors
+    if not isinstance(scope, list):
+        errors.append("SCOPE dependency value must be a list")
+        return errors
+    if not scope:
+        errors.append("SCOPE dependency collection empty")
+        return errors
+    if len(scope) != len(set(scope)):
+        errors.append("SCOPE duplicate predecessors")
+    scope_set = set(scope)
+    missing_scope = sorted(CANONICAL_SCOPE_PREDECESSORS - scope_set)
+    if missing_scope:
+        errors.append(f"SCOPE missing predecessors: {missing_scope}")
+    extra = sorted(scope_set - CANONICAL_SCOPE_PREDECESSORS)
+    if extra:
+        errors.append(f"SCOPE unexpected predecessors: {extra}")
+    return errors
+
+
+def _validate_lane_order(lane_order: object) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(lane_order, list):
+        errors.append("lane_order must be a list")
+        return errors
+    pt_labels = [
+        entry[2]
+        for entry in lane_order
+        if isinstance(entry, (list, tuple))
+        and len(entry) >= 3
+        and isinstance(entry[2], str)
+        and entry[2].startswith("PT-")
+    ]
+    wa_count = pt_labels.count("PT-WA")
+    wb_count = pt_labels.count("PT-WB")
+    if wa_count == 0:
+        errors.append("lane_order: missing PT-WA lane")
+    if wb_count == 0:
+        errors.append("lane_order: missing PT-WB lane")
+    if wa_count > 1:
+        errors.append("lane_order: duplicate PT-WA lane")
+    if wb_count > 1:
+        errors.append("lane_order: duplicate PT-WB lane")
+    pt_idx = _lane_pt_indices(lane_order)
+    if "PT-WA" in pt_idx and "PT-WB" in pt_idx and pt_idx["PT-WA"] > pt_idx["PT-WB"]:
+        errors.append("lane_order: PT-WB precedes PT-WA (reversed)")
+    return errors
+
+
+def _validate_audit_conflict(conflict: dict) -> list[str]:
+    errors: list[str] = []
+    fid = str(conflict.get("finding_id", ""))
+    if fid == "A4-006":
+        for key, expected in A4_006_AUDIT_CONTRACT.items():
+            if conflict.get(key) != expected:
+                errors.append(f"audit conflict {fid}: canonical PT-T01 contract mismatch on {key}")
+        if conflict.get("owner_ticket") == "T-IGX-044-A":
+            errors.append(f"audit conflict {fid}: T-IGX-044-A is not PT-T01 ownership")
+        return errors
+    if not conflict.get("owner_ticket"):
+        errors.append(f"audit conflict {fid}: no owner_ticket")
+    return errors
+
+
+def validate_plan_structure(
+    data: dict[str, object],
+    canonical: set[str],
+    *,
+    matrix_owners: dict[str, str | None] | None = None,
+    explicit: dict[str, dict[str, object]] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    if matrix_owners is None:
+        matrix_owners = _matrix_owners_by_frz()
+    if explicit is None:
+        explicit = _explicit_ownership_contracts()
+
     inventory = data.get("code_fix_inventory")
     if not isinstance(inventory, list) or not inventory:
         errors.append("code_fix_inventory empty or missing")
@@ -93,10 +220,12 @@ def validate_plan_structure(data: dict[str, object], canonical: set[str]) -> lis
         if frz in seen:
             errors.append(f"duplicate frz_id {frz}")
         seen.add(str(frz))
-        if row.get("owner_ticket") and row.get("owner_node") and frz != "FRZ-FRZ-10":
+        if row.get("owner_ticket") and row.get("owner_node") and str(frz) not in explicit:
             if not row.get("owner_provenance"):
                 errors.append(f"{frz}: contradictory ticket and node attribution without provenance")
-        if not _ownership_verified(row):
+        if frz in explicit and not row.get("owner_provenance"):
+            errors.append(f"{frz}: missing required provenance for canonical ownership")
+        if not _ownership_verified(row, matrix_owners, explicit):
             errors.append(f"{frz}: ownership not verified (missing ticket or canonical node contract)")
         nt = row.get("negative_test_id")
         if not nt and "gate extension" not in str(row.get("remediation_track", "")):
@@ -125,8 +254,7 @@ def validate_plan_structure(data: dict[str, object], canonical: set[str]) -> lis
         if fid:
             by_flag[str(fid)] = by_flag.get(str(fid), 0) + 1
             found_flags.add(str(fid))
-            if not c.get("owner_ticket"):
-                errors.append(f"audit conflict {fid}: no owner_ticket")
+            errors.extend(_validate_audit_conflict(c))
     for dup, count in by_flag.items():
         if count > 1:
             errors.append(f"duplicate audit conflict {dup}")
@@ -134,18 +262,8 @@ def validate_plan_structure(data: dict[str, object], canonical: set[str]) -> lis
         errors.append(f"audit_flag_conflicts missing: {sorted(REQUIRED_AUDIT_FLAGS - found_flags)}")
 
     deps = data.get("dependencies") or {}
-    for key in ("W2", "SCOPE", "W3"):
-        if key not in deps:
-            errors.append(f"dependencies missing {key}")
-    scope = deps.get("SCOPE")
-    if isinstance(scope, list):
-        missing_scope = sorted(SCOPE_DEPS - set(scope))
-        if missing_scope:
-            errors.append(f"SCOPE missing predecessors: {missing_scope}")
-
-    pt_idx = _lane_pt_indices(data.get("lane_order") or [])
-    if "PT-WA" in pt_idx and "PT-WB" in pt_idx and pt_idx["PT-WA"] > pt_idx["PT-WB"]:
-        errors.append("lane_order: PT-WB precedes PT-WA (reversed)")
+    errors.extend(_validate_scope_dependencies(deps))
+    errors.extend(_validate_lane_order(data.get("lane_order") or []))
     if not data.get("serialization_pairs"):
         errors.append("serialization_pairs empty")
     if not data.get("overlap_hotspots"):
@@ -179,8 +297,10 @@ def validate_rw_plan_audit(data: dict[str, object]) -> list[str]:
 
 
 def count_verified_ownership(data: dict[str, object]) -> tuple[int, int]:
+    matrix_owners = _matrix_owners_by_frz()
+    explicit = _explicit_ownership_contracts()
     inventory = data.get("code_fix_inventory") or []
-    verified = sum(1 for r in inventory if isinstance(r, dict) and _ownership_verified(r))
+    verified = sum(1 for r in inventory if isinstance(r, dict) and _ownership_verified(r, matrix_owners, explicit))
     return verified, len(inventory)
 
 

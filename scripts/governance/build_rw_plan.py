@@ -40,9 +40,31 @@ AUDIT_FLAG_CONFLICTS = [
         "disposition": "T-AF2-RW-RUNTIME; shares PT-WF / FRZ-CTR rows",
     },
     {"finding_id": "A6-005", "owner_ticket": "T-IGX-043-I", "disposition": "PT-WD; ENT manifest engine scope"},
-    {"finding_id": "A4-006", "owner_ticket": "T-IGX-044-A", "disposition": "PT-T01 gate emitter / tenant propagation"},
+    {
+        "finding_id": "A4-006",
+        "owner_ticket": None,
+        "owner_node": "PT-T01",
+        "owner_wave": "W3",
+        "owner_source": "WP12 DAG / PT-T01 / A4-006",
+        "disposition": "PT-T01 gate emitter / tenant propagation",
+    },
     {"finding_id": "A3-018", "owner_ticket": "T-IGX-046-G", "disposition": "PT-G02 STATE-X citation repair"},
     {"finding_id": "A4-016", "owner_ticket": "T-IGX-043-H", "disposition": "PT-WB dual host LLM resolver"},
+]
+
+SCOPE_HARD_PREDECESSORS = [
+    "M1",
+    "DS-1",
+    "DS-2",
+    "DS-3",
+    "DS-4",
+    "DS-EXC",
+    "PT-V04",
+    "PT-B01",
+    "PT-B02",
+    "REV-MASTER",
+    "T-AF2-RW-PLAN",
+    "T-AF2-RW-PLAN-AUDIT",
 ]
 
 LANE_ORDER = [
@@ -84,13 +106,13 @@ EXPLICIT_CODE_FIX_OWNERSHIP: dict[str, dict[str, object]] = {
         "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
     },
     "FRZ-TEN-02": {
-        "owner_ticket": "T-IGX-044-A",
+        "owner_ticket": None,
         "owner_node": "PT-T01",
         "owner_wave": "W3",
         "owner_source": "WP12 DAG / PT-T01 / A4-006",
     },
     "FRZ-TEN-07": {
-        "owner_ticket": "T-IGX-044-A",
+        "owner_ticket": None,
         "owner_node": "PT-T01",
         "owner_wave": "W3",
         "owner_source": "WP12 DAG / PT-T01 / A4-006",
@@ -361,7 +383,7 @@ def build() -> dict[str, object]:
         ],
         "dependencies": {
             "W2": ["T-AF2-FRZ-MATRIX", "T-AF2-DS-EXC-PACKAGE", "T-AF2-BND-CLOSURE"],
-            "SCOPE": ["T-AF2-RW-PLAN", "T-AF2-RW-PLAN-AUDIT", "PT-V04", "PT-B01", "PT-B02", "REV-MASTER"],
+            "SCOPE": list(SCOPE_HARD_PREDECESSORS),
             "W3": ["SCOPE", "PT-WA"],
         },
         "implementation_disposition": {
@@ -439,7 +461,7 @@ def _render_md(payload: dict[str, object]) -> str:
             "## 6. Dependencies (SCOPE / W3)",
             "",
             f"W2 preds: {payload['dependencies']['W2']}",
-            f"SCOPE preds (partial): {payload['dependencies']['SCOPE']}",
+            f"SCOPE preds: {payload['dependencies']['SCOPE']}",
             f"W3: {payload['dependencies']['W3']}",
             "",
             "## 7. Write sets (from approved plans; mechanical scan)",

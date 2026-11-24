@@ -46,7 +46,14 @@ def _minimal_plan(extra_rows: list[dict] | None = None) -> dict:
             {"finding_id": "A4-005", "owner_ticket": "T-IGX-051-H", "disposition": "x"},
             {"finding_id": "A4-018", "owner_ticket": "T-IGX-051-D", "disposition": "x"},
             {"finding_id": "A6-005", "owner_ticket": "T-IGX-043-I", "disposition": "x"},
-            {"finding_id": "A4-006", "owner_ticket": "T-IGX-044-A", "disposition": "x"},
+            {
+                "finding_id": "A4-006",
+                "owner_ticket": None,
+                "owner_node": "PT-T01",
+                "owner_wave": "W3",
+                "owner_source": "WP12 DAG / PT-T01 / A4-006",
+                "disposition": "x",
+            },
             {"finding_id": "A3-018", "owner_ticket": "T-IGX-046-G", "disposition": "x"},
             {"finding_id": "A4-016", "owner_ticket": "T-IGX-043-H", "disposition": "x"},
         ],
@@ -59,12 +66,18 @@ def _minimal_plan(extra_rows: list[dict] | None = None) -> dict:
         "dependencies": {
             "W2": [],
             "SCOPE": [
-                "T-AF2-RW-PLAN",
-                "T-AF2-RW-PLAN-AUDIT",
+                "M1",
+                "DS-1",
+                "DS-2",
+                "DS-3",
+                "DS-4",
+                "DS-EXC",
                 "PT-V04",
                 "PT-B01",
                 "PT-B02",
                 "REV-MASTER",
+                "T-AF2-RW-PLAN",
+                "T-AF2-RW-PLAN-AUDIT",
             ],
             "W3": [],
         },
@@ -159,6 +172,7 @@ def test_frz_frz_10_node_ownership_accepted():
         "verification_node": "T-B7-PFP-VERIFY",
         "verification_wave": "W8",
         "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+        "owner_provenance": "explicit_mep_wp12",
         "negative_test_id": "NT-FRZ-10",
         "red_first_status": "EVIDENCE_MISSING",
         "regression_scope": "ENT-A",
@@ -173,7 +187,7 @@ def test_contradictory_ownership_rejected():
     plan = _minimal_plan()
     plan["code_fix_inventory"][0]["owner_node"] = "T-AF2-RW-TYP"
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
-    assert any("contradictory" in e for e in errors)
+    assert any("ownership not verified" in e or "contradictory" in e for e in errors)
 
 
 def test_ownership_validation_independent_of_red_first():
@@ -205,3 +219,155 @@ def test_phase_check3_cli_emits_separate_dimensions():
     assert "PLAN_STRUCTURE=" in proc.stdout
     assert "RED_FIRST_EVIDENCE=INCOMPLETE" in proc.stdout
     assert "RW_PLAN_AUDIT=NOT_PERFORMED" in proc.stdout
+
+
+def _import_build_mod():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("build_rw_plan", _REPO / "scripts/governance/build_rw_plan.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _explicit_row(frz: str, **overrides) -> dict:
+    mod = _import_build_mod()
+    contract = mod.EXPLICIT_CODE_FIX_OWNERSHIP[frz]
+    base = {
+        "frz_id": frz,
+        "summary": "s",
+        "negative_test_id": "NT-X",
+        "red_first_status": "EVIDENCE_MISSING",
+        "regression_scope": "ENT-A",
+        "remediation_track": "CODE_FIX:",
+        "owner_provenance": "explicit_mep_wp12",
+    }
+    base.update(contract)
+    base.update(overrides)
+    return base
+
+
+def test_frz_ten_044_a_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TEN-02", owner_ticket="T-IGX-044-A")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert any("FRZ-TEN-02" in e and "ownership" in e for e in errors)
+
+
+def test_frz_ten_pt_t01_accepted():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TEN-02")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert not [e for e in errors if "FRZ-TEN-02" in e]
+
+
+def test_a4_006_044_a_audit_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    for c in plan["audit_flag_conflicts"]:
+        if c["finding_id"] == "A4-006":
+            c["owner_ticket"] = "T-IGX-044-A"
+            c.pop("owner_node", None)
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("A4-006" in e for e in errors)
+
+
+def test_a4_006_pt_t01_audit_accepted():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert not [e for e in errors if "A4-006" in e]
+
+
+def test_incorrect_typ_ticket_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TYP-01", owner_ticket="T-IGX-043-G")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TYP-01"})
+    assert any("FRZ-TYP-01" in e for e in errors)
+
+
+def test_incorrect_typ_node_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TYP-01", owner_node="PT-T01")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TYP-01"})
+    assert any("FRZ-TYP-01" in e for e in errors)
+
+
+def test_arbitrary_ticket_cannot_replace_matrix_owner():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["owner_ticket"] = "T-IGX-051-A"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("ownership not verified" in e for e in errors)
+
+
+def test_arbitrary_node_outside_contract_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["owner_node"] = "PT-T01"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("ownership not verified" in e for e in errors)
+
+
+def test_missing_explicit_provenance_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TEN-02")])
+    plan["code_fix_inventory"][1].pop("owner_provenance")
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert any("provenance" in e for e in errors)
+
+
+def test_missing_scope_predecessor_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["dependencies"]["SCOPE"] = plan["dependencies"]["SCOPE"][:-1]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("SCOPE missing predecessors" in e for e in errors)
+
+
+def test_non_list_scope_dependency_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["dependencies"]["SCOPE"] = "not-a-list"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("must be a list" in e for e in errors)
+
+
+def test_duplicate_scope_predecessor_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["dependencies"]["SCOPE"] = plan["dependencies"]["SCOPE"] + ["M1"]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("duplicate predecessors" in e for e in errors)
+
+
+def test_missing_pt_wa_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["lane_order"] = [e for e in plan["lane_order"] if e[2] != "PT-WA"]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("missing PT-WA" in e for e in errors)
+
+
+def test_missing_pt_wb_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["lane_order"] = [e for e in plan["lane_order"] if e[2] != "PT-WB"]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("missing PT-WB" in e for e in errors)
+
+
+def test_duplicate_pt_wa_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["lane_order"].append(plan["lane_order"][0])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("duplicate PT-WA" in e for e in errors)
+
+
+def test_canonical_scope_dependencies_accepted():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert not [e for e in errors if "SCOPE" in e]

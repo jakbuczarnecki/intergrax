@@ -141,7 +141,28 @@ PT_T01_MATRIX: tuple[PtT01Row, ...] = (
 
 A4_006_TRACKED = "tests/unit/scripts/test_check_runtime_event_tenant_propagation.py"
 
-EXPECTED_NT_IDS = frozenset(row.nt_id for row in PT_T01_MATRIX)
+EXPECTED_NT_IDS = frozenset(
+    {
+        "NT-01",
+        "NT-02",
+        "NT-03",
+        "NT-04a",
+        "NT-04b",
+        "NT-05",
+        "NT-06",
+        "NT-07",
+        "NT-08",
+        "NT-09",
+        "NT-10",
+        "NT-11",
+        "NT-12",
+        "NT-13",
+        "NT-14",
+        "NT-15",
+        "NT-15e",
+        "NT-16",
+    }
+)
 
 ACTIVE_TRACKED_PYTEST_ARGS: tuple[str, ...] = tuple(
     path for row in PT_T01_MATRIX if row.status == "ACTIVE" for path in row.tracked_pytest

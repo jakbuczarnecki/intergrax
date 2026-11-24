@@ -203,8 +203,6 @@ def _blank_row(frz: str):
         ("FRZ-TYP-01", "T-IGX-051-G"),
         ("FRZ-TYP-03", "T-IGX-051-G"),
         ("FRZ-RPL-04", "T-IGX-051-G"),
-        ("FRZ-TEN-02", "T-IGX-044-A"),
-        ("FRZ-TEN-07", "T-IGX-044-A"),
     ],
 )
 def test_explicit_frz_ownership_ticket(frz: str, ticket: str):
@@ -212,6 +210,40 @@ def test_explicit_frz_ownership_ticket(frz: str, ticket: str):
     applied = mod.apply_explicit_ownership(frz, _blank_row(frz))
     assert applied["owner_ticket"] == ticket
     assert applied["owner_provenance"] == "explicit_mep_wp12"
+
+
+@pytest.mark.parametrize("frz", ["FRZ-TEN-02", "FRZ-TEN-07"])
+def test_explicit_pt_t01_node_ownership_without_delivery_ticket(frz: str):
+    mod = _import_build()
+    applied = mod.apply_explicit_ownership(frz, _blank_row(frz))
+    assert applied["owner_ticket"] is None
+    assert applied["owner_node"] == "PT-T01"
+    assert applied["owner_provenance"] == "explicit_mep_wp12"
+
+
+def test_a4_006_audit_conflict_pt_t01_node():
+    mod = _import_build()
+    a4 = next(c for c in mod.AUDIT_FLAG_CONFLICTS if c["finding_id"] == "A4-006")
+    assert a4["owner_ticket"] is None
+    assert a4["owner_node"] == "PT-T01"
+
+
+def test_scope_hard_predecessors_complete():
+    mod = _import_build()
+    assert set(mod.SCOPE_HARD_PREDECESSORS) == {
+        "M1",
+        "DS-1",
+        "DS-2",
+        "DS-3",
+        "DS-4",
+        "DS-EXC",
+        "PT-V04",
+        "PT-B01",
+        "PT-B02",
+        "REV-MASTER",
+        "T-AF2-RW-PLAN",
+        "T-AF2-RW-PLAN-AUDIT",
+    }
 
 
 def test_frz_frz_10_canonical_node_ownership():
