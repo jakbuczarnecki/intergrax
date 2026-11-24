@@ -18,6 +18,18 @@
 | **T-IGX-046-H** | plan_pending — PT-G01 AST gate ticket; no implementation claim |
 | **T-IGX-043-M** | in_progress — slices 1–3 green; Part E manifest work continues; **not closed** |
 
+## P-R0-A pin annex (ledger recount)
+
+| Field | Value |
+| --- | --- |
+| Recount date | **2026-11-24** |
+| `origin/development` / docs ledger read | `51edb2a7c3399cc03f82173b255602efcb208ecf` (`51edb2a7`) |
+| `origin/arch-freeze/rw-train` | `be0ce70d39b0d811e96177410ac5f9d27c770c5c` (`be0ce70`) |
+| Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
+| SSOT | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) @ `51edb2a7` |
+
+Body sections above retain the historical docs pin `e69e1ff58` and train `dbaebfa8`; do not treat them as current pins. Ledger rows cite this annex for factual recount @ `51edb2a7` / `be0ce70`.
+
 
 ## Train merge — fakt operatora / automation
 
