@@ -7,7 +7,7 @@ from __future__ import annotations
 import fnmatch
 import subprocess
 from dataclasses import dataclass, field
-from functools import cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -284,3 +284,179 @@ def build_closed_world_inventory(
         extractor_digest=str(extractor_manifest()["digest"]),
         roots=roots,
     )
+
+
+TIER_BOUNDARY_RULESET = "tier-boundary.v1"
+
+# Longest-prefix wins; mirrors AGENTS.md tier roots (no allowlist growth for violations).
+_PACKAGE_TIER_RULES: tuple[tuple[str, str], ...] = (
+    ("intergrax/applications/", "tier3"),
+    ("intergrax/runtime/", "tier1"),
+    ("applications/", "tier3"),
+    ("agents/", "tier2"),
+    ("platform_proofs/", "tier3"),
+    ("testing_support/change_safety/", "tooling"),
+)
+
+_TIER_ENFORCEMENT_PREFIXES: tuple[str, ...] = ("intergrax/", "agents/", "applications/")
+_TIER0_INTERGRAX_RESERVED_TOPS: frozenset[str] = frozenset({"runtime", "applications"})
+_CW12_BASELINE_PATH = _REPO / "tests" / "qualification" / "evol_x" / "data" / "exclusion_register_cw12_baseline.v1.json"
+
+
+@dataclass(frozen=True)
+class TierEnforcementFinding:
+    kind: str
+    location: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class TierEnforcementReport:
+    ruleset_version: str
+    findings: tuple[TierEnforcementFinding, ...]
+
+    @cached_property
+    def enforcement_digest(self) -> str:
+        return stable_digest_hex(
+            {
+                "ruleset_version": self.ruleset_version,
+                "findings": [[f.kind, f.location, f.detail] for f in self.findings],
+            }
+        )
+
+
+def classify_package_tier(rel_path: str) -> str | None:
+    """Classify production paths under AGENTS.md tiers (longest-prefix; no blanket intergrax/ tier0)."""
+    normalized = rel_path.replace("\\", "/")
+    for prefix, tier in _PACKAGE_TIER_RULES:
+        stem = prefix.rstrip("/")
+        if normalized == stem or normalized.startswith(prefix):
+            return tier
+    if normalized.startswith("intergrax/"):
+        rel = normalized.removeprefix("intergrax/")
+        if not rel or "/" not in rel:
+            return None
+        top = rel.split("/", 1)[0]
+        if top in _TIER0_INTERGRAX_RESERVED_TOPS:
+            return None
+        return "tier0"
+    return None
+
+
+def is_in_universe_dotted(dotted: str) -> bool:
+    root = dotted.split(".", 1)[0]
+    return root in {"intergrax", "agents", "applications"}
+
+
+def _dotted_import_target(node_id: str) -> str:
+    if node_id.startswith("module:"):
+        return node_id.removeprefix("module:")
+    if node_id.startswith("unknown:import:"):
+        return node_id.removeprefix("unknown:import:")
+    return node_id
+
+
+def forbidden_tier_import_rule(source_tier: str, target_dotted: str) -> str | None:
+    if source_tier in {"", "tooling"}:
+        return None
+    top = target_dotted.split(".", 1)[0]
+    if source_tier in ("tier0", "tier1"):
+        if top == "applications" or target_dotted.startswith("intergrax.applications"):
+            return "tier-boundary:applications-import"
+        if top == "agents" or target_dotted.startswith("intergrax.agents"):
+            return "tier-boundary:agents-import"
+    if source_tier == "tier2":
+        if top == "applications" or target_dotted.startswith("intergrax.applications"):
+            return "tier-boundary:applications-import"
+    return None
+
+
+def _module_path_by_id(inventory: ClosedWorldInventory) -> dict[str, str]:
+    return {n.node_id: n.path for n in inventory.nodes if n.category == "module" and n.path}
+
+
+@lru_cache(maxsize=1)
+def baseline_accepted_exclusion_ids() -> frozenset[str]:
+    import json
+
+    if not _CW12_BASELINE_PATH.is_file():
+        raise FileNotFoundError(f"CW-12 canonical baseline missing: {_CW12_BASELINE_PATH}")
+    doc = json.loads(_CW12_BASELINE_PATH.read_text(encoding="utf-8"))
+    return frozenset(str(exc_id) for exc_id in doc.get("accepted_exclusion_ids", ()))
+
+
+def detect_forbidden_exclusion_expansion(exclusion_register: dict[str, Any]) -> tuple[str, ...]:
+    baseline = baseline_accepted_exclusion_ids()
+    expanded: list[str] = []
+    for entry in exclusion_register.get("entries", ()):
+        if entry.get("status") != "ACCEPTED":
+            continue
+        exc_id = str(entry["exclusion_id"])
+        if exc_id not in baseline:
+            expanded.append(exc_id)
+    return tuple(sorted(expanded))
+
+
+def collect_unclassified_dependencies(inventory: ClosedWorldInventory) -> tuple[str, ...]:
+    unknown_edges = {(e.source_id, e.target_id) for e in inventory.edges if e.rel == "DEPENDS_UNKNOWN"}
+    silent: list[str] = []
+    for src, dotted in inventory.unresolved_imports:
+        if not is_in_universe_dotted(dotted):
+            continue
+        uid = f"unknown:import:{dotted}"
+        if (src, uid) not in unknown_edges:
+            silent.append(f"{src}->{dotted}")
+    return tuple(sorted(silent))
+
+
+def build_tier_enforcement_report(inventory: ClosedWorldInventory) -> TierEnforcementReport:
+    findings: list[TierEnforcementFinding] = []
+    paths_by_id = _module_path_by_id(inventory)
+    import_edges = [e for e in inventory.edges if e.rel == "IMPORTS"]
+
+    for node in inventory.nodes:
+        if node.category != "module" or not node.path:
+            continue
+        if not any(node.path.replace("\\", "/").startswith(p) for p in _TIER_ENFORCEMENT_PREFIXES):
+            continue
+        tier = classify_package_tier(node.path)
+        if tier is None:
+            findings.append(
+                TierEnforcementFinding(
+                    "UNCLASSIFIED_MODULE",
+                    node.path,
+                    "production-path module has no package→tier classification",
+                )
+            )
+
+    for edge in import_edges:
+        src_path = paths_by_id.get(edge.source_id)
+        if not src_path:
+            continue
+        if not any(src_path.replace("\\", "/").startswith(p) for p in _TIER_ENFORCEMENT_PREFIXES):
+            continue
+        source_tier = classify_package_tier(src_path)
+        if source_tier is None:
+            continue
+        target_dotted = _dotted_import_target(edge.target_id)
+        rule = forbidden_tier_import_rule(source_tier, target_dotted)
+        if rule:
+            findings.append(
+                TierEnforcementFinding(
+                    "FORBIDDEN_TIER_IMPORT",
+                    src_path,
+                    f"{rule}: {edge.source_id} -> {target_dotted}",
+                )
+            )
+
+    for item in collect_unclassified_dependencies(inventory):
+        findings.append(
+            TierEnforcementFinding(
+                "UNCLASSIFIED_DEPENDENCY",
+                item,
+                "in-universe import lacks explicit unknown:import classification",
+            )
+        )
+
+    ordered = tuple(sorted(findings, key=lambda f: (f.kind, f.location, f.detail)))
+    return TierEnforcementReport(ruleset_version=TIER_BOUNDARY_RULESET, findings=ordered)
