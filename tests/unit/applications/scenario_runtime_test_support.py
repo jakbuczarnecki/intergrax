@@ -18,6 +18,7 @@ from intergrax.applications._shared.scenario_runtime_profiles import (
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from testing_support.dependency_concurrency_admission_config import (
@@ -89,8 +90,16 @@ def build_valid_minimal_production_scenario_fixture(
     """Compose a production-attached scenario runtime with full package closure prerequisites."""
     manifest = minimal_echo_scenario_manifest(config.app_id)
     document_store = config.document_store
+    environment = production_attached_environment(config.profile_id)
+    sandbox_root = tmp_path / "sandbox"
+    if environment.sandbox is None:
+        environment = environment.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+    else:
+        environment = environment.model_copy(
+            update={"sandbox": environment.sandbox.model_copy(update={"root": sandbox_root})},
+        )
     return build_scenario_production_runtime(
-        environment=production_attached_environment(config.profile_id),
+        environment=environment,
         manifest=manifest,
         registry=registry or echo_agent_registry(),
         tenant_id=config.tenant_id,
