@@ -7,7 +7,7 @@ from __future__ import annotations
 import threading
 from dataclasses import replace
 
-from intergrax.agent_distribution.runtime_revision import RuntimeRevision, RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision import RuntimeRevision
 from intergrax.agent_distribution.stores import RuntimeRevisionStore
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
     ProductionRegistryProjectionInputError,
@@ -30,20 +30,17 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 
 
 def _in_persisted_representation(bundle: RegistryProjectionInputBundle) -> RegistryProjectionInputBundle:
-    """Normalize what legitimately differs between a frozen input and its persisted authority.
+    """Normalize manifest representation for durable compare-and-set (EX-D1-07, T-IGX-051-E part D).
 
-    The manifest goes through the JSON round-trip of the persisted descriptor, and the revision
-    lifecycle progress (state, activation time) is neutralized: the frozen inputs of a revision are
-    built while it is validated, the durable authority reports its current state. Digests, roster,
-    manifest content and artifact digest stay compared.
+    The manifest goes through the JSON round-trip of the persisted descriptor so both sides share the
+    same persisted shape. Revision lifecycle fields (``revision_state``, ``activated_at``) and the full
+    manifest (including integration bindings) are compared as-is; a concurrent change raises
+    ``RegistryProjectionError``.
     """
-    revision = bundle.runtime_revision.model_copy(
-        update={"revision_state": RuntimeRevisionState.VALIDATED, "activated_at": None},
-    )
     manifest = bundle.manifest
     if isinstance(manifest, ApplicationManifest):
         manifest = ApplicationManifest.model_validate_json(manifest.model_dump_json())
-    return replace(bundle, runtime_revision=revision, manifest=manifest)
+    return replace(bundle, manifest=manifest)
 
 
 class DescriptorBackedRegistryProjectionInputStore:
@@ -106,9 +103,8 @@ class DescriptorBackedRegistryProjectionInputStore:
                 raise RegistryProjectionError(
                     f"durable descriptor present but authority incomplete for {revision_id!r}",
                 )
-            # Compare in the persisted representation (T-IGX-041-A, F-D1-11): the descriptor decodes
-            # integration bindings to slug references, the production builder emits manifest-carrying
-            # bindings. Both sides go through the same JSON round-trip; a different manifest still differs.
+            # Compare in the persisted representation (EX-D1-07): lifecycle fields and full manifest
+            # bindings are included; only the descriptor JSON round-trip is normalized.
             durable_fingerprint = registry_projection_input_semantic_fingerprint(
                 _in_persisted_representation(reconstructed),
             )
