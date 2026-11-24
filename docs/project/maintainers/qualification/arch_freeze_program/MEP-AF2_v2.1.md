@@ -87,7 +87,7 @@ This plan joins both into one executable program. It ends at `ARCH-FREEZE CLOSED
    - FREEZE_CERTIFICATION_SHA.
 
 **State of WP-12 itself:**
-- Its own review verdict is ACCEPT_WITH_CONDITIONS; the delta review **REV-MASTER** is still open.
+- Its own review verdict is ACCEPT_WITH_CONDITIONS; **AF-02E** (2026-11-24) reconciled historical RM-01..RM-08 against published WP-12/MEP ([`REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md`](./REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md)). Corrective **data and DAG edges are complete**; the independent **REV-MASTER** session verdict (`REV_MASTER_FORMAL_PASSED`) is **not** recorded in-repo.
 - Phase check 3 (negative tests for every CODE_FIX) **FAILS**.
 - 53 of the 60 PDC exceptions are `NOT_IN_RW`.
 - MEP-AF2 v2 closes these gaps through T-AF2-DS-EXC-PACKAGE, T-AF2-FRZ-MATRIX and T-AF2-RW-PLAN.
@@ -110,7 +110,7 @@ This plan joins both into one executable program. It ends at `ARCH-FREEZE CLOSED
 | `origin/development` | `7960ae7f6` (PR #604); the local checkout `76516c4dd` is 44 behind |
 | PDC-X | CLOSED: closure `feaa2a87d` (PR #603), SHA fill-in `399d194e5` (PR #604); global audit PASS_SCOPED @ `969cbd964`; OD-PDC-X-CLOSE signed in chat; the handoff still carries DRAFT headers, but its effective status is HANDOFF READY (SCOPED) and its limitations bind |
 | IIAC | IN_FORCE; policy `IIAC-2026-11-05.1`; effective_from `9f05749bc`; corrective `969cbd964`; audit_execution `a73d15ab3`. **ACT-N11 is measured from `audit_execution_sha` `a73d15ab3`** (`iiac_activation_gate.py`); zero product changes since |
-| EQO-A phase 2 | W0 decision sessions DS-1..DS-6 answered (DP-01..DP-68); **DS-4** DAG complete (AF-02D; [DS4_DECISION_RECONCILIATION_RECORD.md](./DS4_DECISION_RECONCILIATION_RECORD.md)); DS-EXC, DS-Q, **REV-MASTER** still open; **PT-FRZ-RR**: **CLOSED** (AF-02C; PASS_WITH_FINDINGS @ `aaabfc6c8…`; [PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md](./PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md)); W1/W2 docs batches in flight (#605, #606, #607, drafts) |
+| EQO-A phase 2 | W0 decision sessions DS-1..DS-6 answered (DP-01..DP-68); **DS-4** DAG complete (AF-02D; [DS4_DECISION_RECONCILIATION_RECORD.md](./DS4_DECISION_RECONCILIATION_RECORD.md)); **REV-MASTER** corrective data **AF-02E** ([REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md](./REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md)); formal REV-MASTER session **OPEN**; DS-EXC, DS-Q still open; **PT-FRZ-RR**: **CLOSED** (AF-02C; PASS_WITH_FINDINGS @ `aaabfc6c8…`; [PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md](./PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md)); W1/W2 docs batches in flight (#605, #606, #607, drafts) |
 | Branch protection | none on `development` (404); ruleset "Protect development" has `deletion` + `non_fast_forward` and no bypass actors |
 | CI on `development` | "Regression gate" failed on the last 12 runs (`governance-fast`: IIAC A-01 tests from before the rebind); no run at HEAD |
 | FRZ | 225 / 26; PASS 108 + 8 variants; OPEN 109 |

@@ -48,4 +48,4 @@
 | `DS4_PATH_B_RECONCILED` | **YES** |
 | `DS4_DAG_COMPLETE` | **YES** |
 
-**NEXT_ACTION:** Execute open **SCOPE** predecessors per critical path (first open: **REV-MASTER** — MEP-AF2 v2.1 §baseline; hard edge into **SCOPE**). No DS-4 session.
+**NEXT_ACTION:** Execute open **SCOPE** predecessors per critical path (AF-02E: DAG edges **REV-MASTER** / **T-AF2-RW-PLAN** / **T-AF2-RW-PLAN-AUDIT** → **SCOPE** confirmed; remaining blockers: formal REV-MASTER session, RW-PLAN + audit execution, DS-EXC). No DS-4 session.

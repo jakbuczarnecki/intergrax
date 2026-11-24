@@ -1,9 +1,9 @@
 # sha256sum format; check with: sha256sum -c SOURCES.sha256 (run inside this folder)
 # Digests are of the published copies (LF line endings, two machine-path redactions; see README.md).
 # 'source' comments give the original untracked path, its modification time (local) and the sha256 of the source file before normalization/redaction.
-ae7fb06b387279e8b44ea95339167bc0d590fb079ea0e5e0e1d1617dfc18ff01  MEP-AF2_v2.1.md
+01666b9287368321c7f3dca281294a0de25c5590723e0313f2bd41f8dee35f07  MEP-AF2_v2.1.md
 # source of MEP-AF2_v2.1.md: agent-env/plans/pasted-content-id-e2b1-integrax-melodic-aho.md mtime=2026-11-16 13:02:01 sha256=5c31bd9116a587732bc814e12800e904c2ff8a5330e4daeaaf1e17232053af19
-b7d4511cca6d7e7f938c8c7fc3dcdcb23e47145c7af6449d4fc09dfbf2eea121  README.md
+a75f2779b18a6d4ac21e0e36932b78df98287d654789b84487600766e0b7c6af  README.md
 # README.md: written for this publication; no source file
 9591927d492b1d08128952cff969ef62c8338e515ffa2c9927be78e3f00a7dfb  WP12_AUTHORIZATION_REQUESTS.md
 # source of WP12_AUTHORIZATION_REQUESTS.md: .tmp/session/eqo-a-remediation/WP-12/AUTHORIZATION_REQUESTS.md mtime=2026-11-16 12:50:12 sha256=3ac68ee85552a9f7ef239bb4495464fa084334f63be6da1bec9619a6beffaa7b
@@ -21,8 +21,10 @@ bc37e1e774892354eb0be3b4d9ef0d334b12daebf4ea022aa4b103a385ea2a5f  DELEGATION_REC
 894b047f7ba815a0489ede26e4db5edfeb6e3f67c20bbd6c55989efa4f8f2d73  KNOWN_RED_REGISTER.md
 9f344eeaea745c005356cb320c5408841fc07116c82ff58d1b949fd9867a4cc6  PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md
 # written 2026-11-24 T-IGX-073-B (AF-02C)
-f72fef14e00464f948afee08b3d80025e8d71226caa9160343ee747708ab41b6  DS4_DECISION_RECONCILIATION_RECORD.md
-# written 2026-11-24 T-IGX-073-C (AF-02D)
+e6e6b2d6be02e04d267ffa602bc5787aeca08ca1900e59e7336dd1fac332049c  DS4_DECISION_RECONCILIATION_RECORD.md
+# written 2026-11-24 T-IGX-073-C (AF-02D); NEXT_ACTION AF-02E cross-link 2026-11-24 T-IGX-073-D
+2385294a599c75b90b48b227acf06e67ae8fdb3d2ef1049ea0d511fcd26966e7  REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md
+# written 2026-11-24 T-IGX-073-D (AF-02E)
 b1c9b733b20c1bf95f37eeeaadca96b90734446bb4f457a99f52e89535d6bb92  RM499_ENTRY_MAP.md
 9198847c40510c5f436d283d496b3ec36c6a5b1e5b28df45738f1b3609a47b73  RW_TRAIN_DELEGATION_RECORD.md
 04045606cd825b619d503c2318cb99f7478d48ea5da6b9f65c9560d726608e3c  RW_TRAIN_DELEGATION_RECORD_2.md
