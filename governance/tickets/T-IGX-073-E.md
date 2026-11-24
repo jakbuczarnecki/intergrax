@@ -45,6 +45,15 @@ Evidence logs: `.tmp/session/w2-recovery-03/` (W2-RECOVERY-03); `.tmp/session/w2
 - Mechanical validation @ HEAD: `PLAN_STRUCTURE=PASS`, `CODE_FIX_OWNERSHIP=39/39`, `RED_FIRST_EVIDENCE=INCOMPLETE`, `RW_PLAN_AUDIT=NOT_PERFORMED`.
 - Evidence: `.tmp/session/af-w2w3-semantic-consolidation-01/` (diagnostic execution only; not formal qualification).
 
+## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
+
+- Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.
+- FC-1: `test_reject_and_escalate_verdicts_are_recorded_through_materialization` injects `LoggingNotificationAdapter` on `HostOrchestrationLoopInitSpec`.
+- Phase-check-3: strict matrix ownership (no arbitrary ticket fallback); full explicit metadata including `owner_ticket_family`; malformed SCOPE dependency entries rejected without `TypeError`.
+- Regression: governance 297 passed; mechanical `CODE_FIX_OWNERSHIP=39/39`; FC-1 10 passed; TENANT+SUPPLY+MCP identity 98 passed; ruff pass on write-set.
+- Evidence: `.tmp/session/af-w2w3-residual-closure-01/` (session artifacts only).
+
 ## Lifecycle state
 
-in_progress — AF-W2W3-SEMANTIC-CONSOLIDATION-01 implementation complete; formal qualification dimensions not closed
+in_progress — AF-W2W3-RESIDUAL-CLOSURE-01 corrective batch complete; formal qualification dimensions not closed
+

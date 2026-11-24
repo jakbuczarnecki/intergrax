@@ -59,6 +59,7 @@ from intergrax.runtime.human.persistence_contract import (
     InMemoryHumanDecisionPersistence,
 )
 from intergrax.runtime.human.persistence_errors import HumanDecisionPersistenceNotConfiguredError
+from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
@@ -297,6 +298,7 @@ async def test_reject_and_escalate_verdicts_are_recorded_through_materialization
         production_mode=False,
         human_decision_store=store,
         checkpoint_store=checkpoint_store,
+        notification_adapter=LoggingNotificationAdapter(),
     )
     loop = materialize_host_orchestration_backend(registry, spec)._backend  # noqa: SLF001
     task_id = mint_task_id()

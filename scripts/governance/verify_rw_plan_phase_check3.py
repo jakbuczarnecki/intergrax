@@ -42,6 +42,7 @@ EXPLICIT_OWNERSHIP_CONTRACT_KEYS = (
     "owner_source",
     "verification_node",
     "verification_wave",
+    "owner_ticket_family",
 )
 
 
@@ -77,16 +78,28 @@ def _explicit_ownership_contracts() -> dict[str, dict[str, object]]:
     return dict(mod.EXPLICIT_CODE_FIX_OWNERSHIP)
 
 
+def _matrix_row_has_unauthorized_explicit_metadata(row: dict) -> bool:
+    if row.get("owner_provenance"):
+        return True
+    for key in EXPLICIT_OWNERSHIP_CONTRACT_KEYS:
+        if key == "owner_ticket":
+            continue
+        if row.get(key) is not None:
+            return True
+    return False
+
+
 def _explicit_contract_satisfied(row: dict, contract: dict[str, object]) -> bool:
     if row.get("owner_provenance") != "explicit_mep_wp12":
         return False
-    for key in EXPLICIT_OWNERSHIP_CONTRACT_KEYS:
-        if key not in contract:
-            continue
-        if row.get(key) != contract[key]:
-            return False
-    if contract.get("owner_ticket") is None and row.get("owner_ticket"):
+    if "owner_ticket" not in row:
         return False
+    for key in EXPLICIT_OWNERSHIP_CONTRACT_KEYS:
+        if key in contract:
+            if row.get(key) != contract[key]:
+                return False
+        elif row.get(key) is not None:
+            return False
     return True
 
 
@@ -98,14 +111,13 @@ def _ownership_verified(
     if contract is not None:
         return _explicit_contract_satisfied(row, contract)
 
-    node = row.get("owner_node")
-    if node:
+    if _matrix_row_has_unauthorized_explicit_metadata(row):
+        return False
+    if row.get("owner_node"):
         return False
     ticket = row.get("owner_ticket")
     expected = matrix_owners.get(frz)
-    if expected is not None:
-        return ticket == expected
-    return bool(ticket)
+    return isinstance(expected, str) and bool(expected) and isinstance(ticket, str) and ticket == expected
 
 
 def _lane_pt_indices(lane_order: list) -> dict[str, int]:
@@ -117,8 +129,11 @@ def _lane_pt_indices(lane_order: list) -> dict[str, int]:
     return idx
 
 
-def _validate_scope_dependencies(deps: dict[str, object]) -> list[str]:
+def _validate_scope_dependencies(deps: object) -> list[str]:
     errors: list[str] = []
+    if not isinstance(deps, dict):
+        errors.append("dependencies container must be a dictionary")
+        return errors
     for key in ("W2", "SCOPE", "W3"):
         if key not in deps:
             errors.append(f"dependencies missing {key}")
@@ -131,6 +146,17 @@ def _validate_scope_dependencies(deps: dict[str, object]) -> list[str]:
         return errors
     if not scope:
         errors.append("SCOPE dependency collection empty")
+        return errors
+    for i, entry in enumerate(scope):
+        if not isinstance(entry, str):
+            errors.append(f"SCOPE dependency entry {i} must be a nonempty string")
+            continue
+        if not entry:
+            errors.append(f"SCOPE dependency entry {i} must be a nonempty string")
+            continue
+        if entry != entry.strip():
+            errors.append(f"SCOPE dependency entry {i} has leading or trailing whitespace")
+    if any(not isinstance(e, str) or not e or e != e.strip() for e in scope):
         return errors
     if len(scope) != len(set(scope)):
         errors.append("SCOPE duplicate predecessors")
@@ -261,7 +287,7 @@ def validate_plan_structure(
     if REQUIRED_AUDIT_FLAGS - found_flags:
         errors.append(f"audit_flag_conflicts missing: {sorted(REQUIRED_AUDIT_FLAGS - found_flags)}")
 
-    deps = data.get("dependencies") or {}
+    deps = data.get("dependencies")
     errors.extend(_validate_scope_dependencies(deps))
     errors.extend(_validate_lane_order(data.get("lane_order") or []))
     if not data.get("serialization_pairs"):

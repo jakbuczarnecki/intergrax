@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _REPO = Path(__file__).resolve().parents[3]
 _RW_JSON = _REPO / "docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json"
 _VERIFY = _REPO / "scripts/governance/verify_rw_plan_phase_check3.py"
@@ -172,6 +174,7 @@ def test_frz_frz_10_node_ownership_accepted():
         "verification_node": "T-B7-PFP-VERIFY",
         "verification_wave": "W8",
         "owner_source": "MEP-AF2 v2.1 / W5 and W8",
+        "owner_ticket_family": "T-IGX-052-*",
         "owner_provenance": "explicit_mep_wp12",
         "negative_test_id": "NT-FRZ-10",
         "red_first_status": "EVIDENCE_MISSING",
@@ -371,3 +374,179 @@ def test_canonical_scope_dependencies_accepted():
     plan = _minimal_plan()
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
     assert not [e for e in errors if "SCOPE" in e]
+
+
+def test_unknown_frz_arbitrary_ticket_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan(
+        [
+            {
+                "frz_id": "FRZ-UNKNOWN-99",
+                "summary": "s",
+                "owner_ticket": "T-IGX-043-G",
+                "negative_test_id": "NT-X",
+                "red_first_status": "EVIDENCE_MISSING",
+                "regression_scope": "ENT-A",
+                "remediation_track": "CODE_FIX:",
+            }
+        ]
+    )
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-UNKNOWN-99"})
+    assert any("FRZ-UNKNOWN-99" in e and "ownership" in e for e in errors)
+
+
+def test_canonical_frz_missing_matrix_owner_rejected():
+    mod = _load_verify()
+    build = _import_build_mod()
+    matrix = {r.frz_id: r.owner_ticket for r in build.parse_appendix_a_code_fix_inventory()}
+    frz = "FRZ-CANON-NULL-OWNER"
+    matrix[frz] = None
+    plan = _minimal_plan(
+        [
+            {
+                "frz_id": frz,
+                "summary": "s",
+                "owner_ticket": "T-IGX-043-G",
+                "negative_test_id": "NT-X",
+                "red_first_status": "EVIDENCE_MISSING",
+                "regression_scope": "ENT-A",
+                "remediation_track": "CODE_FIX:",
+            }
+        ]
+    )
+    errors = mod.validate_plan_structure(
+        plan,
+        {"FRZ-BND-04", frz},
+        matrix_owners=matrix,
+        explicit=dict(build.EXPLICIT_CODE_FIX_OWNERSHIP),
+    )
+    assert any(frz in e and "ownership" in e for e in errors)
+
+
+def test_canonical_frz_null_owner_without_contract_rejected():
+    mod = _load_verify()
+    build = _import_build_mod()
+    matrix = {r.frz_id: r.owner_ticket for r in build.parse_appendix_a_code_fix_inventory()}
+    frz = "FRZ-CANON-NULL-OWNER"
+    matrix[frz] = None
+    plan = _minimal_plan(
+        [
+            {
+                "frz_id": frz,
+                "summary": "s",
+                "owner_ticket": None,
+                "negative_test_id": "NT-X",
+                "red_first_status": "EVIDENCE_MISSING",
+                "regression_scope": "ENT-A",
+                "remediation_track": "CODE_FIX:",
+            }
+        ]
+    )
+    errors = mod.validate_plan_structure(
+        plan,
+        {"FRZ-BND-04", frz},
+        matrix_owners=matrix,
+        explicit=dict(build.EXPLICIT_CODE_FIX_OWNERSHIP),
+    )
+    assert any(frz in e and "ownership" in e for e in errors)
+
+
+def test_matrix_row_unauthorized_provenance_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["owner_provenance"] = "explicit_mep_wp12"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("ownership not verified" in e for e in errors)
+
+
+def test_matrix_row_unauthorized_owner_wave_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["owner_wave"] = "W3"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("ownership not verified" in e for e in errors)
+
+
+def test_matrix_row_unauthorized_verification_node_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["verification_node"] = "PT-T01"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("ownership not verified" in e for e in errors)
+
+
+def test_pt_t01_unexpected_verification_node_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TEN-02", verification_node="T-B7-PFP-VERIFY")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert any("FRZ-TEN-02" in e for e in errors)
+
+
+def test_pt_t01_unexpected_verification_wave_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-TEN-02", verification_wave="W8")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert any("FRZ-TEN-02" in e for e in errors)
+
+
+def test_explicit_contract_missing_null_owner_ticket_key_rejected():
+    mod = _load_verify()
+    row = _explicit_row("FRZ-TEN-02")
+    row.pop("owner_ticket")
+    plan = _minimal_plan([row])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-TEN-02"})
+    assert any("FRZ-TEN-02" in e for e in errors)
+
+
+def test_frz_frz_10_incorrect_owner_ticket_family_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-FRZ-10", owner_ticket_family="T-IGX-043-*")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-FRZ-10"})
+    assert any("FRZ-FRZ-10" in e for e in errors)
+
+
+def test_frz_frz_10_missing_owner_ticket_family_rejected():
+    mod = _load_verify()
+    row = _explicit_row("FRZ-FRZ-10")
+    row.pop("owner_ticket_family")
+    plan = _minimal_plan([row])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-FRZ-10"})
+    assert any("FRZ-FRZ-10" in e for e in errors)
+
+
+def test_frz_frz_10_complete_contract_accepted():
+    mod = _load_verify()
+    plan = _minimal_plan([_explicit_row("FRZ-FRZ-10")])
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04", "FRZ-FRZ-10"})
+    assert not [e for e in errors if "FRZ-FRZ-10" in e]
+
+
+@pytest.mark.parametrize(
+    "scope_value",
+    [
+        [{}],
+        [[]],
+        [None],
+        [1],
+        [True],
+        [""],
+        [" "],
+        [" M1"],
+        ["M1 "],
+    ],
+)
+def test_malformed_scope_entries_rejected(scope_value):
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["dependencies"]["SCOPE"] = scope_value
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("SCOPE" in e for e in errors)
+
+
+@pytest.mark.parametrize("deps", [[], "not-a-dict"])
+def test_non_dict_dependencies_rejected(deps):
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["dependencies"] = deps
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("dependencies" in e.lower() for e in errors)
