@@ -11,7 +11,7 @@
 
 ## C2 — Ownership / duplicate authority
 
-**Scoped production delta exists** (84 paths since DUP-X @ PRE-ENT replay head `4a932d0c` — L2 CTRL-X `dependency_attempt_execution_boundary.py` + PRE-ENT predecessor batches T-IGX-030-B/C, 032-A, 033-A, provider bundles, enterprise_audit scaffolding; disposition @ `_prod_delta_disposition.py`, `_pre_ent_l3_prod_delta.py`, [`PRE_ENT_REPLAY_L3_PROD_DELTA.md`](pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md); CTRL-X regression **`test_ctrl_x_semantic_boundary_pyright_zero_errors`** @ `22fbc0e` · `l2-ctrl_x.log`). **Unscoped** prod Δ **empty** — `historical_evidence_invalidated_by_later_changes` **0**. DUP-X + EBH-6 SSOT reused; NPSC ten-module disposition recorded.
+**Scoped production delta exists** (PRE-ENT L3 @ `01b3e196` + L2 CTRL-X + **Wave 06 EQO** 418 paths @ W06 head `da5ca5b53` — dispositions in `_pre_ent_l3_prod_delta.py`, `_w06_eqo_prod_delta.py`, `_prod_delta_disposition.py`; map [`PRE_ENT_REPLAY_L3_PROD_DELTA.md`](pre_ent_enterprise_certification/PRE_ENT_REPLAY_L3_PROD_DELTA.md) + [`W06_REPLAY_PROD_DELTA.md`](pre_ent_enterprise_certification/W06_REPLAY_PROD_DELTA.md); CTRL-X regression @ `22fbc0e` preserved). **Unscoped** prod Δ **empty** @ T-IGX-066-A mechanical replay — `historical_evidence_invalidated_by_later_changes` **0**. Historical PASS records @ older TEST_EXECUTION_SHA remain archival; Wave 06 ECAP counter table refreshed @ implementing commit (ticket checkpoint).
 
 ## C3 — VBN taxonomy (31 domains)
 
@@ -27,7 +27,7 @@ Seven replay artifacts @ normative schema (§2.1–2.7) + EBH-5/6 historical SHA
 
 ## Six counters (mechanical @ `TEST_EXECUTION_SHA`)
 
-Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` + B6 R2 bidirectional reconciliation (`_replay_bidirectional_reconciliation.py`) @ **`5f54ba76d68e9065256ac4597bc8e8d9e012b6d2`** worktree (L1 batch `.tmp/proof/roadmap-replay-x-b6-r2-exec-5f54ba76/`).
+Computed by `tests/qualification/roadmap_replay_x/_closure_counters.py` + B6 R2 bidirectional reconciliation @ **T-IGX-066-A** mechanical replay (evidence pin `da5ca5b53`; implementing commit SHA in `governance/tickets/T-IGX-066-A.md` checkpoint).
 
 | Counter | Value | Denominator / source |
 | --- | ---: | --- |
