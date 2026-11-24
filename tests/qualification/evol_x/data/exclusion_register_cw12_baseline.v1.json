@@ -1,0 +1,5 @@
+{
+  "schema_version": "exclusion_register_cw12_baseline.v1",
+  "source_commit_sha": "be0ce70d39b0d811e96177410ac5f9d27c770c5c",
+  "accepted_exclusion_ids": ["X-01", "X-02", "X-03", "X-04", "X-05"]
+}
