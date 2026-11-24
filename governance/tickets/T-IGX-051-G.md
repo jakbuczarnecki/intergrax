@@ -1,4 +1,4 @@
-﻿# T-IGX-051-G — T-AF2-RW-TYP (frozen contract typ ratchet, OD-AF-11)
+# T-IGX-051-G — T-AF2-RW-TYP (frozen contract typ ratchet, OD-AF-11)
 
 ## Scope
 
@@ -22,7 +22,7 @@ Plan digest: d4e9005e793e3c429839580bc305400fc2d8dd299c46d2e9336b0ef37c7b7e3d
 
 Approved: operator-delegate @ 2026-11-24T18:15:00+01:00
 Delegation: docs/project/maintainers/qualification/arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md@0889a64bf93003548b73e3e282b09e3bc0be20b8
-Delegate session: package-c-publication
+Delegate session: local_c387c27a-2faa-432c-baca-9bc2a29aa7d8
 
 ## Test contract
 
@@ -47,3 +47,7 @@ Commands and paths are only in the promoted plan §7; this ticket does not run p
 ## Lifecycle state
 
 in_progress
+
+## Implementer session
+
+Implementer session: local_e54e0892-7d8a-4304-98c7-45f1bc8ebb1c
