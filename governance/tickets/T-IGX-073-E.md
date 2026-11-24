@@ -35,8 +35,6 @@ Evidence logs: `.tmp/session/w2-recovery-03/` (W2-RECOVERY-03); `.tmp/session/w2
 - Phase-check-3 accepts node-based FRZ-FRZ-10 ownership; emits `CODE_FIX_OWNERSHIP=39/39`.
 - Campaign B runner: pytest node paths, output-arg handling, historical B-2 worktree, `HEAD_DIAGNOSTIC`, coverage metadata.
 
-## Lifecycle state
-
 ## AF-W2W3-SEMANTIC-CONSOLIDATION-01 (2026-11-24)
 
 - PT-T01 canonical ownership for FRZ-TEN-02, FRZ-TEN-07, and audit conflict A4-006 (`owner_ticket` null; no T-IGX-044-A).
@@ -55,5 +53,5 @@ Evidence logs: `.tmp/session/w2-recovery-03/` (W2-RECOVERY-03); `.tmp/session/w2
 
 ## Lifecycle state
 
-in_progress — AF-W2W3-RESIDUAL-CLOSURE-01 corrective batch complete; formal qualification dimensions not closed
+in_progress — AF-W2W3-RESIDUAL-CLOSURE-01 corrective batch complete; formal qualification dimensions not closed. P-R0-6: tracked status remains **in_progress**; does not close the ticket, does not set RW-PLAN-AUDIT PASS or SCOPE (`RW_PLAN_AUDIT_STATUS.md` **BLOCKED**).
 

@@ -95,6 +95,27 @@
 | AD-AF-PTFRZ-001 | PT-FRZ-RR: irrecoverable absence of WP-4 primary artefacts; substitute substantive basis for the audit node. | **ACCEPTED — Path B.** The irreversible lack of historical WP-4 artefacts for PT-FRZ-RR is settled by the current full FRZ census at audit SHA `aaabfc6c8d3a0f7dd43ebd43f47d830bdf1c7a20` and the documented Path B assessment (AF-02A-G6 dossier `.tmp/session/arch-freeze/frz-rr/FRZ_RR.md`, verdict **PASS_WITH_FINDINGS**, findings F-PT-001..003). This is the Architecture-Authority-approved substitute substantive basis. Independence, reproducibility and formal closure remain under the existing contract. Normative amendment: [`arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md`](./arch_freeze_program/PT_FRZ_RR_PATH_B_AMENDMENT.md). Formal node closeout: [`PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md`](./arch_freeze_program/PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md) (`PT_FRZ_RR_CLOSED=YES`, `DS4_READY=YES`; AF-02C). Does not promote FRZ rows. | 2026-11-24 | Architecture Authority (ChatGPT, ARCH-FREEZE program); independent evidence AF-02A-G6 @ `aaabfc6c8…`; execution [`T-IGX-073-A`](../../../../governance/tickets/T-IGX-073-A.md) | **ACCEPTED** (record only) |
 | AD-AF-02D-001 | DS-4 chronology: decisions already recorded 2026-11-16; PT-FRZ-RR prerequisite satisfied 2026-11-24; no new decision session. | **ACCEPTED.** Reconcile **DECISION_RECORDED** (2026-11-16, DP-34..45) with **PREREQUISITE_SATISFIED** (AF-02C) and record **DECISION_REVALIDATED_AGAINST_PATH_B** without changing decision text. **DS4_DAG_COMPLETE** when DS-1 + PT-FRZ-RR hard edges hold. Disposition: [`arch_freeze_program/DS4_DECISION_RECONCILIATION_RECORD.md`](./arch_freeze_program/DS4_DECISION_RECONCILIATION_RECORD.md). Does not execute **SCOPE**. | 2026-11-24 | Architecture Authority (ChatGPT, ARCH-FREEZE); execution [`T-IGX-073-C`](../../../../governance/tickets/T-IGX-073-C.md) | **ACCEPTED** (record only) |
 
+## Historical autonomy rows (superseded for program execution)
+
+Rows below record the 2026-11-21 autonomy session only. **SUPERSEDED** for current ARCH-FREEZE re-entry execution by the **OP-0** program ruling (plan section O / R0; citations in [`arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md`](./arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md)). They are not Operator signatures in this batch and do not reopen closed stage evidence.
+
+| OD_ID | Question | Decision (historical) | Date | Authority / record | Status |
+| --- | --- | --- | --- | --- | --- |
+| OD-AF-AUTO-01 | KR-08 / `governance-fast` on train | Narrow **TAK** for product PRs under ACT-N11; not docs-only bypass | 2026-11-21 | [`OPERATOR_DECISIONS_AUTONOMY.md`](./arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md) | **SUPERSEDED** (historical; OP-0 re-entry) |
+| OD-AF-AUTO-02 | FC-3 regression 78 nodes | **TAK** — full batch on `development` | 2026-11-21 | same | **SUPERSEDED** (historical; OP-0 re-entry) |
+| OD-AF-AUTO-03 | Tickets T-IGX-043-J + T-IGX-051-C | Approved after plan digest verify | 2026-11-21 | same | **SUPERSEDED** (historical; OP-0 re-entry) |
+| OD-AF-AUTO-04 | T-IGX-051-A TENANT | Operator UNBLOCK for product work; no FCS/G2/CLOSED | 2026-11-21 | same | **SUPERSEDED** (historical; OP-0 re-entry) |
+| OD-AF-AUTO-05 | FCS / G2 / CLOSED claims | Never announce in autonomy sessions | 2026-11-21 | same | **SUPERSEDED** (historical; OP-0 re-entry) |
+| OD-AF-AUTO-06 | RW-PLAN-AUDIT | **BLOCKED** — no simulated PASS | 2026-11-21 | same; tracked [`RW_PLAN_AUDIT_STATUS.md`](./arch_freeze_program/continuation/RW_PLAN_AUDIT_STATUS.md) | **SUPERSEDED** (historical; BLOCKED still governs) |
+| OD-AF-AUTO-07 | T-IGX-043-M | Parallel fala 2 when FC3 stable | 2026-11-21 | same | **SUPERSEDED** (historical; OP-0 re-entry) |
+
+## Unsigned placeholders (no Operator signature in P-R0-6)
+
+| OD_ID | Question | Decision | Date | Authority / record | Status |
+| --- | --- | --- | --- | --- | --- |
+| OD-AF-23 | RW train standing delegation (S1–S5 from packet 3) | Rules S1–S2 published in [`RW_TRAIN_STANDING_DELEGATION_RECORD.md`](./arch_freeze_program/RW_TRAIN_STANDING_DELEGATION_RECORD.md); S3–S5 cited from session artefact only | 2026-11-17 (rules); placeholder 2026-11-24 | Session artefact `.tmp/session/arch-freeze/OPERATOR_PACKET_3.md` (untracked) | **OPEN** — unsigned in this commit |
+| DS-ADM | ARCH-FREEZE admission operator steps (OD-ARCH-FREEZE-01; EDER-D-0170/0172/0173) | Prerequisite **ENTRY**; no admission executed | — | MEP W8; prep [`continuation/w8/W8_DS_ADM_PREP.md`](./arch_freeze_program/continuation/w8/W8_DS_ADM_PREP.md); **OD-ARCH-FREEZE-01** remains **OPEN** above | **OPEN** — unsigned in this commit |
+
 ## Decisions named by the plan but not re-recorded here
 
 MEP-AF2 v2.1 section M1 lists the following as decided, to be published as record-only: OD-PDC-X-CLOSE, OD-ROUTE-DS3, OD-QUALX-ACCEPT-2026-11-07, IIAC-OD-PDC-X-P8-ACT-N11, the Path B authorization of 2026-10-22 (with DP-34/DP-35) and OD-PDC-ARCHF-01. ("C10/C15 kept" is recorded through DP-62 in the DS-6 row above.) Their text was not part of the source files used for this batch, so no rows are written for them yet and no status is asserted here.

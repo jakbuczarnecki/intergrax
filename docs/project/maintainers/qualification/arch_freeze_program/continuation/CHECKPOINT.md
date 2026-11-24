@@ -4,6 +4,21 @@
 **Base branch (pin dokumentacyjny):** `e69e1ff5819b98c316377bcadf749f61fe00abc2` (`e69e1ff58`) — liczniki gap @ [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
 
+
+## R0-6 ticket lifecycle (factual; P-R0-6)
+
+| Ticket | Lifecycle note |
+|--------|----------------|
+| **T-IGX-073-E** | in_progress — W2 recovery mechanical work landed; does **not** set RW-PLAN-AUDIT PASS or SCOPE |
+| **T-IGX-051-A** | plan_approved — delegate approval recorded; product implementation **not closed** (serialization: after FC3/WF/TRUST) |
+| **T-IGX-051-C** | in_progress — fala 5 trust slice green @ e61e5136a; ticket **not closed** |
+| **T-IGX-051-N** | plan_approved — PR **#684** merged on train (operator manual merge per RC2_EVIDENCE.md); **not** FCS/G2 |
+| **T-IGX-065-A** | in_progress — PT-T01 registry/matrix active; held-out nodes delegated per ticket body |
+| **T-IGX-046-G** | draft — RC-1 scaffold; plan digest pending |
+| **T-IGX-046-H** | plan_pending — PT-G01 AST gate ticket; no implementation claim |
+| **T-IGX-043-M** | in_progress — slices 1–3 green; Part E manifest work continues; **not closed** |
+
+
 ## Train merge — fakt operatora / automation
 
 | Pole | Wartość |

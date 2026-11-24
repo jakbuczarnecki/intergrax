@@ -38,6 +38,6 @@ TENANT **051-A**, GATES **051-F**, SUPPLY **051-B/N**, merge to `rw-train`, FRZ 
 
 ## Lifecycle state
 
-in_progress
+in_progress — P-R0-6: trust slice green; **not closed**
 
 §7 fala 5A slice 3+: `NT-TRUST-06` **1 passed**, tenant-scope **11 passed**, §7.2 **64 passed** @ `dc083f6ea`; all `NT-TRUST-01`..`06` green; fala 5 close @ `e61e5136a`: trust+RAG **80 passed**, FC-3 bundle **260 passed**, 3 skipped — plan §7.2

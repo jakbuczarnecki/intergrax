@@ -14,7 +14,7 @@ Plan digest: 2d916c97680a7d1c86ba836fbdcea3cfe42bde11c4df838108fb2d5f39023279
 
 ## Lifecycle state
 
-in_progress
+in_progress — P-R0-6: PT-T01 matrix active; **not closed**
 
 ## PT-T01 reconciliation (@ development)
 

@@ -58,6 +58,6 @@ Part E manifest / consumer write set: **UNBLOCKED** (operator D3); implementatio
 
 ## Lifecycle state
 
-in_progress
+in_progress — P-R0-6: Part E work continues; **not closed**
 
 Part E E0–E3 authorized OD-W06-AUTH-01 @ 2026-11-23

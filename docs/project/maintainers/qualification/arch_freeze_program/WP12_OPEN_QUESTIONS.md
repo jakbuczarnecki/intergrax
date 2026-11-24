@@ -50,3 +50,17 @@ DECISION findings named by no DP (WP12-Q01; provisional decision session in brac
 Verification needs without a finding of the 239 (home or EDER entry): X-S2b -> A4-004 (RV-14: WP-1 seam S2b is part of A4-004); X-ESC-E4 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry; WP-5 to name the finding (A8-015 is a documentation finding: link UNVERIFIED)); FS-1 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry (family sweep over FRZ rows)); FS-2 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry); FS-3 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry); FS-4 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry); FS-5 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry); FS-6 -> EDER VERIFY_NEED (EDER VERIFY_NEED entry).
 
 Findings with a re-read pending at head: A4-004: WP-1 owner: re-read the unit-tests.yml change (ubuntu pin, default EBH-7 pin); A5-011: WP-8 owner: re-read the PDC-X global audit evidence for G-09.
+
+## F. R0-6 re-disposition (record only; citations to existing records)
+
+| ID | Prior if-undecided risk | R0-6 disposition | Citation (existing record only) |
+|---|---|---|---|
+| WP12-Q01 | Nine DECISION findings stay provisional | **CONDITIONS** — bind to **DS-4** DP ids in plan_data.py / DS-5; no new Operator session in AF-02D | [DS4_DECISION_RECONCILIATION_RECORD.md](./DS4_DECISION_RECONCILIATION_RECORD.md); ODR **DS-4** row; **AD-AF-02D-001** |
+| WP12-Q11 | DS-EXC unmapped exceptions block SCOPE | **CONDITIONS** — disposition per item already **DECIDED** in ODR **DS-EXC**; SCOPE still blocked on other predecessors | ODR **DS-EXC**; MEP hard edge DS-EXC → SCOPE |
+| WP12-Q12 | 35 CODE_FIX FRZ rows UNPLANNED | **CONDITIONS** — RW plan + T-IGX-073-E ownership metadata; formal **T-AF2-RW-PLAN-AUDIT** still **BLOCKED** | [continuation/RW_PLAN_AUDIT_STATUS.md](./continuation/RW_PLAN_AUDIT_STATUS.md); [T-IGX-073-E](../../../../governance/tickets/T-IGX-073-E.md) |
+| WP12-Q14 | C1 label exposure during wave | **CONDITIONS** — honest-label batch remains W5 **PT-D09/D10** prep; no FCS claim | [continuation/W5_PREP_DOSSIER.md](./continuation/W5_PREP_DOSSIER.md) |
+| WP12-Q15 | PT-PB unperformed | **CONDITIONS** — DP-60 gate-meaning; Path B row work **PT-PB** not started | ODR **OD-AF-08**; FRZ Path B record **AD-AF-PTFRZ-001** |
+| WP12-Q17 | Alpha before DS-2..4 | **DECIDED (historical)** — Campaign B alpha runners exist on development (**T-IGX-073-E**); does not satisfy SCOPE | [T-IGX-073-E](../../../../governance/tickets/T-IGX-073-E.md) scope banner |
+
+No row above is a PASS, FRZ promotion, or independent verification.
+
