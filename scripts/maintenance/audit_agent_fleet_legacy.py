@@ -54,6 +54,10 @@ MIGRATED_AGENTS: frozenset[str] = frozenset(
         "problem_radar",
         "vendor_discovery",
         "boundary_demo",
+        "external_contractor_adapter",
+        "model_routing_qualifier",
+        "tool_selection_qualifier",
+        "web_search_qualifier",
     }
 )
 
@@ -65,9 +69,7 @@ LEGACY_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 ACP_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
-        re.compile(
-            r"\bCognitiveAgent\b|\bReflexAgent\b|\bReactAgent\b|\bDiagnosticReflexAgent\b"
-        ),
+        re.compile(r"\bCognitiveAgent\b|\bReflexAgent\b|\bReactAgent\b|\bDiagnosticReflexAgent\b"),
         "cognitive_pattern_base",
     ),
     (re.compile(r"\bon_next_step\b"), "on_next_step"),

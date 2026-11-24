@@ -13,6 +13,9 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_activation_request,
@@ -25,6 +28,9 @@ from tests.unit.applications.ac3_projection_helpers import build_test_registry_p
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
+)
+from local_workspace_application.host.host_runtime_composition import (
+    resolve_local_workspace_host_tenant_binding,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
@@ -67,15 +73,22 @@ def create_lkw_hosted_test_process_composition(
         return composition
     resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     env = lkw_test_environment(resolved_settings)
+    host_tenant = resolve_local_workspace_host_tenant_binding(resolved_settings)
     projection_input = build_reference_registry_projection_input_bundle(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
         env,
         builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
         runtime_revision_id=revision_id,
         settings=resolved_settings,
+        tenant_id=host_tenant.tenant_id,
     )
     activation_request = build_reference_activation_request(projection_input)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     launcher.deploy_and_activate(
         projection_input,
         activation_request,

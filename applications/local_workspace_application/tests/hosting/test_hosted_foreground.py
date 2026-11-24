@@ -157,6 +157,24 @@ def test_hosting_main_requires_activated_composition() -> None:
 
 
 def test_hosted_process_launcher_emits_safe_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_HOST_TENANT_ID", "lkw-hosted-process-launcher-test-tenant")
+    from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+    from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
+        apply_strict_product_memory_test_patches,
+    )
+
+    apply_strict_product_memory_test_patches(monkeypatch)
+
+    stub_llm = PrefixStubLLMAdapter(prefix="lkw-hosted-launcher")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.environment_wiring.resolve_optional_environment_llm_adapter",
+        lambda _env: stub_llm,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_a, **_k: stub_llm,
+    )
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     expected = _supervisor_result(HostedApplicationExitKind.CLEAN_STOP)
 
     def _fake_run(

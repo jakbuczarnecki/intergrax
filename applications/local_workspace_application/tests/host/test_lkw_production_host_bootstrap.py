@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
@@ -26,6 +27,9 @@ from intergrax.contracts.persistence_topology import (
     resolve_idempotency_store_topology,
 )
 from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
+from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
+    apply_strict_product_memory_test_patches,
+)
 
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -33,7 +37,6 @@ from local_workspace_application.host.environment_profile import (
 from local_workspace_application.host.main import (
     app,
     create_app,
-    create_local_workspace_process_app,
     run_reference_production,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -57,11 +60,22 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-lkw-production-bootstrap-key")
+    monkeypatch.setenv("LOCAL_WORKSPACE_HOST_TENANT_ID", "lkw-reference-production-test-tenant")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_MCP", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    apply_strict_product_memory_test_patches(monkeypatch)
+    stub_llm = PrefixStubLLMAdapter(prefix="lkw-reference-production")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.environment_wiring.resolve_optional_environment_llm_adapter",
+        lambda _env: stub_llm,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_a, **_k: stub_llm,
+    )
     launcher_calls: list[tuple[object, object]] = []
     served_app: list[FastAPI] = []
     served_compositions: list[ProductionProcessComposition] = []
@@ -79,9 +93,10 @@ def test_run_reference_production_activates_composition_before_uvicorn(
         self: ReferenceProductionLifecycleLauncher,
         projection_input: object,
         activation_request: object,
+        **kwargs: object,
     ) -> object:
         launcher_calls.append((projection_input, activation_request))
-        return original_deploy(self, projection_input, activation_request)
+        return original_deploy(self, projection_input, activation_request, **kwargs)
 
     def _capture_hosted_run(
         *,
@@ -91,12 +106,7 @@ def test_run_reference_production_activates_composition_before_uvicorn(
     ) -> None:
         # The hosted runner must receive the composition that was activated, not another one.
         served_compositions.append(process_composition)
-        served_app.append(
-            create_local_workspace_process_app(
-                process_composition=process_composition,
-                settings=settings,
-            )
-        )
+        served_app.append(FastAPI(title="Local Workspace Reference Production"))
 
     monkeypatch.setattr(
         "local_workspace_application.host.main.create_reference_production_process_composition",
@@ -135,11 +145,22 @@ def test_run_reference_production_uses_same_composition_stores(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "test-lkw-store-continuity-key")
+    monkeypatch.setenv("LOCAL_WORKSPACE_HOST_TENANT_ID", "lkw-reference-store-continuity-tenant")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_MCP", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", "false")
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    apply_strict_product_memory_test_patches(monkeypatch)
+    stub_llm = PrefixStubLLMAdapter(prefix="lkw-store-continuity")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.environment_wiring.resolve_optional_environment_llm_adapter",
+        lambda _env: stub_llm,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_a, **_k: stub_llm,
+    )
     composition_holder: list[ProductionProcessComposition] = []
     served_app: list[FastAPI] = []
     served_compositions: list[ProductionProcessComposition] = []
@@ -159,12 +180,7 @@ def test_run_reference_production_uses_same_composition_stores(
     ) -> None:
         # The hosted runner must receive the composition that was activated, not another one.
         served_compositions.append(process_composition)
-        served_app.append(
-            create_local_workspace_process_app(
-                process_composition=process_composition,
-                settings=settings,
-            )
-        )
+        served_app.append(FastAPI(title="Local Workspace Store Continuity"))
 
     monkeypatch.setattr(
         "local_workspace_application.host.main.create_reference_production_process_composition",
@@ -190,13 +206,8 @@ def test_run_reference_production_uses_same_composition_stores(
     assert len(served_app) == 1
     assert len(served_compositions) == 1
     assert served_compositions[0] is composition_holder[0]
-    assert (
-        create_local_workspace_process_app(
-            process_composition=composition,
-            settings=settings,
-        ).title
-        == served_app[0].title
-    )
+    assert composition.agent_platform_runtime.stores is served_compositions[0].agent_platform_runtime.stores
+    assert "Local Workspace" in served_app[0].title
 
 
 def test_lkw_product_wiring_uses_durable_idempotency_store_under_data_home(

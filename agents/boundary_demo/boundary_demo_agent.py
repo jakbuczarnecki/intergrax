@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.agents.agent_contract import Agent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
@@ -16,6 +16,7 @@ from intergrax.agents.reference_harness import (
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -40,11 +41,17 @@ RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
 
-class BoundaryDemoAgent(HarnessReferenceAgent):
+class BoundaryDemoAgent(Agent):
     """Single-step UAEP agent for Execution Boundary Export partner sandbox."""
 
     AGENT_ID = "boundary_demo_agent"
     cognitive_pattern = CognitivePattern.REFLEX
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError(
+            f"{type(self).__name__} is executed via AgentEngine/UAEPExecutor, not direct run().",
+        )
 
     def __init__(
         self,

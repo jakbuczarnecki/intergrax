@@ -5,45 +5,46 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+from intergrax.applications._shared.codecraft_wiring import tool_profile_with_codecraft
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.applications._shared.skill_tool_profile import (
-    assert_skill_tool_requirements_for_profile,
-)
 from intergrax.applications._shared.graph_spec_to_plan import (
     application_graph_spec_to_nexus_plan,
     should_seed_plan_from_graph_spec,
 )
-from intergrax.applications._shared.package_wiring import _validate_graph_spec_capabilities
+from intergrax.applications._shared.integration_tool_profile import (
+    extend_tool_profile_for_integration,
+)
 from intergrax.applications._shared.package_wiring import (
+    _validate_graph_spec_capabilities,
     build_application_package,
     validate_application_package_closure,
 )
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
+from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox
+from intergrax.applications._shared.skill_tool_profile import (
+    assert_skill_tool_requirements_for_profile,
+)
+from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
 from intergrax.applications._shared.strict_product_manifest_ci_gates import (
     manifest_ci_contract_authority,
 )
-from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.nexus.orchestration_capabilities import (
     is_orchestration_capability,
     orchestration_capabilities_from_triggers,
 )
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.applications._shared.integration_tool_profile import (
-    extend_tool_profile_for_integration,
-)
-from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox
-from intergrax.applications._shared.codecraft_wiring import tool_profile_with_codecraft
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
 from intergrax.skills.providers.local.plugin import LocalSkillPlugin
+from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
 from intergrax.skills.registry.tool_requirements import (
     SkillToolRequirementError,
     available_tool_ids_for_profile,
 )
-from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
 from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -215,18 +216,28 @@ def test_lkw_docker_compose_uses_persistent_otel_collector_storage_contract() ->
     text = _DOCKER_COMPOSE.read_text(encoding="utf-8")
 
     assert "\n  otel-collector:" in text
-    assert (
-        "./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro" in text
-    )
+    assert "./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro" in text
     assert "lkw_otel_data:/var/lib/otelcol" in text
     assert "\n  lkw_otel_data:" in text
     assert '"4318:4318"' in text
 
 
-def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
+def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.MonkeyPatch) -> None:
+    from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
+        apply_strict_product_memory_test_patches,
+    )
+
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    apply_strict_product_memory_test_patches(monkeypatch)
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
-    env = manifest.resolved_environment()
-    wiring = wire_application_environment(manifest, env, conformance_check=False)
+    env = build_local_workspace_environment_profile()
+    wiring = wire_application_environment(
+        manifest,
+        env,
+        tenant_id="local-workspace-package-closure-tenant",
+        llm_adapter=PrefixStubLLMAdapter(prefix="lkw-package-closure"),
+        conformance_check=False,
+    )
     authority = manifest_ci_contract_authority(manifest)
     package = build_application_package(manifest, env, contract_authority=authority)
     violations = validate_application_package_closure(
@@ -241,11 +252,7 @@ def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
         v for v in violations if "not found on manifest roster" in v or "graph trigger capability" in v
     ]
     assert roster_violations == [], f"unexpected roster/graph violations: {violations}"
-    roster_caps = {
-        capability
-        for binding in manifest.enabled_agents()
-        for capability in binding.capabilities
-    }
+    roster_caps = {capability for binding in manifest.enabled_agents() for capability in binding.capabilities}
     assert "local.workspace.pipeline" not in roster_caps
 
 

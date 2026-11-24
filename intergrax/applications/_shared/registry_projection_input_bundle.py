@@ -13,9 +13,9 @@ with canonical lifecycle stores and ``VenvBundleRuntimeAgentFactoryResolver``.
 
 from __future__ import annotations
 
+from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.roster import EffectiveRoster, EffectiveRosterEntry
-from intergrax.agent_distribution.admin_models import ActivateRuntimeRevisionRequest
 from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevision,
@@ -31,12 +31,11 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     InMemoryRuntimeAgentFactoryResolver,
     RuntimeAgentFactoryResolutionError,
 )
-from intergrax.utils import attribute_access
 from intergrax.applications._shared.wiring import (
     BuilderMap,
-    factory_reference_for_roster_entry,
     _index_manifest_bindings,
     _resolve_manifest_binding_for_entry,
+    factory_reference_for_roster_entry,
 )
 from intergrax.applications.contracts.agent_ref import qualname_for_callable
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
@@ -44,6 +43,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.utils import attribute_access
 
 _REFERENCE_DIGEST = "sha256:" + ("a" * 64)
 _REFERENCE_ROSTER_DIGEST = "sha256:" + ("e" * 64)
@@ -116,21 +116,15 @@ def _resolver_for_bindings(
             continue
         binding = _resolve_manifest_binding_for_entry(entry, manifest_bindings)
         if binding is None:
-            raise ValueError(
-                f"missing manifest binding for roster entry {entry.logical_agent_id!r}"
-            )
+            raise ValueError(f"missing manifest binding for roster entry {entry.logical_agent_id!r}")
         factory = _factory_for_binding(binding, builders)
         try:
             factory_ref = factory_reference_for_roster_entry(entry, manifest_bindings)
         except RuntimeAgentFactoryResolutionError:
             if binding.builder_key is not None:
-                factory_ref = AgentBindingFactoryReference(
-                    builder_key=binding.builder_key
-                )
+                factory_ref = AgentBindingFactoryReference(builder_key=binding.builder_key)
             elif binding.factory_path is not None:
-                factory_ref = AgentBindingFactoryReference(
-                    factory_path=binding.factory_path
-                )
+                factory_ref = AgentBindingFactoryReference(factory_path=binding.factory_path)
             elif builders is not None and binding.agent_type in builders:
                 factory_ref = AgentBindingFactoryReference(
                     builder_key=binding.agent_type.__name__.lower().replace("agent", "")
@@ -175,13 +169,9 @@ def _manifest_with_contract_ids(manifest: ApplicationManifest) -> ApplicationMan
         if binding.contract_id is not None:
             agents.append(binding)
             continue
-        class_contract = attribute_access.optional(
-            binding.agent_type, "contract_id", None
-        )
+        class_contract = attribute_access.optional(binding.agent_type, "contract_id", None)
         if isinstance(class_contract, str) and class_contract.strip():
-            agents.append(
-                binding.model_copy(update={"contract_id": class_contract.strip()})
-            )
+            agents.append(binding.model_copy(update={"contract_id": class_contract.strip()}))
             continue
         import_path = binding.import_path
         if import_path is None:
@@ -206,6 +196,7 @@ def build_reference_registry_projection_input_bundle(
     package_digest: str = _REFERENCE_DIGEST,
     materialization_artifact_digest: str = _REFERENCE_ARTIFACT,
     settings: object | None = None,
+    tenant_id: str | None = None,
 ) -> RegistryProjectionInputBundle:
     """Build frozen AP-10 projection inputs for explicit reference deploy/activate."""
     manifest = _manifest_with_contract_ids(manifest)
@@ -213,14 +204,9 @@ def build_reference_registry_projection_input_bundle(
     bindings = enabled_bindings or tuple(manifest.enabled_agents())
     if enabled_contract_stems is not None:
         bindings = tuple(
-            binding
-            for binding in bindings
-            if (binding.contract_id or _binding_stem(binding)) in enabled_contract_stems
+            binding for binding in bindings if (binding.contract_id or _binding_stem(binding)) in enabled_contract_stems
         )
-    entries = tuple(
-        _roster_entry_from_binding(binding, package_digest=package_digest)
-        for binding in bindings
-    )
+    entries = tuple(_roster_entry_from_binding(binding, package_digest=package_digest) for binding in bindings)
     roster = EffectiveRoster(
         application_id=manifest.app_id,
         application_environment_id=environment.profile_id,
@@ -228,19 +214,14 @@ def build_reference_registry_projection_input_bundle(
         entries=entries,
     ).with_revision_id()
     identity = build_reference_runtime_identity_digests(roster)
-    installed_digests = tuple(
-        entry.package_digest
-        for entry in roster.entries
-        if entry.effective_enablement
-    )
+    installed_digests = tuple(entry.package_digest for entry in roster.entries if entry.effective_enablement)
     revision = RuntimeRevision(
         runtime_revision_id=runtime_revision_id,
         application_id=manifest.app_id,
         application_environment_id=environment.profile_id,
         application_release_id=application_release_id,
         platform_version="0.1.0",
-        effective_roster_revision_id=roster.effective_roster_revision_id
-        or _REFERENCE_ROSTER_DIGEST,
+        effective_roster_revision_id=roster.effective_roster_revision_id or _REFERENCE_ROSTER_DIGEST,
         installed_agent_package_digests=installed_digests,
         materialized_runtime_lock_id=identity.materialized_runtime_lock_id,
         materialized_runtime_lock_digest=identity.materialized_runtime_lock_digest,
@@ -255,11 +236,16 @@ def build_reference_registry_projection_input_bundle(
         from intergrax.applications._shared.environment_wiring import (
             wire_application_environment,
         )
+        from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+            manifest_ci_contract_authority,
+        )
 
         wiring = wire_application_environment(
             manifest,
             environment,
             settings=settings,
+            tenant_id=tenant_id,
+            agent_contract_authority=manifest_ci_contract_authority(manifest),
         )
         composition = wiring.composition
         ctx = composition.factory_context
