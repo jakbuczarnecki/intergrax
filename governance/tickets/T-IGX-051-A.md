@@ -38,7 +38,9 @@ Canonical plan: `governance/tickets/plans/PLAN_T-IGX-051-A.md` (drafted at `.tmp
 
 ## Approved
 
-PENDING. The approval block is written later by the delegate after plan review and the wave packet; the implementer never writes it. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
+Approved: operator-delegate @ 2026-11-22T11:06:58+01:00
+Delegation: docs/project/maintainers/qualification/arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md@0889a64bf93003548b73e3e282b09e3bc0be20b8
+Delegate session: local_219530f7-bbc9-4105-a52c-fadcbe8fea39
 
 ## Test contract
 
@@ -59,8 +61,8 @@ Nothing was run when this ticket was drafted. One process at a time, one `uv run
 
 ## Lifecycle state
 
-plan_pending
+plan_approved — P-R0-6: approved; product wave **not closed** (see `CHECKPOINT.md` R0-6 lifecycle)
 
 ## Implementer session
 
-Implementer session:
+Implementer session: local_79a111e9-0bfd-458e-9e73-2ce206bf114c
