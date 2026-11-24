@@ -27,7 +27,6 @@ _RESEARCH_MAIN = _REPO_ROOT / "applications/research_application/host/main.py"
 _DECLARED_DIRECT_UVICORN_SITES = frozenset(
     {
         "applications/attestation_demo/host/main.py",
-        "applications/governed_contractor_application/host/package_b_strict_production_serving_command.py",
         "applications/intergrax_assistant_application/host/main.py",
         "applications/lab_application/host/main.py",
         "applications/poc_template_application/host/main.py",

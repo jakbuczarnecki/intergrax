@@ -1,19 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Sanctioned Package B strict production serve command (profile v1 + D4 uvicorn factory)."""
+"""Sanctioned Package B strict production serve command (profile v1 + hosted runner)."""
 
 from __future__ import annotations
 
-import os
 import sys
 
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.host.single_node_profile_v1_strict_startup import (
-    open_gca_strict_production_serving_session_from_single_node_production_profile_v1,
-)
-from governed_contractor_application.host.strict_production_serving import (
-    build_governed_contractor_strict_production_uvicorn_factory,
-)
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
@@ -25,16 +17,24 @@ from intergrax.applications._shared.package_b_strict_production_serving_environm
     PackageBStrictProductionServingEnvironmentError,
     load_strict_production_serving_environment_from_env,
 )
+from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
+    raise_primary_with_cleanup_errors,
+)
 from intergrax.applications._shared.single_node_production_profile_v1 import (
     load_single_node_production_profile_v1_from_env,
     validate_configured_single_node_production_profile_v1,
 )
-from intergrax.applications._shared.process_lifecycle_resource_cleanup import (
-    raise_primary_with_cleanup_errors,
-)
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
     StrictProductionServingSession,
+)
+
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.single_node_profile_v1_strict_startup import (
+    open_gca_strict_production_serving_session_from_single_node_production_profile_v1,
+)
+from governed_contractor_application.hosting import (
+    run_governed_contractor_hosted_strict_production_application,
 )
 
 _LEGACY_STRICT_SERVE_MARKERS = (
@@ -84,10 +84,7 @@ def _reraise_with_command_owned_close_failure(
     raise_primary_with_cleanup_errors(
         primary_exc,
         [close_exc],
-        message=(
-            "package B strict production serving command failed; "
-            "errors during command-owned session close"
-        ),
+        message=("package B strict production serving command failed; errors during command-owned session close"),
     )
 
 
@@ -96,8 +93,7 @@ def _validate_operator_backend_settings(
 ) -> None:
     if not settings.api_keys_map:
         raise PackageBStrictProductionServingCommandError(
-            "production API credentials are required "
-            "(GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON or bootstrap key)",
+            "production API credentials are required (GOVERNED_CONTRACTOR_BACKEND_API_KEYS_JSON or bootstrap key)",
         )
     if settings.strict_external_work_provider_id is None:
         raise PackageBStrictProductionServingCommandError(
@@ -112,7 +108,7 @@ def _validate_operator_backend_settings(
 
 
 def run_package_b_strict_production_serving_command() -> None:
-    """Open profile v1 strict session and serve via the D4 uvicorn factory."""
+    """Open profile v1 strict session and serve via the platform hosted application runner."""
     _reject_legacy_strict_serve_invocation()
     try:
         settings = GovernedContractorBackendSettings.from_env()
@@ -146,21 +142,9 @@ def run_package_b_strict_production_serving_command() -> None:
                 "strict production serving session is not ready for traffic",
             )
 
-        factory = build_governed_contractor_strict_production_uvicorn_factory(
-            session,
+        run_governed_contractor_hosted_strict_production_application(
+            session=session,
             settings=settings,
-        )
-        bind_host = os.environ.get(
-            "GOVERNED_CONTRACTOR_BACKEND_BIND_HOST",
-            "0.0.0.0",
-        ).strip()
-        import uvicorn
-
-        uvicorn.run(
-            factory,
-            host=bind_host or "0.0.0.0",
-            port=settings.backend_port,
-            factory=True,
         )
     except PackageBStrictProductionServingCommandError as exc:
         close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
@@ -176,15 +160,8 @@ def run_package_b_strict_production_serving_command() -> None:
         raise_primary_with_cleanup_errors(
             wrapped,
             [close_exc],
-            message=(
-                "package B strict production serving command failed; "
-                "errors during command-owned session close"
-            ),
+            message=("package B strict production serving command failed; errors during command-owned session close"),
         )
-    else:
-        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)
-        if close_exc is not None:
-            raise PackageBStrictProductionServingCommandError(str(close_exc)) from close_exc
 
 
 def main() -> None:

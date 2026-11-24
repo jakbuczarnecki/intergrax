@@ -10,13 +10,11 @@ from typing import Final
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from intergrax.applications._shared.package_b_operator_production_governance_configuration import (
     PackageBOperatorProductionGovernanceConfigurationError,
     load_package_b_operator_production_control_plane_governance_from_env,
 )
 from intergrax.applications._shared.settings_loader import EnvReader
-from governed_contractor_application.host import package_b_strict_production_serving_command as pb_serve_cmd
 from intergrax.applications._shared.strict_production_serving_launcher import (
     StrictProductionServingLauncherError,
     StrictProductionServingReadiness,
@@ -27,15 +25,13 @@ from tests.qualification.prod_q.test_prod_q_r1_r7_q_od_r2_03_single_node_product
     repo_root,
 )
 
+from governed_contractor_application.host import package_b_strict_production_serving_command as pb_serve_cmd
+
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
 _EXPECTED_START_HEAD: Final = "e6afb33c841217e1de235a6fc691bf47f5155ab8"
 _GOVERNANCE_MODULE: Final = (
-    repo_root()
-    / "intergrax"
-    / "applications"
-    / "_shared"
-    / "package_b_operator_production_governance_configuration.py"
+    repo_root() / "intergrax" / "applications" / "_shared" / "package_b_operator_production_governance_configuration.py"
 )
 _SERVE_COMMAND: Final = (
     repo_root()
@@ -104,10 +100,15 @@ def _already_closed_package_b_command_session() -> StrictProductionServingSessio
     )
 
 
-def _run_package_b_command_with_uvicorn_return(
+def _run_package_b_command_with_hosted_return(
     session: StrictProductionServingSession,
+    *,
+    on_hosted_return: object | None = None,
 ) -> None:
-    mock_uvicorn = MagicMock()
+    def _hosted_return(**_kwargs: object) -> None:
+        if callable(on_hosted_return):
+            on_hosted_return()
+
     patches = _patch_package_b_serve_preamble()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
         with patch.object(
@@ -117,11 +118,10 @@ def _run_package_b_command_with_uvicorn_return(
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
-                return_value=lambda: MagicMock(),
+                "run_governed_contractor_hosted_strict_production_application",
+                side_effect=_hosted_return,
             ):
-                with patch.dict(sys.modules, {"uvicorn": mock_uvicorn}):
-                    pb_serve_cmd.run_package_b_strict_production_serving_command()
+                pb_serve_cmd.run_package_b_strict_production_serving_command()
 
 
 def _patch_package_b_serve_preamble() -> tuple[MagicMock, ...]:
@@ -150,11 +150,8 @@ def _patch_package_b_serve_preamble() -> tuple[MagicMock, ...]:
 
 def test_pb_s03_s04_sanctioned_gca_and_d4_factory_in_serve_command() -> None:
     text = _SERVE_COMMAND.read_text(encoding="utf-8")
-    assert (
-        "open_gca_strict_production_serving_session_from_single_node_production_profile_v1"
-        in text
-    )
-    assert "build_governed_contractor_strict_production_uvicorn_factory" in text
+    assert "open_gca_strict_production_serving_session_from_single_node_production_profile_v1" in text
+    assert "run_governed_contractor_hosted_strict_production_application" in text
     assert "_LEGACY_STRICT_SERVE_MARKERS" in text
     assert "host.main:app" in text
     assert "open_strict_production_serving_session(" not in text
@@ -172,9 +169,7 @@ def test_pb_s03_s04_sanctioned_gca_and_d4_factory_in_serve_command() -> None:
             pb_serve_cmd._reject_legacy_strict_serve_invocation()
 
 
-def test_pb_s07_post_session_open_factory_failure_closes_session_and_releases_writer() -> (
-    None
-):
+def test_pb_s07_post_session_open_factory_failure_closes_session_and_releases_writer() -> None:
     session = _package_b_command_ready_session()
     release_calls = 0
 
@@ -192,7 +187,7 @@ def test_pb_s07_post_session_open_factory_failure_closes_session_and_releases_wr
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
+                "run_governed_contractor_hosted_strict_production_application",
                 side_effect=RuntimeError("factory-fail"),
             ):
                 with pytest.raises(
@@ -216,8 +211,6 @@ def test_pb_s08_uvicorn_failure_with_failed_close_retains_writer_lock() -> None:
     def _close_raises(self: object) -> None:
         raise StrictProductionServingLauncherError("pb_close_drain_fail")
 
-    mock_uvicorn = MagicMock()
-    mock_uvicorn.run.side_effect = OSError("uvicorn-bind-fail")
     patches = _patch_package_b_serve_preamble()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
         with patch.object(
@@ -227,28 +220,25 @@ def test_pb_s08_uvicorn_failure_with_failed_close_retains_writer_lock() -> None:
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
-                return_value=lambda: MagicMock(),
+                "run_governed_contractor_hosted_strict_production_application",
+                side_effect=OSError("hosted-bind-fail"),
             ):
-                with patch.dict(sys.modules, {"uvicorn": mock_uvicorn}):
-                    with patch.object(
-                        StrictProductionServingSession,
-                        "close",
-                        _close_raises,
-                    ):
-                        with pytest.raises(ExceptionGroup) as exc_info:
-                            pb_serve_cmd.run_package_b_strict_production_serving_command()
+                with patch.object(
+                    StrictProductionServingSession,
+                    "close",
+                    _close_raises,
+                ):
+                    with pytest.raises(ExceptionGroup) as exc_info:
+                        pb_serve_cmd.run_package_b_strict_production_serving_command()
     assert release_calls == 0
     grouped = exc_info.value
     assert len(grouped.exceptions) == 2
     assert any(
-        isinstance(err, pb_serve_cmd.PackageBStrictProductionServingCommandError)
-        and "uvicorn-bind-fail" in str(err)
+        isinstance(err, pb_serve_cmd.PackageBStrictProductionServingCommandError) and "hosted-bind-fail" in str(err)
         for err in grouped.exceptions
     )
     assert any(
-        isinstance(err, StrictProductionServingLauncherError)
-        and "pb_close_drain_fail" in str(err)
+        isinstance(err, StrictProductionServingLauncherError) and "pb_close_drain_fail" in str(err)
         for err in grouped.exceptions
     )
 
@@ -271,7 +261,7 @@ def test_pb_s09_command_shutdown_skips_close_when_session_already_closed() -> No
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
+                "run_governed_contractor_hosted_strict_production_application",
                 side_effect=RuntimeError("factory-fail"),
             ):
                 with pytest.raises(
@@ -301,7 +291,7 @@ def test_pb_s10_command_shutdown_surfaces_close_incomplete_without_writer_releas
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
+                "run_governed_contractor_hosted_strict_production_application",
                 side_effect=RuntimeError("factory-fail"),
             ):
                 with pytest.raises(ExceptionGroup) as exc_info:
@@ -310,8 +300,7 @@ def test_pb_s10_command_shutdown_surfaces_close_incomplete_without_writer_releas
     grouped = exc_info.value
     assert len(grouped.exceptions) == 2
     assert any(
-        isinstance(err, StrictProductionServingLauncherError)
-        and "close incomplete" in str(err)
+        isinstance(err, StrictProductionServingLauncherError) and "close incomplete" in str(err)
         for err in grouped.exceptions
     )
 
@@ -325,7 +314,7 @@ def test_pb_s11_uvicorn_normal_return_skips_close_when_session_already_closed() 
         release_calls += 1
 
     session.bind_process_scoped_release_on_close(_release_writer)
-    _run_package_b_command_with_uvicorn_return(session)
+    _run_package_b_command_with_hosted_return(session)
     assert release_calls == 0
 
 
@@ -338,7 +327,7 @@ def test_pb_s12_uvicorn_normal_return_closes_open_session_and_releases_writer() 
         release_calls += 1
 
     session.bind_process_scoped_release_on_close(_release_writer)
-    _run_package_b_command_with_uvicorn_return(session)
+    _run_package_b_command_with_hosted_return(session, on_hosted_return=session.close)
     assert release_calls == 1
     assert session.is_closed
 
@@ -365,20 +354,19 @@ def test_pb_s13_uvicorn_normal_return_surfaces_close_failure() -> None:
         ):
             with patch.object(
                 pb_serve_cmd,
-                "build_governed_contractor_strict_production_uvicorn_factory",
-                return_value=lambda: MagicMock(),
+                "run_governed_contractor_hosted_strict_production_application",
+                side_effect=RuntimeError("hosted-runtime-fail"),
             ):
-                with patch.dict(sys.modules, {"uvicorn": MagicMock()}):
-                    with patch.object(
-                        StrictProductionServingSession,
-                        "close",
-                        _close_raises,
+                with patch.object(
+                    StrictProductionServingSession,
+                    "close",
+                    _close_raises,
+                ):
+                    with pytest.raises(
+                        pb_serve_cmd.PackageBStrictProductionServingCommandError,
+                        match="post-uvicorn-close-fail",
                     ):
-                        with pytest.raises(
-                            pb_serve_cmd.PackageBStrictProductionServingCommandError,
-                            match="post-uvicorn-close-fail",
-                        ):
-                            pb_serve_cmd.run_package_b_strict_production_serving_command()
+                        pb_serve_cmd.run_package_b_strict_production_serving_command()
     assert release_calls == 0
 
 
