@@ -508,6 +508,9 @@ def wire_application_environment(
         tool_wiring,
         application_tool_registry,
     )
+    sandbox_manager = wire_sandbox_sessions(
+        env.model_copy(update={"tool_profile": tool_wiring.profile}),
+    )
     policy_bundle = wire_policy_bundle(
         env.model_copy(
             update={
@@ -614,7 +617,7 @@ def wire_application_environment(
         policy_bundle=policy_bundle,
         composition=composition,
         shadow_manager=wire_shadow_workspace(env),
-        sandbox_manager=wire_sandbox_sessions(env),
+        sandbox_manager=sandbox_manager,
         integration_health=integration_health,
         prompt_registry=prompt_registry,
         registry_snapshot=registry_snapshot,
