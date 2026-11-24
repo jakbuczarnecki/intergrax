@@ -9,4 +9,4 @@
 | `docs/project/maintainers/qualification/arch_freeze_program/continuation/CAMPAIGN_B_ALPHA_SCOPE_DEFECTS.md` | PT-B01/B02 SCOPE input |
 | `scripts/governance/verify_rw_plan_phase_check3.py` | Mechanical phase check 3 |
 
-**SHA:** set by auditor session at read time. **No implementer verdict attached.**
+**SHA:** `ebe45c26930a9291a3df2d6a75028c35c036cee2` (auditor session 2026-11-24). **No implementer verdict attached.**

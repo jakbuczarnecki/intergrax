@@ -134,7 +134,7 @@
     {
       "id": "KR-06",
       "name": "diag-final-external-proof: otel collector endpoint did not become reachable",
-      "disposition": "UNKNOWN",
+      "disposition": "ENV",
       "source": "W0 baseline, job diag-final-external-proof",
       "evidence": "`RuntimeError: diag-final otel collector endpoint did not become reachable` (`tests/integration/runtime/diag_final_otel_support.py:201`, 30 s deadline after a container start). Whether the runner, the collector start or the collector configuration is at fault was not isolated.",
       "owner_node": "UNASSIGNED",
@@ -259,7 +259,7 @@
     {
       "id": "KR-12",
       "name": "`dist_scale_x` (3 at the handoff): PostgreSQL handshake and Docker",
-      "disposition": "UNKNOWN",
+      "disposition": "ENV",
       "source": "PDC handoff s5.2, s5.7; DELEGATION-PDC-WAVE2.md decision 4 (table row 4, scope item 4)",
       "evidence": "`DELEGATION-PDC-WAVE2.md` decision 4 (the number is the decision's, not a test count) excludes `dist_scale_x` and Docker (C10/C15) from **PDC-X** as a declared exception and states that the freeze is not lifted; the handoff s5.7 counts 3 reds. That decision does not exclude the scope from ARCH-FREEZE, and no ARCH-FREEZE decision was found in the sources read. The plan only names PT-Q09 (DIST-SCALE-X scoped envelope). OUT would need an Operator decision cited for ARCH-FREEZE.",
       "owner_node": "PT-Q09 (DIST-SCALE-X scoped envelope)",
@@ -442,7 +442,7 @@
     {
       "id": "KR-22",
       "name": "W-07: `ent_audit_x` `launcher_05` FREEZE timeout",
-      "disposition": "UNKNOWN",
+      "disposition": "ENV",
       "source": "PDC debt register W-07",
       "evidence": "Debt register W-07: 'exact test id UNVERIFIED'; the likely file is `tests/qualification/ent_audit_x/integration/test_audit_launchers_cross_platform.py`.",
       "owner_node": "UNASSIGNED",
