@@ -29,12 +29,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 
 from intergrax.applications._shared.harness_auth import (
+    _harness_auth_state_from_request,
+    _local_dev_auth_bypass_allowed,
     require_harness_api_key,
     resolve_harness_authenticated_principal,
+    resolve_harness_authenticated_principal_for_state,
 )
 from intergrax.applications._shared.harness_principal import harness_principal_to_approver_evidence
 from intergrax.contracts.run_trace_store import RunTraceReader
@@ -153,6 +157,116 @@ def _checkpoint_store_factory(
     return _open
 
 
+_LABORATORY_DEFAULT_TENANT = "default"
+
+
+def _resolve_laboratory_query_tenant(query_tenant: str | None) -> str:
+    if query_tenant is None:
+        return _LABORATORY_DEFAULT_TENANT
+    explicit = query_tenant.strip()
+    if not explicit:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant query must not be empty",
+        )
+    return explicit
+
+
+def _resolve_debug_route_tenant(
+    request: Request,
+    *,
+    query_tenant: str | None,
+    x_api_key: str | None = None,
+    authorization: str | None = None,
+) -> str:
+    """Resolve authoritative tenant for tenant-scoped debug handlers."""
+    state = _harness_auth_state_from_request(request)
+    credential_authority_configured = state is not None and (
+        state.resolved_api_key is not None or state.identity_provider is not None
+    )
+    auth_required = state is not None and state.require_api_key
+    tenant_authority_required = state is not None and state.tenant_required
+
+    if auth_required and not credential_authority_configured:
+        raise HTTPException(
+            status_code=403,
+            detail="Authenticated tenant authority is required",
+        )
+
+    if _local_dev_auth_bypass_allowed(state) and not tenant_authority_required:
+        return _resolve_laboratory_query_tenant(query_tenant)
+
+    principal = resolve_harness_authenticated_principal_for_state(
+        harness_auth=state,
+        x_api_key=x_api_key,
+        authorization=authorization,
+    )
+    if principal is not None:
+        if query_tenant is None:
+            return principal.tenant_id
+        explicit = query_tenant.strip()
+        if not explicit:
+            raise HTTPException(
+                status_code=403,
+                detail="tenant query must not be empty",
+            )
+        if explicit != principal.tenant_id:
+            raise HTTPException(
+                status_code=403,
+                detail="tenant query conflicts with authenticated principal",
+            )
+        return principal.tenant_id
+
+    if tenant_authority_required or auth_required:
+        raise HTTPException(
+            status_code=403,
+            detail="Authenticated tenant authority is required",
+        )
+    return _resolve_laboratory_query_tenant(query_tenant)
+
+
+def _debug_tenant_scope(
+    request: Request,
+    tenant: str | None = Query(default=None, description="Tenant id filter"),
+    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> str:
+    return _resolve_debug_route_tenant(
+        request,
+        query_tenant=tenant,
+        x_api_key=x_api_key,
+        authorization=authorization,
+    )
+
+
+def _assert_body_tenant_compatible(
+    request: Request,
+    *,
+    body_tenant: str,
+    resolved_tenant: str,
+    x_api_key: str | None = None,
+    authorization: str | None = None,
+) -> None:
+    state = _harness_auth_state_from_request(request)
+    if _local_dev_auth_bypass_allowed(state):
+        return
+    principal = resolve_harness_authenticated_principal_for_state(
+        harness_auth=state,
+        x_api_key=x_api_key,
+        authorization=authorization,
+    )
+    if principal is None:
+        return
+    explicit = (body_tenant or "").strip()
+    if not explicit:
+        return
+    if explicit != resolved_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant_id in request body conflicts with authenticated principal",
+        )
+
+
 def _runtime_event_item(event) -> RuntimeEventItem:
     return RuntimeEventItem(
         event_id=event.event_id,
@@ -199,7 +313,7 @@ def create_debug_router(
 
     @router.get("/tasks", response_model=RunListResponse)
     def list_tasks(
-        tenant: str = Query(default="default", description="Tenant id filter"),
+        tenant: str = Depends(_debug_tenant_scope),
         limit: int = Query(default=20, ge=1, le=200, description="Max rows"),
         reader: RunTraceReader = Depends(get_reader),
     ) -> RunListResponse:
@@ -213,7 +327,7 @@ def create_debug_router(
     @router.get("/tasks/{run_id}", response_model=RunDetailResponse)
     def show_task(
         run_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         reader: RunTraceReader = Depends(get_reader),
     ) -> RunDetailResponse:
         try:
@@ -225,7 +339,7 @@ def create_debug_router(
     @router.get("/tasks/{run_id}/trace", response_model=TraceResponse)
     def task_trace(
         run_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         include_runtime: bool = Query(
             default=False,
             description="Include unified RuntimeEvent journal (trace bridge + persisted events)",
@@ -252,7 +366,7 @@ def create_debug_router(
     @router.get("/tasks/{run_id}/metrics", response_model=RunMetricsResponse)
     def task_metrics(
         run_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         reader: RunTraceReader = Depends(get_reader),
     ) -> RunMetricsResponse:
         try:
@@ -264,7 +378,7 @@ def create_debug_router(
     @router.get("/tasks/{task_id}/events", response_model=RuntimeEventListResponse)
     def task_runtime_events(
         task_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         limit: int = Query(default=200, ge=1, le=2000, description="Max events"),
         store: RuntimeEventPersistence | None = Depends(get_runtime_events),
     ) -> RuntimeEventListResponse:
@@ -290,7 +404,7 @@ def create_debug_router(
     @router.get("/tasks/{task_id}/checkpoints", response_model=CheckpointListResponse)
     def task_checkpoints(
         task_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         reader: TaskCheckpointReader | None = Depends(get_checkpoints),
     ) -> CheckpointListResponse:
         if reader is None:
@@ -322,7 +436,7 @@ def create_debug_router(
     @router.get("/tasks/{task_id}/progress", response_model=TaskProgressResponse)
     def task_progress(
         task_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
     ) -> TaskProgressResponse:
         if progress_service is None:
             raise HTTPException(
@@ -342,14 +456,20 @@ def create_debug_router(
         request: Request,
         task_id: str,
         body: SubmitHumanResponseRequest,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
+        x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+        authorization: Annotated[str | None, Header()] = None,
     ) -> HumanResponseResult:
         if hitl_service is None:
             raise HTTPException(
                 status_code=503,
                 detail=("HITL resume is not configured. Pass registry=AgentRegistry(...) to create_debug_app."),
             )
-        principal = resolve_harness_authenticated_principal(request)
+        principal = resolve_harness_authenticated_principal(
+            request,
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         approver = harness_principal_to_approver_evidence(principal) if principal is not None else None
         try:
             verdict = HumanResponseVerdict(body.response.strip().lower())
@@ -404,7 +524,7 @@ def create_debug_router(
     def list_experiments(
         limit: int = Query(default=20, ge=1, le=200),
         decision: ExperimentDecision | None = Query(default=None),
-        tenant: str = Query(default="default", description="Tenant id filter"),
+        tenant: str = Depends(_debug_tenant_scope),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentListResponse:
         records = store.list_experiments(limit=limit, decision=decision, tenant_id=tenant)
@@ -415,17 +535,27 @@ def create_debug_router(
 
     @router.post("/experiments", response_model=ExperimentRecord, status_code=201)
     def register_experiment(
+        request: Request,
         body: RegisterExperimentRequest,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
+        x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+        authorization: Annotated[str | None, Header()] = None,
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
+        _assert_body_tenant_compatible(
+            request,
+            body_tenant=body.tenant_id,
+            resolved_tenant=tenant,
+            x_api_key=x_api_key,
+            authorization=authorization,
+        )
         scoped = body.model_copy(update={"tenant_id": tenant})
         return store.register(scoped)
 
     @router.get("/experiments/{experiment_id}", response_model=ExperimentRecord)
     def show_experiment(
         experiment_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
@@ -437,7 +567,7 @@ def create_debug_router(
     def decide_experiment(
         experiment_id: str,
         body: SetExperimentDecisionRequest,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord | ExperimentDeletedResponse:
         try:
@@ -457,7 +587,7 @@ def create_debug_router(
     def link_experiment_run(
         experiment_id: str,
         run_id: str,
-        tenant: str = Query(default="default", description="Tenant id"),
+        tenant: str = Depends(_debug_tenant_scope),
         store: ExperimentPersistence = Depends(get_experiments),
     ) -> ExperimentRecord:
         try:
