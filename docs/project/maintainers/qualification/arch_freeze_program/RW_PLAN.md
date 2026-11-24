@@ -1,59 +1,59 @@
 # RW-PLAN — T-AF2-RW-PLAN (canonical)
 
-**Generated:** 2026-11-24T10:36:30.103534+00:00
-**Execution SHA:** `8aaa178a5d45736ed51efe7c03b638ce5e253e37`
+**Generated:** 2026-11-24T11:04:06.976638+00:00
+**Execution SHA:** `86974b6d41d7859a0212265816248f468f3e3802`
 **Node:** T-AF2-RW-PLAN (W2, DOC)
 
 ## 0. Reconciliation (35 vs 45 CODE_FIX)
 
 - MEP historical unplanned pack: **35**
-- Matrix Appendix C CODE_FIX rows: **39**
-- T-IGX-050-D reconciled 225 FRZ rows; the matrix file contains 45 CODE_FIX tokens (incl. summary/checklist duplicates). Appendix A table parse yields the unique inventory below (subset bounded by appendix-A end marker). MEP historical 35-pack = WP12-Q12 scope; no count forced to 35.
-- FIND-AF2-23 (18 CODE_FIX without explicit negative tests) is historical WP-12 phase-check-3; current matrix CODE_FIX rows with NT-* or NEG-P: 39 / 39.
+- Matrix Appendix A CODE_FIX rows: **39**
+- T-IGX-050-D reconciled 225 FRZ rows; CODE_FIX inventory is parsed from Appendix A required_fix column only (bounded by appendix-A end marker). MEP historical 35-pack = WP12-Q12 scope; matrix row count is authoritative (not hardcoded).
+- FIND-AF2-23 (18 CODE_FIX without explicit negative tests) is historical WP-12 phase-check-3; current matrix CODE_FIX rows with NT-* or NEG-P/NEG-0: 39 / 39.
 
 ## 1. CODE_FIX inventory
 
 | FRZ | Owner ticket | Negative test | Red-first | Regression |
 |-----|--------------|---------------|-----------|------------|
-| `FRZ-BND-04` | T-IGX-043-G | NT-BND-04 | EVIDENCE_MISSING | T-IGX-043-G |
-| `FRZ-BND-05` | T-IGX-043-H | NT-BND-05 | EVIDENCE_MISSING | T-IGX-043-H |
-| `FRZ-BND-06` | T-IGX-043-J | NT-BND-06 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-OWN-02` | T-IGX-043-J | NT-OWN-02 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-OWN-03` | T-IGX-043-H | NT-OWN-03 | EVIDENCE_MISSING | T-IGX-043-H |
-| `FRZ-OWN-05` | T-IGX-043-H | NT-OWN-05 | EVIDENCE_MISSING | T-IGX-043-H |
-| `FRZ-CTR-01` | T-IGX-051-D | NT-CTR-01 | EVIDENCE_MISSING | T-IGX-051-D |
-| `FRZ-CTR-02` | T-IGX-051-D | NT-CTR-02 | EVIDENCE_MISSING | T-IGX-051-D |
-| `FRZ-CTR-06` | T-IGX-051-D | NT-CTR-06 | EVIDENCE_MISSING | T-IGX-051-D |
-| `FRZ-TYP-01` | T-IGX-050-D | NEG-0 | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-TYP-03` | T-IGX-050-D | NEG-P | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-TYP-05` | T-IGX-051-G | NT-TYP-05 | EVIDENCE_MISSING | T-IGX-051-G |
-| `FRZ-PLG-01` | T-IGX-043-J | NT-PLG-01 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-PLG-02` | T-IGX-043-J | NT-PLG-02 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-PLG-05` | T-IGX-043-A | NT-PLG-05 | EVIDENCE_MISSING | T-IGX-043-A |
-| `FRZ-PLG-06` | T-IGX-043-J | NT-PLG-06 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-PLG-07` | T-IGX-043-J | NT-PLG-07 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-RPL-04` | T-IGX-050-D | NEG-P | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-EXE-02` | T-IGX-043-A | NT-EXE-02 | EVIDENCE_MISSING | T-IGX-043-A |
-| `FRZ-CFG-02` | T-IGX-043-C | NT-CFG-02 | EVIDENCE_MISSING | T-IGX-043-C |
-| `FRZ-CFG-06` | T-IGX-043-C | NT-CFG-06 | EVIDENCE_MISSING | T-IGX-043-C |
-| `FRZ-CFG-08` | T-IGX-043-F | NT-CFG-08 | EVIDENCE_MISSING | T-IGX-043-F |
-| `FRZ-SEC-04` | T-IGX-043-C | NT-SEC-04 | EVIDENCE_MISSING | T-IGX-043-C |
-| `FRZ-SEC-06` | T-IGX-051-B | NEG-0 | EVIDENCE_MISSING | T-IGX-051-B |
-| `FRZ-REL-07` | T-IGX-043-B | NT-REL-07 | EVIDENCE_MISSING | T-IGX-043-B |
-| `FRZ-REL-09` | T-IGX-043-B | NT-REL-09 | EVIDENCE_MISSING | T-IGX-043-B |
-| `FRZ-REL-10` | T-IGX-043-B | NT-REL-10 | EVIDENCE_MISSING | T-IGX-043-B |
-| `FRZ-PRD-03` | T-IGX-043-B | NT-PRD-03 | EVIDENCE_MISSING | T-IGX-043-B |
-| `FRZ-PRD-05` | T-IGX-043-H | NT-PRD-05 | EVIDENCE_MISSING | T-IGX-043-H |
-| `FRZ-PRD-08` | T-IGX-043-J | NT-PRD-08 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-REG-09` | T-IGX-051-F | NT-REG-09 | EVIDENCE_MISSING | T-IGX-051-F |
-| `FRZ-DEBT-02` | T-IGX-051-H | NT-DEBT-02 | EVIDENCE_MISSING | T-IGX-051-H |
-| `FRZ-DEBT-03` | T-IGX-051-H | NT-DEBT-03 | EVIDENCE_MISSING | T-IGX-051-H |
-| `FRZ-DEBT-04` | T-IGX-051-F | NT-DEBT-04 | EVIDENCE_MISSING | T-IGX-051-F |
-| `FRZ-FRZ-10` | T-IGX-050-D | NT-FRZ-10 | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-TEN-01` | T-IGX-043-J | NT-TEN-01 | EVIDENCE_MISSING | T-IGX-043-J |
-| `FRZ-TEN-02` | T-IGX-050-D | NEG-0 | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-TEN-07` | T-IGX-050-D | NEG-P | EVIDENCE_MISSING | T-IGX-050-D |
-| `FRZ-TEN-10` | T-IGX-051-A | NT-TEN-10 | EVIDENCE_MISSING | T-IGX-051-A |
+| `FRZ-BND-04` | T-IGX-043-G | NT-BND-04 | EVIDENCE_MISSING @ — | ENT-A-BND-01..03 |
+| `FRZ-BND-05` | T-IGX-043-H | NT-BND-05 | EVIDENCE_MISSING @ — | ENT-A-BND-01..03 |
+| `FRZ-BND-06` | T-IGX-043-J | NT-BND-06 | EVIDENCE_MISSING @ — | tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py; ENT-A-BND-01..03 |
+| `FRZ-CFG-02` | T-IGX-043-C | NT-CFG-02 | EVIDENCE_MISSING @ — | ENT-A-VBN-01..03 |
+| `FRZ-CFG-06` | T-IGX-043-C | NT-CFG-06 | EVIDENCE_MISSING @ — | ENT-A-VBN-01..03 |
+| `FRZ-CFG-08` | T-IGX-043-F | NT-CFG-08 | EVIDENCE_MISSING @ — | ENT-A-VBN-01..03 |
+| `FRZ-CTR-01` | T-IGX-051-D | NT-CTR-01 | EVIDENCE_MISSING @ — | ENT-A-CTR-01..03 |
+| `FRZ-CTR-02` | T-IGX-051-D | NT-CTR-02 | EVIDENCE_MISSING @ — | ENT-A-CTR-01..03 |
+| `FRZ-CTR-06` | T-IGX-051-D | NT-CTR-06 | EVIDENCE_MISSING @ — | ENT-A-CTR-01..03 |
+| `FRZ-DEBT-02` | T-IGX-051-H | NT-DEBT-02 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-DEBT-03` | T-IGX-051-H | NT-DEBT-03 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-DEBT-04` | T-IGX-051-F | NT-DEBT-04 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-EXE-02` | T-IGX-043-A | NT-EXE-02 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-FRZ-10` | UNASSIGNED | NT-FRZ-10 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-OWN-02` | T-IGX-043-J | NT-OWN-02 | EVIDENCE_MISSING @ — | ENT-A-OWN-01..03 |
+| `FRZ-OWN-03` | T-IGX-043-H | NT-OWN-03 | EVIDENCE_MISSING @ — | ENT-A-OWN-01..03 |
+| `FRZ-OWN-05` | T-IGX-043-H | NT-OWN-05 | EVIDENCE_MISSING @ — | ENT-A-OWN-01..03 |
+| `FRZ-PLG-01` | T-IGX-043-J | NT-PLG-01 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-PLG-02` | T-IGX-043-J | NT-PLG-02 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-PLG-05` | T-IGX-043-A | NT-PLG-05 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-PLG-06` | T-IGX-043-J | NT-PLG-06 | EVIDENCE_MISSING @ — | tests/qualification/governance/gr11/catalog.py |
+| `FRZ-PLG-07` | T-IGX-043-J | NT-PLG-07 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-PRD-03` | T-IGX-043-B | NT-PRD-03 | EVIDENCE_MISSING @ — | ENT-A-PRD-01..03 |
+| `FRZ-PRD-05` | T-IGX-043-H | NT-PRD-05 | EVIDENCE_MISSING @ — | ENT-A-PRD-01..03 |
+| `FRZ-PRD-08` | T-IGX-043-J | NT-PRD-08 | EVIDENCE_MISSING @ — | ENT-A-PRD-01..03 |
+| `FRZ-REG-09` | T-IGX-051-F | NT-REG-09 | EVIDENCE_MISSING @ — | ENT-A-REG-01; ENT-A-REG-02 |
+| `FRZ-REL-07` | T-IGX-043-B | NT-REL-07 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-REL-09` | T-IGX-043-B | NT-REL-09 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-REL-10` | T-IGX-043-B | NT-REL-10 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-RPL-04` | UNASSIGNED | NEG-P | EVIDENCE_MISSING @ — | ENT-A-VBN-01..03 |
+| `FRZ-SEC-04` | T-IGX-043-C | NT-SEC-04 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-SEC-06` | T-IGX-051-B | NEG-0 | EVIDENCE_MISSING @ — | ENT-A / stage pytest |
+| `FRZ-TEN-01` | T-IGX-043-J | NT-TEN-01 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-02` | UNASSIGNED | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-07` | UNASSIGNED | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-10` | T-IGX-051-A | NT-TEN-10 | EVIDENCE_MISSING @ — | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TYP-01` | UNASSIGNED | NEG-0 | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
+| `FRZ-TYP-03` | UNASSIGNED | NEG-P | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
+| `FRZ-TYP-05` | T-IGX-051-G | NT-TYP-05 | EVIDENCE_MISSING @ — | ENT-A-TYP-01..03 |
 
 ## 2. Audit-flag conflicts (6)
 
@@ -252,10 +252,6 @@ W3: ['SCOPE', 'PT-WA']
 - `tests/unit/experiments/test_experiment_workflow.py`
 - `tests/unit/runtime/execution/`
 - `tests/unit/runtime/execution/test_execution_runtime.py`
-
-### T-IGX-050-D
-- `scripts/docs/check_docs_domain_pairs.py`
-- `scripts/governance/verify_arch_freeze_plan_traceability.py`
 
 ### T-IGX-051-A
 - `applications/*/mcp/server.py`

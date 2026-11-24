@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Build canonical T-AF2-RW-PLAN artefacts from FRZ matrix + ticket plans (W2-RECOVERY-01)."""
+"""Build canonical T-AF2-RW-PLAN artefacts from FRZ matrix + ticket plans (W2-RECOVERY-02)."""
 
 from __future__ import annotations
 
@@ -20,10 +20,17 @@ _RW_PLAN_JSON = _REPO / "docs/project/maintainers/qualification/arch_freeze_prog
 
 APPENDIX_A_MARK = "## Appendix A."
 APPENDIX_END_MARKERS = ("## Appendix B", "## Appendix C", "## Appendix D")
-_TICKET_RE = re.compile(r"T-IGX-\d{3}-[A-Z0-9]+")
 _RW_TICKET_RE = re.compile(r"RW ticket (T-IGX-\d{3}-[A-Z0-9]+)")
 _NT_RE = re.compile(r"(NT-[A-Z0-9]+-\d+|NT-[A-Z]{3}-\d+|NT-ROW-\d+)")
 _FRZ_ROW_RE = re.compile(r"^\|\s*`(FRZ-[A-Z]+-\d+)`\s*\|")
+APPENDIX_A_COL = {
+    "frz_id": 1,
+    "summary": 2,
+    "tests": 10,
+    "negative_tests": 11,
+    "required_fix": 12,
+    "required_certification": 13,
+}
 
 AUDIT_FLAG_CONFLICTS = [
     {"finding_id": "A4-005", "owner_ticket": "T-IGX-051-H", "disposition": "T-AF2-DEPS-BATCH; PT-WF overlap"},
@@ -39,12 +46,12 @@ AUDIT_FLAG_CONFLICTS = [
 ]
 
 LANE_ORDER = [
-    ("lane_1", "T-IGX-043-H", "PT-WB"),
-    ("lane_2", "T-IGX-043-G", "PT-WA"),
+    ("lane_1", "T-IGX-043-G", "PT-WA"),
+    ("lane_2", "T-IGX-043-H", "PT-WB"),
     ("lane_3", ["T-IGX-043-B", "T-IGX-043-C", "T-IGX-043-A", "T-IGX-051-D", "T-IGX-051-E", "T-IGX-051-F"]),
     ("lane_4", ["T-IGX-043-D", "T-IGX-043-E", "T-IGX-043-F", "T-IGX-043-I", "T-IGX-043-J", "T-IGX-043-M"]),
     ("lane_5", ["T-IGX-051-B", "T-IGX-051-C", "T-IGX-051-G", "T-IGX-051-N"]),
-    ("lane_6", ["T-IGX-043-N", "T-IGX-051-A"]),
+    ("lane_6", ["T-IGX-043-N"]),
     ("lane_7", "T-IGX-051-A", "T-AF2-RW-TENANT"),
 ]
 
@@ -64,6 +71,7 @@ class CodeFixRow:
     negative_test: str | None
     remediation_track: str
     owner_ticket: str | None
+    regression_scope: str | None
     delta_findings: list[str] = field(default_factory=list)
 
 
@@ -71,7 +79,7 @@ def _git_head() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_REPO, text=True).strip()
 
 
-def _parse_appendix_a() -> list[CodeFixRow]:
+def _extract_appendix_a_section() -> str:
     text = _MATRIX.read_text(encoding="utf-8")
     start = text.find(APPENDIX_A_MARK)
     if start < 0:
@@ -80,53 +88,111 @@ def _parse_appendix_a() -> list[CodeFixRow]:
     for marker in APPENDIX_END_MARKERS:
         end = section.find(marker)
         if end > 0:
-            section = section[:end]
-            break
+            return section[:end]
+    return section
+
+
+def _row_parts(line: str) -> list[str]:
+    return [p.strip() for p in line.split("|")]
+
+
+def _extract_negative_test(neg_col: str) -> str | None:
+    nt_m = _NT_RE.search(neg_col)
+    if nt_m:
+        return nt_m.group(1)
+    if "NEG-0" in neg_col:
+        return "NEG-0"
+    if "NEG-P" in neg_col:
+        return "NEG-P"
+    return None
+
+
+def _extract_owner_ticket(cert_col: str, fix_col: str) -> str | None:
+    rw_m = _RW_TICKET_RE.search(cert_col)
+    if rw_m:
+        return rw_m.group(1)
+    for pattern in (
+        r"Appendix C,?\s*(T-IGX-\d{3}-[A-Z0-9]+)",
+        r";\s*(T-IGX-\d{3}-[A-Z0-9]+)\)",
+        r";\s*(T-IGX-\d{3}-[A-Z0-9]+)\s*\+",
+    ):
+        m = re.search(pattern, fix_col)
+        if m and "*" not in m.group(1):
+            return m.group(1)
+    return None
+
+
+def _code_fix_row_key(row: CodeFixRow) -> tuple:
+    return (
+        row.summary,
+        row.negative_test,
+        row.remediation_track,
+        row.owner_ticket,
+        row.regression_scope,
+        tuple(row.delta_findings),
+    )
+
+
+def parse_appendix_a_code_fix_inventory(section: str | None = None) -> list[CodeFixRow]:
+    """Parse CODE_FIX rows from Appendix A required_fix column only."""
+    if section is None:
+        section = _extract_appendix_a_section()
     seen: dict[str, CodeFixRow] = {}
     for line in section.splitlines():
-        m = _FRZ_ROW_RE.match(line)
-        if not m:
+        if not _FRZ_ROW_RE.match(line):
             continue
-        frz_id = m.group(1)
-        if "CODE_FIX" not in line:
+        parts = _row_parts(line)
+        if len(parts) <= max(APPENDIX_A_COL.values()):
+            raise SystemExit(f"malformed Appendix A row (columns): {line[:120]}")
+        required_fix = parts[APPENDIX_A_COL["required_fix"]]
+        if not required_fix.startswith("CODE_FIX"):
             continue
-        parts = [p.strip() for p in line.split("|")]
-        summary = parts[1] if len(parts) > 1 else ""
-        nt = None
-        nt_m = _NT_RE.search(line)
-        if nt_m:
-            nt = nt_m.group(1)
-        elif "NEG-0" in line:
-            nt = "NEG-0"
-        elif "NEG-P" in line:
-            nt = "NEG-P"
-        ticket = None
-        rw_m = _RW_TICKET_RE.search(line)
-        if rw_m:
-            ticket = rw_m.group(1)
-        elif "Appendix C," in line:
-            tm = _TICKET_RE.search(line.split("Appendix C,")[-1])
-            if tm:
-                ticket = tm.group(0)
-        if not ticket:
-            tm = _TICKET_RE.search(line)
-            if tm:
-                ticket = tm.group(0)
-        findings = re.findall(r"A\d+-\d+", parts[-2] if len(parts) > 2 else "")
-        track = "CODE_FIX"
-        if "CODE_FIX (" in line:
-            track = line.split("CODE_FIX", 1)[1].split("|", 1)[0].strip(" ): ")
+        frz_id = parts[APPENDIX_A_COL["frz_id"]].strip("`")
+        summary = parts[APPENDIX_A_COL["summary"]]
+        neg_col = parts[APPENDIX_A_COL["negative_tests"]]
+        tests_col = parts[APPENDIX_A_COL["tests"]]
+        cert_col = parts[APPENDIX_A_COL["required_certification"]]
+        delta_findings = re.findall(r"A\d+-\d+", parts[14] if len(parts) > 14 else "")
+        regression = tests_col.strip()
+        if not regression or regression in {"—", "-", "none"}:
+            regression = None
         row = CodeFixRow(
             frz_id=frz_id,
-            summary=summary[:200],
-            negative_test=nt,
-            remediation_track=track,
-            owner_ticket=ticket or "T-IGX-050-D",
-            delta_findings=findings,
+            summary=summary[:500],
+            negative_test=_extract_negative_test(neg_col),
+            remediation_track=required_fix,
+            owner_ticket=_extract_owner_ticket(cert_col, required_fix),
+            regression_scope=regression,
+            delta_findings=delta_findings,
         )
-        if frz_id not in seen or (seen[frz_id].negative_test is None and row.negative_test):
-            seen[frz_id] = row
+        if frz_id in seen and _code_fix_row_key(seen[frz_id]) != _code_fix_row_key(row):
+            raise SystemExit(f"conflicting CODE_FIX records for {frz_id}")
+        seen[frz_id] = row
     return list(seen.values())
+
+
+def _load_prior_red_first() -> dict[str, dict[str, object]]:
+    if not _RW_PLAN_JSON.is_file():
+        return {}
+    try:
+        data = json.loads(_RW_PLAN_JSON.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    out: dict[str, dict[str, object]] = {}
+    for row in data.get("code_fix_inventory") or []:
+        if not isinstance(row, dict):
+            continue
+        frz = row.get("frz_id")
+        status = row.get("red_first_status")
+        sha = row.get("red_first_prefix_sha")
+        ref = row.get("red_first_evidence_ref")
+        if frz and status == "RED_AT_PREFIX" and isinstance(sha, str) and len(sha) == 40 and ref:
+            out[str(frz)] = {
+                "red_first_prefix_sha": sha,
+                "red_first_status": status,
+                "red_first_evidence_ref": ref,
+            }
+    return out
 
 
 def _scan_plan_paths(ticket: str) -> list[str]:
@@ -139,19 +205,17 @@ def _scan_plan_paths(ticket: str) -> list[str]:
 
 
 def _reconcile_35_vs_45(rows: list[CodeFixRow]) -> dict[str, object]:
-    """MEP cites 35 unplanned WP12-Q12 rows; matrix Appendix C lists 45 CODE_FIX rows @ T-IGX-050-D."""
     return {
         "mep_historical_unplanned_count": 35,
         "matrix_appendix_c_code_fix_count": len(rows),
         "delta_explanation": (
-            "T-IGX-050-D reconciled 225 FRZ rows; the matrix file contains 45 CODE_FIX tokens "
-            "(incl. summary/checklist duplicates). Appendix A table parse yields the unique inventory "
-            "below (subset bounded by appendix-A end marker). MEP historical 35-pack = WP12-Q12 scope; "
-            "no count forced to 35."
+            "T-IGX-050-D reconciled 225 FRZ rows; CODE_FIX inventory is parsed from Appendix A "
+            "required_fix column only (bounded by appendix-A end marker). MEP historical 35-pack = "
+            "WP12-Q12 scope; matrix row count is authoritative (not hardcoded)."
         ),
         "find_af2_23_note": (
             "FIND-AF2-23 (18 CODE_FIX without explicit negative tests) is historical WP-12 phase-check-3; "
-            f"current matrix CODE_FIX rows with NT-* or NEG-P: "
+            f"current matrix CODE_FIX rows with NT-* or NEG-P/NEG-0: "
             f"{sum(1 for r in rows if r.negative_test)} / {len(rows)}."
         ),
     }
@@ -159,7 +223,8 @@ def _reconcile_35_vs_45(rows: list[CodeFixRow]) -> dict[str, object]:
 
 def build() -> dict[str, object]:
     head = _git_head()
-    code_fix_rows = _parse_appendix_a()
+    prior_rf = _load_prior_red_first()
+    code_fix_rows = sorted(parse_appendix_a_code_fix_inventory(), key=lambda r: r.frz_id)
     by_ticket: dict[str, list[CodeFixRow]] = defaultdict(list)
     for row in code_fix_rows:
         if row.owner_ticket:
@@ -169,26 +234,41 @@ def build() -> dict[str, object]:
     for ticket in sorted(by_ticket):
         ticket_writes[ticket] = _scan_plan_paths(ticket)[:80]
 
+    inventory: list[dict[str, object]] = []
+    for r in code_fix_rows:
+        prior = prior_rf.get(r.frz_id)
+        if prior:
+            rf_sha = prior["red_first_prefix_sha"]
+            rf_status = prior["red_first_status"]
+            rf_ref = prior.get("red_first_evidence_ref")
+        else:
+            rf_sha = None
+            rf_status = "EVIDENCE_MISSING"
+            rf_ref = None
+        reg_scope = r.regression_scope if r.regression_scope else "MAPPING_MISSING"
+        inventory.append(
+            {
+                "frz_id": r.frz_id,
+                "summary": r.summary,
+                "owner_ticket": r.owner_ticket,
+                "negative_test_id": r.negative_test,
+                "red_first_prefix_sha": rf_sha,
+                "red_first_status": rf_status,
+                "red_first_evidence_ref": rf_ref,
+                "regression_scope": reg_scope,
+                "regression_scope_source": "matrix_tests_column" if r.regression_scope else "MAPPING_MISSING",
+                "delta_findings": r.delta_findings,
+                "remediation_track": r.remediation_track,
+            }
+        )
+
     payload: dict[str, object] = {
         "schema": "rw_plan.v1",
         "generated_at": datetime.now(UTC).isoformat(),
         "execution_sha": head,
         "node": "T-AF2-RW-PLAN",
         "reconciliation": _reconcile_35_vs_45(code_fix_rows),
-        "code_fix_inventory": [
-            {
-                "frz_id": r.frz_id,
-                "summary": r.summary,
-                "owner_ticket": r.owner_ticket,
-                "negative_test_id": r.negative_test,
-                "red_first_prefix_sha": head,
-                "red_first_status": "EVIDENCE_MISSING",
-                "regression_scope": r.owner_ticket or "UNASSIGNED",
-                "delta_findings": r.delta_findings,
-                "remediation_track": r.remediation_track,
-            }
-            for r in code_fix_rows
-        ],
+        "code_fix_inventory": inventory,
         "audit_flag_conflicts": AUDIT_FLAG_CONFLICTS,
         "lane_order": LANE_ORDER,
         "serialization_pairs": [{"first": a, "second": b, "reason": c} for a, b, c in SERIALIZED_PAIRS],
@@ -235,7 +315,7 @@ def _render_md(payload: dict[str, object]) -> str:
         "## 0. Reconciliation (35 vs 45 CODE_FIX)",
         "",
         f"- MEP historical unplanned pack: **{recon['mep_historical_unplanned_count']}**",
-        f"- Matrix Appendix C CODE_FIX rows: **{recon['matrix_appendix_c_code_fix_count']}**",
+        f"- Matrix Appendix A CODE_FIX rows: **{recon['matrix_appendix_c_code_fix_count']}**",
         f"- {recon['delta_explanation']}",
         f"- {recon['find_af2_23_note']}",
         "",
@@ -245,9 +325,10 @@ def _render_md(payload: dict[str, object]) -> str:
         "|-----|--------------|---------------|-----------|------------|",
     ]
     for r in rows:
+        sha_disp = r.get("red_first_prefix_sha") or "—"
         lines.append(
             f"| `{r['frz_id']}` | {r.get('owner_ticket') or 'UNASSIGNED'} | "
-            f"{r.get('negative_test_id') or '—'} | {r['red_first_status']} | {r['regression_scope']} |"
+            f"{r.get('negative_test_id') or '—'} | {r['red_first_status']} @ {sha_disp} | {r['regression_scope']} |"
         )
     lines.extend(
         [

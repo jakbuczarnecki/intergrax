@@ -27,8 +27,8 @@ python scripts/qualification/run_campaign_b_w2_alpha.py --phase b1
 python scripts/qualification/run_campaign_b_w2_alpha.py --phase b2
 ```
 
-Evidence logs: `.tmp/session/w2-recovery-01/`
+Evidence logs: `.tmp/session/w2-recovery-02/` (W2-RECOVERY-02); `.tmp/session/w2-recovery-01/` (W2-RECOVERY-01)
 
 ## Lifecycle state
 
-in_progress
+in_progress — W2-RECOVERY-02 implementation complete; formal qualification dimensions not closed
