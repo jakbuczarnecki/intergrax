@@ -53,6 +53,12 @@ Nothing was run when this ticket was published to governance (governance-prep on
 
 Product paths (`intergrax/`, `agents/`, `applications/`), `scripts/maintenance/check_intergrax_no_applications_imports.py`, `.github/`, `pyproject.toml`, `uv.lock`, FRZ and roadmap, WB05, ENT-AUDIT, EQO closure matrix, EBH-3 scan extension, seam ledger, other PT-G01 scripts, EC-02/P2 and EC-03.
 
+## Approved
+
+Approved: operator @ 2026-11-24T18:00:00+01:00
+
+Authorization: Enterprise Campaign V3 §19 (S-W03a). Operator instructed execution of the canonical write-set `T-IGX-046-H` (AST registry bypass gate, DP-14) on `arch-freeze/rw-train`; decision recorded on 2026-11-24 in the campaign session.
+
 ## Lifecycle state
 
-plan_pending
+plan_approved — S-W03a implementation authorized 2026-11-24 per §19; G6 / independent PASS not claimed by this ticket.
