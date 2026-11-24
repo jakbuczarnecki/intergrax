@@ -15,8 +15,9 @@ from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
-from intergrax.integrations._shared.in_memory_document_store import (
-    InMemoryDocumentStore,
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
@@ -87,7 +88,7 @@ def build_proof_runtime_session(
     config: ModelRuntimeProofConfig,
     *,
     provider: Literal["ollama", "vllm"] | None,
-    document_store: InMemoryDocumentStore | None = None,
+    document_store: DocumentStore | None = None,
     data_home: Path | None = None,
 ) -> ProofRuntimeSession:
     tracked_keys = (
@@ -125,7 +126,7 @@ def build_proof_runtime_session(
         os.environ.get("LKW_MODEL_RUNTIME_PROOF_QDRANT_URL", "").strip() or "http://127.0.0.1:6333"
     )
 
-    store = document_store or InMemoryDocumentStore()
+    store = document_store or create_reference_in_memory_document_store()
     settings = cast(LocalWorkspaceBackendSettings, LocalWorkspaceBackendSettings.from_env())
     environment_profile = build_local_workspace_environment_profile(settings)
     llm_adapter: LLMAdapter | None = None
