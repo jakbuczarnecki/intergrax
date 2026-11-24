@@ -77,4 +77,23 @@
 
 ## Werdykt playbook (Runda 2 @ docs `4e911556b`)
 
-**OPEN (red)** — formalny replay z `gh` potwierdza **FAILURE** na wszystkich trzech wymaganych jobach @ train pin; RC-2 **PARTIAL**.
+**OPEN (red)** — formalny replay z `gh` potwierdza **FAILURE** na wszystkich trzech wymaganych jobach @ train pin; RC-2 **PARTIAL**. **Do not** apply this row to train pin `e9bebe0ac` (merges **#811** / **#812**).
+
+---
+
+# TRAIN CI replay — Runda 3 (PT-Q02 re-audit, read-only `gh`)
+
+**Tor:** `origin/arch-freeze/rw-train` @ `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (`e9bebe0ac`, merge PR **#812**, 2026-11-24).  
+**Source:** `gh pr checks` + `gh pr view --json statusCheckRollup` at merge time (not prose from Rounds 1–2).  
+**Session logs:** `.tmp/session/arch-freeze/pt-q02_gh_pr_checks_811.log`, `pt-q02_gh_pr_checks_812.log`.
+
+| Job | PR / merge SHA | Run (job URL) | Conclusion @ 2026-11-24 |
+|-----|----------------|---------------|-------------------------|
+| `ci-smoke` | **#811** → `876af7e5d2670ec566e70142d37e57e8e3cfba53` | [45468072190 / job 138708234393](https://github.com/jakbuczarnecki/intergrax/actions/runs/45468072190/job/138708234393) | **SUCCESS** |
+| `ci-smoke` | **#812** → `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (train tip) | [45471125619 / job 138719037983](https://github.com/jakbuczarnecki/intergrax/actions/runs/45471125619/job/138719037983) | **SUCCESS** |
+| `rag-gate` | **#811** → `876af7e5d2670ec566e70142d37e57e8e3cfba53` | [45468072184 / job 138708232459](https://github.com/jakbuczarnecki/intergrax/actions/runs/45468072184/job/138708232459) | **SUCCESS** |
+| `rag-gate` | **#812** (HEAD `2c8556a23`) | — | **not executed** (`gh pr checks 812` — no job; path filter) |
+| `governance-fast` | **#812** @ train tip | [45471125619 / job 138719037514](https://github.com/jakbuczarnecki/intergrax/actions/runs/45471125619/job/138719037514) | **FAILURE** (ACT-N11 / KR-08 — expected; no remediation in this wave) |
+
+**Verdict @ `e9bebe0ac`:** `ci-smoke` **green**; `rag-gate` **green** on the last merge-chain run (**#811**), **not red** on tip; `governance-fast` **red** only under ACT-N11. RC2-B2 for historical pin `dbaebfa8` remains **OPEN** (red on #699); do **not** mark `[x]` without operator-mandated green `governance-fast`.
+

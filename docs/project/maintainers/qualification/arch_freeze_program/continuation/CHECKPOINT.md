@@ -30,17 +30,28 @@
 
 Body sections above retain the historical docs pin `e69e1ff58` and train `dbaebfa8`; do not treat them as current pins. Ledger rows cite this annex for factual recount @ `c9ce6175f` / `e9bebe0ac`.
 
+## Train CI @ current pin `e9bebe0ac` (PT-Q02 `gh` replay)
 
-## Train merge — fakt operatora / automation
+**SSOT:** [`TRAIN_CI_REPLAY_PLAYBOOK.md`](TRAIN_CI_REPLAY_PLAYBOOK.md) Runda 3 · session `.tmp/session/arch-freeze/pt-q02_gh_pr_checks_*.log`.
+
+| Merge | SHA | `ci-smoke` | `rag-gate` | `governance-fast` |
+|-------|-----|------------|------------|-------------------|
+| **#811** | `876af7e5d…` | [SUCCESS](https://github.com/jakbuczarnecki/intergrax/actions/runs/45468072190/job/138708234393) | [SUCCESS](https://github.com/jakbuczarnecki/intergrax/actions/runs/45468072184/job/138708232459) | FAILURE (ACT-N11) |
+| **#812** (tip) | `e9bebe0ac…` | [SUCCESS](https://github.com/jakbuczarnecki/intergrax/actions/runs/45471125619/job/138719037983) | not executed on #812; green from #811 | [FAILURE ACT-N11](https://github.com/jakbuczarnecki/intergrax/actions/runs/45471125619/job/138719037514) |
+
+**Do not** claim `ci-smoke` / `rag-gate` **red** on train tip `e9bebe0ac`. **Not** RC2-B2 PASS; **not** G2 / FCS / SCOPE.
+
+## Train merge — fakt operatora / automation (historyczny **#699** only)
+
 
 | Pole | Wartość |
 |------|---------|
 | PR | **#699** `af-dev-train-sync` → `arch-freeze/rw-train` |
 | Merge SHA | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` |
-| CI przy merge | `governance-fast` **FAILURE (ACT-N11)**; `ci-smoke` **red**; `rag-gate` **red** |
+| CI przy merge | `governance-fast` **FAILURE (ACT-N11)**; `ci-smoke` **FAILURE**; `rag-gate` **FAILURE** ([playbook Runda 2](TRAIN_CI_REPLAY_PLAYBOOK.md)) |
 | SSOT slice | `TRAIN_CHERRY_PICK_STATUS.md` |
 
-Merge przy czerwonych checkach — zapisany stan; **nie** spełnia OD-AF-AUTO-01 jako dowód green gate. **RC-2** pozostaje **PARTIAL** (`RC2_EXIT_CHECKLIST.md` — B2 replay **OPEN**; B3 merge fact; replay `governance-fast` zależne od operatora).
+Merge przy czerwonych checkach — zapisany stan historyczny **#699**; **nie** spełnia OD-AF-AUTO-01 jako dowód green gate. **RC-2** pozostaje **PARTIAL** (`RC2_EXIT_CHECKLIST.md` — B2 replay **OPEN** dla `dbaebfa8`; tip `e9bebe0ac` — tabela wyżej).
 
 ## RC-1 (G4 — tor development)
 
