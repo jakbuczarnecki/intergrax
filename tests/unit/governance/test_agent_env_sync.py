@@ -269,3 +269,21 @@ def test_cursor_autonomy_is_a_direct_execution_stub_and_claude_adapter_points_to
     claude = expected[ROOT / ".claude" / "skills" / "igx-autonomy" / "SKILL.md"]
     assert "Read and follow the canonical skill (SSOT): `agent-env/skills/igx-autonomy/SKILL.md`" in claude
     assert "factory" not in claude
+
+
+def test_chatgpt_direct_mode_overrides_only_cursor_routing_and_publication() -> None:
+    sync = _load_sync()
+    expected = sync.expected_files()
+    direct = expected[ROOT / ".cursor/rules/igx-cursor-direct-execution.mdc"]
+    core = expected[ROOT / ".cursor/rules/intergrax-core.mdc"]
+    assert "CHATGPT_DIRECT_IMPLEMENTATION" in direct
+    assert "PREFLIGHT_OK" in direct
+    assert "PUBLISHED_DRAFT" in direct
+    assert "Do not substitute direct" in direct
+    assert "Cursor parent may be Grok" not in core
+    for rule, note in sync._CURSOR_DIRECT_RULE_NOTES.items():
+        assert note in expected[ROOT / ".cursor" / "rules" / f"{rule}.mdc"]
+        assert note not in expected[ROOT / ".claude" / "skills" / rule / "SKILL.md"]
+    for skill, note in sync._CURSOR_DIRECT_SKILL_NOTES.items():
+        assert note in expected[ROOT / ".cursor" / "skills" / skill / "SKILL.md"]
+        assert note not in expected[ROOT / ".claude" / "skills" / skill / "SKILL.md"]

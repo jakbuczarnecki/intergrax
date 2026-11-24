@@ -192,3 +192,90 @@ def test_direct_mutations_still_denied():
     assert guard.decide({"command": "python scripts/cursor/igx_publish_candidate.py --wave EC-V3-W01"})[
         "permission"
     ] == "allow"
+
+
+def test_preflight_is_read_only_for_fresh_and_existing_candidate(mod, monkeypatch, tmp_path):
+    p = packet()
+    calls = []
+    head = [SHA]
+    monkeypatch.setattr(mod, "verify_checkout", lambda *_: head[0])
+    monkeypatch.setattr(mod, "verify_local", lambda *_: calls.append("verify_local") or head[0])
+    monkeypatch.setattr(mod, "verify_remote_candidate", lambda *_: (None, None))
+    monkeypatch.setattr(mod, "command", lambda *_a, **_kw: pytest.fail("unexpected remote mutation"))
+    monkeypatch.setattr(mod, "git", lambda *_a: pytest.fail("unexpected git operation"))
+    result = mod.preflight(p, tmp_path)
+    assert result["result"] == "PREFLIGHT_OK"
+    assert result["state"] == "BASE_READY"
+    assert calls == []
+    head[0] = HEAD
+    result = mod.preflight(p, tmp_path)
+    assert result["state"] == "CANDIDATE_PRESENT"
+    assert calls == ["verify_local"]
+
+
+def test_preflight_refuses_remote_divergence_before_any_push(mod, monkeypatch, tmp_path):
+    p = packet()
+    monkeypatch.setattr(mod, "verify_checkout", lambda *_: SHA)
+    monkeypatch.setattr(mod, "verify_target", lambda *_: None)
+    monkeypatch.setattr(mod, "open_prs", lambda _: [])
+    monkeypatch.setattr(mod, "remote_sha", lambda *_: HEAD)
+    calls = []
+
+    def git(_, *args):
+        calls.append(args)
+        if args[0] == "merge-base":
+            raise mod.Blocked("remote candidate diverged")
+        return ""
+
+    monkeypatch.setattr(mod, "git", git)
+    with pytest.raises(mod.Blocked, match="diverged"):
+        mod.preflight(p, tmp_path)
+    assert [call[0] for call in calls] == ["fetch", "merge-base"]
+
+
+def test_candidate_requires_exactly_one_ref_per_commit(mod, monkeypatch, tmp_path):
+    p = packet()
+    monkeypatch.setattr(mod, "verify_checkout", lambda *_: HEAD)
+    monkeypatch.setattr(mod, "diff_paths", lambda *_: {"intergrax/allowed.py"})
+    message = [f"fix: candidate\n\nRef: {p['ticket']}\n"]
+
+    def git(_, *args):
+        if args[0] == "rev-list":
+            return HEAD
+        if args[2] == "--format=%P":
+            return SHA
+        if args[2] == "--format=%B":
+            return message[0]
+        raise AssertionError(args)
+
+    monkeypatch.setattr(mod, "git", git)
+    assert mod.verify_local(p, tmp_path) == HEAD
+    message[0] += "Ref: governance/tickets/T-IGX-058-A.md\n"
+    with pytest.raises(mod.Blocked, match="exactly one"):
+        mod.verify_local(p, tmp_path)
+
+
+def test_cli_preflight_does_not_call_publish(mod, monkeypatch, capsys):
+    import sys
+
+    p = packet()
+    monkeypatch.setattr(sys, "argv", ["publisher", "--wave", p["wave"], "--preflight"])
+    monkeypatch.setattr(mod, "read_authorization", lambda _: p)
+    monkeypatch.setattr(mod, "preflight", lambda *_: {"result": "PREFLIGHT_OK"})
+    monkeypatch.setattr(mod, "publish", lambda *_: pytest.fail("preflight must not publish"))
+    assert mod.main() == 0
+    assert '"result": "PREFLIGHT_OK"' in capsys.readouterr().out
+
+
+def test_live_w01_command_and_preflight_pass_cursor_shell_guard():
+    path = ROOT / "scripts/hooks/igx_cursor_integration_guard.py"
+    spec = importlib.util.spec_from_file_location("cursor_candidate_live_guard_test", path)
+    assert spec and spec.loader
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    command = (
+        "Set-Location D:/Projekty/_wt/intergrax/ec-w01; "
+        'python "D:/Projekty/intergrax/scripts/cursor/igx_publish_candidate.py" --wave EC-V3-W01'
+    )
+    assert guard.decide({"command": command})["permission"] == "allow"
+    assert guard.decide({"command": command + " --preflight"})["permission"] == "allow"

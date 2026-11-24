@@ -8,7 +8,7 @@ alwaysApply: true
 - Default branch `development`; stay on the operator-named branch.
 - Without operator approval: no `git checkout <sha>`, `git switch --detach`, `git checkout -b`, `git switch -c` on the main checkout; never end that checkout detached.
 - Approved plan: `git worktree add` (`-b` or `--detach`) per `/igx-worktree` only. Do not alter another worktree or the main checkout.
-- Pinned SHA: fetch `development`; `merge-base --is-ancestor <SHA> HEAD` must pass else escalate; record HEAD.
+- Pinned SHA: use the externally authorized target in CHATGPT_DIRECT_IMPLEMENTATION, otherwise `development`; `merge-base --is-ancestor <SHA> HEAD` must pass; record HEAD. Use the candidate publisher preflight for direct mode.
 - Before ending: `git symbolic-ref HEAD` must succeed.
 
 ## Attribution
@@ -43,13 +43,13 @@ alwaysApply: true
 
 - Execute the approved plan step by step. Never ask for a go-ahead or whether to continue, commit, run tests, retry or start the next step: decide from the plan, ADRs, repo rules or existing code.
 - Stop only with `ESCALATION: <type>` (unplanned architecture; scope/cost/reversibility decision; plan/rules/code contradiction; forbidden action; missing access). One batched message with options, recommendation, consequence, cost.
-- In Cursor direct execution a normal session may commit on the current checkout within approved ticket scope with the `Ref:` trailer (see `.cursor/rules/igx-cursor-direct-execution.mdc`). Subagents and delegated modes still follow `may_commit` in `governance/agent-control-plane/role_registry.yaml`. `git push origin development` after quality gates from a clean `development` checkout (fast-forward only; server rejection is a real blocker — no force push). In ChatGPT Direct mode, candidate push and draft PR are permitted only through the authorized Cursor candidate publisher. External acceptance, merge, branch integration and GitHub settings stay human.
+- In Cursor direct execution a normal session may commit on the current checkout within approved ticket scope with the `Ref:` trailer (see `.cursor/rules/igx-cursor-direct-execution.mdc`). Subagents and delegated modes still follow `may_commit` in `governance/agent-control-plane/role_registry.yaml`. Outside CHATGPT_DIRECT_IMPLEMENTATION, `git push origin development` after quality gates from a clean `development` checkout is allowed (fast-forward only; no force push). In the explicit direct mode, candidate push and draft PR must use the authorized Cursor candidate publisher in the same turn. External acceptance, merge, branch integration and GitHub settings stay human.
 - Sub-agents end with `DONE: <line>` or `BLOCKED: <type>: <what, options, recommendation>`; the parent decides alone when plan, ADR, rules or code answer it (`/igx-autonomy`).
-- Plan finished: print `PLAN COMPLETE` and a short summary when the approved work is complete (Cursor direct execution per `.cursor/rules/igx-cursor-direct-execution.mdc`).
+- Plan finished: print `PLAN COMPLETE` and a short summary when the approved work is complete (Cursor direct execution per `.cursor/rules/igx-cursor-direct-execution.mdc`); in CHATGPT_DIRECT_IMPLEMENTATION, completion includes confirmed candidate publication.
 <!-- igx:authority end -->
 
 ## Cursor orchestration
 
-- Cursor parent may be Grok. Workers: Task `model` `composer-2.5` or `composer-2.5-fast` (do not omit `model`). Any other worker model needs an Operator override in that chat. IIAC and G6 are unchanged.
+- CHATGPT_DIRECT_IMPLEMENTATION uses one top-level Composer and no parent orchestrator, subagents or model approval. Outside that mode, delegated workers are optional only on Operator request; Task `model` must be `composer-2.5` or `composer-2.5-fast` unless explicitly overridden. IIAC and G6 are unchanged.
 
 Canonical rule (SSOT): `agent-env/rules/intergrax-core.md`. Read it only when editing rules or when a section outside this extract is needed.

@@ -107,7 +107,8 @@ def diff_paths(checkout: Path, base: str, head: str) -> set[str]:
     return set(filter(None, git(checkout, "diff", "--name-only", "--no-renames", "-z", base, head).split("\0")))
 
 
-def verify_local(p: dict[str, Any], checkout: Path) -> str:
+def verify_checkout(p: dict[str, Any], checkout: Path) -> str:
+    """Check the authorized starting or resumed worktree without requiring new commits."""
     local_worktree(checkout)
     if Path(git(checkout, "rev-parse", "--show-toplevel")).resolve() != checkout.resolve():
         raise Blocked("run from the assigned worktree root")
@@ -119,8 +120,8 @@ def verify_local(p: dict[str, Any], checkout: Path) -> str:
         raise Blocked("candidate branch differs from authorization")
     git(checkout, "check-ref-format", f"refs/heads/{p['branch']}")
     head = git(checkout, "rev-parse", "HEAD")
-    if not SHA.fullmatch(head) or (p.get("head_sha") is not None and p["head_sha"] != head):
-        raise Blocked("candidate head differs from authorization")
+    if not SHA.fullmatch(head):
+        raise Blocked("invalid local head")
     if git(checkout, "status", "--porcelain"):
         raise Blocked("candidate worktree must be clean")
     base = p["base_sha"]
@@ -130,6 +131,14 @@ def verify_local(p: dict[str, Any], checkout: Path) -> str:
         raise Blocked("base ticket lacks approval")
     if not re.search(r"(?m)^## Lifecycle state\s*\n\s*(plan_approved|in_progress|quality_gate|ready_for_audit)\s*$", ticket):
         raise Blocked("base ticket does not authorize implementation")
+    return head
+
+
+def verify_local(p: dict[str, Any], checkout: Path) -> str:
+    head = verify_checkout(p, checkout)
+    if p.get("head_sha") is not None and p["head_sha"] != head:
+        raise Blocked("candidate head differs from authorization")
+    base = p["base_sha"]
     assert_scoped(diff_paths(checkout, base, head), p)
     commits = git(checkout, "rev-list", "--reverse", f"{base}..{head}").splitlines()
     if not commits or len(commits) > 100:
@@ -140,8 +149,9 @@ def verify_local(p: dict[str, Any], checkout: Path) -> str:
             raise Blocked("candidate must be a linear isolated implementation history")
         assert_scoped(diff_paths(checkout, parent, commit), p)
         message = git(checkout, "show", "-s", "--format=%B", commit)
-        if f"Ref: {p['ticket']}" not in message.splitlines():
-            raise Blocked("candidate commit lacks canonical ticket trailer")
+        refs = [line.strip() for line in message.splitlines() if line.strip().startswith("Ref: governance/tickets/")]
+        if refs != [f"Ref: {p['ticket']}"]:
+            raise Blocked("candidate commit must contain exactly one canonical ticket trailer")
         parent = commit
     return head
 
@@ -170,8 +180,23 @@ def verify_target(p: dict[str, Any], checkout: Path) -> None:
 
 def open_prs(p: dict[str, Any]) -> list[dict[str, Any]]:
     result = json.loads(
-        command(["gh", "pr", "list", "-R", REPO, "--head", p["branch"], "--state", "open",
-                 "--json", "number", "--limit", "100"])
+        command(
+            [
+                "gh",
+                "pr",
+                "list",
+                "-R",
+                REPO,
+                "--head",
+                p["branch"],
+                "--state",
+                "open",
+                "--json",
+                "number",
+                "--limit",
+                "100",
+            ]
+        )
     )
     if not isinstance(result, list) or len(result) > 1 or any(not isinstance(x, dict) for x in result):
         raise Blocked("ambiguous open candidate PR")
@@ -203,10 +228,11 @@ def verify_draft(p: dict[str, Any], number: int, head: str | None = None) -> dic
     return pr
 
 
-def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
-    head = verify_local(p, checkout)
+def verify_remote_candidate(p: dict[str, Any], checkout: Path, head: str) -> tuple[int | None, str | None]:
+    """Read-only remote qualification: check ancestry, existing draft identity and divergence."""
     verify_target(p, checkout)
     existing = open_prs(p)
+    number = None
     if existing:
         number = existing[0].get("number")
         if type(number) is not int or number <= 0:
@@ -216,16 +242,60 @@ def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
     if remote and remote != head:
         git(checkout, "fetch", "origin", f"refs/heads/{p['branch']}")
         git(checkout, "merge-base", "--is-ancestor", remote, head)
+    return number, remote
+
+
+def preflight(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
+    """Qualify the publication route before implementation; do not push or create a PR."""
+    head = verify_checkout(p, checkout)
+    if head != p["base_sha"]:
+        head = verify_local(p, checkout)
+    number, remote = verify_remote_candidate(p, checkout, head)
+    return {
+        "result": "PREFLIGHT_OK",
+        "state": "BASE_READY" if head == p["base_sha"] else "CANDIDATE_PRESENT",
+        "wave": p["wave"],
+        "base_sha": p["base_sha"],
+        "head_sha": head,
+        "remote_sha": remote,
+        "pr": number,
+    }
+
+
+def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
+    head = verify_local(p, checkout)
+    number, remote = verify_remote_candidate(p, checkout, head)
     if remote != head:
-        git(checkout, "push", "--no-follow-tags", "--recurse-submodules=no", "origin",
-            f"{head}:refs/heads/{p['branch']}")
+        git(
+            checkout,
+            "push",
+            "--no-follow-tags",
+            "--recurse-submodules=no",
+            "origin",
+            f"{head}:refs/heads/{p['branch']}",
+        )
     if remote_sha(checkout, p["branch"]) != head:
         raise Blocked("remote candidate head not confirmed")
-    if not existing:
-        command(["gh", "pr", "create", "-R", REPO, "--draft", "--base", p["target"], "--head", p["branch"],
-                 "--title", p["pr_title"], "--body",
-                 f"Candidate for external acceptance. Wave: {p['wave']}. Ref: {p['ticket']}."],
-                cwd=checkout)
+    if number is None:
+        command(
+            [
+                "gh",
+                "pr",
+                "create",
+                "-R",
+                REPO,
+                "--draft",
+                "--base",
+                p["target"],
+                "--head",
+                p["branch"],
+                "--title",
+                p["pr_title"],
+                "--body",
+                f"Candidate for external acceptance. Wave: {p['wave']}. Ref: {p['ticket']}.",
+            ],
+            cwd=checkout,
+        )
         created = open_prs(p)
         if len(created) != 1 or type(created[0].get("number")) is not int or created[0]["number"] <= 0:
             raise Blocked("candidate draft PR creation not confirmed")
@@ -237,13 +307,16 @@ def publish(p: dict[str, Any], checkout: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wave", required=True)
+    parser.add_argument("--preflight", action="store_true", help="Validate the publication route without publishing")
     args = parser.parse_args()
     try:
         p = read_authorization(args.wave)
-        print(json.dumps(publish(p, Path.cwd())))
+        result = preflight(p, Path.cwd()) if args.preflight else publish(p, Path.cwd())
+        print(json.dumps(result))
         return 0
     except (Blocked, ValueError, OSError, TypeError, KeyError, AttributeError) as exc:
-        print(f"PUBLICATION_FAILED: {exc}", file=sys.stderr)
+        stage = "PREFLIGHT_FAILED" if args.preflight else "PUBLICATION_FAILED"
+        print(f"{stage}: {exc}", file=sys.stderr)
         return 2
 
 

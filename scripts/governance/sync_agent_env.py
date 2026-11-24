@@ -135,8 +135,9 @@ _CORE_PLAN_DONE = (
     "Plan finished: print `PLAN COMPLETE` and a short summary (`/igx-run-plan` enforces it via Stop hook)."
 )
 _CURSOR_PLAN_DONE = (
-    "Plan finished: print `PLAN COMPLETE` and a short summary when the approved work is complete "
-    "(Cursor direct execution per `.cursor/rules/igx-cursor-direct-execution.mdc`)."
+    "Plan finished: print `PLAN COMPLETE` and a short summary when the approved work is complete (Cursor "
+    "direct execution per `.cursor/rules/igx-cursor-direct-execution.mdc`); in "
+    "CHATGPT_DIRECT_IMPLEMENTATION, completion includes confirmed candidate publication."
 )
 _CORE_MAY_COMMIT = (
     "`may_commit` in `governance/agent-control-plane/role_registry.yaml` is the only commit right. "
@@ -148,15 +149,37 @@ _CURSOR_MAY_COMMIT = (
     "In Cursor direct execution a normal session may commit on the current checkout within approved ticket "
     "scope with the `Ref:` trailer (see `.cursor/rules/igx-cursor-direct-execution.mdc`). Subagents and "
     "delegated modes still follow `may_commit` in `governance/agent-control-plane/role_registry.yaml`. "
-    "`git push origin development` after quality gates from a clean `development` checkout (fast-forward only; "
-    "server rejection is a real blocker — no force push). In ChatGPT Direct mode, candidate push and draft PR "
-    "are permitted only through the authorized Cursor candidate publisher. External acceptance, merge, "
-    "branch integration and GitHub settings stay human."
+    "Outside CHATGPT_DIRECT_IMPLEMENTATION, `git push origin development` after quality gates from a "
+    "clean `development` checkout is allowed (fast-forward only; no force push). In the explicit direct "
+    "mode, candidate push and draft PR must use the authorized Cursor candidate publisher in the same "
+    "turn. External acceptance, merge, branch integration and GitHub settings stay human."
 )
+_CORE_CURSOR_ORCHESTRATION = (
+    "Cursor parent may be Grok. Workers: Task `model` `composer-2.5` or `composer-2.5-fast` (do not omit "
+    "`model`). Any other worker model needs an Operator override in that chat. IIAC and G6 are unchanged."
+)
+_CURSOR_DIRECT_ORCHESTRATION = (
+    "CHATGPT_DIRECT_IMPLEMENTATION uses one top-level Composer and no parent orchestrator, subagents or "
+    "model approval. Outside that mode, delegated workers are optional only on Operator request; Task "
+    "`model` must be `composer-2.5` or `composer-2.5-fast` unless explicitly overridden. IIAC and G6 are "
+    "unchanged."
+)
+_CORE_PINNED_SHA = (
+    "Pinned SHA: fetch `development`; `merge-base --is-ancestor <SHA> HEAD` must pass else escalate; "
+    "record HEAD."
+)
+_CURSOR_PINNED_SHA = (
+    "Pinned SHA: use the externally authorized target in CHATGPT_DIRECT_IMPLEMENTATION, otherwise "
+    "`development`; `merge-base --is-ancestor <SHA> HEAD` must pass; record HEAD. Use the candidate "
+    "publisher preflight for direct mode."
+)
+
 # (canonical sentence, Cursor replacement, what drifted) - each canonical sentence must occur exactly once.
 _CURSOR_CORE_SUBSTITUTIONS = (
     (_CORE_PLAN_DONE, _CURSOR_PLAN_DONE, "PLAN COMPLETE / Stop hook"),
     (_CORE_MAY_COMMIT, _CURSOR_MAY_COMMIT, "may_commit commit rights"),
+    (_CORE_CURSOR_ORCHESTRATION, _CURSOR_DIRECT_ORCHESTRATION, "Cursor orchestration"),
+    (_CORE_PINNED_SHA, _CURSOR_PINNED_SHA, "pinned SHA"),
 )
 
 
@@ -171,6 +194,80 @@ def _cursor_core_text(rule_id: str, text: str) -> str:
     return text
 
 
+_CURSOR_DIRECT_RULE_NOTES = {
+    "igx-enterprise-delivery": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, use the authorized isolated worktree and candidate publisher, not "
+        "the shared development push or gh PR fallback."
+    ),
+    "intergrax-agent-roles": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, the top-level Composer is the sole implementer. No orchestrator, "
+        "separate tester, reviewer or delivery-closure role is required."
+    ),
+    "intergrax-independent-audit": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, complete candidate push and draft PR before ending the "
+        "implementation turn. The external authority owns lifecycle transitions and independent G6/IIAC; "
+        "publication is not certification."
+    ),
+    "intergrax-iteration": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, execute only the assigned wave and publish via the candidate "
+        "publisher. External acceptance and ticket transitions remain outside the executor."
+    ),
+}
+
+
+_CURSOR_DIRECT_SKILL_NOTES = {
+    "igx-devos-github-pr-workflow": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, use the authorized candidate publisher, not direct gh commands or "
+        "a separate delivery-closure role. Draft publication requires no prior review or lifecycle "
+        "transition."
+    ),
+    "igx-devos-ticket-driven-work": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, run assigned tests and mandatory gates, commit with the canonical "
+        "Ref trailer, then publish the draft via the candidate publisher. External authority owns ticket "
+        "updates outside the write set."
+    ),
+    "igx-devos-role-tester": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, Composer executes the assigned tests in the same turn. No separate "
+        "tester or out-of-scope ticket checkpoint is required before publication."
+    ),
+    "igx-devos-role-implementer": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, the top-level Composer is the implementer, not a delegated worker. "
+        "Complete authorized publication in the same turn."
+    ),
+    "igx-devos-enterprise-quality-gate": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, mandatory local gates remain in force; never set skip variables or "
+        "bypass controls. Use the authorized publisher after those gates."
+    ),
+    "igx-devos-qc-orchestrator": (
+        "Not applicable in CHATGPT_DIRECT_IMPLEMENTATION. Do not route, delegate or request model approval; "
+        "execute the external contract in one Composer session."
+    ),
+    "igx-devos-parallel-orchestration": (
+        "Not applicable in CHATGPT_DIRECT_IMPLEMENTATION. Do not spawn subagents or require their results; "
+        "the named isolated worktree is the execution scope."
+    ),
+    "igx-devos-plan-ticket-scope": (
+        "Not an execution step in CHATGPT_DIRECT_IMPLEMENTATION. External authority resolves plan and ticket "
+        "approval before dispatch. Do not generate another plan or approval."
+    ),
+    "igx-devos-ticket-scaffold": (
+        "Not an execution step in CHATGPT_DIRECT_IMPLEMENTATION. External authority prepares the canonical "
+        "ticket and publication authorization before dispatch."
+    ),
+    "igx-devos-role-architect": (
+        "Not applicable in CHATGPT_DIRECT_IMPLEMENTATION. Architecture and decisions are external."
+    ),
+    "igx-devos-role-reviewer": (
+        "Not applicable in CHATGPT_DIRECT_IMPLEMENTATION. Independent review and acceptance follow "
+        "publication outside the executor."
+    ),
+    "igx-worktree": (
+        "In CHATGPT_DIRECT_IMPLEMENTATION, the authorized named worktree is the execution location; never "
+        "change the trusted development checkout during the wave."
+    ),
+}
+
+
 def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:
     head = (
         "---\n"
@@ -180,7 +277,9 @@ def _cursor_rule(rule_id: str, meta: dict[str, str]) -> str:
         f"<!-- {GENERATED} from agent-env/rules/{rule_id}.md - do not edit. -->\n"
     )
     if meta["loading"] not in ("always", "cursor-always"):
-        return head + f"Canonical rule (SSOT): @agent-env/rules/{rule_id}.md\n"
+        pointer = head + f"Canonical rule (SSOT): @agent-env/rules/{rule_id}.md\n"
+        note = _CURSOR_DIRECT_RULE_NOTES.get(rule_id)
+        return pointer + (f"\n{note}\n" if note else "")
     # Cursor does not expand "@" inside a rule body: the normative text must be inlined here.
     return (
         head
@@ -227,7 +326,9 @@ def _cursor_autonomy_stub() -> str:
         "description: Cursor-only pointer — decision rules from the canonical skill; direct execution lifecycle\n"
         "---\n"
         f"<!-- {GENERATED} from Cursor-only direct execution policy - do not edit. -->\n"
-        "Read `agent-env/skills/igx-autonomy/SKILL.md` for decision rules, DONE/BLOCKED and escalation types. "
+        "In CHATGPT_DIRECT_IMPLEMENTATION, follow the direct execution rule; no parent, subagents, "
+        "model approvals or routine escalation. Outside that mode, read `agent-env/skills/igx-autonomy/SKILL.md` "
+        "for decision rules, DONE/BLOCKED and escalation types. "
         "Ignore factory-only `WAITING:` and Stop-hook paragraphs unless the Operator explicitly runs the factory.\n"
         "Default Cursor lifecycle: `.cursor/rules/igx-cursor-direct-execution.mdc`. "
         "Optional factory: `/igx-native-run-plan` only on operator request.\n"
@@ -356,13 +457,15 @@ def expected_files() -> dict[Path, str]:
             if tool_dir == _CURSOR and sid == "igx-autonomy":
                 out[tool_dir / "skills" / sid / "SKILL.md"] = _cursor_autonomy_stub()
                 continue
-            out[tool_dir / "skills" / sid / "SKILL.md"] = _skill_adapter(
+            adapter = _skill_adapter(
                 sid,
                 str(meta["description"]),
                 canonical=canonical,
                 kind="skill",
                 explicit_only=bool(meta["explicit_only"]),
             )
+            note = _CURSOR_DIRECT_SKILL_NOTES.get(sid) if tool_dir == _CURSOR else None
+            out[tool_dir / "skills" / sid / "SKILL.md"] = adapter + (f"\n{note}\n" if note else "")
     for aid, text in load_agents().items():
         out[_CLAUDE / "agents" / f"{aid}.md"] = text
     for path in sorted(_AGENTS.glob(f"{AGENT_PREFIX}*.md")):
