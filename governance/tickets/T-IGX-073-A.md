@@ -34,4 +34,4 @@ git diff --check
 
 ## Lifecycle state
 
-in_progress
+closed

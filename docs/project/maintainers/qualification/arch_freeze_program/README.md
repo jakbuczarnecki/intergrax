@@ -1,4 +1,4 @@
-# ARCH-FREEZE program — published planning records
+﻿# ARCH-FREEZE program — published planning records
 
 Published 2026-11-16 by ticket [`T-IGX-050-A`](../../../../../governance/tickets/T-IGX-050-A.md) (node T-AF2-PLAN-PUBLISH), lifecycle `plan_pending`, so that the plan sources are tracked in the repository and digest-pinned.
 
@@ -15,6 +15,7 @@ Published 2026-11-16 by ticket [`T-IGX-050-A`](../../../../../governance/tickets
 | [`WP12_OPEN_QUESTIONS.md`](./WP12_OPEN_QUESTIONS.md) | The WP12-Q* open questions and their status. |
 | [`SOURCES.sha256`](./SOURCES.sha256) | `sha256sum`-format digests of every other file in this folder, plus (as comments) the original source path and source digest of each copy. |
 | [`PT_FRZ_RR_PATH_B_AMENDMENT.md`](./PT_FRZ_RR_PATH_B_AMENDMENT.md) | Architecture decision **AD-AF-PTFRZ-001** (AF-02B): PT-FRZ-RR Path B substitute substantive basis when WP-4 primary is absent; links AF-02A-G6 evidence at `aaabfc6c8…`. Record only — no FRZ promotion or node closure. |
+| [`PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md`](./PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md) | AF-02C formal disposition: `PT_FRZ_RR_CLOSED=YES`, `DS4_READY=YES`, digest credential for AF-02A-G6 session artefacts; no FRZ promotion or DS-4 content. |
 
 ## Provenance and handling
 
