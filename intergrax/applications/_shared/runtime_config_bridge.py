@@ -282,6 +282,7 @@ def build_runtime_context_from_environment(
     memory_wiring = resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
+        tenant_id=config.tenant_id,
     )
     rag_stack = resolve_rag_stack_for_memory_wiring(
         env,
