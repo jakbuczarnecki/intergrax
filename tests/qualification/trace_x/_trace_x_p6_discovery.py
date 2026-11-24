@@ -8,9 +8,11 @@ positively establish semantics; unknown candidates fail qualification (fail-clos
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_REDELIVER_MARKER_RE = re.compile(r"\bredeliver\b")
 
 _DISCOVERY_ROOTS = (
     _REPO_ROOT / "intergrax",
@@ -69,6 +71,12 @@ def _normalize_repo_path(path: Path) -> str:
     return path.relative_to(_REPO_ROOT).as_posix()
 
 
+def _restart_resume_marker_present(text: str, marker: str) -> bool:
+    if marker == "redeliver":
+        return _REDELIVER_MARKER_RE.search(text) is not None
+    return marker in text
+
+
 def _is_discovery_candidate(path: Path) -> bool:
     if path.suffix != ".py":
         return False
@@ -91,7 +99,7 @@ def discover_restart_resume_path_keys() -> frozenset[tuple[str, str]]:
                 text = path.read_text(encoding="utf-8")
             except OSError:
                 continue
-            if not any(marker in text for marker in _RESTART_RESUME_MARKERS):
+            if not any(_restart_resume_marker_present(text, marker) for marker in _RESTART_RESUME_MARKERS):
                 continue
             keys.add((_normalize_repo_path(path), "module"))
     return frozenset(keys)
