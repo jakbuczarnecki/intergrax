@@ -228,6 +228,84 @@ def _integration_sandbox_host_configured(integration_profile: Any) -> bool:
     )
 
 
+def _package_gate_closure_environment(
+    env: ApplicationEnvironmentProfile,
+    *,
+    resolved_integration: Any,
+) -> bool:
+    """True when ``package_gate_environment`` swapped this host to lab closure checks."""
+    from intergrax.applications.contracts.application_host import ApplicationProfile
+    from intergrax.integrations.registry.profile import IntegrationProfile
+
+    if env.application_profile is not ApplicationProfile.LAB:
+        return False
+    if not isinstance(resolved_integration, IntegrationProfile):
+        return False
+    return resolved_integration == IntegrationProfile.lab()
+
+
+def _augment_package_gate_observability_environment(
+    env: ApplicationEnvironmentProfile,
+    *,
+    resolved_integration: Any,
+) -> ApplicationEnvironmentProfile:
+    from intergrax.contracts.observability_export import ExporterKind
+
+    if not _package_gate_closure_environment(env, resolved_integration=resolved_integration):
+        return env
+    obs = env.observability_profile
+    if not obs.bounded_event_delivery_enabled:
+        return env
+    if obs.observability_exporter_kind not in (
+        ExporterKind.OTLP,
+        ExporterKind.DISTRIBUTED_OTLP,
+    ):
+        return env
+    if obs.otlp_export_endpoint.strip():
+        return env
+    updates: dict[str, object] = {"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"}
+    if (
+        obs.observability_exporter_kind is ExporterKind.DISTRIBUTED_OTLP
+        and not obs.observability_export_service_name.strip()
+    ):
+        updates["observability_export_service_name"] = "igx-package-gate"
+    return env.model_copy(update={"observability_profile": obs.model_copy(update=updates)})
+
+
+def _augment_package_gate_sandbox_environment(
+    env: ApplicationEnvironmentProfile,
+    *,
+    resolved_integration: Any,
+    effective_tool_profile: Any,
+) -> ApplicationEnvironmentProfile:
+    import os
+    import tempfile
+
+    from intergrax.applications._shared.sandbox_wiring import sandbox_required_for_posture
+    from intergrax.contracts.sandbox_profile import SandboxProfile
+    from intergrax.runtime.sandbox.manager import ENV_SANDBOX_ROOT
+
+    if not _package_gate_closure_environment(env, resolved_integration=resolved_integration):
+        return env
+    probe = env.model_copy(update={"tool_profile": effective_tool_profile})
+    if not sandbox_required_for_posture(probe):
+        return env
+    sandbox_profile = env.sandbox
+    if sandbox_profile is not None and sandbox_profile.root is not None:
+        return env
+    if os.environ.get(ENV_SANDBOX_ROOT, "").strip():
+        return env
+    root_path = Path(tempfile.mkdtemp(prefix="igx-package-gate-sandbox-"))
+    sandbox_profile = sandbox_profile or SandboxProfile(enable_exec_tool=True)
+    return env.model_copy(
+        update={
+            "sandbox": sandbox_profile.model_copy(
+                update={"root": root_path, "enable_exec_tool": True},
+            ),
+        },
+    )
+
+
 def _merge_integration_read_allowlist_roots(
     wiring_context: ToolWiringContext,
     resolved_integration: Any,
@@ -283,6 +361,10 @@ def wire_application_environment(
     context_bootstrap = bootstrap_application_context_catalog()
     assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
     resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+    env = _augment_package_gate_observability_environment(
+        env,
+        resolved_integration=resolved_integration,
+    )
     reliability_wiring = wire_application_reliability(env)
     integration_health = probe_integration_profile_health(
         resolved_integration,
@@ -307,9 +389,15 @@ def wire_application_environment(
             lab_opt_in: LabSelectorOptIn | None = None
             if wiring_fails_closed(env):
                 if embedding_slug is None:
-                    raise EmbeddingProviderConfigurationError(
-                        "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
-                    )
+                    if _package_gate_closure_environment(env, resolved_integration=resolved_integration):
+                        lab_opt_in = LabSelectorOptIn(
+                            selector=lab_embedding_provider_slug(),
+                            reason="package gate lab integration without embedding binding",
+                        )
+                    else:
+                        raise EmbeddingProviderConfigurationError(
+                            "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
+                        )
             elif embedding_slug is None:
                 lab_opt_in = LabSelectorOptIn(
                     selector=lab_embedding_provider_slug(),
@@ -508,6 +596,14 @@ def wire_application_environment(
         tool_wiring,
         application_tool_registry,
     )
+    sandbox_env = _augment_package_gate_sandbox_environment(
+        env,
+        resolved_integration=resolved_integration,
+        effective_tool_profile=tool_wiring.profile,
+    )
+    sandbox_manager = wire_sandbox_sessions(
+        sandbox_env.model_copy(update={"tool_profile": tool_wiring.profile}),
+    )
     policy_bundle = wire_policy_bundle(
         env.model_copy(
             update={
@@ -614,7 +710,7 @@ def wire_application_environment(
         policy_bundle=policy_bundle,
         composition=composition,
         shadow_manager=wire_shadow_workspace(env),
-        sandbox_manager=wire_sandbox_sessions(env),
+        sandbox_manager=sandbox_manager,
         integration_health=integration_health,
         prompt_registry=prompt_registry,
         registry_snapshot=registry_snapshot,
