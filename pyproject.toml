@@ -51,7 +51,7 @@ dependencies = [
   # -----------------
   "fastapi>=0.115,<1",
   "uvicorn>=0.30,<1",
-  "starlette>=0.41,<1",
+  "starlette>=0.41,<2",
   "httpx>=0.27,<1",
   "python-multipart>=0.0.9,<1",
   "pydantic>=2.7,<3",
@@ -72,7 +72,7 @@ dependencies = [
   # -----------------
   # Media / ingestion
   # -----------------
-  "chardet>=5.2,<6",
+  "chardet>=5.2,<8",
   "jsonschema>=4.23,<5",
   # -----------------
   # Time zones
@@ -269,19 +269,19 @@ llm-ollama = ["ollama>=0.1,<1", "tiktoken>=0.7,<1"]
 # Explicit compatibility surface for LangChainOllamaAdapter and its
 # LangChain message types.
 llm-langchain-ollama = ["langchain-core>=0.3,<2.0", "langchain-ollama>=0.2,<2.0"]
-llm-gemini = ["google-genai>=0.3,<2", "tiktoken>=0.7,<1"]
+llm-gemini = ["google-genai>=0.3,<4", "tiktoken>=0.7,<1"]
 llm-bedrock = ["boto3>=1.34,<2", "tiktoken>=0.7,<1"]
 llm-groq = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
 llm-vllm = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
 llm-compat = ["openai>=1.0,<3", "tiktoken>=0.7,<1"]
-llm-vertex = ["google-genai>=0.3,<2", "tiktoken>=0.7,<1"]
+llm-vertex = ["google-genai>=0.3,<4", "tiktoken>=0.7,<1"]
 llm-cohere-native = ["cohere>=5.5,<6", "tiktoken>=0.7,<1"]
 llm-all = [
   "openai>=1.0,<3",
   "anthropic>=0.25,<1",
   "mistralai>=0.4,<2",
   "ollama>=0.1,<1",
-  "google-genai>=0.3,<2",
+  "google-genai>=0.3,<4",
   "boto3>=1.34,<2",
   "cohere>=5.5,<6",
   "tiktoken>=0.7,<1",
