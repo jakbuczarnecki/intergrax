@@ -10,7 +10,10 @@ from typing import Any
 from testing_support.change_safety.assess.consumers import critical_consumer_closure
 from testing_support.change_safety.discovery.closed_world import (
     ClosedWorldInventory,
+    TierEnforcementReport,
     accepted_exclusion_patterns,
+    build_tier_enforcement_report,
+    detect_forbidden_exclusion_expansion,
     owners_for_path,
     path_matches_patterns,
 )
@@ -253,6 +256,52 @@ def run_cw10(full: ClosedWorldInventory, incremental: ClosedWorldInventory | Non
         "incremental rebuild == full rebuild" if passed else "incremental != full",
         {"full": full.inventory_digest, "incremental": incremental.inventory_digest},
     )
+
+
+def run_cw11(
+    tier_report: TierEnforcementReport | None,
+    *,
+    scope_prefixes: tuple[str, ...] = ("intergrax/", "agents/", "applications/"),
+) -> ClosedWorldGateCheck:
+    if tier_report is None:
+        return ClosedWorldGateCheck("CW-11", False, "tier report not supplied (fail-closed)", {"supplied": 0})
+    scoped = [
+        f
+        for f in tier_report.findings
+        if f.kind != "UNCLASSIFIED_MODULE" or any(f.location.replace("\\", "/").startswith(p) for p in scope_prefixes)
+    ]
+    counts: dict[str, int] = {}
+    for finding in scoped:
+        counts[finding.kind] = counts.get(finding.kind, 0) + 1
+    passed = not scoped
+    return ClosedWorldGateCheck(
+        "CW-11",
+        passed,
+        "tier-boundary closed-world enforcement" if passed else f"findings={len(scoped)}",
+        {"findings": len(scoped), **{f"kind_{k}": v for k, v in sorted(counts.items())}},
+    )
+
+
+def run_cw12(exclusion_register: dict[str, Any]) -> ClosedWorldGateCheck:
+    expanded = detect_forbidden_exclusion_expansion(exclusion_register)
+    passed = not expanded
+    return ClosedWorldGateCheck(
+        "CW-12",
+        passed,
+        "exclusion register has no new ACCEPTED rows" if passed else f"forbidden_exclusion_expansion={expanded}",
+        {"expanded_accepted": len(expanded)},
+    )
+
+
+def run_tier_closed_world_gates(
+    inventory: ClosedWorldInventory,
+    exclusion_register: dict[str, Any],
+    *,
+    tier_report: TierEnforcementReport | None = None,
+) -> ClosedWorldGateReport:
+    report = tier_report if tier_report is not None else build_tier_enforcement_report(inventory)
+    checks = (run_cw11(report), run_cw12(exclusion_register))
+    return ClosedWorldGateReport(schema_version="tier_closed_world_gates.v1", checks=checks)
 
 
 def run_closed_world_gates(
