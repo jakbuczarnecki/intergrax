@@ -213,6 +213,7 @@ def assess_retrieval_freshness(
     *,
     observations: Mapping[str, SourceFreshnessObservation],
     request_reindex: bool = True,
+    tenant_id: str | None = None,
 ) -> RetrievalFreshnessAssessment:
     """Evaluate a retrieval result and queue reindex for stale sources via the existing hook.
 
@@ -254,6 +255,7 @@ def assess_retrieval_freshness(
                     or (verdict.indexed_modified_at.isoformat() if verdict.indexed_modified_at else None),
                     target_version=target,
                     reason=_REINDEX_REASON_BY_VERDICT_REASON.get(verdict.reason, "source_stale"),
+                    tenant_id=tenant_id,
                 )
                 or reindex_requested
             )
