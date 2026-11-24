@@ -65,6 +65,7 @@ from echo.echo_agent import EchoAgent
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = CI_SMOKE_PRODUCT_TENANT
+_DF5_TEST_OTLP_ENDPOINT = "http://127.0.0.1:0/v1/logs"
 
 
 @pytest.fixture(autouse=True)
@@ -73,6 +74,10 @@ def _df5_close_host_owned_runtime_resources(
 ) -> Generator[None, None, None]:
     """Release dependency-admission threads so pytest and CI smoke can exit cleanly."""
     monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "ollama")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.runtime_event_delivery_wiring.require_otlp_observability_dependency_profile",
+        lambda **_: None,
+    )
     from intergrax.applications._shared import declarative_tool_wiring as declarative_tool_wiring_module
     from intergrax.applications._shared import harness_host_runtime as harness_host_runtime_module
     from intergrax.applications._shared.declarative_tool_wiring import (
@@ -142,12 +147,19 @@ def _echo_registry() -> AgentRegistry:
     return echo_agent_registry()
 
 
-def _product_manifest(profile_id: str = "df5.product.host") -> ApplicationManifest:
+def _product_manifest(profile_id: str = "df5.product.host", *, sandbox_root: Path | None = None) -> ApplicationManifest:
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id=profile_id)
     environment.execution_mode = ExecutionMode.BALANCED
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={"otel_enabled": False},
+        update={
+            "otel_enabled": False,
+            "otlp_export_endpoint": _DF5_TEST_OTLP_ENDPOINT,
+        },
     )
+    if sandbox_root is not None and environment.sandbox is not None:
+        environment = environment.model_copy(
+            update={"sandbox": environment.sandbox.model_copy(update={"root": sandbox_root})},
+        )
     return ApplicationManifest.lab(
         app_id="df5_product_host",
         name="DF5 Product Host",
@@ -198,7 +210,7 @@ def test_df5_case_a_product_without_document_store_fails(
     tmp_path: Path,
     _stub_llm: None,
 ) -> None:
-    manifest = _product_manifest("df5.case.a")
+    manifest = _product_manifest("df5.case.a", sandbox_root=tmp_path / "sandbox")
     env = manifest.environment
     assert env is not None
     with pytest.raises(DiagnosticAssemblyError, match="document store"):
@@ -218,7 +230,7 @@ def test_df5_case_b_product_without_runtime_event_persistence_fails(
     tmp_path: Path,
     _stub_llm: None,
 ) -> None:
-    manifest = _product_manifest("df5.case.b")
+    manifest = _product_manifest("df5.case.b", sandbox_root=tmp_path / "sandbox")
     env = manifest.environment
     assert env is not None
     env.observability_profile = env.observability_profile.model_copy(
@@ -242,7 +254,7 @@ def test_df5_case_c_product_without_attached_diagnostics_fails_closed(
     _stub_llm: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    manifest = _product_manifest("df5.case.c")
+    manifest = _product_manifest("df5.case.c", sandbox_root=tmp_path / "sandbox")
     env = manifest.environment
     assert env is not None
     monkeypatch.setattr(
@@ -327,7 +339,7 @@ def test_df5_health_gate_fails_on_real_runtime_when_diagnostics_unavailable(
     tmp_path: Path,
     _stub_llm: None,
 ) -> None:
-    manifest = _product_manifest("df5.health.gate")
+    manifest = _product_manifest("df5.health.gate", sandbox_root=tmp_path / "sandbox")
     env = manifest.environment
     assert env is not None
     runtime = build_harness_host_runtime(
@@ -366,7 +378,7 @@ def test_df5_observability_gate_fails_when_central_diagnostics_not_attached(
 ) -> None:
     from scripts.maintenance import check_harness_observability_wiring as gate
 
-    manifest = _product_manifest("df5.obs.gate")
+    manifest = _product_manifest("df5.obs.gate", sandbox_root=tmp_path / "sandbox")
     env = manifest.environment
     assert env is not None
 

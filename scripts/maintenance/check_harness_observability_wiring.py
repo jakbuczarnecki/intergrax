@@ -3,6 +3,8 @@
 
 """Audit Tier-3 observability wiring from environment profile (Phase OBS-3 / DIAG-FOUNDATION-2)."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import sys
@@ -25,6 +27,7 @@ from intergrax.applications._shared.observability_assembly_resolver import (
 )
 from intergrax.applications._shared.observability_wiring import wire_application_observability
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -57,22 +60,24 @@ def _audit_lab_host() -> int:
 def _audit_product_host_auditability() -> int:
     import tempfile
 
-    from echo.echo_agent import EchoAgent
     from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
-    from intergrax.applications.contracts.application_host import ApplicationProfile
     from intergrax.applications.contracts.environment_profile import (
         ApplicationEnvironmentProfile,
-        ObservabilityProfile,
     )
-    from intergrax.contracts.execution_mode import ExecutionMode
     from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+    from intergrax.contracts.execution_mode import ExecutionMode
     from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
     from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+    from echo.echo_agent import EchoAgent
 
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id="obs.auditability.product")
     environment.execution_mode = ExecutionMode.BALANCED
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={"otel_enabled": False},
+        update={
+            "otel_enabled": False,
+            "otlp_export_endpoint": "http://127.0.0.1:0/v1/logs",
+        },
     )
     manifest = ApplicationManifest.lab(
         app_id="obs_auditability_product",
@@ -85,6 +90,10 @@ def _audit_product_host_auditability() -> int:
     registry = AgentRegistry()
     registry.register(EchoAgent())
     temp_dir = Path(tempfile.mkdtemp(prefix="obs-auditability-gate-"))
+    if environment.sandbox is not None:
+        environment = environment.model_copy(
+            update={"sandbox": environment.sandbox.model_copy(update={"root": temp_dir / "sandbox"})},
+        )
     runtime = build_harness_host_runtime(
         manifest,
         environment,

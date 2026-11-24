@@ -15,6 +15,7 @@ from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
     resolve_observability_export_profile,
 )
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -54,11 +55,7 @@ def _otlp_enabled_env(
     endpoint: str,
     exporter_kind: ExporterKind = ExporterKind.OTLP,
 ) -> ApplicationEnvironmentProfile:
-    env = _with_posture(
-        base,
-        profile=ApplicationProfile.PRODUCT,
-        mode=ExecutionMode.STRICT,
-    )
+    env = base.model_copy(deep=True)
     env.observability_profile = env.observability_profile.model_copy(
         update={
             "bounded_event_delivery_enabled": True,
@@ -78,7 +75,11 @@ def _patch_otlp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_otlp_01_product_empty_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
-    env = _otlp_enabled_env(ApplicationEnvironmentProfile.product_defaults(), endpoint="")
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
+        endpoint="",
+    )
     with patch(
         "intergrax.runtime.observability.exporters.otlp.otlp_transport.OtlpTransport",
         MagicMock(),
@@ -95,21 +96,29 @@ def test_otlp_02_lab_strict_empty_endpoint(monkeypatch: pytest.MonkeyPatch) -> N
         _with_posture(base, profile=ApplicationProfile.LAB, mode=ExecutionMode.STRICT),
         endpoint="",
     )
+    assert env.application_profile is ApplicationProfile.LAB
+    assert env.execution_mode is ExecutionMode.STRICT
+    assert wiring_fails_closed(env) is True
     with pytest.raises(ConfigurationError, match="otlp_export_endpoint"):
         resolve_application_runtime_event_delivery_wiring(env)
 
 
 def test_otlp_03_whitespace_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
-    env = _otlp_enabled_env(ApplicationEnvironmentProfile.product_defaults(), endpoint="   ")
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
+        endpoint="   ",
+    )
     with pytest.raises(ConfigurationError):
         resolve_application_runtime_event_delivery_wiring(env)
 
 
 def test_otlp_04_valid_profile_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
+    base = ApplicationEnvironmentProfile.product_defaults()
     env = _otlp_enabled_env(
-        ApplicationEnvironmentProfile.product_defaults(),
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
         endpoint=_OTLP_ENDPOINT_PROFILE,
     )
     wiring = resolve_application_runtime_event_delivery_wiring(env)
@@ -119,7 +128,11 @@ def test_otlp_04_valid_profile_endpoint(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_otlp_05_settings_endpoint_used(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
-    env = _otlp_enabled_env(ApplicationEnvironmentProfile.product_defaults(), endpoint="")
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
+        endpoint="",
+    )
     settings = _OtlpSettings(observability_otlp_endpoint=_OTLP_ENDPOINT_SETTINGS)
     wiring = resolve_application_runtime_event_delivery_wiring(env, settings=settings)
     assert wiring.otlp_transport is not None
@@ -131,8 +144,9 @@ def test_otlp_05_settings_endpoint_used(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_otlp_06_settings_precedence_over_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
+    base = ApplicationEnvironmentProfile.product_defaults()
     env = _otlp_enabled_env(
-        ApplicationEnvironmentProfile.product_defaults(),
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
         endpoint=_OTLP_ENDPOINT_PROFILE,
     )
     settings = _OtlpSettings(observability_otlp_endpoint=_OTLP_ENDPOINT_SETTINGS)
@@ -166,8 +180,9 @@ def test_otlp_08_explicitly_disabled_delivery() -> None:
 
 def test_otlp_09_distributed_missing_service_name(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
+    base = ApplicationEnvironmentProfile.product_defaults()
     env = _otlp_enabled_env(
-        ApplicationEnvironmentProfile.product_defaults(),
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
         endpoint=_OTLP_ENDPOINT_PROFILE,
         exporter_kind=ExporterKind.DISTRIBUTED_OTLP,
     )
@@ -182,7 +197,11 @@ def test_otlp_10_injected_factory_not_called_on_missing_endpoint(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_otlp_dependency(monkeypatch)
-    env = _otlp_enabled_env(ApplicationEnvironmentProfile.product_defaults(), endpoint="")
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
+        endpoint="",
+    )
 
     class _SpyFactory(EventExportSinkFactoryPort):
         def __init__(self) -> None:
@@ -198,9 +217,37 @@ def test_otlp_10_injected_factory_not_called_on_missing_endpoint(
     assert factory.called is False
 
 
+def test_otlp_product_balanced_empty_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_otlp_dependency(monkeypatch)
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.BALANCED),
+        endpoint="",
+    )
+    assert wiring_fails_closed(env) is True
+    with pytest.raises(ConfigurationError, match="otlp_export_endpoint"):
+        resolve_application_runtime_event_delivery_wiring(env)
+
+
+def test_otlp_product_strict_whitespace_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_otlp_dependency(monkeypatch)
+    base = ApplicationEnvironmentProfile.lab_defaults(profile_id="ec.w02.otlp.strict.ws")
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.LAB, mode=ExecutionMode.STRICT),
+        endpoint="   ",
+    )
+    assert wiring_fails_closed(env) is True
+    with pytest.raises(ConfigurationError):
+        resolve_application_runtime_event_delivery_wiring(env)
+
+
 def test_otlp_guard_raises_before_transport_constructor(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_otlp_dependency(monkeypatch)
-    env = _otlp_enabled_env(ApplicationEnvironmentProfile.product_defaults(), endpoint="")
+    base = ApplicationEnvironmentProfile.product_defaults()
+    env = _otlp_enabled_env(
+        _with_posture(base, profile=ApplicationProfile.PRODUCT, mode=ExecutionMode.STRICT),
+        endpoint="",
+    )
     export_profile = resolve_observability_export_profile(env)
     with patch(
         "intergrax.runtime.observability.exporters.otlp.otlp_transport.OtlpTransport",

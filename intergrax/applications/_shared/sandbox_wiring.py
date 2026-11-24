@@ -13,7 +13,12 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.runtime.sandbox.manager import ENV_SANDBOX_ROOT, SandboxSessionManager
 from intergrax.tools.contracts.tool_profile import ToolProfile
-from intergrax.tools.registry.catalog import UnknownToolBundleError, get_bundle, list_catalog_tool_ids
+from intergrax.tools.registry.catalog import (
+    UnknownToolBundleError,
+    get_bundle,
+    iter_bundles,
+    list_catalog_tool_ids,
+)
 
 _SIDE_EFFECT_TOOL_PREFIXES = ("sandbox.", "workspace.", "gitlab.", "websearch.")
 
@@ -31,18 +36,20 @@ def _effective_enabled_tool_ids(
     *,
     strict_bundle_resolution: bool,
 ) -> set[str]:
-    enabled = set(profile.enabled)
     if profile.register_all_catalog_bundles:
-        enabled.update(list_catalog_tool_ids())
-        return enabled
+        return set(list_catalog_tool_ids())
     for bundle_id in profile.enabled_bundles:
         try:
-            entry = get_bundle(bundle_id)
+            get_bundle(bundle_id)
         except UnknownToolBundleError:
             if strict_bundle_resolution:
                 raise
-            continue
-        enabled.update(entry.tool_ids)
+    enabled = set(profile.enabled)
+    for entry in iter_bundles():
+        if profile.should_register_bundle(entry.bundle_id, tool_ids=entry.tool_ids):
+            enabled.update(entry.tool_ids)
+    if profile.enabled and not profile.enabled_bundles:
+        enabled &= set(profile.enabled)
     return enabled
 
 
