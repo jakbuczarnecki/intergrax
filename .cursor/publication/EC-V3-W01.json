@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "wave": "EC-V3-W01",
+  "mode": "CHATGPT_DIRECT_IMPLEMENTATION",
+  "target": "arch-freeze/rw-train",
+  "kind": "product",
+  "branch": "ec-v3/w01-vision-fix",
+  "base_sha": "370ec6748f0461215e437ba0bde214a3a833f820",
+  "head_sha": "d9717c15421a20f68232cbec574839c949455005",
+  "ticket": "governance/tickets/T-IGX-043-C.md",
+  "write_set": [
+    "intergrax/model_inference/adapters/triton_vision.py",
+    "intergrax/model_inference/adapters/huggingface_inference_vision.py",
+    "tests/unit/model_inference/test_fc3_vision_fail_closed.py"
+  ],
+  "pr_title": "fix(vision): FC-3 empty inference residual corrective"
+}

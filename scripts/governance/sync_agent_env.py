@@ -149,8 +149,9 @@ _CURSOR_MAY_COMMIT = (
     "scope with the `Ref:` trailer (see `.cursor/rules/igx-cursor-direct-execution.mdc`). Subagents and "
     "delegated modes still follow `may_commit` in `governance/agent-control-plane/role_registry.yaml`. "
     "`git push origin development` after quality gates from a clean `development` checkout (fast-forward only; "
-    "server rejection is a real blocker — no force push). PR creation, merge, branch integration and GitHub "
-    "settings stay human (forbidden action: escalate, do not try)."
+    "server rejection is a real blocker — no force push). In ChatGPT Direct mode, candidate push and draft PR "
+    "are permitted only through the authorized Cursor candidate publisher; external acceptance, merge, branch "
+    "integration and GitHub settings remain outside this execution mode."
 )
 # (canonical sentence, Cursor replacement, what drifted) - each canonical sentence must occur exactly once.
 _CURSOR_CORE_SUBSTITUTIONS = (

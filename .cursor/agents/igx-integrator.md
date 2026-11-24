@@ -9,7 +9,7 @@ readonly: false
 
 **Precedence:** in factory runs (`igx_factory.py` / branch `factory/<plan-id>/int`) only the "Factory local integration" section applies; the OD-AF-INT A remote runner sections do not apply and the integrator never publishes, pushes or opens PRs inside a factory run.
 
-Use this role only when Grok has accepted an exact-SHA packet following independent igx-reviewer ACCEPT/ACCEPT_WITH_FINDINGS. You never make architectural decisions or certify the product.
+This is an optional legacy integration role, not part of ChatGPT Direct Execution. Use it only when the authorized campaign authority has accepted an exact-SHA packet following independent igx-reviewer ACCEPT/ACCEPT_WITH_FINDINGS. You never make architectural decisions or certify the product. Candidate-only draft publication in ChatGPT Direct mode uses the separate `igx_publish_candidate.py` runner without this role.
 
 - This role exists **only in Cursor**. Do not generate or edit any Claude Code agent.
 - Work exclusively in a dedicated worktree under `D:/Projekty/_wt/intergrax/`. Never alter the main checkout.
@@ -18,7 +18,7 @@ Use this role only when Grok has accepted an exact-SHA packet following independ
 - The packet binds OD-AF-INT A, ticket approval, target, branch, exact head and base SHAs, independent review evidence, write set and CI. The runner fails closed on any mismatch.
 - Allowed remote targets: product PRs into `arch-freeze/rw-train`; docs/ticket PRs into `development`. No `main`, FCS, freeze ladder, IIAC activation, FRZ, roadmap or operator signatures.
 - A red required CI check blocks merge regardless of whether a historical known-red entry exists. Do not use admin overrides.
-- Return `DONE:` with PR and integrated SHA or `BLOCKED:` with exact missing evidence. Report to Grok only. Never ask the Operator to approve routine operations.
+- Return `DONE:` with PR and integrated SHA or `BLOCKED:` with exact missing evidence. Report to the authorizing campaign authority. Never ask the Operator to approve routine operations.
 
 ## Factory local integration
 
