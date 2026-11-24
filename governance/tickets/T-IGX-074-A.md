@@ -4,7 +4,7 @@
 
 Enterprise Campaign V3 wave EC-V3-W02 (OD-EC-W02-01, OD-EC-W02-02): corrective implementation for EQOA-A4-032a (silent OTLP event-delivery degradation) and A4-032b / WP2-OBS-02 (implicit sandbox root under guarded composition). Decisions DP-24, Q4=A, Q5=A. No finding closure or certification is asserted.
 
-Exact candidate write set (seven paths, from RECOVERY-02):
+Exact cumulative candidate write set (eleven paths, Operator-approved corrective amendment 2026-11-24):
 
 - `applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py`
 - `intergrax/applications/_shared/runtime_event_delivery_wiring.py`
@@ -13,14 +13,22 @@ Exact candidate write set (seven paths, from RECOVERY-02):
 - `tests/unit/applications/task_control_product_host_test_support.py`
 - `tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py`
 - `tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py`
+- `intergrax/applications/_shared/environment_wiring.py`
+- `tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py`
+- `tests/unit/applications/scenario_runtime_test_support.py`
+- `scripts/maintenance/check_harness_observability_wiring.py`
 
 Only explicit fixture configuration is permitted in existing test and maintenance paths; existing gate assertions and meaning remain unchanged. Preserve PRODUCT or STRICT fail-closed behavior, existing non-guarded behavior, actual tool catalog membership, explicit root precedence and OTLP settings precedence.
+
+Corrective amendment: preserve OTLP guard and caller posture in regression helper; use canonical bundle selection and final effective tool profile for sandbox composition; configure test-only prerequisites for DF5/scenario/observability gate, including scoped diagnostic cursor secret and tenant evaluation registry where required. No weakening of assertions or production defaults. Complete scoped typing and ticket validation.
 
 ## Approved
 
 Approved: operator @ 2026-11-24T12:00:00+01:00
 
 Authorization: OD-EC-W02-01, OD-EC-W02-02 (EC-V3-W02 corrective package). The approval line is transcribed from the Operator-supplied RECOVERY-02 ticket; its exact timestamp is not independently verified. Explicit approval of both decisions was given in the campaign conversation. This registration is by the external architecture authority, not the implementer.
+
+Amendment approval: Operator explicitly approved expansion from seven to eleven paths in the Enterprise Campaign conversation on 2026-11-24 and instructed the external architecture authority to execute its part. This is a transcription by ChatGPT, not an Operator-authored signature or independent audit. No further scope expansion is authorized.
 
 ## Test contract
 
@@ -29,6 +37,8 @@ uv run pytest tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py tests/u
 uv run pytest tests/unit/applications/test_reference_capability_bundle.py applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py tests/unit/scripts/test_check_application_production_gates.py -q
 uv run pytest tests/unit/runtime/observability/test_otlp_exporter.py tests/unit/runtime/observability/test_otlp_http_transport.py tests/unit/runtime/observability/exporters/test_otlp_transport_adapter.py tests/unit/runtime/integrations/test_otlp_observability_integration.py -q
 uv run pytest tests/unit/runtime/sandbox/test_sandbox_session.py tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py tests/unit/tools/providers/sandbox/test_sandbox_exec.py -q
+uv run pytest tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py -q
+uv run python scripts/maintenance/check_harness_observability_wiring.py
 uv run python scripts/maintenance/check_sandbox_policy_wiring.py
 uv run python scripts/gates/check_application_production_gates.py
 ```
@@ -37,7 +47,7 @@ Run sequentially under the existing pytest mutex. Repeat on the actual train can
 
 ## Recovery and publication
 
-Original local source 5ff7b9abd479eb903b9e43e1d9cf8f99dc42cae5, immediate parent 6495498f7f8046117528e40243e78e116d9595d8. Recover only the seven-path patch on the authorized train base containing this ticket. Keep the original candidate unchanged. Do not import development history. Candidate contains no governance files. External authority registers the per-wave publication record; implementer uses only the canonical publisher.
+Original local source 5ff7b9abd479eb903b9e43e1d9cf8f99dc42cae5, immediate parent 6495498f7f8046117528e40243e78e116d9595d8. Historical recovery used the original seven-path patch. For the approved amendment, preserve PR #805 and original source commits 9082b00f25873caf48b50bac6ef614af5c028f47 and local reported 62bdd2d15940353ca7c9fe73c1f3decdf69f6d27 unchanged; recover their product deltas onto the new immutable train base containing this amended ticket, on a new isolated branch. No force push, no replacement of old PR history. Requalify the resulting candidate, which must be linear and carry this ticket trailer in each commit. Do not import development history. Candidate contains no governance files. External authority registers the per-wave publication record; implementer uses only the canonical publisher.
 
 ## Out of scope
 
