@@ -52,7 +52,7 @@ Placeholders `PT-*`; the Operator allocates real `T-IGX-NN-L` ids. Commit traile
 | DS-1 | DEC | W0 | Decision session DS-1: ground rules, impact definition, labels, delegation, ONE wave, exact-SHA meaning (DP-01..DP-12) | - | - |
 | DS-2 | DEC | W0 | Decision session DS-2: seams and layer boundaries (DP-13..DP-23) | - | - |
 | DS-3 | DEC | W0 | Decision session DS-3: fail-closed design and reachability-first checks (DP-24..DP-33) | - | - |
-| DS-4 | DEC | W0 | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); after PT-FRZ-RR (Path B substitute per AD-AF-PTFRZ-001; formal node closure still required) | - | - |
+| DS-4 | DEC | W0 | Decision session DS-4 (DP-34..DP-45): **DECIDED** 2026-11-16; **DAG complete** 2026-11-24 after PT-FRZ-RR (AF-02D) — `DS4_DECISION_RECONCILIATION_RECORD.md` | - | DECIDED; DAG complete AF-02D |
 | DS-5 | DEC | W0 | Decision session DS-5: register, ownership, domains (DP-46..DP-57) | - | - |
 | DS-6 | DEC | W0 | Decision session DS-6: requalification schedule, pins, enforcement activation (DP-58..DP-68) | - | - |
 | AUTH-PRE | DEC | W0 | Intake of PRE authorizations: read scope AR-62, read-only/static probes AR-01..03, AR-11..13 | AR-62, AR-01, AR-02, AR-03, AR-11, AR-12, AR-13 | - |

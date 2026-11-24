@@ -36,7 +36,7 @@ DS-ADM, PT-D12, PT-D13, PT-E00, PT-Q10, PT-V03, PT-V05, PT-V06, PT-WE
 | DS-1 | DEC | Decision session DS-1: ground rules, impact definition, labels, delegation, ONE wave, exact-SHA meaning (DP-01..DP-12) | M-NOW | - | - | - | - | DP-01..12 | - |
 | DS-2 | DEC | Decision session DS-2: seams and layer boundaries (DP-13..DP-23) | DS-1 | - | - | - | - | DP-13..23 | - |
 | DS-3 | DEC | Decision session DS-3: fail-closed design and reachability-first checks (DP-24..DP-33) | DS-1 | DS-2 | - | - | - | DP-24..33 | - |
-| DS-4 | DEC | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); answered after PT-FRZ-RR (WP-4 re-read design or Path B substitute per AD-AF-PTFRZ-001; formal PT-FRZ-RR closure still required) | DS-1, PT-FRZ-RR | - | - | - | - | DP-34..45 | - |
+| DS-4 | DEC | Decision session DS-4: FRZ rows, Path B, L499 and stage evidence (DP-34..DP-45); **DECIDED** 2026-11-16; **DAG complete** 2026-11-24 (AF-02D) — [`DS4_DECISION_RECONCILIATION_RECORD.md`](./DS4_DECISION_RECONCILIATION_RECORD.md) | DS-1, PT-FRZ-RR | - | - | - | - | DP-34..45 | DECIDED 2026-11-16; DAG complete 2026-11-24 AF-02D |
 | DS-5 | DEC | Decision session DS-5: register, ownership, domains (DP-46..DP-57) | DS-4 | - | - | - | - | DP-46..57 | - |
 | DS-6 | DEC | Decision session DS-6: requalification schedule, pins, enforcement activation (DP-58..DP-68) | DS-1, DS-4 | - | - | - | - | DP-58..68 | - |
 | AUTH-PRE | DEC | Intake of PRE authorizations: read scope AR-62, read-only/static probes AR-01..03, AR-11..13 | M-NOW | - | - | - | AR-62, AR-01, AR-02, AR-03, AR-11, AR-12, AR-13 | - | - |

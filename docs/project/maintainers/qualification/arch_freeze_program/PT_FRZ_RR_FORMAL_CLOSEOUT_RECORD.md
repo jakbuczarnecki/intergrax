@@ -21,7 +21,7 @@
 | `PT_FRZ_RR_AMENDMENT` | **PUBLISHED** |
 | `PT_FRZ_RR_CONTRACT_SATISFIED` | **YES** |
 | `PT_FRZ_RR_CLOSED` | **YES** |
-| `DS4_READY` | **YES** (hard prerequisites **DS-1** DONE + **PT-FRZ-RR** closed; DS-4 session content not decided) |
+| `DS4_READY` | **YES** (hard prerequisites **DS-1** DECIDED + **PT-FRZ-RR** closed); DS-4 content **DECIDED** 2026-11-16; DAG AF-02D [`DS4_DECISION_RECONCILIATION_RECORD.md`](./DS4_DECISION_RECONCILIATION_RECORD.md) |
 
 ## Contract satisfaction (AF-02C)
 
@@ -34,7 +34,7 @@ Formal closure per [`WP12_DAG.md`](./WP12_DAG.md) node **PT-FRZ-RR**: **independ
 | WP-4 primary / row-level diff | **Not required** while WP-4 primary stays absent (amendment) |
 | Unconditional G6 PASS | **Not required** for node closure |
 | FRZ row promotion / 109 OPEN | **Out of scope** — unchanged OPEN |
-| DS-4 decision content | **Not decided** — only admission readiness |
+| DS-4 decision content | **DECIDED** 2026-11-16 (DP-34..45, PR #615); DAG prerequisites met 2026-11-24 (AF-02D; no new session) |
 
 ### Findings (node closure scope)
 
@@ -65,4 +65,4 @@ Executor package directory: `.tmp/session/arch-freeze/frz-rr/AF02A/` (supporting
 - [`MEP-AF2_v2.1.md`](./MEP-AF2_v2.1.md) — §0 (i), §B verified baseline
 - [`ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md`](../ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md) — Appendix D / `[RR]` attributions unchanged for FRZ status
 
-**NEXT_ACTION:** Schedule **DS-4** decision session (DP-34..DP-45); no PT-FRZ-RR rework.
+**NEXT_ACTION:** None for PT-FRZ-RR. DS-4 DAG disposition: [`DS4_DECISION_RECONCILIATION_RECORD.md`](./DS4_DECISION_RECONCILIATION_RECORD.md) (AF-02D). Proceed **SCOPE** predecessors (first open on critical path: **REV-MASTER** per MEP-AF2 v2.1).
