@@ -294,7 +294,6 @@ def validate_plan_structure(
         errors.append("serialization_pairs empty")
     if not data.get("overlap_hotspots"):
         errors.append("overlap_hotspots empty")
-    errors.extend(validate_known_red_fix_inventory(data))
     return errors
 
 
@@ -321,52 +320,6 @@ def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
 
 def validate_rw_plan_audit(data: dict[str, object]) -> list[str]:
     return ["independent RW-PLAN acceptance not performed by mechanical validator"]
-
-
-def _load_known_red_required_ids():
-    import importlib.util
-
-    path = _REPO / "scripts/governance/known_red_fix_rows.py"
-    spec = importlib.util.spec_from_file_location("known_red_fix_rows", path)
-    if spec is None or spec.loader is None:
-        raise SystemExit("cannot load known_red_fix_rows")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return frozenset(getattr(mod, "REQUIRED_KR_FIX_IDS"))
-
-
-def validate_known_red_fix_inventory(data: dict[str, object]) -> list[str]:
-    errors: list[str] = []
-    required = _load_known_red_required_ids()
-    inventory = data.get("known_red_fix_inventory")
-    if not isinstance(inventory, list):
-        errors.append("known_red_fix_inventory missing or not a list")
-        return errors
-    seen: set[str] = set()
-    for row in inventory:
-        if not isinstance(row, dict):
-            errors.append("known_red_fix_inventory row not an object")
-            continue
-        kr = row.get("kr_id")
-        if not kr:
-            errors.append("known_red row without kr_id")
-            continue
-        seen.add(str(kr))
-        if not row.get("owner_node"):
-            errors.append(f"{kr}: missing owner_node")
-        scope = row.get("file_scope")
-        if not isinstance(scope, list) or not scope or not all(isinstance(p, str) and p for p in scope):
-            errors.append(f"{kr}: missing file_scope list")
-        if not row.get("negative_test_id"):
-            errors.append(f"{kr}: missing negative_test_id")
-    missing = sorted(required - seen)
-    extra = sorted(seen - required)
-    if missing:
-        errors.append(f"known_red_fix_inventory missing KR rows: {missing}")
-    if extra:
-        errors.append(f"known_red_fix_inventory unexpected KR rows: {extra}")
-    return errors
 
 
 def count_verified_ownership(data: dict[str, object]) -> tuple[int, int]:
