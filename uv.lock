@@ -1351,11 +1351,11 @@ wheels = [
 
 [[package]]
 name = "fsspec"
-version = "2026.1.0"
+version = "2026.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d5/7d/5df2650c57d47c57232af5ef4b4fdbff182070421e405e0d62c6cdbfaa87/fsspec-2026.1.0.tar.gz", hash = "sha256:e987cb0496a0d81bba3a9d1cee62922fb395e7d4c3b575e57f547953334fe07b", size = 310496, upload-time = "2026-01-09T15:21:35.562Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/a1/ae4e3e5003468d6391d2c77b6fa1cd73bd5d13511d81c642d7b28ac90ed4/fsspec-2026.6.0.tar.gz", hash = "sha256:f5bac145310fe30e16e1471bd6840b2d990d609e872251d7e674241822abf01a", size = 313646, upload-time = "2026-06-16T01:57:28.105Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/c9/97cc5aae1648dcb851958a3ddf73ccd7dbe5650d95203ecb4d7720b4cdbf/fsspec-2026.1.0-py3-none-any.whl", hash = "sha256:cb76aa913c2285a3b49bdd5fc55b1d7c708d7208126b60f2eb8194fe1b4cbdcc", size = 201838, upload-time = "2026-01-09T15:21:34.041Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/22/4222d7ddf3da30f363edaa98e329c2bce6c65497c9cb2810931c8b2c0fbc/fsspec-2026.6.0-py3-none-any.whl", hash = "sha256:02e0b71817df9b2169dc30a16832045764def1191b43dcff5bb85bdee212d2a1", size = 203949, upload-time = "2026-06-16T01:57:26.358Z" },
 ]
 
 [[package]]
@@ -2108,7 +2108,7 @@ requires-dist = [
     { name = "cassandra-driver", marker = "extra == 'dev'", specifier = ">=3.29" },
     { name = "celery", marker = "extra == 'dev'", specifier = ">=5.3" },
     { name = "celery", marker = "extra == 'dev-ci'", specifier = ">=5.3" },
-    { name = "chardet", specifier = ">=5.2,<6" },
+    { name = "chardet", specifier = ">=5.2,<8" },
     { name = "chromadb", marker = "extra == 'vector-chroma'", specifier = "==1.4.1" },
     { name = "cohere", marker = "extra == 'llm-all'", specifier = ">=5.5,<6" },
     { name = "cohere", marker = "extra == 'llm-cohere-native'", specifier = ">=5.5,<6" },
@@ -2128,9 +2128,9 @@ requires-dist = [
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.3.1,<4" },
     { name = "google-auth", marker = "extra == 'dev'", specifier = ">=2.29" },
     { name = "google-cloud-spanner", marker = "extra == 'continuity-cloud'", specifier = ">=3.50,<4" },
-    { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3,<2" },
-    { name = "google-genai", marker = "extra == 'llm-gemini'", specifier = ">=0.3,<2" },
-    { name = "google-genai", marker = "extra == 'llm-vertex'", specifier = ">=0.3,<2" },
+    { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3,<4" },
+    { name = "google-genai", marker = "extra == 'llm-gemini'", specifier = ">=0.3,<4" },
+    { name = "google-genai", marker = "extra == 'llm-vertex'", specifier = ">=0.3,<4" },
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
     { name = "langchain-community", marker = "extra == 'parsing-office'", specifier = ">=0.3,<0.5" },
@@ -2215,7 +2215,7 @@ requires-dist = [
     { name = "sentry-sdk", marker = "extra == 'integrations-harness'", specifier = ">=2.0" },
     { name = "sentry-sdk", marker = "extra == 'integrations-sentry'", specifier = ">=2.0" },
     { name = "slack-sdk", marker = "extra == 'integrations-slack'", specifier = ">=3.33.4" },
-    { name = "starlette", specifier = ">=0.41,<1" },
+    { name = "starlette", specifier = ">=0.41,<2" },
     { name = "streamlit", marker = "extra == 'ui-streamlit'", specifier = ">=1.39,<2" },
     { name = "tiktoken", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'dev-unit-cert'", specifier = ">=0.7,<1" },
