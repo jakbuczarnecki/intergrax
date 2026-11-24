@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import sys
+import tempfile
+from pathlib import Path
 
 from intergrax.applications._shared.sandbox_wiring import (
     product_requires_sandbox,
@@ -16,6 +18,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     SandboxProfile,
 )
+
+
 def main() -> int:
     base = ApplicationEnvironmentProfile.product_defaults(
         tool_ids=["sandbox.exec", "workspace.write_file"],
@@ -24,15 +28,18 @@ def main() -> int:
         print("product_requires_sandbox must detect side-effect tools", file=sys.stderr)
         return 1
 
-    env = base.model_copy(update={"sandbox": SandboxProfile(enable_exec_tool=True)})
-    if wire_sandbox_sessions(env) is None:
-        print("wire_sandbox_sessions must return manager when sandbox profile set", file=sys.stderr)
-        return 1
+    with tempfile.TemporaryDirectory() as sandbox_tmp:
+        env = base.model_copy(
+            update={"sandbox": SandboxProfile(enable_exec_tool=True, root=Path(sandbox_tmp))},
+        )
+        if wire_sandbox_sessions(env) is None:
+            print("wire_sandbox_sessions must return manager when sandbox profile set", file=sys.stderr)
+            return 1
 
-    tool_profile = tool_profile_with_sandbox(env)
-    if "sandbox.exec" not in tool_profile.enabled:
-        print("tool_profile_with_sandbox must include sandbox.exec", file=sys.stderr)
-        return 1
+        tool_profile = tool_profile_with_sandbox(env)
+        if "sandbox.exec" not in tool_profile.enabled:
+            print("tool_profile_with_sandbox must include sandbox.exec", file=sys.stderr)
+            return 1
 
     no_tools = ApplicationEnvironmentProfile.product_defaults()
     if product_requires_sandbox(no_tools):
