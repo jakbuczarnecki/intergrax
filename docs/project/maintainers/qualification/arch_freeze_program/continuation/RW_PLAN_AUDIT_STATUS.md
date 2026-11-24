@@ -1,15 +1,17 @@
 # T-AF2-RW-PLAN-AUDIT — status raportu (RC-1)
 
-**Werdykt tej sesji:** `BLOCKED` (brak audytora niezależnego od implementera i od orchestratora wykonawczego).
+**Werdykt tej sesji (AR-12-07, niezależny audytor @ `ebe45c26930a9291a3df2d6a75028c35c036cee2`):** `PASS` (RM-03 strukturalny).
 
-**Zakres wymagany (MEP / plan kontynuacji):** jeden niezależny review fazy 3 na Appendix C macierzy FRZ oraz macierzy zadań AF-RC (ten plan kontynuacji po zatwierdzeniu operatora).
+**Cytat audytora (bez redakcji):**
 
-**Co może zrobić operator:** otworzyć **nową sesję Cursor** z rolą `independent_auditor`, worktree read-only od `development` (lub od HEAD po merge paczek RC-1), bez edycji product paths.
+```text
+AR-12-07 @ ebe45c26930a9291a3df2d6a75028c35c036cee2: RM-03 PASS — 20/20 known-red FIX inventory (owner_node/file_scope/negative_test_id), register mirror aligned, CODE_FIX_OWNERSHIP 39/39, REV-MASTER formal closeout recorded; RED_FIRST_EVIDENCE remains INCOMPLETE (not blocking).
+```
 
-**Nie jest blokadą implementacji równoległej na rozłącznych write setach (G1 embedding, G3 trust, …),** ale formalny `SCOPE` na trainie pozostaje `DONE_REQUALIFICATION_REQUIRED` do czasu PASS.
+**Mechanical replay @ audit SHA:** `python scripts/governance/verify_rw_plan_phase_check3.py` → `PLAN_STRUCTURE=PASS`, `CODE_FIX_OWNERSHIP=39/39`, `RED_FIRST_EVIDENCE=INCOMPLETE`, `RW_PLAN_AUDIT=NOT_PERFORMED` (mechanical validator does not substitute independent session).
 
-**Data:** 2026-11-21 (prep fala `af-dev-rw-plan` @ `e69e1ff5819b98c316377bcadf749f61fe00abc2`; werdykt **BLOCKED** bez zmian; wejście sesji: [`RW_PLAN_AUDIT_PREP_DOSSIER.md`](RW_PLAN_AUDIT_PREP_DOSSIER.md); ticket **T-IGX-050-N**)
+**Wejście:** [`RW_PLAN_AUDIT_EVIDENCE_INDEX.md`](RW_PLAN_AUDIT_EVIDENCE_INDEX.md) @ `ebe45c269…`
 
-**P-R0-6 (2026-11-24):** This tracked file **governs**. Autonomy packet 3 and mechanical validators may cite RW_PLAN_AUDIT=NOT_PERFORMED — that is **not** an independent audit PASS. **T-AF2-RW-PLAN-AUDIT must be re-run** in a separate independent_auditor session (AR-12-07) before any SCOPE closure claim. [T-IGX-073-E](../../../../../../governance/tickets/T-IGX-073-E.md) does not set audit PASS.
+**Data:** 2026-11-24 (Package B, worktree `af-pkg-b-rev`)
 
-**Otwarte pozycje RC-1:** [`RC1_OPEN_ITEMS_DEV.md`](RC1_OPEN_ITEMS_DEV.md) (RC1-J1).
+**Uwaga:** Ten wpis **nie** ustawia milestone `SCOPE` ani `ARCH_FREEZE_CLOSED`. RED_FIRST evidence completion pozostaje na ścieżce W2/W3.

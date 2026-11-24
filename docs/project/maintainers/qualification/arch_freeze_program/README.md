@@ -17,7 +17,8 @@ Published 2026-11-16 by ticket [`T-IGX-050-A`](../../../../../governance/tickets
 | [`PT_FRZ_RR_PATH_B_AMENDMENT.md`](./PT_FRZ_RR_PATH_B_AMENDMENT.md) | Architecture decision **AD-AF-PTFRZ-001** (AF-02B): PT-FRZ-RR Path B substitute substantive basis when WP-4 primary is absent; links AF-02A-G6 evidence at `aaabfc6c8…`. Record only — no FRZ promotion or node closure. |
 | [`PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md`](./PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md) | AF-02C formal disposition: `PT_FRZ_RR_CLOSED=YES`, `DS4_READY=YES`, digest credential for AF-02A-G6 session artefacts; no FRZ promotion. |
 | [DS4_DECISION_RECONCILIATION_RECORD.md](./DS4_DECISION_RECONCILIATION_RECORD.md) | AF-02D disposition: DS-4 chronology; Path B revalidation; DS4_DAG_COMPLETE=YES; no new session. |
-| [`REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md`](./REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md) | AF-02E disposition: RM-01..RM-08 reconciliation; SCOPE predecessor edges confirmed; formal REV-MASTER session still OPEN. |
+| [`REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md`](./REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md) | AF-02E disposition: RM-01..RM-08 reconciliation; SCOPE predecessor edges confirmed; formal closeout in [`REV_MASTER_FORMAL_CLOSEOUT_RECORD.md`](./REV_MASTER_FORMAL_CLOSEOUT_RECORD.md) (AF-02F). |
+| [`REV_MASTER_FORMAL_CLOSEOUT_RECORD.md`](./REV_MASTER_FORMAL_CLOSEOUT_RECORD.md) | AF-02F formal disposition: `REV_MASTER_CLOSED=YES`, `REV_MASTER_FORMAL_PASSED=YES` @ `51edb2a7c`; no SCOPE/G2 claim. |
 
 ## Provenance and handling
 

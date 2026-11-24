@@ -50,7 +50,7 @@ Totals: 28 rows. FIX 20, ENV 8, OUT 0, UNKNOWN 0. (P-R0-4 reclassified the forme
 
 1. **Hidden reds.** At baseline `gate-tests` aborted at collection (`5 skipped, 40 errors`), so no test body ran in that job. Any red behind KR-01 to KR-03 is unmeasured; the register must be re-measured once the collection errors are removed.
 2. **Not enumerated.** Only rows whose `nodes_kind` in the JSON is `node_ids` carry full pytest node ids (`files` means test modules, `partial` means some node ids are named, `none` means only a count or a class from the PDC handoff and debt register). Every other row needs enumeration before M3.
-3. **Owners.** Where the plan names no owner the row says UNASSIGNED; this draft assigns none.
+3. **Owners (FIX rows).** All 20 FIX rows carry `owner_node`, `file_scope`, and `negative_test_id` in [`known_red_register.v1.json`](known_red_register.v1.json) and [`rw_plan.v1.json`](rw_plan.v1.json) (`known_red_fix_inventory`). Rows stay red; this is planning only.
 4. **Product-path fixes** (KR-17 to KR-19 and any FIX row that needs a product change) are subject to the development hold and ACT-N11; they cannot land before the RW train.
 5. **S1.** `.tmp/session/arch-freeze/s1-diag/RESULT.md` exists and was read (KR-09 to KR-11). S1 is a non-certifying diagnostic by its own text.
 6. **Left out on purpose.** Reds already repaired (W-01 to W-04, Z-D1) and the green S1 steps are not listed. A repaired row that turns red again must be added.

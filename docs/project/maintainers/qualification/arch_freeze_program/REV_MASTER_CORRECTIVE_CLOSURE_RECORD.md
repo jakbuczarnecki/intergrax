@@ -19,7 +19,7 @@
 | `REV_MASTER_DAG_SCOPE_EDGES` | **YES** — `REV-MASTER`, `T-AF2-RW-PLAN`, `T-AF2-RW-PLAN-AUDIT` → `SCOPE` in published DAG |
 | `REV_MASTER_PHASE_CHECKS_PUBLISHED` | **YES** — WP12 validation table: acyclic, ENTRY 50/0, wave order OK |
 | `REV_MASTER_CORRECTIVE_COMPLETE` | **YES** |
-| `REV_MASTER_FORMAL_PASSED` | **NO** — independent session verdict not recorded in-repo |
+| `REV_MASTER_FORMAL_PASSED` | **YES** (2026-11-24, AF-02F) — [`REV_MASTER_FORMAL_CLOSEOUT_RECORD.md`](./REV_MASTER_FORMAL_CLOSEOUT_RECORD.md) |
 | `T_AF2_RW_PLAN_AUDIT_PASS` | **NO** — [`continuation/RW_PLAN_AUDIT_STATUS.md`](./continuation/RW_PLAN_AUDIT_STATUS.md) remains **BLOCKED** |
 
 ## R1 — RM-01..RM-08 reconciliation
@@ -70,4 +70,4 @@ Per [`WP12_DAG.md`](./WP12_DAG.md) row **SCOPE** and mermaid closure at AF-02E:
 | Whitespace | `git diff --check` | (run at commit) |
 | Ticket Ref | `python -m scripts.governance.igx_gov ticket` | (run at commit) |
 
-**NEXT_ACTION:** Open **REV-MASTER** independent review session when Architecture Authority requests formal W0 exit; keep **T-AF2-RW-PLAN** / **T-AF2-RW-PLAN-AUDIT** execution on critical path to **SCOPE** (audit remains **BLOCKED**).
+**NEXT_ACTION:** None for REV-MASTER formal closure (AF-02F). Proceed **T-AF2-RW-PLAN** completion and **T-AF2-RW-PLAN-AUDIT** (AR-12-07) on the SCOPE critical path.
