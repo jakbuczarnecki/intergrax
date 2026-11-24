@@ -21,7 +21,7 @@ dependencies = [
 [dependency-groups]
 # Used by Linux certification image / local application test runs — not production runtime.
 certification = [
-  "pytest>=8.4,<9",
+  "pytest>=8.4,<10",
   "pytest-asyncio>=0.23,<0.24",
 ]
 
