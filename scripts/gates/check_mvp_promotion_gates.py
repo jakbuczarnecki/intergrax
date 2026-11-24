@@ -135,7 +135,30 @@ class GateReport:
         return not self.structural_failures
 
 
-def run_gates(governance_ticket: str | None = None, root: Path = REPO_ROOT) -> GateReport:
+def promotion_ticket_authorization(
+    governance_ticket: str | None,
+    promotion_ticket: str | None,
+    root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if promotion_ticket is None:
+        return True, "no promotion-ticket binding required"
+    if governance_ticket is None:
+        return False, "promotion binding requires --governance-ticket"
+    gov = governance_ticket.strip().replace("\\", "/")
+    promo = promotion_ticket.strip().replace("\\", "/")
+    if gov != promo:
+        return False, f"governance ticket {gov!r} does not match promotion ticket {promo!r}"
+    gov_ok, gov_detail = governance_authorization(governance_ticket, root)
+    if not gov_ok:
+        return False, gov_detail
+    return True, f"promotion ticket matches authorized governance ticket {promo}"
+
+
+def run_gates(
+    governance_ticket: str | None = None,
+    promotion_ticket: str | None = None,
+    root: Path = REPO_ROOT,
+) -> GateReport:
     report = GateReport()
     gates = (
         ("G0", gate_g0_runnable, False),
@@ -149,10 +172,10 @@ def run_gates(governance_ticket: str | None = None, root: Path = REPO_ROOT) -> G
         report.lines.append(f"{gate_id}: {status}{tag} - {detail}")
         if not ok:
             report.structural_failures.append(gate_id)
-    gov_ok, gov_detail = governance_authorization(governance_ticket, root)
-    report.authorization_detail = gov_detail
+    promo_ok, promo_detail = promotion_ticket_authorization(governance_ticket, promotion_ticket, root)
+    report.authorization_detail = promo_detail
     # G1 is necessary evidence but never sufficient: authorization needs governance.
-    report.authorized = report.ready and gov_ok
+    report.authorized = report.ready and promo_ok
     return report
 
 
@@ -160,10 +183,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--with-doctor", action="store_true")
     parser.add_argument("--governance-ticket", default=None)
+    parser.add_argument(
+        "--promotion-ticket",
+        default=None,
+        help="Ticket that owns this promotion; must equal --governance-ticket when set.",
+    )
+    parser.add_argument(
+        "--repo-root",
+        default=None,
+        help="Repository root for structural gate checks (defaults to script parent tree).",
+    )
     parser.add_argument("--require-authorization", action="store_true")
     args = parser.parse_args()
 
-    report = run_gates(args.governance_ticket)
+    root = Path(args.repo_root) if args.repo_root else REPO_ROOT
+    report = run_gates(args.governance_ticket, args.promotion_ticket, root)
     for line in report.lines:
         print(line)
 
