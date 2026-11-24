@@ -103,7 +103,7 @@ Row count: 149
 | PT-WF | PARTIAL | T-IGX-043-J | NONE | CHECKPOINT.md L34 (dc083f6ea); CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-J=in_progress | N | SEC |
 | REV-MASTER | PARTIAL | - | NONE | REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md L22; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| SCOPE | UNK | - | NONE | DAG L85; ODR L54; continuation/RW_PLAN_AUDIT_STATUS.md L11,L13 (BLOCKED); no SCOPE PASS @dev 51edb2a7 (P-R0-A) | N | - |
+| SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 RM-03 PASS @ ebe45c26930a9291a3df2d6a75028c35c036cee2; continuation/RW_PLAN_AUDIT_STATUS.md; RED_FIRST INCOMPLETE; G2/FCS/M3 NOT SET | N | - |
 | T-AF2-BASELINE-PIN | DONE-FORMAL | - | 7960ae7f6 | LAD L25 (AUDIT_BASELINE_2 PINNED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | T-AF2-BND-CLOSURE | UNK | - | NONE | RC0 L59-73; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | BND |
 | T-AF2-CI-HEAD-RUN | PARTIAL | - | 43858457516 | GAP L52; KNOWN_RED_REGISTER.md L12; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | REG |

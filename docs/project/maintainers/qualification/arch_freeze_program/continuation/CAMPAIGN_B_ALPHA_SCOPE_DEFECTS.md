@@ -15,6 +15,10 @@
 
 B-1 defined cases: **0** defects (`incomplete=0/9`).
 
+## Package C consumer index
+
+Handoff defect IDs (ID-only; no reproduction steps): `DEF-CB-B2-S03-01`, `DEF-CB-B2-S03-02`, `DEF-CB-B2-S03-03`. Owner node PT-WF. Logs under `.tmp/session/arch-freeze/campaign-b-alpha/pkg-b-51edb2a/`.
+
 ## Disposition
 
 Does not set SCOPE, omega, or FCS. Feeds SCOPE predecessor PT-B02 alpha evidence only.
