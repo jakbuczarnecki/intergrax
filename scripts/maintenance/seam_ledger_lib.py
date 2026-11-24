@@ -368,6 +368,27 @@ def _path_in_scan_roots(rel_path: str, scan_roots: Sequence[str]) -> bool:
     return any(rel_path == root or rel_path.startswith(root + "/") for root in scan_roots)
 
 
+def _path_under_prefixes(rel_path: str, prefixes: Sequence[str]) -> bool:
+    return any(rel_path == prefix or rel_path.startswith(f"{prefix}/") for prefix in prefixes)
+
+
+def _missing_seam_source_in_scope(rule: Mapping[str, Any], source_path: str) -> bool:
+    scan_roots = [str(r) for r in rule.get("scan_roots") or [] if isinstance(r, str)]
+    if _path_in_scan_roots(source_path, scan_roots):
+        return False
+    jurisdiction = rule.get("missing_seam_jurisdiction_roots")
+    if jurisdiction is None:
+        return True
+    if not isinstance(jurisdiction, list) or not jurisdiction:
+        return False
+    jurisdiction_roots = [str(r) for r in jurisdiction if isinstance(r, str)]
+    if not _path_under_prefixes(source_path, jurisdiction_roots):
+        return False
+    excludes = rule.get("missing_seam_jurisdiction_exclude_prefixes") or []
+    exclude_prefixes = [str(e) for e in excludes if isinstance(e, str)]
+    return not _path_under_prefixes(source_path, exclude_prefixes)
+
+
 def detect_unregistered_cross_boundary_import(
     *,
     module: str,
@@ -385,6 +406,8 @@ def detect_unregistered_cross_boundary_import(
             continue
         denied = rule.get("denied_module_prefixes") or []
         if not any(isinstance(p, str) and _module_prefix_match(module, p) for p in denied):
+            continue
+        if not _missing_seam_source_in_scope(rule, source_path):
             continue
         governed = False
         for other in rules:
