@@ -111,6 +111,9 @@ def build_task_control_product_harness_host_runtime(
                 ),
             },
         )
+    env.observability_profile = env.observability_profile.model_copy(
+        update={"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"},
+    )
     manifest_for_runtime = manifest.model_copy(update={"environment": env})
     platform = build_reference_production_platform_persistence(
         db_path=tmp_path / "task-control-product-kv.db",
