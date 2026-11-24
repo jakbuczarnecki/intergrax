@@ -2108,7 +2108,7 @@ requires-dist = [
     { name = "cassandra-driver", marker = "extra == 'dev'", specifier = ">=3.29" },
     { name = "celery", marker = "extra == 'dev'", specifier = ">=5.3" },
     { name = "celery", marker = "extra == 'dev-ci'", specifier = ">=5.3" },
-    { name = "chardet", specifier = ">=5.2,<6" },
+    { name = "chardet", specifier = ">=5.2,<8" },
     { name = "chromadb", marker = "extra == 'vector-chroma'", specifier = "==1.4.1" },
     { name = "cohere", marker = "extra == 'llm-all'", specifier = ">=5.5,<6" },
     { name = "cohere", marker = "extra == 'llm-cohere-native'", specifier = ">=5.5,<6" },
@@ -2128,9 +2128,9 @@ requires-dist = [
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.3.1,<4" },
     { name = "google-auth", marker = "extra == 'dev'", specifier = ">=2.29" },
     { name = "google-cloud-spanner", marker = "extra == 'continuity-cloud'", specifier = ">=3.50,<4" },
-    { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3,<2" },
-    { name = "google-genai", marker = "extra == 'llm-gemini'", specifier = ">=0.3,<2" },
-    { name = "google-genai", marker = "extra == 'llm-vertex'", specifier = ">=0.3,<2" },
+    { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3,<4" },
+    { name = "google-genai", marker = "extra == 'llm-gemini'", specifier = ">=0.3,<4" },
+    { name = "google-genai", marker = "extra == 'llm-vertex'", specifier = ">=0.3,<4" },
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
     { name = "langchain-community", marker = "extra == 'parsing-office'", specifier = ">=0.3,<0.5" },
@@ -2215,7 +2215,7 @@ requires-dist = [
     { name = "sentry-sdk", marker = "extra == 'integrations-harness'", specifier = ">=2.0" },
     { name = "sentry-sdk", marker = "extra == 'integrations-sentry'", specifier = ">=2.0" },
     { name = "slack-sdk", marker = "extra == 'integrations-slack'", specifier = ">=3.33.4" },
-    { name = "starlette", specifier = ">=0.41,<1" },
+    { name = "starlette", specifier = ">=0.41,<2" },
     { name = "streamlit", marker = "extra == 'ui-streamlit'", specifier = ">=1.39,<2" },
     { name = "tiktoken", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'dev-unit-cert'", specifier = ">=0.7,<1" },
@@ -4252,11 +4252,11 @@ wheels = [
 
 [[package]]
 name = "pyasn1"
-version = "0.6.2"
+version = "0.6.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fe/b6/6e630dff89739fcd427e3f72b3d905ce0acb85a45d4ec3e2678718a3487f/pyasn1-0.6.2.tar.gz", hash = "sha256:9b59a2b25ba7e4f8197db7686c09fb33e658b98339fadb826e9512629017833b", size = 146586, upload-time = "2026-01-16T18:04:18.534Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/7e/3c0da41061a2021cac7cd524fd57092adbe5b515e8bf9005702e366802e2/pyasn1-0.6.5.tar.gz", hash = "sha256:6b11616a6bcf3a40e635f082bb232fa57b5e0dd7f517bd7ddd69ec3794508a47", size = 155152, upload-time = "2026-10-27T06:32:49.125Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/b5/a96872e5184f354da9c84ae119971a0a4c221fe9b27a4d94bd43f2596727/pyasn1-0.6.2-py3-none-any.whl", hash = "sha256:1eb26d860996a18e9b6ed05e7aae0e9fc21619fcee6af91cca9bad4fbea224bf", size = 83371, upload-time = "2026-01-16T18:04:17.174Z" },
+    { url = "https://files.pythonhosted.org/packages/19/1f/3eefd5c84c35cae44549ce1c7f7e58f7945b34f5a6bce07a135438522073/pyasn1-0.6.5-py3-none-any.whl", hash = "sha256:4017b0fce125096b8573b39c989fdb1a4b19cf761e683398184550fea0e66587", size = 84807, upload-time = "2026-10-27T06:32:48.045Z" },
 ]
 
 [[package]]
