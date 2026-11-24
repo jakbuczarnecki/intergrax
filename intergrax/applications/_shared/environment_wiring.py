@@ -401,7 +401,11 @@ def wire_application_environment(
             },
         )
 
-    memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    memory_wiring = resolve_memory_platform_wiring(
+        env,
+        integration_profile=resolved_integration,
+        tenant_id=normalized_tenant_id,
+    )
     assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
     from intergrax.applications._shared.memory_wiring import (
         build_session_manager_from_environment,
