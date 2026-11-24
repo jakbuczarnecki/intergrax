@@ -99,7 +99,7 @@ quality = [
 ]
 # Offline dataset tooling for platform_proofs/scenarios/verified_product_identification.
 platform-proofs-vpi-dataset = [
-  "pyarrow>=18,<22",
+  "pyarrow>=18,<24",
 ]
 
 [tool.uv]
