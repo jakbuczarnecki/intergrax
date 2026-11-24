@@ -1,0 +1,25 @@
+{
+  "schema": "campaign_b_w2_manifest.v1",
+  "b1_baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "diagnostic_sha_default": "HEAD",
+  "b1_cases": [
+    {"case_id": "R00", "contract": "AB-05", "command": "python scripts/governance/verify_arch_freeze_plan_traceability.py", "read_only": true},
+    {"case_id": "R01a", "contract": "AB-05", "command": "python scripts/governance/verify_rw_plan_phase_check3.py", "read_only": true},
+    {"case_id": "R02", "contract": "AB-05", "command": "python -m pytest tests/unit/governance/test_arch_freeze_plan_traceability.py -q --tb=line", "read_only": true},
+    {"case_id": "R03", "contract": "AB-06", "command": "python scripts/governance/arch_freeze_b1_closed_world_inventory.py --report-only --output-dir .tmp/session/w2-recovery-01/b1/closed-world", "read_only": true},
+    {"case_id": "R05", "contract": "AB-07", "command": "python scripts/governance/lint_iiac_closure_regex.py", "read_only": true},
+    {"case_id": "R09", "contract": "AB-09", "command": "python -m pytest tests/qualification/tenant_x/test_tenant_x_p0_fast.py -q --tb=line", "read_only": true},
+    {"case_id": "R11", "contract": "AB-09", "command": "python -m pytest tests/qualification/trace_x/test_trace_x_p0_baseline.py -q --tb=line", "read_only": true},
+    {"case_id": "R14", "contract": "AB-09", "command": "python -m pytest tests/qualification/state_x/test_state_x_p0_baseline.py -q --tb=line", "read_only": true},
+    {"case_id": "R17", "contract": "AB-11", "command": "python scripts/qualification/render_ebh7_f10_normative_matrix.py --check", "read_only": true}
+  ],
+  "b2_cases": [
+    {"case_id": "R20", "contract": "AB-10", "command": "python scripts/governance/verify_rw_plan_phase_check3.py", "read_only": true},
+    {"case_id": "R21", "contract": "AB-10", "command": "python scripts/governance/verify_arch_freeze_plan_traceability.py", "read_only": true},
+    {"case_id": "R22", "contract": "AB-10", "command": "python -m pytest tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py -q --tb=line", "read_only": true},
+    {"case_id": "R23", "contract": "AB-10", "command": "python scripts/docs/check_docs_domain_pairs.py", "read_only": true},
+    {"case_id": "S01", "contract": "AB-10", "command": "python -m pytest tests/unit/architecture/test_ebh_2d_d_application_contract_surface_recertification.py::test_whole_surface_forbids_contract_to_implementation_edges -q --tb=line", "read_only": true},
+    {"case_id": "S02", "contract": "AB-10", "command": "python -m pytest tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py -q --tb=line", "read_only": true},
+    {"case_id": "S03", "contract": "AB-10", "command": "python -m pytest tests/qualification/harness_01 -q --maxfail=3 --tb=line", "read_only": true}
+  ]
+}
