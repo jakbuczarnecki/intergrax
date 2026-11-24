@@ -3,7 +3,7 @@
 Packet: P-R0-A (factual recount). Prior packet: P-R0-3W draft (2026-11-24).
 DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
 
-**Recount pins (2026-11-24):** `origin/development` = `51edb2a7c3399cc03f82173b255602efcb208ecf`; `origin/arch-freeze/rw-train` = `be0ce70d39b0d811e96177410ac5f9d27c770c5c`. Local `arch-freeze/rw-train` ref may be stale â€” use `origin/` only.
+**Recount pins (2026-11-24, PT-Q02 audit delta):** `origin/development` = `c9ce6175f9a0da6a1dec622c4e4bb4b81683ea4e`; `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a`. Local `arch-freeze/rw-train` ref may be stale â€” use `origin/` only.
 
 Status vocabulary: `DONE-FORMAL`, `REQ`, `PARTIAL`, `UNK`, `OPEN`, `VOID` (optional DAG nodes not activated).
 REQ flag: `Y` iff status is `REQ`. SHA: acceptance or merge SHA when cited in tracked evidence; otherwise `NONE`.
@@ -47,7 +47,7 @@ Row count: 149
 | PT-D05 | REQ | T-IGX-042-C | NONE | WBS L36; MEP L519 (#606); @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-042-C=plan_approved | Y | DOC |
 | PT-D06 | UNK | T-IGX-046-B | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-D07 | REQ | T-IGX-042-B | NONE | WBS L36; MEP L519 (#608); @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-042-B=plan_approved | Y | DOC |
-| PT-D08 | REQ | T-IGX-046-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-046-D=plan_approved | Y | - |
+| PT-D08 | REQ | T-IGX-046-D | 397580bfe | PR #665 merge (agents/README.md, neo4j/USAGE.md); git log origin/arch-freeze/rw-train; @train e9bebe0ac; T-IGX-046-D=plan_approved | Y | - |
 | PT-D09 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-D10 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | PRD |
 | PT-D11 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
@@ -61,8 +61,8 @@ Row count: 149
 | PT-E05 | REQ | T-IGX-044-F | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-044-F=plan_approved | Y | - |
 | PT-FC1 | REQ | T-IGX-043-A/N | 65ef1f196 | PR #680 train merge SHA; CHECKPOINT.md L120 (#680); CHECKPOINT header stale (e69e1ff58) â€” P-R0-A annex; T-IGX-043-A=plan_approved; @dev 51edb2a7 / train be0ce70d (P-R0-A) | Y | PRD |
 | PT-FC2 | PARTIAL | T-IGX-043-B/E | 711ee4a11 | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-B=quality_gate | N | REL |
-| PT-FC3 | PARTIAL | T-IGX-043-C/F | NONE | CHECKPOINT.md L33 (413fb9186); RC0 L44-55; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-C=plan_approved | N | PRD |
-| PT-FC4 | REQ | T-IGX-043-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-D=plan_approved | Y | - |
+| PT-FC3 | PARTIAL | T-IGX-043-C/F | c443865e9 | PR #688 @ train; vision follow-up PR #812 e9bebe0ac; dev regression 413fb9186 cite-only; @train e9bebe0ac; T-IGX-043-C=plan_approved | N | PRD |
+| PT-FC4 | REQ | T-IGX-043-D | 33a91bfdd | PR #668 merge intergrax/skills/execution_pinning_durability.py; git log origin/arch-freeze/rw-train; @train e9bebe0ac; T-IGX-043-D=plan_approved | Y | - |
 | PT-FRZ-RR | DONE-FORMAL | T-IGX-073-A/B/C | aaabfc6c8 | PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md L11,L23,L24; ODR L95; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-073-A=closed | N | all FRZ rows |
 | PT-G01 | PARTIAL | T-IGX-046-H | NONE | T-IGX-046-H L56-58; CHECKPOINT.md L134; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-046-H=plan_pending | N | BND |
 | PT-G02 | PARTIAL | T-IGX-046-G | NONE | T-IGX-046-G L15-17; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-046-G=draft | N | OWN, CTR, PLG |
@@ -100,7 +100,7 @@ Row count: 149
 | PT-WB | PARTIAL | T-IGX-043-H | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-H=plan_approved | N | OWN |
 | PT-WD | PARTIAL | T-IGX-043-I/M | NONE | CHECKPOINT.md L40; RC0 L20-32; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-I=plan_approved | N | - |
 | PT-WE | VOID | - | NONE | DAG L104 (OPTIONAL, conditional on DP-43/RA-1); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
-| PT-WF | PARTIAL | T-IGX-043-J | NONE | CHECKPOINT.md L34 (dc083f6ea); CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-J=in_progress | N | SEC |
+| PT-WF | PARTIAL | T-IGX-043-J | db69a9e44 | G-09 product e6b1d97f7 via PR #718; E2-E4 absent @ train (PLAN_T-IGX-043-J, DEF_CB_B2_S03_PT_WF_DISPOSITION.md); dev dc083f6ea not on train; T-IGX-043-J=in_progress | N | SEC |
 | REV-MASTER | PARTIAL | - | NONE | REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md L22; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 RM-03 PASS @ ebe45c26930a9291a3df2d6a75028c35c036cee2; continuation/RW_PLAN_AUDIT_STATUS.md; RED_FIRST INCOMPLETE; G2/FCS/M3 NOT SET | N | - |
@@ -129,8 +129,8 @@ Row count: 149
 | T-AF2-RW-RECOVERY | PARTIAL | T-IGX-051-E | NONE | RC0 L34-42; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-E=plan_approved | N | REL |
 | T-AF2-RW-RUNTIME | REQ | T-IGX-051-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-D=plan_approved | Y | CTR, REL |
 | T-AF2-RW-SUPPLY | REQ | T-IGX-051-B/N | 711ee4a11 | CHECKPOINT.md L120-124; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-B=plan_approved | Y | PLG, SEC |
-| T-AF2-RW-TENANT | UNK | T-IGX-051-A | NONE | CHECKPOINT.md L131; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-A=plan_approved | N | SEC |
-| T-AF2-RW-TRUST | PARTIAL | T-IGX-051-C | NONE | CHECKPOINT.md L35; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-C=in_progress | N | SEC |
+| T-AF2-RW-TENANT | UNK | T-IGX-051-A | 876af7e5d | PR #811 partial slice only (full A1 write set absent @ e9bebe0ac); git log origin/arch-freeze/rw-train; T-IGX-051-A=plan_approved | N | SEC |
+| T-AF2-RW-TRUST | PARTIAL | T-IGX-051-C | dbaebfa8c | Trust slices via PR #699 train-sync (e28de385f); NT-TRUST-06 trace @ 26b6115a1 (#717); T-IGX-051-C=in_progress | N | SEC |
 | T-AF2-RW-TYP | UNK | T-IGX-051-G | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | TYP |
 | T-AF2-SSOT-RECONCILE-A | REQ | T-IGX-050-A | NONE | GAP L41 (merged PR #613); @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-050-A=plan_approved | Y | - |
 | T-AF2-SSOT-RECONCILE-B | UNK | T-IGX-050-A2 | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
