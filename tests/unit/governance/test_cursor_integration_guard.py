@@ -206,3 +206,43 @@ def _skip_push_precheck(monkeypatch):
 )
 def test_guard_allows_scoped_development_push(cmd: str) -> None:
     assert _permission(cmd) == "allow", cmd
+
+
+def test_development_push_resolves_shell_cwd_and_explicit_checkout(monkeypatch, tmp_path):
+    seen = []
+    monkeypatch.setattr(guard, "validate_development_push", lambda root: seen.append(root) or None)
+    cwd = tmp_path / "workspace"
+    for command, expected in [
+        ("git push origin development", cwd),
+        ('git -C "checkout with spaces" push origin development', cwd / "checkout with spaces"),
+        (f'git -C "{tmp_path}" push origin development', tmp_path),
+    ]:
+        assert guard.decide({"command": command, "cwd": str(cwd)})["permission"] == "allow"
+        assert seen[-1] == expected
+
+
+def test_development_push_falls_back_to_actual_process_cwd(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    seen = []
+    monkeypatch.setattr(guard, "validate_development_push", lambda root: seen.append(root) or None)
+    assert _permission("git push origin development") == "allow"
+    assert seen == [tmp_path]
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git -c core.hooksPath=x push origin development",
+        "git --git-dir=x --work-tree=y push origin development",
+        "git -C x -C y push origin development",
+        "git push --no-verify origin development",
+        "Set-Location D:/other; git push origin development",
+        "git status && git push origin development",
+        "git push origin development; git push origin development",
+    ],
+)
+def test_push_rejects_ambiguous_context_or_unapproved_options(monkeypatch, cmd):
+    monkeypatch.setattr(
+        guard, "validate_development_push", lambda _: pytest.fail("invalid command must not reach preflight")
+    )
+    assert _permission(cmd) == "deny"

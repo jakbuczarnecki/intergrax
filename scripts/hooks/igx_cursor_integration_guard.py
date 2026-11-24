@@ -24,7 +24,6 @@ _spec.loader.exec_module(_push)
 push_target_is_allowed_development = _push.push_target_is_allowed_development
 validate_development_push = _push.validate_development_push
 
-_REPO = Path(__file__).resolve().parents[2]
 _VALUE = r"""(?:"[^"]*"|'[^']*'|[^\s;&|"'-][^\s;&|]*)"""
 _OPTS = rf"(?:\s+-[^\s;&|]*(?:\s+{_VALUE})?)*"
 _GIT = rf"""\b(?i:git(?:\.exe|\.cmd)?)["']?{_OPTS}"""
@@ -55,7 +54,11 @@ BANNED = (
 _GH_API_TAIL = re.compile(_GH + _sub("api") + rf"({_SEG})")
 _FIELD = re.compile(r"\s(?:-[fF]|--field\b|--raw-field\b|--input\b)")
 _EXPLICIT_READ = re.compile(r"""(?:\s-X\s*|\s--method(?:\s+|=))["']?(?i:GET|HEAD)\b""")
-_REPO_FLAG = re.compile(rf"""(?i:(?:^|[\s;&|])(?:git(?:\.exe|\.cmd)?["']?{_OPTS}\s+)?)-[Cc]\s+({_VALUE})""")
+# A direct development push accepts no Git global overrides except a single -C.
+# This excludes -c, --git-dir and --work-tree, which could change the checked repository.
+_DIRECT_PUSH_PREFIX = re.compile(
+    rf"""(?i:git(?:\.exe|\.cmd)?)["']?(?:\s+-C\s+({_VALUE}))?\s+["']?push["']?\s*$"""
+)
 
 
 def _gh_api_implicit_post(cmd: str) -> bool:
@@ -81,17 +84,21 @@ def _strip_quotes(value: str) -> str:
     return text
 
 
-def _repo_root(cmd: str) -> Path:
-    match = _REPO_FLAG.search(cmd)
-    if match:
-        return Path(_strip_quotes(match.group(1)))
-    return _REPO
+def _repo_root(prefix: str, cwd: Path) -> Path | None:
+    match = _DIRECT_PUSH_PREFIX.fullmatch(prefix)
+    if match is None:
+        return None
+    if match.group(1):
+        path = Path(_strip_quotes(match.group(1)))
+        return path if path.is_absolute() else cwd / path
+    return cwd
 
 
-def _push_denial(cmd: str) -> dict[str, str] | None:
+def _push_denial(cmd: str, cwd: Path) -> dict[str, str] | None:
     if os.environ.get("IGX_HOOKS", "").strip().lower() == "off":
         return None
-    for segment in re.split(r"[;&|]", cmd):
+    segments = re.split(r"[;&|\n]", cmd)
+    for segment in segments:
         piece = segment.strip()
         if not piece:
             continue
@@ -112,7 +119,23 @@ def _push_denial(cmd: str) -> dict[str, str] | None:
                     "from branch development is allowed in Cursor direct mode."
                 ),
             }
-        reason = validate_development_push(_repo_root(cmd))
+        # Do not guess the execution directory of a compound shell command.
+        # A standalone git -C <checkout> push is deterministic and works from any session.
+        if len([part for part in segments if part.strip()]) != 1:
+            return {
+                "permission": "deny",
+                "user_message": (
+                    "Run the authorized development push as one standalone command: "
+                    "git -C <checkout> push origin development."
+                ),
+            }
+        root = _repo_root(piece[match.start() : match.end()], cwd)
+        if root is None:
+            return {
+                "permission": "deny",
+                "user_message": "Unsupported Git global options; use git -C <checkout> push origin development.",
+            }
+        reason = validate_development_push(root)
         if reason:
             return {"permission": "deny", "user_message": reason}
     return None
@@ -122,7 +145,9 @@ def decide(value: object) -> dict[str, str]:
     if not isinstance(value, dict) or not isinstance(value.get("command"), str):
         return {"permission": "deny", "user_message": "Cursor integration hook received invalid shell payload."}
     cmd = _normalize(value["command"])
-    push_block = _push_denial(cmd)
+    raw_cwd = value.get("cwd")
+    cwd = Path(raw_cwd) if isinstance(raw_cwd, str) and raw_cwd else Path.cwd()
+    push_block = _push_denial(cmd, cwd)
     if push_block:
         return push_block
     if any(pattern.search(cmd) for pattern in BANNED) or _gh_api_implicit_post(cmd):

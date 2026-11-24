@@ -6,15 +6,11 @@
 from __future__ import annotations
 
 import os
-import re
+import shutil
 import subprocess
-import sys
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parents[2]
-_REF_DEVELOPMENT = re.compile(r"^refs/heads/development$", re.IGNORECASE)
-_SAFE_TAIL = re.compile(r"^\s*(?:-[A-Za-z][\w-]*(?:\s+=\s+[^\s;&|]+|\s+[^\s;&|-][^\s;&|]*)?)*\s*")
-_ALLOWED_REMOTE = "origin"
+_ALLOWED_REFS = frozenset({"development", "refs/heads/development", "HEAD:refs/heads/development"})
 
 
 def _truthy_env(name: str) -> bool:
@@ -38,33 +34,43 @@ def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 def push_target_is_allowed_development(push_tail: str) -> bool:
     """Return True when the refspec targets only ``origin`` → ``development`` (no force)."""
-    tail = push_tail.strip()
-    if not tail or tail.startswith("-") and not tail.startswith("--"):
-        return False
-    if re.search(r"(?i)(?:^|\s)(?:\+|--force\b|--force-with-lease\b)", tail):
-        return False
-    if re.search(r"(?i)\b(?:--all|--tags|--mirror)\b", tail):
-        return False
-    tokens = [t for t in re.split(r"\s+", _SAFE_TAIL.sub("", tail).strip()) if t]
-    if not tokens or tokens[0].lower() != _ALLOWED_REMOTE:
-        return False
-    if len(tokens) == 1:
-        return False
-    refspecs = tokens[1:]
-    for spec in refspecs:
-        if spec.startswith(":") or spec.endswith(":"):
-            return False
-        if ":" in spec:
-            _local, remote = spec.split(":", 1)
-            remote = remote.strip()
-            if remote and not _REF_DEVELOPMENT.fullmatch(remote):
-                return False
-            if _local.upper() == "HEAD" and (not remote or _REF_DEVELOPMENT.fullmatch(remote)):
-                continue
-            return False
-        if spec.lower() != "development" and not _REF_DEVELOPMENT.fullmatch(spec):
-            return False
-    return True
+    tokens = push_tail.split()
+    # Only the documented, single-ref form. In particular, never allow --no-verify,
+    # arbitrary options, multiple refspecs, or refspecs that change the destination.
+    return len(tokens) == 2 and tokens[0] == "origin" and tokens[1] in _ALLOWED_REFS
+
+
+def _uv_executable() -> str | None:
+    executable = shutil.which("uv")
+    if executable:
+        return executable
+    # Match the Windows Git pre-push hook's PATH recovery without changing global PATH.
+    homes = [Path.home()]
+    if os.environ.get("USERPROFILE"):
+        homes.append(Path(os.environ["USERPROFILE"]))
+    for home in homes:
+        for name in ("uv.exe", "uv"):
+            candidate = home / ".local" / "bin" / name
+            if candidate.is_file():
+                return str(candidate)
+    return None
+
+
+def _run_gate(root: Path, uv: str, script: str, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [uv, "run", "--no-sync", "--project", str(root), "python", str(root / script), *args],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
+def _gate_failure(name: str, result: subprocess.CompletedProcess[str]) -> str:
+    details = (result.stderr + "\n" + result.stdout).strip()
+    return f"{name} failed (exit {result.returncode}): {details[-1200:] or 'no diagnostic output'}"
 
 
 def validate_development_push(repo: Path | None = None) -> str | None:
@@ -73,7 +79,18 @@ def validate_development_push(repo: Path | None = None) -> str | None:
         return None
     if _truthy_env("IGX_CURSOR_PUSH_PRECHECK_SKIP"):
         return None
-    root = repo or _REPO
+    checkout = repo or Path.cwd()
+    try:
+        top = _run_git(checkout, "rev-parse", "--show-toplevel")
+        if top.returncode != 0 or not top.stdout.strip():
+            return "Cursor push preflight: cannot resolve Git checkout from the shell working directory."
+        root = Path(top.stdout.strip()).resolve()
+        return _validate_checkout(root)
+    except (OSError, ValueError) as exc:
+        return f"Cursor push preflight could not execute: {exc}"
+
+
+def _validate_checkout(root: Path) -> str | None:
     sym = _run_git(root, "symbolic-ref", "HEAD")
     if sym.returncode != 0:
         return "Cannot resolve current branch (detached HEAD?)."
@@ -101,23 +118,24 @@ def validate_development_push(repo: Path | None = None) -> str | None:
             "Fetch and reconcile — force push is not allowed."
         )
 
-    ref_gate = subprocess.run(
-        [sys.executable, str(root / "scripts/governance/verify_commit_ticket_refs.py"), "--mode", "push"],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
+    uv = _uv_executable()
+    if uv is None:
+        return "Cursor push preflight: uv not found on PATH or in the user .local/bin directory."
+    # Use the same project environment as the actual Git pre-push hook; the hook
+    # launcher itself may be a system Python without PyYAML or other dependencies.
+    ref_gate = _run_gate(
+        root,
+        uv,
+        "scripts/governance/verify_commit_ticket_refs.py",
+        "--ci",
+        "--mode",
+        "range",
+        "--rev-range",
+        f"{origin.stdout.strip()}..{head.stdout.strip()}",
     )
     if ref_gate.returncode != 0:
-        detail = (ref_gate.stderr or ref_gate.stdout or "").strip().splitlines()
-        hint = detail[-1] if detail else "verify_commit_ticket_refs failed"
-        return f"Ticket Ref gate failed: {hint}"
-
-    policy = subprocess.run(
-        [sys.executable, str(root / "scripts/governance/validate_policy_registry.py")],
-        cwd=root,
-        check=False,
-    )
+        return _gate_failure("Ticket Ref gate", ref_gate)
+    policy = _run_gate(root, uv, "scripts/governance/validate_policy_registry.py")
     if policy.returncode != 0:
-        return "Policy registry validation failed before push."
+        return _gate_failure("Policy registry validation", policy)
     return None
