@@ -1,18 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.experiments.models import ExperimentDecision, RegisterExperimentRequest
 from intergrax.experiments.workflow import (
     ExperimentSession,
-    evaluate_against_criteria,
     ensure_repo_root_on_path,
+    evaluate_against_criteria,
 )
-from testing_support.agent_registry_bootstrap import build_harness_registry
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.runtime.task.task import TaskResult, TaskState
+from testing_support.agent_registry_bootstrap import build_harness_registry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -66,6 +65,173 @@ async def test_experiment_session_echo_workflow(tmp_path):
         ExperimentDecision.KEEP,
         notes="gate test",
     )
+    assert decided.decision == ExperimentDecision.KEEP
+
+
+@pytest.fixture
+def two_tenant_experiment_store(tmp_path):
+    from intergrax.experiments.store import SQLiteExperimentStore
+
+    db = tmp_path / "experiments.db"
+    store = SQLiteExperimentStore(db_path=db)
+    record_a = store.register(
+        RegisterExperimentRequest(
+            tenant_id="tenant-a",
+            hypothesis="hypothesis-a",
+            capability="echo.basic",
+            agent_id="echo",
+        )
+    )
+    record_b = store.register(
+        RegisterExperimentRequest(
+            tenant_id="tenant-b",
+            hypothesis="hypothesis-b",
+            capability="echo.basic",
+            agent_id="echo",
+        )
+    )
+    return store, record_a, record_b
+
+
+def test_wf_session_registration_binds_implicit_tenant(two_tenant_experiment_store) -> None:
+    store, _, _ = two_tenant_experiment_store
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    record = session.register(
+        RegisterExperimentRequest(
+            hypothesis="implicit tenant",
+            capability="echo.basic",
+        )
+    )
+    assert record.tenant_id == "tenant-a"
+
+
+def test_wf_session_registration_rejects_foreign_tenant(two_tenant_experiment_store) -> None:
+    store, _, _ = two_tenant_experiment_store
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(ValueError, match="not authorized"):
+        session.register(
+            RegisterExperimentRequest(
+                tenant_id="tenant-b",
+                hypothesis="foreign",
+                capability="echo.basic",
+            )
+        )
+
+
+def test_wf_session_decide_rejects_foreign_experiment(two_tenant_experiment_store) -> None:
+    store, _, record_b = two_tenant_experiment_store
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(ValueError, match="not found"):
+        session.decide(record_b.experiment_id, ExperimentDecision.KEEP)
+
+
+def test_wf_session_link_run_rejects_foreign_experiment(two_tenant_experiment_store) -> None:
+    store, _, record_b = two_tenant_experiment_store
+    session = ExperimentSession(experiment_store=store, tenant_id="tenant-a")
+    with pytest.raises(ValueError, match="not found"):
+        session.link_run(record_b.experiment_id, "run-foreign")
+    unchanged = store.get(record_b.experiment_id, tenant_id="tenant-b")
+    assert unchanged.run_ids == []
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_rejects_foreign_record_before_execution(
+    two_tenant_experiment_store,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    store, _, record_b = two_tenant_experiment_store
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    run_called = {"count": 0}
+    original = UnifiedTaskRunner.run_task
+
+    async def guarded(self, *args, **kwargs):
+        run_called["count"] += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(UnifiedTaskRunner, "run_task", guarded)
+    with pytest.raises(ValueError, match="not authorized"):
+        await session.run(loop=loop, record=record_b, message="hello")
+    assert run_called["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_rejects_forged_record_identity(
+    two_tenant_experiment_store,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    store, record_a, _ = two_tenant_experiment_store
+    forged = record_a.model_copy(update={"capability": "forged.capability"})
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    run_called = {"count": 0}
+    original = UnifiedTaskRunner.run_task
+
+    async def guarded(self, *args, **kwargs):
+        run_called["count"] += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(UnifiedTaskRunner, "run_task", guarded)
+    with pytest.raises(ValueError, match="persisted experiment identity"):
+        await session.run(loop=loop, record=forged, message="hello")
+    assert run_called["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_wf_session_run_uses_authoritative_persisted_record(
+    two_tenant_experiment_store,
+    tmp_path,
+) -> None:
+
+    store, record_a, _ = two_tenant_experiment_store
+    caller_record = record_a.model_copy(update={"agent_id": None})
+    session = ExperimentSession(
+        experiment_store=store,
+        trace_db=tmp_path / "trace.db",
+        tenant_id="tenant-a",
+    )
+    loop = session.build_nexus_loop(build_harness_registry())
+    outcome = await session.run(
+        loop=loop,
+        record=caller_record,
+        message="hello authoritative",
+    )
+    assert outcome.passed
+    assert outcome.record.agent_id == "echo"
+
+
+def test_wf_session_matching_tenant_preserves_workflow(two_tenant_experiment_store, tmp_path) -> None:
+    store, record_a, _ = two_tenant_experiment_store
+    session = ExperimentSession(
+        experiment_store=store,
+        experiments_db=tmp_path / "unused.db",
+        tenant_id="tenant-a",
+    )
+    explicit = session.register(
+        RegisterExperimentRequest(
+            tenant_id="tenant-a",
+            hypothesis="explicit ok",
+            capability="echo.basic",
+        )
+    )
+    assert explicit.tenant_id == "tenant-a"
+    linked = session.link_run(record_a.experiment_id, "run-a-1")
+    assert "run-a-1" in linked.run_ids
+    decided = session.decide(record_a.experiment_id, ExperimentDecision.KEEP, notes="ok")
     assert decided.decision == ExperimentDecision.KEEP
 
 

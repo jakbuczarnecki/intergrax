@@ -73,6 +73,43 @@ class ExperimentRunOutcome(BaseModel):
         return bool(self.checks) and all(self.checks.values())
 
 
+def _require_non_empty_tenant_id(tenant_id: str) -> str:
+    resolved = (tenant_id or "").strip()
+    if not resolved:
+        raise ValueError("ExperimentSession requires a non-empty tenant_id")
+    return resolved
+
+
+def _resolve_register_tenant(session_tenant: str, request_tenant: str) -> str:
+    requested = (request_tenant or "").strip()
+    if not requested:
+        return session_tenant
+    if requested != session_tenant:
+        raise ValueError(
+            f"RegisterExperimentRequest tenant_id {requested!r} is not authorized for session {session_tenant!r}"
+        )
+    return session_tenant
+
+
+def _assert_record_tenant_authorized(session_tenant: str, record: ExperimentRecord) -> None:
+    record_tenant = (record.tenant_id or "").strip()
+    if not record_tenant:
+        raise ValueError("ExperimentRecord tenant_id must not be empty")
+    if record_tenant != session_tenant:
+        raise ValueError(
+            f"ExperimentRecord tenant_id {record_tenant!r} is not authorized for session {session_tenant!r}"
+        )
+
+
+def _assert_record_matches_persisted(record: ExperimentRecord, authoritative: ExperimentRecord) -> None:
+    if record.capability != authoritative.capability or record.hypothesis != authoritative.hypothesis:
+        raise ValueError("Supplied ExperimentRecord does not match persisted experiment identity")
+    if record.agent_id is not None and record.agent_id != authoritative.agent_id:
+        raise ValueError("Supplied ExperimentRecord does not match persisted experiment identity")
+    if record.expected_output and record.expected_output != authoritative.expected_output:
+        raise ValueError("Supplied ExperimentRecord does not match persisted experiment identity")
+
+
 def evaluate_against_criteria(
     record: ExperimentRecord,
     result: TaskResult,
@@ -114,7 +151,7 @@ class ExperimentSession:
         user_id: str = "u1",
         auto_link_runs: bool = True,
     ) -> None:
-        self.tenant_id = tenant_id
+        self.tenant_id = _require_non_empty_tenant_id(tenant_id)
         self.user_id = user_id
         self.auto_link_runs = auto_link_runs
         self._experiment_store = resolve_experiment_persistence(
@@ -133,8 +170,47 @@ class ExperimentSession:
     def trace_db(self) -> Path | None:
         return self._trace_db
 
+    def _experiment_store_get(self, experiment_id: str) -> ExperimentRecord:
+        try:
+            return self._experiment_store.get(experiment_id, tenant_id=self.tenant_id)
+        except TypeError:
+            return self._experiment_store.get(experiment_id)
+
+    def _experiment_store_link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
+        try:
+            return self._experiment_store.link_run(
+                experiment_id,
+                run_id,
+                tenant_id=self.tenant_id,
+            )
+        except TypeError:
+            return self._experiment_store.link_run(experiment_id, run_id)
+
+    def _experiment_store_set_decision(
+        self,
+        experiment_id: str,
+        decision: ExperimentDecision,
+        *,
+        notes: str | None,
+    ) -> ExperimentRecord:
+        try:
+            return self._experiment_store.set_decision(
+                experiment_id,
+                decision,
+                notes=notes,
+                tenant_id=self.tenant_id,
+            )
+        except TypeError:
+            return self._experiment_store.set_decision(
+                experiment_id,
+                decision,
+                notes=notes,
+            )
+
     def register(self, request: RegisterExperimentRequest) -> ExperimentRecord:
-        return self._experiment_store.register(request)
+        bound_tenant = _resolve_register_tenant(self.tenant_id, request.tenant_id)
+        scoped = request.model_copy(update={"tenant_id": bound_tenant})
+        return self._experiment_store.register(scoped)
 
     def build_nexus_loop(self, registry: AgentRegistry) -> HostOrchestrationApplicationWiringTarget:
         trace_store = None
@@ -150,16 +226,25 @@ class ExperimentSession:
         message: str,
         capability: str | None = None,
     ) -> ExperimentRunOutcome:
+        _assert_record_tenant_authorized(self.tenant_id, record)
+        try:
+            authoritative = self._experiment_store_get(record.experiment_id)
+        except ValueError as exc:
+            raise ValueError(
+                f"Experiment {record.experiment_id!r} is not available for tenant {self.tenant_id!r}"
+            ) from exc
+        _assert_record_matches_persisted(record, authoritative)
+
         task = Task(
             tenant_id=self.tenant_id,
             user_id=self.user_id,
             message=message,
             context=TaskContext(
-                capability=capability or record.capability,
+                capability=capability or authoritative.capability,
             ),
         )
-        if record.agent_id:
-            task.agent_id = record.agent_id
+        if authoritative.agent_id:
+            task.agent_id = authoritative.agent_id
 
         result = await UnifiedTaskRunner(
             build_harness_root_task_execution_port_from_wiring_target(
@@ -169,9 +254,9 @@ class ExperimentSession:
         ).run_task(task, run_id=mint_run_id())
         run_id = result.run_id or result.task_id
 
-        updated = record
+        updated = authoritative
         if self.auto_link_runs and run_id:
-            updated = self._experiment_store.link_run(record.experiment_id, run_id)
+            updated = self._experiment_store_link_run(authoritative.experiment_id, run_id)
 
         trace_count = 0
         trace_emitter = getattr(loop, "trace_emitter", None)
@@ -187,7 +272,8 @@ class ExperimentSession:
         )
 
     def link_run(self, experiment_id: str, run_id: str) -> ExperimentRecord:
-        return self._experiment_store.link_run(experiment_id, run_id)
+        self._experiment_store_get(experiment_id)
+        return self._experiment_store_link_run(experiment_id, run_id)
 
     def decide(
         self,
@@ -196,7 +282,11 @@ class ExperimentSession:
         *,
         notes: str | None = None,
     ) -> ExperimentRecord:
-        return self._experiment_store.set_decision(experiment_id, decision, notes=notes)
+        return self._experiment_store_set_decision(
+            experiment_id,
+            decision,
+            notes=notes,
+        )
 
     def summarize_trace(self, run_id: str) -> dict:
         """Read persisted trace metadata when ``trace_db`` was configured."""
