@@ -23,12 +23,12 @@
 | Field | Value |
 | --- | --- |
 | Recount date | **2026-11-24** |
-| `origin/development` / docs ledger read | `51edb2a7c3399cc03f82173b255602efcb208ecf` (`51edb2a7`) |
-| `origin/arch-freeze/rw-train` | `be0ce70d39b0d811e96177410ac5f9d27c770c5c` (`be0ce70`) |
+| `origin/development` / docs ledger read | `c9ce6175f9a0da6a1dec622c4e4bb4b81683ea4e` (`c9ce6175f`) |
+| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (`e9bebe0ac`) |
 | Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
-| SSOT | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) @ `51edb2a7` |
+| SSOT | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) @ `c9ce6175f` |
 
-Body sections above retain the historical docs pin `e69e1ff58` and train `dbaebfa8`; do not treat them as current pins. Ledger rows cite this annex for factual recount @ `51edb2a7` / `be0ce70`.
+Body sections above retain the historical docs pin `e69e1ff58` and train `dbaebfa8`; do not treat them as current pins. Ledger rows cite this annex for factual recount @ `c9ce6175f` / `e9bebe0ac`.
 
 
 ## Train merge — fakt operatora / automation

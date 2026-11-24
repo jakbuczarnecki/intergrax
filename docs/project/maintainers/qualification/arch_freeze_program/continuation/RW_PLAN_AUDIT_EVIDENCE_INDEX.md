@@ -10,3 +10,8 @@
 | `scripts/governance/verify_rw_plan_phase_check3.py` | Mechanical phase check 3 |
 
 **SHA:** `ebe45c26930a9291a3df2d6a75028c35c036cee2` (auditor session 2026-11-24). **No implementer verdict attached.**
+
+## RED_FIRST_EVIDENCE (still INCOMPLETE)
+
+Mechanical rule (`scripts/governance/verify_rw_plan_phase_check3.py`, `validate_red_first_evidence`): every `code_fix_inventory` row in `rw_plan.v1.json` with `red_first_status: EVIDENCE_MISSING` needs a tracked `RED_AT_PREFIX` replay with a 40-character `red_first_prefix_sha` and a non-empty `red_first_evidence_ref` before `RED_FIRST_EVIDENCE` can complete. All 20 FIX rows remain `EVIDENCE_MISSING` at `c9ce6175f` (no row greened in this pass). Missing input: wave red-first session logs (typically under `.tmp/session/`, not product-path commits). **SCOPE not closed.**
+
