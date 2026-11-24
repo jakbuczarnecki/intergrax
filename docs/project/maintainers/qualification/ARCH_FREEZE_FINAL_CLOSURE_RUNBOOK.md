@@ -1,5 +1,7 @@
 # ARCH-FREEZE final closure runbook
 
+**MEP supersession (P-R0-6 / AD-10):** Where this runbook conflicts with [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md), **MEP governs**. **Steps 1–5 below are legacy** (EVOL-X and ENT-AUDIT-X formal closure already recorded via IIAC; see ODR **OD-ENT-08** COMPLETE and EVOL formal closure row). **Steps 9–10 order** follows MEP W7 (**ECAP §2.C** before **T-B7-VBN-INDEPENDENT-ACCEPT**), not the older VBN-before-ECAP wording here.
+
 1. Confirm **AUDIT_BASELINE_SHA** (`a0624e28`) and **CLOSURE_DOC_HEAD** (`950097ea`); clean tree.
 2. Wave 1 **ACCEPTED (SCOPED)** @ G6 `3d96691f` — do not reopen B0–B4 without material code delta.
 3. Run **L3-ENT-FULL** @ wave EXECUTION_SHA when revalidating (wave-1 evidence @ `f7ce9dae`).

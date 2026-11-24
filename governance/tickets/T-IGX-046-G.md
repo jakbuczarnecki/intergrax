@@ -14,7 +14,7 @@ Canonical plan: `governance/tickets/plans/PLAN_T-IGX-046-G.md` (to be added afte
 
 ## Lifecycle state
 
-draft
+draft — P-R0-6: RC-1 scaffold only; no product PR
 
 ## Out of scope
 

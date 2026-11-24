@@ -101,7 +101,7 @@ Nothing was run when this ticket was drafted, except read-only checks of the dry
 
 ## Lifecycle state
 
-plan_approved
+plan_approved — P-R0-6: train merge **#684** fact only; **not** ticket closure or G2/FCS
 
 ## Implementer session
 

@@ -61,7 +61,7 @@ Nothing was run when this ticket was drafted. One process at a time, one `uv run
 
 ## Lifecycle state
 
-plan_approved
+plan_approved — P-R0-6: approved; product wave **not closed** (see `CHECKPOINT.md` R0-6 lifecycle)
 
 ## Implementer session
 
