@@ -85,7 +85,7 @@ dependencies = [
 # Keep the default test runner self-contained on a fresh checkout.
 # Heavy optional development integrations remain in the explicit ``dev`` extra.
 test = [
-  "pytest>=8.4,<9",
+  "pytest>=8.4,<10",
   "pytest-asyncio>=0.23,<0.24",
   # W5-H1 — canonical ``uv run pytest`` must satisfy enterprise OTLP gate tests.
   "opentelemetry-api>=1.27,<2",
@@ -287,7 +287,7 @@ llm-all = [
   "tiktoken>=0.7,<1",
 ]
 dev = [
-  "pytest>=8.4,<9",
+  "pytest>=8.4,<10",
   "pytest-asyncio>=0.23,<0.24",
   "ruff",
   "pyright",
@@ -308,7 +308,7 @@ dev = [
 ]
 # Minimal deps for GitHub Actions regression gate (no docling / unstructured / linters).
 dev-ci = [
-  "pytest>=8.4,<9",
+  "pytest>=8.4,<10",
   "pytest-asyncio>=0.23,<0.24",
   "pytest-xdist>=3.6,<4",
   "duckdb>=1.0,<2",
