@@ -24,7 +24,7 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 
 from attestation_demo.host.agent_builders import build_attestation_demo_agent_builders
@@ -40,7 +40,7 @@ def create_attestation_demo_application(
     db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    document_store: InMemoryDocumentStore | None = None,
+    document_store: DocumentStore | None = None,
     boundary_event_buffer: BoundaryEventBuffer | None = None,
 ) -> FastAPI:
     settings = settings or AttestationDemoSettings.from_env()

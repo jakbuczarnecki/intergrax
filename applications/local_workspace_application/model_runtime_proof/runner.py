@@ -10,8 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from intergrax.integrations._shared.in_memory_document_store import (
-    InMemoryDocumentStore,
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.catalog_capabilities import (
@@ -72,7 +72,7 @@ _REJECTED_OLLAMA_MODEL = "qwen2.5:7b"
 class ModelRuntimeProofRunner:
     def __init__(self, config: ModelRuntimeProofConfig) -> None:
         self._config = config
-        self._document_store = InMemoryDocumentStore()
+        self._document_store = create_reference_in_memory_document_store()
         self._data_home: Path | None = None
         self._indexing_count_before = 0
 
@@ -141,9 +141,7 @@ class ModelRuntimeProofRunner:
                 update={
                     "completed_at": datetime.now(UTC),
                     "overall_status": ProofOverallStatus.FAIL,
-                    "limitations": (
-                        f"index_fixture_failed:{exc.__class__.__name__}:{exc}",
-                    ),
+                    "limitations": (f"index_fixture_failed:{exc.__class__.__name__}:{exc}",),
                 }
             )
         finally:
@@ -192,31 +190,17 @@ class ModelRuntimeProofRunner:
             after_session.close()
 
         comparison = compare_index_identity(index_identity, after_identity)
-        embedding_ok = compare_embedding_identity(
-            embedding_before, after_identity.embedding
-        )
+        embedding_ok = compare_embedding_identity(embedding_before, after_identity.embedding)
         no_reindex_ok = indexing_after == self._indexing_count_before
 
         index_invariance = IndexInvarianceResult(
             embedding_identity=StageStatus.PASS if embedding_ok else StageStatus.FAIL,
-            collection_identity=StageStatus.PASS
-            if comparison.collection_identity
-            else StageStatus.FAIL,
-            vector_count=StageStatus.PASS
-            if comparison.vector_count
-            else StageStatus.FAIL,
-            source_identity=StageStatus.PASS
-            if comparison.source_id
-            else StageStatus.FAIL,
-            document_identity=StageStatus.PASS
-            if comparison.document_id
-            else StageStatus.FAIL,
-            content_hash=StageStatus.PASS
-            if comparison.content_hash
-            else StageStatus.FAIL,
-            chunk_count=StageStatus.PASS
-            if comparison.chunk_count
-            else StageStatus.FAIL,
+            collection_identity=StageStatus.PASS if comparison.collection_identity else StageStatus.FAIL,
+            vector_count=StageStatus.PASS if comparison.vector_count else StageStatus.FAIL,
+            source_identity=StageStatus.PASS if comparison.source_id else StageStatus.FAIL,
+            document_identity=StageStatus.PASS if comparison.document_id else StageStatus.FAIL,
+            content_hash=StageStatus.PASS if comparison.content_hash else StageStatus.FAIL,
+            chunk_count=StageStatus.PASS if comparison.chunk_count else StageStatus.FAIL,
             no_reindex=StageStatus.PASS if no_reindex_ok else StageStatus.FAIL,
         )
         if not index_invariance_passes(index_invariance):
@@ -232,9 +216,7 @@ class ModelRuntimeProofRunner:
         if self._config.vllm_provisioning_classification == "unverified":
             limitations.append("vllm_provisioning_classification_unverified")
         if self._config.ollama_model != _REJECTED_OLLAMA_MODEL:
-            limitations.append(
-                f"{_REJECTED_OLLAMA_MODEL} was not the qualified full-product Ollama model"
-            )
+            limitations.append(f"{_REJECTED_OLLAMA_MODEL} was not the qualified full-product Ollama model")
 
         completed = datetime.now(UTC)
         return result.model_copy(
@@ -246,9 +228,7 @@ class ModelRuntimeProofRunner:
                 "embedding_identity_after": after_identity.embedding,
                 "provider_results": provider_results,
                 "index_invariance": index_invariance,
-                "overall_status": ProofOverallStatus.PASS
-                if overall_pass
-                else ProofOverallStatus.FAIL,
+                "overall_status": ProofOverallStatus.PASS if overall_pass else ProofOverallStatus.FAIL,
                 "limitations": tuple(limitations),
             }
         )
@@ -305,11 +285,7 @@ class ModelRuntimeProofRunner:
         fixture: IndexedFixture,
         index_identity,
     ) -> ProviderQualificationResult:
-        configured_model = (
-            self._config.ollama_model
-            if provider == "ollama"
-            else self._config.vllm_model
-        )
+        configured_model = self._config.ollama_model if provider == "ollama" else self._config.vllm_model
         base = ProviderQualificationResult(
             provider=provider,
             configured_model=configured_model,

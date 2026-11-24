@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -18,7 +19,10 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 _FORBIDDEN_SHARED_PREFIX = "intergrax.integrations._shared"
 _INTEGRATIONS_PREFIX = "intergrax/integrations/"
-_PLATFORM_SCAN_ROOT = _REPO_ROOT / "intergrax"
+_EBH3_R1_SCAN_ROOTS = ("intergrax", "agents", "applications")
+# Deliberate coverage gap (CW/B1 owns these; EBH-3 does not widen silently).
+_EBH3_R1_UNCOVERED_ROOTS = ("scripts", "testing_support", "platform_proofs")
+_PRIVATE_BREAKER_APPLICATION_ROOTS = ("intergrax/applications", "applications")
 
 _CONTRACT_MODULE = _REPO_ROOT / "intergrax/integrations/contracts/circuit_breaker.py"
 _CONTRACT_FORBIDDEN_IMPORT_PREFIXES = (
@@ -30,15 +34,31 @@ _CONTRACT_FORBIDDEN_IMPORT_PREFIXES = (
 )
 
 
+def _is_tier23_production_module(path: Path) -> bool:
+    """Tier-2/3 trees co-locate tests; production-only scan matches NT-RW-WA-01 layout."""
+    rel_parts = path.relative_to(_REPO_ROOT).parts
+    if "tests" in rel_parts:
+        return False
+    if path.name == "conftest.py" or path.name.startswith("test_"):
+        return False
+    return True
+
+
 def _platform_python_files() -> list[Path]:
     files: list[Path] = []
-    for path in sorted(_PLATFORM_SCAN_ROOT.rglob("*.py")):
-        if not path.is_file():
+    for root_name in _EBH3_R1_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
             continue
-        rel = path.relative_to(_REPO_ROOT).as_posix()
-        if rel.startswith(_INTEGRATIONS_PREFIX):
-            continue
-        files.append(path)
+        for path in sorted(root.rglob("*.py")):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if rel.startswith(_INTEGRATIONS_PREFIX):
+                continue
+            if root_name in {"agents", "applications"} and not _is_tier23_production_module(path):
+                continue
+            files.append(path)
     return files
 
 
@@ -132,16 +152,61 @@ def test_ebh_3_production_must_not_import_integrations_shared() -> None:
     )
 
 
+def test_ebh_3_tier23_r1_scan_roots_cover_agents_and_applications() -> None:
+    assert "agents" in _EBH3_R1_SCAN_ROOTS
+    assert "applications" in _EBH3_R1_SCAN_ROOTS
+    scanned_roots = {p.relative_to(_REPO_ROOT).parts[0] for p in _platform_python_files()}
+    assert "agents" in scanned_roots
+    assert "applications" in scanned_roots
+
+
+def test_ebh_3_r1_uncovered_roots_remain_explicit_findings() -> None:
+    for uncovered in _EBH3_R1_UNCOVERED_ROOTS:
+        assert uncovered not in _EBH3_R1_SCAN_ROOTS
+        assert (_REPO_ROOT / uncovered).is_dir(), f"expected repo root {uncovered}/"
+
+
+def test_ebh_3_r1_skips_intergrax_integrations_package() -> None:
+    internal = _REPO_ROOT / "intergrax/integrations/_shared/health.py"
+    assert internal.is_file()
+    scanned = {p.relative_to(_REPO_ROOT).as_posix() for p in _platform_python_files()}
+    assert "intergrax/integrations/_shared/health.py" not in scanned
+
+
+@pytest.mark.parametrize("tier_root", ("agents", "applications"))
+def test_ebh_3_tier23_r1_detects_forbidden_shared_import(tier_root: str) -> None:
+    probe_dir = _REPO_ROOT / tier_root / ".gate_probe" / "ebh3"
+    probe_dir.mkdir(parents=True, exist_ok=True)
+    probe = probe_dir / "_violation_probe.py"
+    probe.write_text(
+        "from intergrax.integrations._shared import health\n",
+        encoding="utf-8",
+    )
+    rel = probe.relative_to(_REPO_ROOT).as_posix()
+    try:
+        assert _is_tier23_production_module(probe)
+        scanned = {p.relative_to(_REPO_ROOT).as_posix() for p in _platform_python_files()}
+        assert rel in scanned
+        assert _collect_forbidden_shared_imports(probe)
+    finally:
+        probe.unlink(missing_ok=True)
+        shutil.rmtree(probe_dir.parent, ignore_errors=True)
+
+
 def test_ebh_3_circuit_breaker_config_has_single_class_definition() -> None:
     definitions = 0
-    for path in (_REPO_ROOT / "intergrax").rglob("*.py"):
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        except OSError:
+    for root_name in _EBH3_R1_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
             continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name == "IntegrationCircuitBreakerConfig":
-                definitions += 1
+        for path in root.rglob("*.py"):
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            except OSError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and node.name == "IntegrationCircuitBreakerConfig":
+                    definitions += 1
     assert definitions == 1, f"expected exactly one IntegrationCircuitBreakerConfig, found {definitions}"
 
 
@@ -162,10 +227,13 @@ def test_ebh_3_circuit_breaker_contract_module_is_pure() -> None:
 
 
 def test_ebh_3_applications_must_not_construct_private_integration_breaker() -> None:
-    root = _REPO_ROOT / "intergrax/applications"
     violations: list[str] = []
-    for path in sorted(root.rglob("*.py")):
-        violations.extend(_collect_applications_private_breaker_violations(path))
+    for root_rel in _PRIVATE_BREAKER_APPLICATION_ROOTS:
+        root = _REPO_ROOT / root_rel
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("*.py")):
+            violations.extend(_collect_applications_private_breaker_violations(path))
     assert not violations, violations
 
 
@@ -210,10 +278,10 @@ def test_ebh_3_applications_must_not_construct_private_integration_breaker() -> 
             True,
         ),
         (
-            '''
+            """
             # IntegrationCircuitBreaker("doc-only") must not fail lexical scan
             NOTE = "integrations._shared.circuit_breaker"
-            ''',
+            """,
             False,
         ),
     ],
@@ -233,6 +301,30 @@ def test_ebh_3_applications_private_breaker_detector_adversarial(
             assert not hits, hits
     finally:
         probe.unlink(missing_ok=True)
+
+
+@pytest.mark.parametrize("tier_root", ("agents", "applications"))
+def test_ebh_3_tier23_private_breaker_violation_detected(tier_root: str) -> None:
+    probe_dir = _REPO_ROOT / tier_root / ".gate_probe" / "ebh3_breaker"
+    probe_dir.mkdir(parents=True, exist_ok=True)
+    probe = probe_dir / "_breaker_probe.py"
+    probe.write_text(
+        textwrap.dedent(
+            """
+            from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreaker
+
+            def wire() -> None:
+                IntegrationCircuitBreaker("x")
+            """
+        ),
+        encoding="utf-8",
+    )
+    try:
+        hits = _collect_applications_private_breaker_violations(probe)
+        assert hits
+    finally:
+        probe.unlink(missing_ok=True)
+        shutil.rmtree(probe_dir.parent, ignore_errors=True)
 
 
 def test_ebh_3_rag_must_not_import_private_circuit_breaker_module() -> None:
@@ -272,8 +364,8 @@ def test_ebh_3_sanctioned_health_probes_surface_imports() -> None:
 
 
 def test_ebh_3_sanctioned_circuit_breaker_composition_surface() -> None:
-    from intergrax.integrations.registry.circuit_breakers import create_integration_circuit_breaker
     from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
+    from intergrax.integrations.registry.circuit_breakers import create_integration_circuit_breaker
 
     breaker = create_integration_circuit_breaker(
         "ebh-3-gate",

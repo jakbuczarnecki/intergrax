@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
+)
 from intergrax.tools.providers.records.service import (
     RECORDS_COUNT_TOOL_ID,
     RECORDS_DELETE_TOOL_ID,
@@ -41,7 +43,7 @@ def wire_attestation_demo_tools(
     document_store: DocumentStore | None = None,
 ) -> ApplicationToolWiring:
     """Lab PoC — in-memory document store backing ``records.put``."""
-    store = document_store or InMemoryDocumentStore()
+    store = document_store or create_reference_in_memory_document_store()
     profile = attestation_demo_tool_profile()
     wiring_context = ToolWiringContext(document_store=store)
     return build_application_tool_wiring(

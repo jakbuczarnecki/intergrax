@@ -10,13 +10,13 @@ from pathlib import Path
 from intergrax.applications._shared.integration_wiring import (
     bootstrap_application_integration_catalog,
 )
-from intergrax.integrations._shared.in_memory_document_store import (
-    InMemoryDocumentStore,
-)
+from intergrax.contracts.run_trace_store import RunTraceWriter
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
+)
 from intergrax.runtime.execution.run_trace_store_factories import create_in_memory_run_trace_store
-from intergrax.contracts.run_trace_store import RunTraceWriter
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ def wire_attestation_demo_integrations(
     """Partner PoC — lab integration profile, in-memory trace, shared document store."""
     bootstrap_application_integration_catalog()
     profile = IntegrationProfile.lab()
-    resolved_store = document_store or InMemoryDocumentStore()
+    resolved_store = document_store or create_reference_in_memory_document_store()
     if db_path is None:
         trace_store: RunTraceWriter = create_in_memory_run_trace_store()
         trace_db_path = None
