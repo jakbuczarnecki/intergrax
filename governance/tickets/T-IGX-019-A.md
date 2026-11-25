@@ -43,26 +43,22 @@ audit: W401-RA-05 (negation denylist / ASCII-only decision scope, process-enforc
 operator decision), W401-RA-09 (documentation at the old pin), W401-RA-10 (Linux container not reproduced by that auditor; CI evidence exists).
 The previous audit dossier is held outside the repository and was not edited.
 
-## Round 3 - delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`) and defect hunt
+## Round 3 - delta re-audit W402 (verdict PARTIAL on `ca78b1c1f`, one MEDIUM blocker W402-01, auditor session `local_e360e892-825d-4e0f-81f6-b4dc46ed4df9`)
 
-Same ticket and files. **W402-01** (HEAD-binding evaded by index flags: content comparison replaces `git status`), **W402-02** (verifier code and
-`.gitattributes` bound to `HEAD`), **W402-03** (free-text channels), **W402-04** (commit-graph / fsmonitor off) and the subagent defect hunt D3-D8
-(sys.path shadowing, git environment, structured lifecycle values, gitlinks). Open on purpose: W401-RA-05, RA-07 / D9, OD-1 (decided: accept residual).
+Operator request (recorded, not an approval line): the user asked in chat to start a new `implementer` session to carry out the certifier-track
+corrective plan (`STATUS_AND_NEXT_STEPS.md` section 5) in one pass. This section only continues the existing ticket; it adds no `Approved:` or
+`Publication-Approved:` line and edits none of the existing ones. Publication of round 3 is not authorised by this text and needs the user's
+own approval.
 
-## Round 4 - re-audit W403 (verdict PARTIAL on `2e0ed9c6b`)
-
-Same ticket and files. **W403-01** (forged bytecode: no repository bytecode is read or written), **W403-02** (closure_evidence keys, audit directory freeze,
-indexed evidence directories), **W403-03** (binding limited to the verifier directories and the loaded modules). Open on purpose: W403-04 (unverified), RA-05,
-RA-07, OD-1 (decided C), threat-model boundary (suggested OD-2, undecided).
-
-## Round 5 - re-audit W404 (verdict PARTIAL on `dc650b8df`)
-
-Same ticket and files. **W404-01** (HIGH regression: bootstrap imports only os/sys before the sys.path strip), **W404-02** (repository `scripts` package pinned, untracked
-repository-root modules flagged), **W404-03** (bytecode/safe-path environment for children). Open on purpose: W404-04, W404-05 (threat-model boundary, suggested OD-2).
-
-## Stage closure - certifier and acceptance records (2026-11-07)
-
-Independent certifier session `local_dbad2215-acac-4a9e-aaf6-ad3be89aee18` recommended ACCEPT_WITH_CONDITIONS for B-4 at pin `fdb1e7a62` (report published at `b59052993`). The operator's ratification of OD-1/OD-2, the OD-2 wording amendment, the filled W4-F08 certifier row and the acceptance record OD-3 (`docs/project/maintainers/qualification/evol_x/EVOL_X_OD3_DECISION_RECORD.md`) are recorded on 2026-11-07. The machine publication of the B-4 resolution (OD-3 condition 2), P3, B6 acceptance, FRZ promotion and EVOL-X closure are not part of this entry.
+Same ticket, same preflight and B4 test module. Findings addressed in this round: **W402-01** (MEDIUM blocker; `git status` is no longer the
+oracle for "inputs equal HEAD": every verified input is compared byte-wise with its HEAD blob through the RA-B4-01 contract, tracked paths flagged
+`skip-worktree` / `assume-unchanged` are rejected, untracked evidence is found by comparing the evidence directory listing with the HEAD tree),
+**W402-02** (the byte comparison covers everything under `scripts/`, so every imported gate module), **W402-03** (open blocker texts must equal the
+published text, resolved-blocker entries are key allow-listed, `stage_closure_status` is an enum, every committed file under
+`iiac_evidence/EVOL-X/` must be covered by an evidence index), **W402-04** (all git calls run with `core.fsmonitor=false` and
+`core.commitGraph=false`; alternates and a tampered object database stay documented residuals). Not changed: W401-RA-05, RA-07, RA-08/OD-1
+(operator-owned or deliberately open). No change under `intergrax/`, `agents/`, `applications/`, `scripts/governance/`, the activation record,
+`iiac_evidence/` or `.gitattributes`. Handoff: `EVOL_X_W4_01_ROUND3_REAUDIT_HANDOFF.md`.
 
 ## Plan digest
 
@@ -90,13 +86,9 @@ evidence, the IIAC activation record / gate / protocol, W4-F08 attestations.
 
 ## Lifecycle state
 
-closed
+ready_for_audit
 
 ## Checkpoint
 
 Implemented by an implementer session; it cannot certify its own correction. A new `independent-quality-auditor` session must re-audit the exact
 implementation SHA named in the handoff; a separate certifier then accepts. See `EVOL_X_W4_01_CONSOLIDATED_CORRECTIVE_IMPLEMENTATION_REPORT.md`.
-
-## Closure (2026-11-07)
-
-B-4 is recorded as `RESOLVED_WITH_EVIDENCE` at implementation pin `fdb1e7a62` (re-audit manifest `add7187bc`, certifier disposition `7a5476cdc`; second certifier report `EVOL_X_W4_01_SECOND_CERTIFIER_REPORT.md`; OD-2 Amendment 2 for CERT-01; OD-3 closure update; W4-F01 ratification record). The ticket scope is complete and closed. Out of this ticket and still open: B-5, B6-P3/P4/P5, FRZ promotion, OD-EVOL-12, OD-EVOLX-08 and EVOL-X closure (operator-only).
