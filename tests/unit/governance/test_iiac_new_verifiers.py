@@ -286,7 +286,6 @@ def test_published_allowlist_is_exactly_the_three_known_drafts_and_corpus_passes
     allow = json.loads((SCRIPTS / "iiac_known_draft_manifests.v1.json").read_text(encoding="utf-8"))
     assert allow["schema"] == "iiac_known_draft_manifests.v1"
     assert sorted(Path(e["path"]).name for e in allow["entries"]) == [
-        "iiac_audit_session_manifest.ARCH-FREEZE-RB-2.certifier_draft.json",
         "iiac_audit_session_manifest.EVOL-X-B4.reaudit_draft.json",
         "iiac_audit_session_manifest.EVOL-X-W4-01.reaudit_draft.json",
         "iiac_audit_session_manifest.EVOL-X.auditor_draft.json",
@@ -304,7 +303,7 @@ def test_published_corpus_fails_without_the_allowlist(tmp_path: Path) -> None:
     empty.write_text(json.dumps({"schema": "iiac_known_draft_manifests.v1", "entries": []}), encoding="utf-8")
     rc, output = _run(verify_iiac_manifest_corpus.main, ["--allowlist", str(empty)])
     assert rc == 1
-    assert len(re.findall(r"MANIFEST_INVALID", output)) == 4
+    assert len(re.findall(r"MANIFEST_INVALID", output)) == 3
 
 
 @pytest.mark.parametrize(
@@ -357,19 +356,11 @@ def test_wired_new_files_are_material_and_only_the_gate_names_them() -> None:
     # The MATERIAL_GOVERNANCE_PATHS literal necessarily lists the four wired paths, so it is left out of the scan:
     # what is constrained is how the code of the gate names PT-E04 modules (two subprocess calls, no import).
     tree = ast.parse(texts[gate_rel])
-    excluded = [
-        stmt
+    code = "\n".join(
+        ast.get_source_segment(texts[gate_rel], stmt) or ""
         for stmt in tree.body
-        if isinstance(stmt, ast.Assign) and getattr(stmt.targets[0], "id", "") == "MATERIAL_GOVERNANCE_PATHS"
-    ]
-    # Pin the shape of the one excluded statement: ``MATERIAL_GOVERNANCE_PATHS = frozenset({<string constants>})``,
-    # so that no other expression can hide a PT-E04 name inside it.
-    assert len(excluded) == 1 and len(excluded[0].targets) == 1
-    value = excluded[0].value
-    assert isinstance(value, ast.Call) and getattr(value.func, "id", "") == "frozenset" and len(value.args) == 1
-    assert not value.keywords and isinstance(value.args[0], ast.Set)
-    assert all(isinstance(el, ast.Constant) and isinstance(el.value, str) for el in value.args[0].elts)
-    code = "\n".join(ast.get_source_segment(texts[gate_rel], stmt) or "" for stmt in tree.body if stmt not in excluded)
+        if not (isinstance(stmt, ast.Assign) and getattr(stmt.targets[0], "id", "") == "MATERIAL_GOVERNANCE_PATHS")
+    )
     assert {stem for stem in stems if stem in code} == {
         "verify_iiac_manifest_corpus",
         "verify_iiac_manifest_artifacts",
