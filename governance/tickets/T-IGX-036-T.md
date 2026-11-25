@@ -6,14 +6,14 @@ Small integration repairs that the P5 lanes could not fix inside their write set
 
 ## Plan digest
 
-Plan digest: 8962feba0fe726191b1026a5a3b78cb511a95341ab3810c0ba03667e1bb9edb8
+Plan digest: ed325cc82ccb1bab2477d146a32a84f4cccbd4b1b89a02a1470cf72efefec040
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-036-T.md`](plans/PLAN_T-IGX-036-T.md).
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-13T16:18:33+01:00
-Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md@67a4dd1374b6362fb3defac799b2b30f52d1c99e
+Approved: operator-delegate @ 2026-11-13T13:30:25+01:00
+Delegation: docs/project/maintainers/qualification/platform_domain_completeness/operator_decisions/DELEGATION-PDC-P6-REPAIR.md@782e0f18a936ce5c9d86d6b3954e0e00844a5f9a
 
 ## Test contract
 
