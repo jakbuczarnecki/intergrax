@@ -56,13 +56,13 @@
       "owner_ticket": "T-IGX-043-C",
       "negative_test_id": "NT-CFG-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_AT_PREFIX",
+      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CFG-02",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-C",
-      "red_first_reason": "E   AssertionError: ENT-A-VBN-02 failed exit=4 (semantic gate at prefix)"
+      "red_first_reason": "E   AssertionError: ENT-A-VBN-02 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero'"
     },
     {
       "frz_id": "FRZ-CFG-06",
@@ -83,13 +83,13 @@
       "owner_ticket": "T-IGX-043-F",
       "negative_test_id": "NT-CFG-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_AT_PREFIX",
+      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-CFG-08",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-F",
-      "red_first_reason": "E   AssertionError: VBN-SHADOW-SELECTION failed exit=4 (semantic gate at prefix)"
+      "red_first_reason": "E   AssertionError: VBN-SHADOW-SELECTION failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/qualification/config_x/test_config_x_final_reconciliation_gates.py'"
     },
     {
       "frz_id": "FRZ-CTR-01",
@@ -212,13 +212,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-OWN-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_AT_PREFIX",
+      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-02",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "semantic gate ENT-A-OWN-02 FAILED at prefix (non-zero ENT exit)"
+      "red_first_reason": "E   AssertionError: ENT-A-OWN-02 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py'"
     },
     {
       "frz_id": "FRZ-OWN-03",
@@ -226,13 +226,13 @@
       "owner_ticket": "T-IGX-043-H",
       "negative_test_id": "NT-OWN-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_AT_PREFIX",
+      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-03",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "E   AssertionError: ENT-A-OWN-03 failed exit=4 (semantic gate at prefix)"
+      "red_first_reason": "E   AssertionError: ENT-A-OWN-03 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py'"
     },
     {
       "frz_id": "FRZ-OWN-05",
@@ -329,7 +329,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "'ent_semantic_gate' not found in `markers` configuration option"
     },
     {
       "frz_id": "FRZ-PRD-05",
@@ -343,7 +343,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "negative test file absent"
     },
     {
       "frz_id": "FRZ-PRD-08",
@@ -357,7 +357,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "negative test file absent"
     },
     {
       "frz_id": "FRZ-REG-09",
@@ -365,13 +365,13 @@
       "owner_ticket": "T-IGX-051-F",
       "negative_test_id": "NT-REG-09",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REG-09",
       "regression_scope": "ENT-A-REG-01; ENT-A-REG-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "AssertionError: assert offenders == [] \u2014 ollama SDK imported outside provider package (test_no_module_outside_the_provider_package_imports_the_ollama_sdk)"
     },
     {
       "frz_id": "FRZ-REL-07",
