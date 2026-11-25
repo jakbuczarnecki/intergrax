@@ -146,6 +146,7 @@ from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
 from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderConfigurationError
 from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
@@ -270,6 +271,7 @@ def wire_application_environment(
     platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
     llm_adapter: LLMAdapter | None = None,
     agent_contract_authority: ContractAuthority | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -506,6 +508,7 @@ def wire_application_environment(
         sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
         security_profile=env.security_profile,
+        human_decision_store=human_decision_store,
     )
     tool_wiring = apply_application_owned_tool_registry(
         manifest,
