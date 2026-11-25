@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Protocol
 from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
@@ -104,11 +105,12 @@ def persistent_canonical_user_profile_memory_required(
 
 
 def tenant_scoped_memory_capability_enabled(env: ApplicationEnvironmentProfile) -> bool:
-    """True when any closed-list memory flag requires a tenant in fail-closed posture."""
+    """True when user or long-term memory requires a tenant in STRICT fail-closed posture.
+
+    Organization memory scope is enforced by org/session admission (PT-FC2), not here.
+    """
     memory_profile = env.memory_profile
-    return (
-        memory_profile.enable_user_memory or memory_profile.enable_org_memory or memory_profile.enable_long_term_memory
-    )
+    return memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
 
 
 class MemoryTenantScopeError(ValueError):
@@ -126,7 +128,15 @@ def validate_memory_tenant_scope_admission(
     *,
     tenant_id: str | None,
 ) -> None:
-    """Refuse unscoped memory composition in STRICT or PRODUCT postures (EX-D2-06)."""
+    """Refuse unscoped user/LTM memory composition in STRICT LAB posture (EX-D2-06).
+
+    PRODUCT hosts use org/session admission for store durability and org memory; organization
+    memory is not a tenant-scope signal (PT-FC2).
+    """
+    if env.application_profile is not ApplicationProfile.LAB:
+        return
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
     if not wiring_fails_closed(env):
         return
     if not tenant_scoped_memory_capability_enabled(env):
