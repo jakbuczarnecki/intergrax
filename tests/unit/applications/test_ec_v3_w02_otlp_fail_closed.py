@@ -18,7 +18,7 @@ from intergrax.applications._shared.runtime_event_delivery_wiring import (
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.contracts.observability_export import ExporterKind
+from intergrax.contracts.observability_export import ConfigurationError, ExporterKind
 from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -66,8 +66,8 @@ def test_product_otlp_without_endpoint_refuses_qualification_fallback(
         "intergrax.runtime.observability.exporters.otlp.otlp_transport.OtlpTransport",
         MagicMock(),
     ) as transport_cls:
-        wiring = resolve_application_runtime_event_delivery_wiring(env)
-        assert wiring.otlp_transport is None
+        with pytest.raises(ConfigurationError, match="otlp_export_endpoint"):
+            resolve_application_runtime_event_delivery_wiring(env)
         transport_cls.assert_not_called()
 
 
@@ -83,8 +83,8 @@ def test_strict_lab_otlp_without_endpoint_refuses_qualification_fallback(
         },
     )
     env = _otlp_env(base.model_copy(update={"meta": meta}), endpoint="")
-    wiring = resolve_application_runtime_event_delivery_wiring(env)
-    assert wiring.otlp_transport is None
+    with pytest.raises(ConfigurationError, match="otlp_export_endpoint"):
+        resolve_application_runtime_event_delivery_wiring(env)
 
 
 def test_package_gate_metadata_supplies_explicit_qualification_endpoint() -> None:

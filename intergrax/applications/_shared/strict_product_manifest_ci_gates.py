@@ -39,7 +39,7 @@ def check_strict_product_capability_graph(
     from intergrax.applications._shared.environment_wiring import wire_application_environment
     from intergrax.applications._shared.package_wiring import (
         PACKAGE_GATE_TENANT_ID,
-        package_gate_environment,
+        package_gate_qualification,
     )
 
     env = manifest.resolved_environment()
@@ -48,33 +48,33 @@ def check_strict_product_capability_graph(
     if manifest.profile is not ApplicationProfile.PRODUCT:
         return []
 
-    gate_env = package_gate_environment(env)
-    try:
-        wiring = wire_application_environment(
+    with package_gate_qualification(env) as run:
+        try:
+            wiring = wire_application_environment(
+                manifest,
+                run.composition_env,
+                conformance_check=False,
+                tenant_id=PACKAGE_GATE_TENANT_ID,
+            )
+        except Exception as exc:  # noqa: BLE001 — gate surfaces wiring failures
+            return [f"{product_id}: wire_application_environment failed: {exc}"]
+
+        view = wiring.capability_graph
+        snapshot = wiring.registry_snapshot
+        if view is None:
+            return [f"{product_id}: capability_graph not materialized"]
+        if snapshot is None:
+            return [f"{product_id}: registry_snapshot not materialized"]
+
+        authority = materialize_manifest_contract_authority_lab_compat(manifest)
+        result = validate_strict_capability_graph_deploy(
+            view,
+            snapshot,
             manifest,
-            gate_env,
-            conformance_check=False,
-            tenant_id=PACKAGE_GATE_TENANT_ID,
+            env,
+            contract_authority=authority,
         )
-    except Exception as exc:  # noqa: BLE001 — gate surfaces wiring failures
-        return [f"{product_id}: wire_application_environment failed: {exc}"]
-
-    view = wiring.capability_graph
-    snapshot = wiring.registry_snapshot
-    if view is None:
-        return [f"{product_id}: capability_graph not materialized"]
-    if snapshot is None:
-        return [f"{product_id}: registry_snapshot not materialized"]
-
-    authority = materialize_manifest_contract_authority_lab_compat(manifest)
-    result = validate_strict_capability_graph_deploy(
-        view,
-        snapshot,
-        manifest,
-        env,
-        contract_authority=authority,
-    )
-    return [f"{product_id}: {error}" for error in result.errors]
+        return [f"{product_id}: {error}" for error in result.errors]
 
 
 def check_strict_product_agent_certification(

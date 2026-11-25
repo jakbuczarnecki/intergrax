@@ -14,7 +14,11 @@ from intergrax.applications._shared.package_wiring import (
     package_gate_qualification,
     release_all_package_gate_qualifications,
 )
-from intergrax.applications._shared.sandbox_wiring import product_requires_sandbox, wire_sandbox_sessions
+from intergrax.applications._shared.sandbox_wiring import (
+    SandboxCompositionError,
+    product_requires_sandbox,
+    wire_sandbox_sessions,
+)
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
@@ -125,5 +129,5 @@ def test_package_gate_metadata_yields_stable_package_checksum() -> None:
 def test_product_requires_sandbox_without_qualification_fallback() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(tool_ids=["sandbox.exec"])
     assert product_requires_sandbox(env)
-    manager = wire_sandbox_sessions(env.model_copy(update={"sandbox": None}))
-    assert manager is None
+    with pytest.raises(SandboxCompositionError):
+        wire_sandbox_sessions(env.model_copy(update={"sandbox": None}))
