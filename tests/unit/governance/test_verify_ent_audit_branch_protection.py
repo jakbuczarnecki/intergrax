@@ -219,3 +219,60 @@ def test_gh_api_wrapper_is_only_subprocess_user() -> None:
     # The autouse guard makes subprocess.run raise; the real wrapper must hit it (proves tests above never used it).
     with pytest.raises(AssertionError, match="network/gh forbidden"):
         v._gh_api("repos/x/y")
+
+
+def _make_router(classic: tuple[int, str], ruleset: tuple[int, str]):
+    def fake(path: str) -> tuple[int, str]:
+        if "/protection" in path:
+            return classic
+        if "/rules/branches/" in path:
+            return ruleset
+        raise AssertionError(f"unexpected gh path {path}")
+
+    return fake
+
+
+def _errors_default_path(
+    monkeypatch: pytest.MonkeyPatch,
+    classic: tuple[int, str],
+    ruleset: tuple[int, str],
+) -> list[str]:
+    monkeypatch.setattr(v, "_gh_api", _make_router(classic, ruleset))
+    return v.verify_branch_protection()
+
+
+def _errors_injected_path(classic: tuple[int, str], ruleset: tuple[int, str]) -> list[str]:
+    return v.verify_branch_protection(gh_api=_make_router(classic, ruleset))
+
+
+@pytest.mark.parametrize(
+    ("classic", "ruleset"),
+    [
+        (_classic(FAST, GATE), (0, "[]")),
+        (NOT_PROTECTED, _rules(FAST, GATE)),
+        (NOT_PROTECTED, _rules(FAST)),
+        (_classic(LEGACY_FAST, LEGACY_GATE), (0, "[]")),
+        (NOT_PROTECTED, _rules("ent-audit-nightly")),
+        ((1, "gh: Forbidden"), _rules(FAST, GATE)),
+        (_classic(FAST, GATE), (0, "<html>")),
+        ((0, "[]"), _rules(FAST, GATE)),
+        (NOT_PROTECTED, (0, json.dumps(REAL_RULES_TODAY))),
+        (NOT_PROTECTED, _rules("Other workflow / ent-audit-fast", GATE)),
+    ],
+    ids=[
+        "valid-classic",
+        "valid-ruleset",
+        "missing-required-context",
+        "legacy-prefixed",
+        "nightly-only",
+        "unreadable-classic",
+        "malformed-ruleset",
+        "malformed-classic",
+        "required-checks-absent",
+        "foreign-workflow-prefix",
+    ],
+)
+def test_default_and_injected_paths_share_od_ent_02_policy(
+    monkeypatch: pytest.MonkeyPatch, classic: tuple[int, str], ruleset: tuple[int, str]
+) -> None:
+    assert _errors_default_path(monkeypatch, classic, ruleset) == _errors_injected_path(classic, ruleset)

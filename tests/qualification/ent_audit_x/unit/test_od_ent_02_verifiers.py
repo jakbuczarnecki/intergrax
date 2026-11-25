@@ -10,8 +10,10 @@ import pytest
 import scripts.governance.verify_ent_audit_branch_protection as live
 import scripts.governance.verify_od_ent_02_compensating_control as comp
 
-FAST = "Enterprise audit (ENT-AUDIT-X) / ent-audit-fast"
-GATE = "Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate"
+BARE_FAST = "ent-audit-fast"
+BARE_GATE = "ent-audit-pr-gate"
+LEGACY_FAST = "Enterprise audit (ENT-AUDIT-X) / ent-audit-fast"
+LEGACY_GATE = "Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate"
 
 
 def _ruleset_rule(*contexts: str) -> list[dict[str, Any]]:
@@ -37,28 +39,37 @@ def test_live_fails_when_only_deletion_and_force_push_are_blocked() -> None:
 
 
 def test_live_passes_when_a_ruleset_requires_both_checks() -> None:
-    rules = (0, json.dumps(_ruleset_rule(FAST, GATE)))
+    rules = (0, json.dumps(_ruleset_rule(BARE_FAST, BARE_GATE)))
     assert live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules)) == []
 
 
 def test_live_passes_when_classic_protection_requires_both_checks() -> None:
-    protection = (0, json.dumps({"required_status_checks": {"contexts": [FAST, GATE]}}))
-    assert live.verify_branch_protection(gh_api=_api(protection, (1, "boom"))) == []
+    protection = (0, json.dumps({"required_status_checks": {"contexts": [BARE_FAST, BARE_GATE]}}))
+    assert live.verify_branch_protection(gh_api=_api(protection, (0, "[]"))) == []
+
+
+def test_live_rejects_legacy_prefixed_ruleset_checks_only() -> None:
+    rules = (0, json.dumps(_ruleset_rule(LEGACY_FAST, LEGACY_GATE)))
+    errors = live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules))
+    assert any("never reports" in e for e in errors), errors
+    assert any(BARE_FAST in e for e in errors), errors
 
 
 def test_live_fails_when_one_check_is_missing() -> None:
-    rules = (0, json.dumps(_ruleset_rule(FAST)))
+    rules = (0, json.dumps(_ruleset_rule(BARE_FAST)))
     errors = live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules))
     assert any("ent-audit-pr-gate" in e for e in errors), errors
 
 
 def test_live_fails_closed_when_nothing_is_readable() -> None:
     errors = live.verify_branch_protection(gh_api=_api((1, "x"), (1, "y")))
-    assert errors and "no live enforcement source readable" in errors[0]
+    assert len(errors) == 2
+    assert any("classic branch protection unavailable" in e for e in errors)
+    assert any("rulesets unavailable" in e for e in errors)
 
 
 def test_live_fails_on_nightly_only_gate() -> None:
-    rules = (0, json.dumps(_ruleset_rule(FAST, GATE, "ent-audit-nightly")))
+    rules = (0, json.dumps(_ruleset_rule(BARE_FAST, BARE_GATE, "ent-audit-nightly")))
     errors = live.verify_branch_protection(gh_api=_api(NOT_PROTECTED, rules))
     assert any("Nightly-only" in e for e in errors), errors
 
