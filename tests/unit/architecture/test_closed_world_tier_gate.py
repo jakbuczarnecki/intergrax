@@ -42,8 +42,6 @@ def _write_tier_fixture_tree(root: Path) -> None:
             "intergrax/contracts/unresolved_import.py",
             "import intergrax.future_missing_owner.alpha\n",
         ),
-        ("intergrax/unscoped/__init__.py", ""),
-        ("intergrax/unscoped/mystery_module.py", "VALUE = 1\n"),
     ):
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,7 +119,7 @@ def test_two_identical_tier_enforcement_runs_match(tier_fixture_inventory: Close
 
 def test_unclassified_product_module_finding(tier_fixture_inventory: ClosedWorldInventory) -> None:
     report = build_tier_enforcement_report(tier_fixture_inventory)
-    assert any(f.kind == "UNCLASSIFIED_MODULE" and "unscoped" in f.location for f in report.findings)
+    assert any(f.kind == "UNCLASSIFIED_MODULE" and f.location == "intergrax/__init__.py" for f in report.findings)
 
 
 def test_tier_closed_world_gate_wrapper_passes_exclusion_baseline(

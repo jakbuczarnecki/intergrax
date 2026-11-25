@@ -3,6 +3,8 @@
 
 """Audit Tier-3 observability wiring from environment profile (Phase OBS-3 / DIAG-FOUNDATION-2)."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import sys
@@ -19,12 +21,16 @@ from intergrax.applications._shared.auditability_health_wiring import (
     project_host_auditability_health_facts_from_runtime,
 )
 from intergrax.applications._shared.diagnostic_read_wiring import resolve_host_diagnostic_read_service
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+    close_harness_host_runtime,
+)
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
 )
 from intergrax.applications._shared.observability_wiring import wire_application_observability
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -36,6 +42,15 @@ def _audit_lab_host() -> int:
     if env is None:
         print("lab manifest missing environment profile")
         return 1
+
+    env = env.model_copy(
+        update={
+            "observability_profile": env.observability_profile.model_copy(
+                update={"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"},
+            ),
+        },
+    )
+    manifest = manifest.model_copy(update={"environment": env})
 
     wiring = wire_application_observability(env)
     assert_observability_assembly_valid(wiring, env)
@@ -55,24 +70,33 @@ def _audit_lab_host() -> int:
 
 
 def _audit_product_host_auditability() -> int:
+    import os
+    import secrets
     import tempfile
 
-    from echo.echo_agent import EchoAgent
     from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
-    from intergrax.applications.contracts.application_host import ApplicationProfile
     from intergrax.applications.contracts.environment_profile import (
         ApplicationEnvironmentProfile,
-        ObservabilityProfile,
     )
-    from intergrax.contracts.execution_mode import ExecutionMode
     from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+    from intergrax.contracts.execution_mode import ExecutionMode
     from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
     from intergrax.runtime.registry.agent_registry import AgentRegistry
+    from tests.fixtures.g09_tenant_evaluation_registry import CI_SMOKE_PRODUCT_TENANT
+
+    from echo.echo_agent import EchoAgent
+
+    cursor_secret_env = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
+    prior_cursor_secret = os.environ.get(cursor_secret_env)
+    os.environ[cursor_secret_env] = secrets.token_hex(32)
 
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id="obs.auditability.product")
     environment.execution_mode = ExecutionMode.BALANCED
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={"otel_enabled": False},
+        update={
+            "otel_enabled": False,
+            "otlp_export_endpoint": "http://127.0.0.1:0/v1/logs",
+        },
     )
     manifest = ApplicationManifest.lab(
         app_id="obs_auditability_product",
@@ -84,35 +108,50 @@ def _audit_product_host_auditability() -> int:
     )
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    temp_dir = Path(tempfile.mkdtemp(prefix="obs-auditability-gate-"))
-    runtime = build_harness_host_runtime(
-        manifest,
-        environment,
-        registry=registry,
-        registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
-        document_store=InMemoryDocumentStore(),
-        trace_db_path=temp_dir / "trace.db",
-        runtime_events_db_path=temp_dir / "events.db",
-    )
-    read_side_ready = True
-    if environment.observability_profile.diagnostics_pane_enabled:
-        try:
-            resolve_host_diagnostic_read_service(runtime)
-        except ValueError:
-            read_side_ready = False
-    facts = project_host_auditability_health_facts_from_runtime(
-        runtime,
-        diagnostic_read_side_ready=read_side_ready,
-    )
     try:
-        assert_host_auditability_health_valid(facts, environment)
-    except Exception as exc:
-        print(str(exc))
-        return 1
-    if not runtime.diagnostic_wiring.attached:
-        print("product host must attach central diagnostics for auditability conformance")
-        return 1
-    return 0
+        with tempfile.TemporaryDirectory(prefix="obs-auditability-gate-") as gate_tmp:
+            temp_dir = Path(gate_tmp)
+            if environment.sandbox is not None:
+                environment = environment.model_copy(
+                    update={"sandbox": environment.sandbox.model_copy(update={"root": temp_dir / "sandbox"})},
+                )
+            runtime = build_harness_host_runtime(
+                manifest,
+                environment,
+                registry=registry,
+                tenant_id=CI_SMOKE_PRODUCT_TENANT,
+                registry_assembly_mode=RegistryAssemblyMode.MANIFEST_DEVELOPMENT,
+                document_store=InMemoryDocumentStore(),
+                trace_db_path=temp_dir / "trace.db",
+                runtime_events_db_path=temp_dir / "events.db",
+            )
+            read_side_ready = True
+            if environment.observability_profile.diagnostics_pane_enabled:
+                try:
+                    resolve_host_diagnostic_read_service(runtime)
+                except ValueError:
+                    read_side_ready = False
+            facts = project_host_auditability_health_facts_from_runtime(
+                runtime,
+                diagnostic_read_side_ready=read_side_ready,
+            )
+            try:
+                assert_host_auditability_health_valid(facts, environment)
+            except Exception as exc:
+                print(str(exc))
+                close_harness_host_runtime(runtime)
+                return 1
+            if not runtime.diagnostic_wiring.attached:
+                print("product host must attach central diagnostics for auditability conformance")
+                close_harness_host_runtime(runtime)
+                return 1
+            close_harness_host_runtime(runtime)
+            return 0
+    finally:
+        if prior_cursor_secret is None:
+            os.environ.pop(cursor_secret_env, None)
+        else:
+            os.environ[cursor_secret_env] = prior_cursor_secret
 
 
 def main() -> int:
