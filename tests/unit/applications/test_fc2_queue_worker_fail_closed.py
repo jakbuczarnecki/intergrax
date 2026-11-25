@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import sys
+import types
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -82,6 +84,9 @@ def _wire(*, enabled: bool, production_mode: bool, backend: ProductionQueueBacke
 @pytest.fixture
 def worker_spy(monkeypatch: pytest.MonkeyPatch) -> _WorkerSpy:
     spy = _WorkerSpy()
+    celery_stub = types.ModuleType("celery")
+    celery_stub.Celery = MagicMock()
+    monkeypatch.setitem(sys.modules, "celery", celery_stub)
     monkeypatch.setattr("intergrax.runtime.task.worker_bootstrap.create_nexus_celery_worker_app", spy)
     return spy
 

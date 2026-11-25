@@ -12,7 +12,16 @@ from intergrax.agent_distribution.activation import (
     FakeRuntimeServingProjectionCoordinator,
 )
 from intergrax.agent_distribution.admin_models import (
+    ActivateRuntimeRevisionRequest,
+    ActivationResultView,
     BindAgentRequest,
+    BindingMutationResult,
+    BuildApplicationRevisionRequest,
+    BuildRevisionResult,
+    InstallAgentRequest,
+    InstallationMutationResult,
+    RuntimeRevisionView,
+    ServingStateView,
     SetAgentEnablementRequest,
 )
 from intergrax.agent_distribution.agent_discovery import (
@@ -48,6 +57,7 @@ from intergrax.agent_distribution.delegated_subtasks import (
 )
 from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymentAdapter
 from intergrax.agent_distribution.dynamic_acquisition import (
+    AgentPlatformLifecyclePort,
     DynamicAgentAcquisitionResult,
 )
 from intergrax.agent_distribution.federated_discovery import (
@@ -109,6 +119,7 @@ from intergrax.applications._shared.registry_projection import (
 from intergrax.applications._shared.registry_projection_descriptor import (
     InMemoryRuntimeRegistryProjectionDescriptorStore,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     ExecutionId,
@@ -141,6 +152,9 @@ from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.agent_platform_dependency_resolver import (
     make_identity_dependency_resolver,
+)
+from testing_support.canonical_agent_lifecycle_composition import (
+    phase9_production_composition_install_package_contract_authority_records,
 )
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     _install_request,
@@ -441,6 +455,126 @@ class _StaticSpecialistInvocation(SpecialistInvocationPort[OcrRequest, OcrResult
         return self.delegate
 
 
+@dataclass(frozen=True, slots=True)
+class _Phase9InstallContractAuthorityLifecyclePort:
+    """Enriches dynamic-acquisition installs with digest-bound contract authority."""
+
+    inner: AgentPlatformLifecyclePort
+
+    def install_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: InstallAgentRequest,
+        principal: RequestIdentity,
+    ) -> InstallationMutationResult:
+        enriched = request
+        if not request.package_contract_authority:
+            identity = request.package_identity
+            authority_records = phase9_production_composition_install_package_contract_authority_records(
+                package_digest=identity.package_digest,
+                distribution_package_id=identity.distribution_package_id,
+                artifact_store_ref=request.artifact_store_ref,
+                agent_project_metadata_ref=request.agent_project_metadata_ref,
+            )
+            enriched = request.model_copy(
+                update={"package_contract_authority": authority_records},
+            )
+        return self.inner.install_agent(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=enriched,
+            principal=principal,
+        )
+
+    def bind_agent(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BindAgentRequest,
+        principal: RequestIdentity,
+    ) -> BindingMutationResult:
+        return self.inner.bind_agent(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            principal=principal,
+        )
+
+    def enable_binding(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        application_binding_id: str,
+        request: SetAgentEnablementRequest,
+        principal: RequestIdentity,
+    ) -> BindingMutationResult:
+        return self.inner.enable_binding(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            application_binding_id=application_binding_id,
+            request=request,
+            principal=principal,
+        )
+
+    def build_application_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BuildApplicationRevisionRequest,
+        principal: RequestIdentity,
+    ) -> BuildRevisionResult:
+        return self.inner.build_application_revision(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            principal=principal,
+        )
+
+    def activate_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: ActivateRuntimeRevisionRequest,
+        principal: RequestIdentity,
+    ) -> ActivationResultView:
+        return self.inner.activate_revision(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            principal=principal,
+        )
+
+    def inspect_serving(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> ServingStateView:
+        return self.inner.inspect_serving(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+        )
+
+    def inspect_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        runtime_revision_id: str,
+    ) -> RuntimeRevisionView:
+        return self.inner.inspect_revision(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            runtime_revision_id=runtime_revision_id,
+        )
+
+
 def build_phase9_harness(
     *,
     candidates: tuple[AgentDiscoveryCandidate, ...],
@@ -461,6 +595,9 @@ def build_phase9_harness(
         agent_platform_runtime=platform_runtime,
         application_composition=app_composition,
         lifecycle_services=lifecycle_services,
+    )
+    capability_runtime.dynamic_acquisition._lifecycle = _Phase9InstallContractAuthorityLifecyclePort(
+        inner=capability_runtime.admin_service
     )
     composition = ProductionProcessComposition(
         agent_platform_runtime=platform_runtime,
@@ -574,7 +711,9 @@ async def test_production_composition_one_admin_universe() -> None:
         candidates=(_discovery_candidate(_PACKAGE_ID, capability_ids=("document.ocr",)),),
     )
     runtime = harness.capability_runtime
-    assert runtime.dynamic_acquisition._lifecycle is runtime.admin_service
+    port = runtime.dynamic_acquisition._lifecycle
+    assert isinstance(port, _Phase9InstallContractAuthorityLifecyclePort)
+    assert port.inner is runtime.admin_service
     assert runtime.task_scoped_agents._release_service._lifecycle is runtime.admin_service
     assert runtime.task_scoped_agents._acquisition_service._acquisition is runtime.dynamic_acquisition
 
@@ -721,14 +860,23 @@ async def test_production_composition_persistent_binding_survives_release() -> N
         config=plan_config,
         package_id=_PACKAGE_ID,
     )
+    delegated_lease_id = "lease-delegate-1"
+    installation_id = f"inst-{delegated_lease_id}"
+    artifact_store_ref = f"store://artifacts/{installation_id}"
     admin.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
         request=_install_request().model_copy(
             update={
                 "installation_slot_id": persistent_slot_id,
-                "installation_id": f"inst-{persistent_slot_id}",
-                "artifact_store_ref": f"store://artifacts/{persistent_slot_id}",
+                "installation_id": installation_id,
+                "artifact_store_ref": artifact_store_ref,
+                "package_contract_authority": phase9_production_composition_install_package_contract_authority_records(
+                    package_digest=_DIGEST,
+                    distribution_package_id=_PACKAGE_ID,
+                    artifact_store_ref=artifact_store_ref,
+                    agent_project_metadata_ref=_META_REF,
+                ),
             },
         ),
         principal=principal,
