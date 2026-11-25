@@ -18,8 +18,7 @@ Plan digest: 8c9936aaecb16009aed52a3e743393dd293755d897c9cd169baace54ace5b91b
 
 ## Approved
 
-Approved: operator @ 2026-11-23T13:30:00+01:00
-
+Awaiting operator signature. This file is not an approval.
 
 ## Test contract
 
@@ -43,4 +42,4 @@ Exact pytest paths and gate script invocations are defined only in the approved 
 
 ## Lifecycle state
 
-in_progress
+plan_pending
