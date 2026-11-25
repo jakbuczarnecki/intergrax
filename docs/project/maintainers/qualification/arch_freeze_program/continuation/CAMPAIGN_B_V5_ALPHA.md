@@ -53,9 +53,10 @@ Evidence: `.tmp/session/w2-recovery-03/campaign-b/b1/HISTORICAL_ALPHA/7960ae7f6c
 | Metric | Value |
 | --- | ---: |
 | Manifest rows | 9 |
-| PASS | 5 |
-| FAIL | 3 |
+| PASS (runner) | 5 (`R21`, `R22`, `R23`, `R24`, `S02`) |
+| FAIL (runner) | 3 (`R25`, `S01`, `S03` process exit) |
 | `NOT_EXECUTABLE_AT_BASELINE` | 1 (`R20`) |
+| Incomplete (FAIL + NEAB) | **4 / 9** |
 | Runner exit code | **1** |
 | `coverage_classification` | **PARTIAL_DIAGNOSTIC** |
 
@@ -67,12 +68,12 @@ Evidence: `.tmp/session/w2-recovery-03/campaign-b/b2/HISTORICAL_ALPHA/7960ae7f6c
 | R21 | PASS | traceability verifier |
 | R22 | PASS | scoped path net-zero |
 | R23 | PASS | domain pairs |
-| R24 | PASS | `pp_nt19.py` overlay (6 passed, 4 skipped deps) |
-| R25 | FAIL | **assertion exit 1** — R25c `exit0=3/12` (9× CHANGED-SINCE unmapped `evol_x`; historical X-A6-003 pattern) |
-| S01 | FAIL | **assertion exit 1** — contract→implementation edge on `environment_profile/root.py` |
+| R24 | PASS | Recovered **NT-19** probe (`pp_nt19.py` overlay @ B); 6 passed, 4 skipped (optional deps) |
+| R25 | FAIL | **assertion exit 1** — `r25_impact12.py`: **9/12** lanes exit 1 (`CHANGED-SINCE fail-closed: unmapped evol_x paths`); **3/12** exit 0: **EVOL-X**, **ENT-AUDIT-X**, **MCP-SERVER-X** (historical X-A6-003; no impact-map edit) |
+| S01 | FAIL | **assertion exit 1** — `test_whole_surface_forbids_contract_to_implementation_edges`: `intergrax.applications._shared.strict_host_dependency_concurrency_admission` imported from contract surface (`environment_profile/root.py`); historical diagnostic |
 | S02 | PASS | W5 typed observability gate |
-| S03 | FAIL | **external abort exit 4294967295** (session kill after long stall); stdout captured **127 passed** — **not** accepted as alpha pass without exit 0 |
+| S03 | **node: PASS** | **Node result (stdout):** `127 passed` in `S03/stdout.txt`. Runner exit **4294967295** = **process termination**, not a failing assertion. Does **not** authorize WF E2–E4 product edits. No S03 rerun in P2. |
 
 ### S03 disposition
 
-**`REMEASURE_REQUIRED`:** Runner row is **FAIL** (non-zero exit from external terminate). Stdout shows full suite green at capture time; that is **diagnostic signal only**, not qualification PASS. Does **not** authorize WF E2–E4. Class prior pip/setup **ERROR** pattern as `missing_extra` when remeasured with proper extras.
+Alpha cites **pytest stdout** (`127 passed`, `tests/qualification/harness_01`) as the node measurement. Runner JSON retains non-zero exit from external process termination only; that kill is **not** qualification evidence and **not** a substitute for a clean campaign runner exit.

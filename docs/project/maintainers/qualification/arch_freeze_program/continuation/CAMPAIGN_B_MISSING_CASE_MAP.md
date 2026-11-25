@@ -4,7 +4,7 @@ Diagnostic mapping for **T-IGX-073-E** package P2. Alpha baseline **B**: `7960ae
 
 ## Defined slots (manifest @ candidate branch)
 
-**Coverage:** B-1 **19 / 19** manifest rows defined; alpha execution **`PARTIAL_DIAGNOSTIC`** (11/19 incomplete @ B). B-2 **9 / 9** defined; alpha execution **`PARTIAL_DIAGNOSTIC`** (4/9 incomplete @ B).
+**Coverage:** B-1 **19 / 19** manifest rows defined; alpha **`PARTIAL_DIAGNOSTIC`** (**8 PASS**, **3 NOT_EXECUTABLE**, **8 FAIL**; **11/19** incomplete @ B). B-2 **9 / 9** defined; alpha **`PARTIAL_DIAGNOSTIC`** (**5 PASS**, **1 NOT_EXECUTABLE**, runner **3 FAIL**; **4/9** incomplete @ B; S03 node **127 passed** per stdout — see [`CAMPAIGN_B_V5_ALPHA.md`](CAMPAIGN_B_V5_ALPHA.md).
 
 ### B-1 recovered / overlay (R04)
 

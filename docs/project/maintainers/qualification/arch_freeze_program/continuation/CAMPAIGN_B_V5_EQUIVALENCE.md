@@ -5,7 +5,7 @@ Alpha baseline **B** (`AUDIT_BASELINE_2`): `7960ae7f6c82da60ca9acdc0ceebf6381000
 ## Alpha measurement @ B (P2 session `af-v5-p2-cb`)
 
 - **PT-B01:** 19 manifest rows; **8 PASS**, **8 FAIL**, **3 NOT_EXECUTABLE**; **11/19 incomplete** → **`PARTIAL_DIAGNOSTIC`** (runner exit 1). Eight FAIL cause classes recorded in [`CAMPAIGN_B_V5_ALPHA.md`](CAMPAIGN_B_V5_ALPHA.md).
-- **PT-B02:** 9/9 defined; **5 PASS**, **3 FAIL**, **1 NOT_EXECUTABLE** (`R20`); **`PARTIAL_DIAGNOSTIC`** (runner exit 1).
+- **PT-B02:** 9/9 defined; runner **5 PASS** (`R21`–`R24`, `S02`), **3 FAIL** (`R25`, `S01`, S03 process exit), **1 NOT_EXECUTABLE** (`R20`); **4/9 incomplete** → **`PARTIAL_DIAGNOSTIC`**. **S03** node cited from stdout: **127 passed** (runner exit 4294967295 = termination only). **R24** = recovered NT-19 @ B. **R25** = 9× unmapped `evol_x` / 3× clean (EVOL-X, ENT-AUDIT-X, MCP-SERVER-X).
 
 ## Recovered probes (vendor identity)
 
