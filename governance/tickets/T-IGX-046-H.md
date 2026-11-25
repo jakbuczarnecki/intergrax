@@ -55,4 +55,4 @@ Product paths (`intergrax/`, `agents/`, `applications/`), `scripts/maintenance/c
 
 ## Lifecycle state
 
-plan_pending — P-R0-6: governance-prep published; implementation **not started**
+plan_pending
