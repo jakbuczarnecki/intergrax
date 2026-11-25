@@ -1,14 +1,10 @@
 # T-IGX-055-B — EQOA-A4-027: research serving rejects missing tenant_id (no research-tenant default)
 
-## Approved
-
-Approved: operator @ 2026-11-23T13:30:00+01:00
-
 ## Scope
 
 Remove silent `research-tenant` / `research-user` defaults from research HTTP serving. `ResearchRunRequestV1` requires explicit `tenant_id` and `user_id`. The research router must not substitute a tenant when there is no authenticated principal. Maps to EQO-PKG-A4-027 / `EDER-F-0136`.
 
-This branch is cut from `development` at `a0598ba3e4f4f903eb4da3db8ea012d5cbf71225`. It carries the same behavior as the train-line package without importing `arch-freeze/rw-train`.
+Write set authorized under the EQO-PKG-A4-027 grant from the 2026-11-21 orchestration session. Required behavior is fixed by DP-23 and C3 (missing `tenant_id` is rejected; no silent research-tenant default).
 
 Write set only:
 
@@ -24,11 +20,11 @@ Plan digest: n/a (EQO WAVE-02 package EQO-PKG-A4-027; behavior fixed by DP-23 an
 
 ## Test contract
 
-`uv run pytest tests/unit/applications/test_research_run_request_missing_tenant_id_eqo_a4_027.py --basetemp D:/Projekty/_wt/intergrax/_scratch/eqo-dev-a4027/pytest`
+`uv run pytest tests/unit/applications/test_research_run_request_missing_tenant_id_eqo_a4_027.py --basetemp D:/Projekty/_wt/intergrax/_scratch/eqo-w2-a4027/pytest`
 
 ## Out of scope
 
-Other applications with `default` tenant literals; `harness_host_runtime.py`; FRZ-TEN-10 promotion; merging `arch-freeze/rw-train` into `development`; host factory paths; matrix or register lifecycle updates.
+Other applications with `default` tenant literals; `harness_host_runtime.py`; FRZ-TEN-10 promotion; `development` merge; host factory paths; matrix or register lifecycle updates.
 
 ## Lifecycle state
 

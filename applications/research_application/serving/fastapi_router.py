@@ -49,12 +49,12 @@ class ResearchRunService:
             tenant_id = canonical.tenant_id
             user_id = canonical.user_id or body.user_id
         else:
-            tenant_id = body.tenant_id.strip()
-            if not tenant_id:
+            if authenticated_principal is None and not body.tenant_id:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="tenant_id_required",
                 )
+            tenant_id = body.tenant_id
             user_id = body.user_id
 
         task = Task(
