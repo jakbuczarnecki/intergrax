@@ -42,3 +42,4 @@ quality_gate
 ## Checkpoint
 
 @ post-impl: mechanical **16/16 PASS**, scoped_path_net_zero PASS — `.tmp/session/w06/pytest_w06_post_impl.log` (27 nodeids incl. globals). Pre-impl baseline: `.tmp/session/w06/pytest_replay_mechanical_da5ca5b.log` (3 FAIL).
+@ S07D factory: mechanical **16/16 PASS**, scoped_path_net_zero **8/8 PASS** — `.tmp/factory/ec-v6-ec02-closure/S07D/tests.log` (24 nodeids); train-pin +44 path reconcile in `_w06_eqo_prod_delta.py`.

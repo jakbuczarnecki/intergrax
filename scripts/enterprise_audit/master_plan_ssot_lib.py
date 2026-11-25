@@ -437,11 +437,21 @@ def _line_has_negated_cert(line: str, phrase: str) -> bool:
     return any(x in lower for x in ("no ", "not ", "without ", "≠", "— no", "does not"))
 
 
+def extract_disposition_line(text: str) -> str | None:
+    matches = [ln for ln in text.splitlines() if ln.startswith("**Disposition:**")]
+    if not matches:
+        return None
+    return matches[0]
+
+
 def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     root = root or repo_root()
 
-    if not any(constant in text for constant in ACCEPTED_DISPOSITIONS):
+    disposition_line = extract_disposition_line(text)
+    if disposition_line is None:
+        errors.append("missing required plan disposition line (**Disposition:** header)")
+    elif not any(constant in disposition_line for constant in ACCEPTED_DISPOSITIONS):
         errors.append(
             "disposition must declare one accepted constant "
             "(READY, PLAN PARTIAL, TECHNICAL PARTIAL, or INTERNALLY CLOSED)"
@@ -592,10 +602,10 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     if "**Overall publication gate:** PASS" in sec18 and "Validator exit code: 0" not in sec18:
         errors.append("§18 Overall PASS requires Validator exit code: 0 row")
 
-    if READY_DISPOSITION in text and errors:
+    if disposition_line and READY_DISPOSITION in disposition_line and errors:
         errors.append("READY disposition incompatible with validation errors")
 
-    if INTERNALLY_CLOSED_DISPOSITION in text and errors:
+    if disposition_line and INTERNALLY_CLOSED_DISPOSITION in disposition_line and errors:
         errors.append("INTERNALLY CLOSED disposition incompatible with validation errors")
 
     if order:

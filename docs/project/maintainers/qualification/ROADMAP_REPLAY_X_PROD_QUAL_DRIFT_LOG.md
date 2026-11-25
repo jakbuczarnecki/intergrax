@@ -44,3 +44,12 @@ Mechanical gate: `test_replay_x_prod_delta_empty_since_dup_x` asserts **unscoped
 | historical_evidence_invalidated_by_later_changes | 0 |
 | vendor_neutrality_replay_failures | 0 |
 | B6 R2 ecap_counter_vs_mechanical | **empty** |
+
+## Factory train-pin addendum (ec-v6-ec02-closure S07D)
+
+| Scope | git diff a7d83925..HEAD @ integrate worktree | Reopen? |
+| --- | --- | --- |
+| **Scoped (W06 EQO + train-pin delta)** | +44 paths (factory S01–S07 integrates) — [`W06_REPLAY_PROD_DELTA.md`](pre_ent_enterprise_certification/W06_REPLAY_PROD_DELTA.md) | **no** |
+| **Unscoped** | **empty** @ mechanical replay | **no** |
+
+Mechanical replay: `test_roadmap_replay_x_mechanical_exit_gates.py` **16/16 PASS**, `test_roadmap_replay_x_scoped_path_net_zero.py` **PASS** (S07D locked pytest).

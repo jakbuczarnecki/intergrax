@@ -138,6 +138,7 @@ from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 
 from testing_support.agent_distribution.install_contract_authority_fixtures import (
+    binding_agent_contract,
     package_contract_authority_record,
 )
 from testing_support.agent_platform_admin_harness import (
@@ -296,6 +297,36 @@ def lifecycle_install_package_contract_authority_records(
         )
     if contract.id != config.logical_agent_id:
         contract = contract.model_copy(update={"id": config.logical_agent_id})
+    return (
+        package_contract_authority_record(
+            contract=contract,
+            package_digest=package_digest,
+            distribution_package_id=distribution_package_id,
+            artifact_store_ref=artifact_store_ref,
+            agent_project_metadata_ref=agent_project_metadata_ref,
+        ),
+    )
+
+
+def phase9_production_composition_install_package_contract_authority_records(
+    *,
+    package_digest: str,
+    distribution_package_id: str,
+    artifact_store_ref: str,
+    agent_project_metadata_ref: str,
+) -> tuple[PackageAgentContractAuthorityRecord, ...]:
+    """Digest-bound install authority for AC-4 Phase 9 production composition E2E."""
+    template = binding_agent_contract(
+        contract_id="contract.v1",
+        version="1",
+        description="phase9 production composition reference",
+    )
+    contract = template.model_copy(
+        update={
+            "capabilities": ["document.ocr"],
+            "skills": [],
+        }
+    )
     return (
         package_contract_authority_record(
             contract=contract,
