@@ -14,14 +14,18 @@ _CONTRACT_PREFIX = "intergrax.integrations.contracts"
 _REASON = "agents may import only intergrax.integrations.contracts leaves"
 
 
+def _module_under_package(module: str, package: str) -> bool:
+    return module == package or module.startswith(f"{package}.")
+
+
 def _allowed_contract_module(module: str) -> bool:
-    return module == _CONTRACT_PREFIX or module.startswith(f"{_CONTRACT_PREFIX}.")
+    return _module_under_package(module, _CONTRACT_PREFIX)
 
 
 def _import_name_violation(module: str) -> str | None:
-    if module.startswith("intergrax.tools"):
+    if _module_under_package(module, "intergrax.tools"):
         return _REASON
-    if module.startswith("intergrax.integrations") and not _allowed_contract_module(module):
+    if _module_under_package(module, "intergrax.integrations") and not _allowed_contract_module(module):
         return _REASON
     return None
 

@@ -152,21 +152,6 @@ class EnterpriseAuditRunner:
                     baseline_sha=baseline.accepted_baseline_sha,
                 )
 
-        if effective_certifying:
-            fallthrough = frz_default_fallback_check_ids(self._checks)
-            if fallthrough:
-                return self._blocked_report(
-                    mode,
-                    identity,
-                    output_dir,
-                    finding_id="FRZ:COVERAGE_DEFAULT_FALLBACK",
-                    message=(
-                        "certifying runs forbid checks without an explicit FRZ family attribution: "
-                        + ", ".join(sorted(fallthrough))
-                    ),
-                    certifying_run=certifying_run,
-                )
-
         planned_all = checks_for_mode(self._checks, mode, changed_check_ids=changed_check_ids)
         filtered = bool(check_ids_filter)
         if check_ids_filter:

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from intergrax.platform.enterprise_audit.contracts import AuditMode, ManifestCheck
 from intergrax.platform.enterprise_audit.impact_map import (
+    EVOL_X_TREE_IMPACT_RULES,
     check_ids_for_changed_path,
     is_product_path,
     load_default_impact_map,
@@ -85,6 +86,8 @@ def evol_checks_by_path(checks: tuple[ManifestCheck, ...]) -> dict[str, frozense
         if check.check_id.startswith("ENT-A-EVOL") or check.check_id.startswith("ENT-A-INV"):
             for ep in _entrypoint_paths(check.entrypoint):
                 mapping.setdefault(ep.replace("\\", "/"), set()).add(check.check_id)
+    for prefix, ids in EVOL_X_TREE_IMPACT_RULES:
+        mapping.setdefault(prefix, set()).update(ids)
     return {k: frozenset(v) for k, v in mapping.items()}
 
 
