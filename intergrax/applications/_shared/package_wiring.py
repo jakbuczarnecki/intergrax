@@ -4,7 +4,13 @@
 
 from __future__ import annotations
 
+import atexit
+import contextlib
 import json
+import shutil
+import tempfile
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
@@ -47,7 +53,10 @@ from intergrax.tools.registry.factory import enabled_tool_ids_for_profile
 
 PACKAGE_GATE_TENANT_ID = "ci-package-gate-tenant"
 PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT = "http://127.0.0.1:0/v1/logs"
-PACKAGE_GATE_SANDBOX_QUALIFICATION_ROOT = Path("build/ci/package_gate_sandbox")
+_PACKAGE_GATE_SANDBOX_PREFIX = "igx-package-gate-sandbox-"
+_SIDE_EFFECT_TOOL_PREFIXES = ("sandbox.", "workspace.", "gitlab.", "websearch.")
+
+_active_package_gate_qualifications: list[PackageGateQualificationRun] = []
 
 
 def package_gate_integration_profile() -> IntegrationProfile:
@@ -67,21 +76,50 @@ def package_gate_integration_profile() -> IntegrationProfile:
     )
 
 
-def package_gate_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
-    """Lab integration bindings plus guarded-composition qualification for CI package gates.
+@dataclass
+class PackageGateQualificationRun:
+    """One CI package-gate qualification run with owned temporary sandbox resources."""
 
-    Preserves STRICT/PRODUCT posture (no BALANCED/LAB downgrade). Qualification supplies
-    OTLP, in-memory integration backends, and an explicit sandbox root when guarded wiring
-    requires one.
-    """
-    from intergrax.applications._shared.sandbox_wiring import (
-        product_requires_sandbox,
-        sandbox_required_for_posture,
-    )
+    metadata_env: ApplicationEnvironmentProfile
+    composition_env: ApplicationEnvironmentProfile
+    _qualification_root: Path | None = field(default=None, repr=False)
+    _released: bool = field(default=False, init=False, repr=False)
+
+    def release(self) -> None:
+        if self._released:
+            return
+        self._released = True
+        if self._qualification_root is not None and self._qualification_root.is_dir():
+            shutil.rmtree(self._qualification_root, ignore_errors=True)
+            self._qualification_root = None
+
+
+def _package_gate_has_side_effect_tools(env: ApplicationEnvironmentProfile) -> bool:
+    enabled = set(env.tool_profile.enabled)
+    for bundle in env.tool_profile.enabled_bundles:
+        enabled.add(bundle)
+    return any(tool_id.startswith(_SIDE_EFFECT_TOOL_PREFIXES) or tool_id == "sandbox.exec" for tool_id in enabled)
+
+
+def _package_gate_requires_sandbox_root(gate_env: ApplicationEnvironmentProfile) -> bool:
+    from intergrax.applications._shared.sandbox_wiring import product_requires_sandbox
     from intergrax.applications._shared.wiring_posture import wiring_fails_closed
-    from intergrax.contracts.sandbox_profile import SandboxProfile
 
-    gate_env = env.model_copy(
+    if product_requires_sandbox(gate_env):
+        return True
+    if wiring_fails_closed(gate_env) and gate_env.sandbox is not None and gate_env.sandbox.enable_exec_tool:
+        return True
+    if wiring_fails_closed(gate_env) and _package_gate_has_side_effect_tools(gate_env):
+        return True
+    return False
+
+
+def package_gate_metadata_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
+    """Deterministic package-gate projection (integration + qualification OTLP only).
+
+    Does not inject a sandbox root or change posture, sandbox enablement, or other source fields.
+    """
+    return env.model_copy(
         update={
             "integration_profile": package_gate_integration_profile(),
             "observability_profile": env.observability_profile.model_copy(
@@ -89,23 +127,83 @@ def package_gate_environment(env: ApplicationEnvironmentProfile) -> ApplicationE
             ),
         },
     )
-    needs_sandbox_root = (
-        sandbox_required_for_posture(gate_env)
-        or product_requires_sandbox(gate_env)
-        or (wiring_fails_closed(gate_env) and gate_env.sandbox is not None and gate_env.sandbox.enable_exec_tool)
-    )
-    if not needs_sandbox_root:
-        return gate_env
-    sandbox = gate_env.sandbox or SandboxProfile(enable_exec_tool=True)
-    if sandbox.root is not None:
-        return gate_env
-    return gate_env.model_copy(
+
+
+def _compose_package_gate_environment(
+    metadata_env: ApplicationEnvironmentProfile,
+) -> tuple[ApplicationEnvironmentProfile, Path | None]:
+    from intergrax.contracts.sandbox_profile import SandboxProfile
+
+    if not _package_gate_requires_sandbox_root(metadata_env):
+        return metadata_env, None
+    sandbox = metadata_env.sandbox
+    if sandbox is not None and sandbox.root is not None:
+        return metadata_env, None
+    sandbox = sandbox or SandboxProfile(enable_exec_tool=True)
+    qualification_root = Path(tempfile.mkdtemp(prefix=_PACKAGE_GATE_SANDBOX_PREFIX))
+    qualification_root.mkdir(parents=True, exist_ok=True)
+    composition_env = metadata_env.model_copy(
         update={
-            "sandbox": sandbox.model_copy(
-                update={"root": PACKAGE_GATE_SANDBOX_QUALIFICATION_ROOT},
-            ),
+            "sandbox": sandbox.model_copy(update={"root": qualification_root}),
         },
     )
+    return composition_env, qualification_root
+
+
+def _register_package_gate_qualification(run: PackageGateQualificationRun) -> None:
+    _active_package_gate_qualifications.append(run)
+
+
+@contextlib.contextmanager
+def package_gate_qualification(
+    env: ApplicationEnvironmentProfile,
+) -> Iterator[PackageGateQualificationRun]:
+    """Isolate one package-gate qualification run and release temporary resources."""
+    metadata_env = package_gate_metadata_environment(env)
+    composition_env, qualification_root = _compose_package_gate_environment(metadata_env)
+    run = PackageGateQualificationRun(
+        metadata_env=metadata_env,
+        composition_env=composition_env,
+        _qualification_root=qualification_root,
+    )
+    _register_package_gate_qualification(run)
+    try:
+        yield run
+    finally:
+        run.release()
+
+
+def package_gate_qualification_release(run: PackageGateQualificationRun) -> None:
+    """Release a package-gate qualification run started via :func:`package_gate_environment`."""
+    run.release()
+
+
+def release_all_package_gate_qualifications() -> None:
+    """Release every active package-gate qualification run (process shutdown helper)."""
+    for run in tuple(_active_package_gate_qualifications):
+        run.release()
+    _active_package_gate_qualifications.clear()
+
+
+def package_gate_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
+    """Start an owned qualification run and return its composition environment.
+
+    Prefer :func:`package_gate_qualification` or :func:`package_gate_metadata_environment`
+    for deterministic package metadata. Callers that only need package projection should use
+    ``metadata_env`` from :func:`package_gate_qualification`.
+    """
+    metadata_env = package_gate_metadata_environment(env)
+    composition_env, qualification_root = _compose_package_gate_environment(metadata_env)
+    run = PackageGateQualificationRun(
+        metadata_env=metadata_env,
+        composition_env=composition_env,
+        _qualification_root=qualification_root,
+    )
+    _register_package_gate_qualification(run)
+    return composition_env
+
+
+atexit.register(release_all_package_gate_qualifications)
 
 
 def package_id_for_app(app_id: str) -> str:
