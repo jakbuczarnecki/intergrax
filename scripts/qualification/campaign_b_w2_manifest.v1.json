@@ -7,7 +7,7 @@
     "b1": {
       "canonical_planned_cases": 18,
       "canonical_reserve_slots": 4,
-      "manifest_defined_cases": 9,
+      "manifest_defined_cases": 17,
       "coverage_classification": "PARTIAL_DIAGNOSTIC"
     },
     "b2": {
@@ -20,12 +20,21 @@
   "b1_cases": [
     {"case_id": "R00", "contract": "AB-05", "command": "python scripts/governance/verify_arch_freeze_plan_traceability.py", "read_only": true},
     {"case_id": "R01a", "contract": "AB-05", "command": "python scripts/governance/verify_rw_plan_phase_check3.py", "read_only": true},
+    {"case_id": "R01b", "contract": "AB-05", "command": "python scripts/maintenance/check_agent_registry_bypass.py", "read_only": true},
     {"case_id": "R02", "contract": "AB-05", "command": "python -m pytest tests/unit/governance/test_arch_freeze_plan_traceability.py -q --tb=line", "read_only": true},
     {"case_id": "R03", "contract": "AB-06", "command": "python scripts/governance/arch_freeze_b1_closed_world_inventory.py --report-only --output-dir .tmp/session/w2-recovery-01/b1/closed-world", "read_only": true},
     {"case_id": "R05", "contract": "AB-07", "command": "python scripts/governance/lint_iiac_closure_regex.py", "read_only": true},
+    {"case_id": "R06", "contract": "AB-08", "command": "python -m pytest tests/unit/applications/test_mcp_identity_mode_fail_closed.py tests/unit/applications/test_mcp_rc_audit_corrections.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py -q --tb=line", "read_only": true},
+    {"case_id": "R07", "contract": "AB-07", "command": "python -m pytest tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q02_restart_resume_closed_world_parity tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q10_semantic_owner_discovery_exact_parity tests/qualification/trace_x/test_trace_x_p5_r2_closed_world_gates.py::test_txp5cw_q03_configured_execution_paths_closed_world_parity tests/qualification/trace_x/test_trace_x_p5_r2_closed_world_gates.py::test_txp5cw_q13_semantic_owner_duplicate_matrix -q --tb=line", "read_only": true},
+    {"case_id": "R08", "contract": "AB-07", "command": "python -m pytest tests/qualification/tenant_x -q --tb=line", "read_only": true},
     {"case_id": "R09", "contract": "AB-09", "command": "python -m pytest tests/qualification/tenant_x/test_tenant_x_p0_fast.py -q --tb=line", "read_only": true},
+    {"case_id": "R10", "contract": "AB-08", "command": "python -m pytest tests/unit/runtime/tools/test_tools_side_effect_safety.py tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py tests/unit/runtime/nexus/tools/test_tool_life_x_c0_no_boundary_submit_failure_terminal.py -q --tb=line", "read_only": true},
     {"case_id": "R11", "contract": "AB-09", "command": "python -m pytest tests/qualification/trace_x/test_trace_x_p0_baseline.py -q --tb=line", "read_only": true},
+    {"case_id": "R12", "contract": "AB-07", "command": "python -m pytest tests/integration/decision_system/test_concurrent_finalization.py -q --tb=line", "read_only": true},
+    {"case_id": "R13", "contract": "AB-07", "command": "python -m pytest tests/qualification/ent_audit_x/unit/test_od_ent_02_verifiers.py tests/qualification/ent_audit_x/unit/test_changed_since_impact_map.py tests/unit/governance/test_iiac_negative_guards.py::test_n09_implementer_must_not_publish_unbound_pass_records -q --tb=line", "read_only": true},
     {"case_id": "R14", "contract": "AB-09", "command": "python -m pytest tests/qualification/state_x/test_state_x_p0_baseline.py -q --tb=line", "read_only": true},
+    {"case_id": "R15", "contract": "AB-09", "command": "python -m pytest tests/qualification/dup_x tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed -q --tb=line", "read_only": true},
+    {"case_id": "R16", "contract": "AB-09", "command": "python -m pytest tests/qualification/trace_x -q --tb=line", "read_only": true},
     {"case_id": "R17", "contract": "AB-11", "command": "python scripts/qualification/render_ebh7_f10_normative_matrix.py --check", "read_only": true}
   ],
   "b2_cases": [
