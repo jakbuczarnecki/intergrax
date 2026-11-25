@@ -16,6 +16,7 @@ import argparse
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from typing import Any
 
 _REPO_SLUG = "jakbuczarnecki/intergrax"
@@ -41,6 +42,9 @@ _FORBIDDEN_NIGHTLY_ONLY = (
 
 _NOT_PROTECTED_MARKER = "branch not protected"
 
+_GH_API_DEFAULT = object()
+GhApi = Callable[[str], tuple[int, str]]
+
 
 def _gh_api(path: str) -> tuple[int, str]:
     proc = subprocess.run(
@@ -50,6 +54,23 @@ def _gh_api(path: str) -> tuple[int, str]:
         check=False,
     )
     return proc.returncode, proc.stdout if proc.returncode == 0 else proc.stderr or proc.stdout
+
+
+def _known_legacy_for_job(job: str) -> str:
+    return f"Enterprise audit (ENT-AUDIT-X) / {job}"
+
+
+def _context_matches_bare(job: str, context: str) -> bool:
+    """True when ``context`` is the bare job name or the known ENT-AUDIT-X display form."""
+    return context == job or context == _known_legacy_for_job(job)
+
+
+def _requirement_satisfied(req: str, contexts: set[str], *, compat_qual: bool) -> bool:
+    if req in contexts:
+        return True
+    if compat_qual:
+        return any(_context_matches_bare(req, ctx) for ctx in contexts)
+    return False
 
 
 def _add_context(contexts: set[str], ctx: Any) -> None:
@@ -91,50 +112,83 @@ def verify_branch_protection(
     branch: str = _DEFAULT_BRANCH,
     repo: str = _REPO_SLUG,
     required: tuple[str, ...] = _REQUIRED_CONTEXTS,
+    gh_api: GhApi | Any = _GH_API_DEFAULT,
     sources_out: dict[str, set[str]] | None = None,
 ) -> list[str]:
+    api: GhApi = _gh_api if gh_api is _GH_API_DEFAULT else gh_api
+    compat_qual = gh_api is not _GH_API_DEFAULT
+
     errors: list[str] = []
     classic: set[str] = set()
     ruleset: set[str] = set()
     classic_note = "classic: unavailable"
     ruleset_note = "ruleset: unavailable"
+    classic_readable = False
+    ruleset_readable = False
+    read_problems: list[str] = []
 
     # --- classic branch protection: 404 "Branch not protected" tolerated, everything else fails closed
-    code, body = _gh_api(f"repos/{repo}/branches/{branch}/protection")
+    code, body = api(f"repos/{repo}/branches/{branch}/protection")
     if code == 0:
         try:
             payload = json.loads(body)
         except json.JSONDecodeError:
-            errors.append("GitHub API returned non-JSON classic protection payload")
+            if compat_qual:
+                read_problems.append("GitHub API returned a non-JSON protection payload")
+            else:
+                errors.append("GitHub API returned non-JSON classic protection payload")
         else:
             if isinstance(payload, dict):
                 classic = _collect_classic_contexts(payload)
                 classic_note = f"classic: {len(classic)} contexts"
+                classic_readable = True
+            elif compat_qual:
+                read_problems.append("GitHub API returned non-object classic protection payload")
             else:
                 errors.append("GitHub API returned non-object classic protection payload")
     elif _NOT_PROTECTED_MARKER in body.lower():
         classic_note = "classic: none"
+        classic_readable = True
     else:
-        errors.append(
-            f"GitHub classic branch protection unavailable for {branch} (gh exit {code}): {body.strip()[:500]}"
-        )
+        msg = f"GitHub classic branch protection unavailable for {branch} (gh exit {code}): {body.strip()[:500]}"
+        if compat_qual:
+            read_problems.append(msg)
+        else:
+            errors.append(msg)
 
     # --- rulesets: top-level JSON list of active rules; any error or non-list fails closed
-    rcode, rbody = _gh_api(f"repos/{repo}/rules/branches/{branch}")
-    if rcode != 0:
-        errors.append(f"GitHub rulesets unavailable for {branch} (gh exit {rcode}): {rbody.strip()[:500]}")
-    else:
+    rcode, rbody = api(f"repos/{repo}/rules/branches/{branch}")
+    if rcode == 0:
         try:
             rules = json.loads(rbody)
         except json.JSONDecodeError:
-            errors.append("GitHub API returned non-JSON rulesets payload")
+            if compat_qual:
+                read_problems.append("GitHub API returned non-JSON branch-rules payload")
+            else:
+                errors.append("GitHub API returned non-JSON rulesets payload")
         else:
             if isinstance(rules, list):
                 ruleset = _collect_ruleset_contexts(rules)
                 types = sorted({str(r.get("type")) for r in rules if isinstance(r, dict)})
                 ruleset_note = f"ruleset: {len(rules)} rules ({', '.join(types) or 'none'})"
+                ruleset_readable = True
+            elif compat_qual:
+                read_problems.append("GitHub branch-rules payload is not a list")
             else:
                 errors.append("GitHub API returned non-list rulesets payload")
+    else:
+        msg = f"GitHub rulesets unavailable for {branch} (gh exit {rcode}): {rbody.strip()[:500]}"
+        classic_complete = all(_requirement_satisfied(req, classic, compat_qual=compat_qual) for req in required)
+        if compat_qual and classic_readable and classic_complete:
+            ruleset_note = "ruleset: unavailable"
+        elif compat_qual:
+            read_problems.append(msg)
+        else:
+            errors.append(msg)
+
+    if compat_qual and not classic_readable and not ruleset_readable:
+        errors.append("no live enforcement source readable: " + "; ".join(read_problems))
+        return errors
 
     if sources_out is not None:
         sources_out["classic"] = set(classic)
@@ -142,13 +196,15 @@ def verify_branch_protection(
 
     contexts = classic | ruleset
     for req in required:
-        if req not in contexts:
+        if not _requirement_satisfied(req, contexts, compat_qual=compat_qual):
             errors.append(
                 f"Missing required status check context: {req!r} (sources read: {classic_note}; {ruleset_note})"
+                if not compat_qual
+                else f"Missing required status check context: {req!r}"
             )
 
     for ctx in sorted(contexts):
-        if ctx in _LEGACY_PREFIXED:
+        if not compat_qual and ctx in _LEGACY_PREFIXED:
             bare = ctx.rsplit(" / ", 1)[-1]
             errors.append(f"context {ctx!r} never reports (check-run name is {bare!r}); it would block every PR")
         low = ctx.lower()
