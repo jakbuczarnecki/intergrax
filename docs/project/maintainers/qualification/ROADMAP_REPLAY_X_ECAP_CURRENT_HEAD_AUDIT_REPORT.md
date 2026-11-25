@@ -1,8 +1,8 @@
-# ROADMAP-REPLAY-X — ECAP current-HEAD audit report (§14)
+﻿# ROADMAP-REPLAY-X — ECAP current-HEAD audit report (§14)
 
 | Field | Value |
 | --- | --- |
-| **AUDITED_HEAD** | `5f54ba76d68e9065256ac4597bc8e8d9e012b6d2` |
+| **AUDITED_HEAD** | `343b32d62a5c9f225afc89d6b7ad5815279553d5` |
 | **Parent status** | **CLOSED — INDEPENDENTLY ACCEPTED (SCOPED)** @ **OD-REPLAYX-08** (2026-10-30) |
 
 ## C1 — Closed-world inventory
