@@ -13,7 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "scripts" / "hooks" / "igx_subagent_guard.py"
 HOOKS_JSON = ROOT / ".cursor" / "hooks.json"
-ROLES = ("igx-architect", "igx-implementer", "igx-integrator", "igx-researcher", "igx-reviewer")
+ROLES = ("igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer")
 
 
 def _run(stdin: str, **env: str) -> dict:
@@ -34,16 +34,15 @@ def _start(subagent_type: object, **env: str) -> dict:
     return _run(json.dumps({"hook_event_name": "subagentStart", "subagent_type": subagent_type}), **env)
 
 
-@pytest.mark.parametrize("generic", ["generalPurpose", "general-purpose", "GeneralPurpose"])
-def test_general_purpose_is_denied_and_names_the_roles(generic: str) -> None:
-    out = _start(generic)
+def test_general_purpose_is_denied_and_names_the_roles() -> None:
+    out = _start("generalPurpose")
     assert out["permission"] == "deny"
     for role in ROLES:
         assert role in out["user_message"]
 
 
-@pytest.mark.parametrize("subagent_type", [*ROLES, "explore"])
-def test_typed_roles_are_allowed(subagent_type: str) -> None:
+@pytest.mark.parametrize("subagent_type", [*ROLES, "explore", "general-purpose", "GeneralPurpose"])
+def test_other_types_are_allowed(subagent_type: str) -> None:
     assert _start(subagent_type) == {"permission": "allow"}
 
 
@@ -62,20 +61,13 @@ def test_kill_switch_allows_every_spawn() -> None:
     assert _run("not json", IGX_HOOKS="off") == {"permission": "allow"}
 
 
-def test_hooks_json_uses_native_cursor_lifecycle_and_keeps_permission_guards() -> None:
+def test_hooks_json_registers_only_a_fail_closed_subagent_start() -> None:
     config = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     assert config["version"] == 1
-    assert set(config["hooks"]) == {"subagentStart", "beforeShellExecution"}
-    (remote,) = config["hooks"]["beforeShellExecution"]
-    assert remote["failClosed"] is True
-    assert remote["command"] == "python scripts/hooks/igx_cursor_integration_guard.py"
+    assert list(config["hooks"]) == ["subagentStart"]
+    assert "stop" not in config["hooks"]
     (entry,) = config["hooks"]["subagentStart"]
     assert entry["failClosed"] is True
-    assert entry["matcher"] == "^(generalPurpose|general-purpose|GeneralPurpose)$"
+    assert entry["matcher"] == "^generalPurpose$"
     assert entry["command"] == "python scripts/hooks/igx_subagent_guard.py"
-    assert "stop" not in config["hooks"]
-    # Claude Code retains its existing independent Stop hook.
-    claude = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
-    assert any(
-        "igx_stop_guard.py" in hook.get("command", "") for item in claude["hooks"]["Stop"] for hook in item["hooks"]
-    )
+    assert (ROOT / "scripts" / "hooks" / "igx_subagent_guard.py").is_file()

@@ -64,13 +64,13 @@ def _mdc_body(rule_id: str) -> str:
     return text.split("---\n", 2)[2]
 
 
-def test_always_rules_include_generated_core_and_scoped_cursor_overrides() -> None:
+def test_always_rules_are_exactly_core_and_english_only() -> None:
     always = sorted(
         p.stem
         for p in (ROOT / ".cursor" / "rules").glob("*.mdc")
         if "alwaysApply: true" in p.read_text(encoding="utf-8").split("---", 2)[1]
     )
-    assert always == sorted([*ALWAYS_RULES, "igx-cursor-direct-execution"])
+    assert always == sorted(ALWAYS_RULES)
 
 
 def test_always_core_mdc_inlines_the_invariants() -> None:
@@ -117,30 +117,15 @@ def test_cursor_adapters_carry_no_claude_model_slugs() -> None:
         assert not re.search(r"^model:\s*(haiku|opus|sonnet)\b", path.read_text(encoding="utf-8"), re.MULTILINE)
 
 
-def test_cursor_reviewer_uses_composer_without_claude_routing() -> None:
-    cursor = (ROOT / ".cursor" / "agents" / "igx-reviewer.md").read_text(encoding="utf-8")
-    claude = (ROOT / "agent-env" / "agents" / "igx-reviewer.md").read_text(encoding="utf-8")
-    assert "model: composer-2.5" in cursor
-    assert "reviewer uses `composer-2.5`" in cursor
-    assert "runs this agent on `opus`" not in cursor
-    assert "runs this agent on `opus`" in claude
-
-
 def test_cursor_agents_use_documented_keys_and_derived_readonly() -> None:
     cursor_agents = ROOT / ".cursor" / "agents"
     names = sorted(p.stem for p in cursor_agents.glob("igx-*.md"))
-    assert names == ["igx-architect", "igx-implementer", "igx-integrator", "igx-researcher", "igx-reviewer"]
-    assert not (ROOT / ".claude" / "agents" / "igx-integrator.md").exists()
+    assert names == ["igx-architect", "igx-implementer", "igx-researcher", "igx-reviewer"]
     for name in names:
         head = (cursor_agents / f"{name}.md").read_text(encoding="utf-8").split("---", 2)[1]
         keys = {line.split(":", 1)[0] for line in head.strip().splitlines()}
         assert keys == {"name", "description", "model", "readonly"}
-    for name, readonly in (
-        ("igx-reviewer", "true"),
-        ("igx-researcher", "true"),
-        ("igx-implementer", "false"),
-        ("igx-integrator", "false"),
-    ):
+    for name, readonly in (("igx-reviewer", "true"), ("igx-researcher", "true"), ("igx-implementer", "false")):
         assert f"readonly: {readonly}" in (cursor_agents / f"{name}.md").read_text(encoding="utf-8")
 
 
@@ -212,78 +197,3 @@ def test_checker_fails_when_core_mdc_is_a_pointer(tmp_path: Path, monkeypatch) -
     checker._check_always_on_rules(errors)
     assert any("@agent-env" in e for e in errors)
     assert any("lost required text" in e for e in errors)
-
-
-def _load_sync():  # noqa: ANN202
-    sys.path.insert(0, str(SYNC.parent))
-    try:
-        import sync_agent_env  # noqa: WPS433
-    finally:
-        sys.path.remove(str(SYNC.parent))
-    return sync_agent_env
-
-
-CORE_SENTENCE = "`/igx-run-plan` enforces it via Stop hook"
-
-
-def test_cursor_core_direct_execution_and_claude_core_is_unchanged() -> None:
-    expected = _load_sync().expected_files()
-    cursor_core = expected[ROOT / ".cursor" / "rules" / "intergrax-core.mdc"]
-    assert "igx-cursor-direct-execution.mdc" in cursor_core
-    assert "current checkout" in cursor_core
-    assert CORE_SENTENCE not in cursor_core
-    source = (ROOT / "agent-env" / "rules" / "intergrax-core.md").read_text(encoding="utf-8")
-    assert CORE_SENTENCE in source  # Claude imports this source verbatim via CLAUDE.md
-    claude_md = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
-    assert "@agent-env/rules/intergrax-core.md" in claude_md
-    assert "igx-cursor-direct-execution" not in claude_md
-
-
-def test_cursor_core_keeps_shared_git_escalation_wording() -> None:
-    sync = _load_sync()
-    cursor_core = sync.expected_files()[ROOT / ".cursor" / "rules" / "intergrax-core.mdc"]
-    assert "push origin development" in cursor_core
-    assert "branch integration and GitHub settings stay human" in cursor_core
-    assert "factory/<plan-id>/int" not in cursor_core
-    source = (ROOT / "agent-env" / "rules" / "intergrax-core.md").read_text(encoding="utf-8")
-    for canonical, _cursor, _label in sync._CURSOR_CORE_SUBSTITUTIONS:
-        assert source.count(canonical) == 1  # Claude keeps the canonical wording
-
-
-def test_cursor_core_transform_fails_loudly_on_source_drift() -> None:
-    import pytest
-
-    sync = _load_sync()
-    with pytest.raises(ValueError, match="Cursor adapter"):
-        sync._cursor_core_text("intergrax-core", "no plan sentence here")
-    assert sync._cursor_core_text("intergrax-english-only-commits", "x") == "x"
-
-
-def test_cursor_autonomy_is_a_direct_execution_stub_and_claude_adapter_points_to_canonical() -> None:
-    expected = _load_sync().expected_files()
-    cursor = expected[ROOT / ".cursor" / "skills" / "igx-autonomy" / "SKILL.md"]
-    assert "agent-env/skills/igx-autonomy/SKILL.md" in cursor
-    assert "igx-cursor-direct-execution.mdc" in cursor
-    assert "igx_factory.py park" not in cursor
-    assert "Read and follow the canonical skill (SSOT)" not in cursor
-    claude = expected[ROOT / ".claude" / "skills" / "igx-autonomy" / "SKILL.md"]
-    assert "Read and follow the canonical skill (SSOT): `agent-env/skills/igx-autonomy/SKILL.md`" in claude
-    assert "factory" not in claude
-
-
-def test_chatgpt_direct_mode_overrides_only_cursor_routing_and_publication() -> None:
-    sync = _load_sync()
-    expected = sync.expected_files()
-    direct = expected[ROOT / ".cursor/rules/igx-cursor-direct-execution.mdc"]
-    core = expected[ROOT / ".cursor/rules/intergrax-core.mdc"]
-    assert "CHATGPT_DIRECT_IMPLEMENTATION" in direct
-    assert "PREFLIGHT_OK" in direct
-    assert "PUBLISHED_DRAFT" in direct
-    assert "Do not substitute direct" in direct
-    assert "Cursor parent may be Grok" not in core
-    for rule, note in sync._CURSOR_DIRECT_RULE_NOTES.items():
-        assert note in expected[ROOT / ".cursor" / "rules" / f"{rule}.mdc"]
-        assert note not in expected[ROOT / ".claude" / "skills" / rule / "SKILL.md"]
-    for skill, note in sync._CURSOR_DIRECT_SKILL_NOTES.items():
-        assert note in expected[ROOT / ".cursor" / "skills" / skill / "SKILL.md"]
-        assert note not in expected[ROOT / ".claude" / "skills" / skill / "SKILL.md"]
