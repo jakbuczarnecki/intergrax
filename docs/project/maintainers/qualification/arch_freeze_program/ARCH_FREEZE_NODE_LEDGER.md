@@ -1,11 +1,50 @@
 # ARCH-FREEZE node ledger (R0)
 
-Packet: P-R0-A (factual recount). Prior packet: P-R0-3W draft (2026-11-24).
+Packet: P0 fc-closure reconcile (@ INTEGRATION_HEAD). Prior packet: P-R0-A recount (2026-11-24).
 DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
 
-**Recount pins (2026-11-24, PT-Q02 audit delta):** `origin/development` = `c9ce6175f9a0da6a1dec622c4e4bb4b81683ea4e`; `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a`. Local `arch-freeze/rw-train` ref may be stale â€” use `origin/` only.
+**Recount pins (P0 @ 2026-11-25, INTEGRATION_HEAD):** `origin/development` = `11787a7e196cbfea32a982bfa260f02a34fe05fc`; `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a`. **`11787a7e` is INTEGRATION_HEAD** (merge `arch-freeze/rw-train` product into `development`); **not** G2, **not** FCS, **not** M3. Prior recount @ `c9ce6175f` superseded for disposition reads. Local `arch-freeze/rw-train` ref may be stale — use `origin/` only.
 
-Status vocabulary: `DONE-FORMAL`, `REQ`, `PARTIAL`, `UNK`, `OPEN`, `VOID` (optional DAG nodes not activated).
+Dirty tree classification: [`continuation/P0_DIRTY_TREE_DISPOSITION.md`](continuation/P0_DIRTY_TREE_DISPOSITION.md) (165 paths; not applied to fc-train in P0).
+
+**P0 disposition vocabulary (read-only @ INTEGRATION_HEAD):** `ABSENT`, `LOCAL`, `PUBLISHED`, `VALIDATED`, `QUALIFIED`, `CLOSED`, `BLOCKED`, `PARTIAL` (residual work), `VOID` (optional DAG). Full 149-row ledger retains legacy `DONE-FORMAL` / `REQ` / `UNK` columns below; **do not** promote `CLOSED` here without an in-repo independent closure record.
+
+### P0 focal node disposition (@ `11787a7e` / train `e9bebe0ac`)
+
+| Node | P0 disposition | Evidence @ pin |
+| --- | --- | --- |
+| SCOPE | **PARTIAL** / **BLOCKED** (RED_FIRST) | `RW_PLAN_AUDIT_STATUS.md`; `RW_PLAN_AUDIT_EVIDENCE_INDEX.md` (36/39 `EVIDENCE_MISSING`) |
+| PT-WA | **PUBLISHED** (slice) / **PARTIAL** | PR **#680** @ train; W3 gate remnants local only |
+| PT-WB | **PARTIAL** | Plan §1.4; no closure record |
+| PT-WD | **PARTIAL** | RC0 / WD tickets open |
+| PT-WF | **PARTIAL** | G-09 published; E2–E4 absent @ train |
+| PT-WE | **VOID** | DAG optional |
+| PT-FC1 | **PUBLISHED** | PR **#680** |
+| PT-FC2 | **PARTIAL** | Train slice `711ee4a11` |
+| PT-FC3 | **PUBLISHED** / **PARTIAL** | PR **#688** + **#812** @ `e9bebe0ac` |
+| PT-FC4 | **PUBLISHED** | PR **#668** |
+| PT-G01 | **PARTIAL** | `T-IGX-046-H` plan_pending |
+| PT-G02 | **PARTIAL** | `T-IGX-046-G` draft |
+| PT-D08 | **PUBLISHED** | PR **#665** |
+| PT-E05 | **ABSENT** / **PARTIAL** | No product closure |
+| PT-T01 | **ABSENT** / **PARTIAL** | `T-IGX-065-A` in_progress |
+| RW | **PARTIAL** | Slices on train; not qualified closed |
+| T-AF2-RW-TENANT | **PARTIAL** | PR **#811** partial |
+| T-AF2-RW-SUPPLY | **PARTIAL** | PR **#684** partial |
+| T-AF2-RW-TRUST | **PARTIAL** | Trust train-sync slices |
+| T-AF2-RW-RUNTIME | **ABSENT** / **PARTIAL** | Plan approved; slice not complete |
+| T-AF2-RW-RECOVERY | **PARTIAL** | RC0 open |
+| T-AF2-RW-GATES | **ABSENT** / **PARTIAL** | KR gates open |
+| T-AF2-RW-TYP | **ABSENT** | No closure @ pin |
+| T-AF2-DEPS-BATCH | **ABSENT** | `T-IGX-051-H` plan only |
+| T-AF2-RW-PLAN-AUDIT | **VALIDATED** / **BLOCKED** (RED_FIRST) | AR-12-07 PASS @ `ebe45c269` in `RW_PLAN_AUDIT_STATUS.md` |
+| G2 | **ABSENT** | `ARCH_FREEZE_SHA_LADDER.md` L26 NOT SET |
+| R | **ABSENT** | LAD L27 NOT SET |
+| FCS | **ABSENT** | LAD L28 NOT SET; **≠** INTEGRATION_HEAD |
+| M3 | **ABSENT** | LAD L29 NOT SET |
+| REV-MASTER | **VALIDATED** | `REV_MASTER_FORMAL_CLOSEOUT_RECORD.md` |
+
+Status vocabulary (ledger rows):  `DONE-FORMAL`, `REQ`, `PARTIAL`, `UNK`, `OPEN`, `VOID` (optional DAG nodes not activated).
 REQ flag: `Y` iff status is `REQ`. SHA: acceptance or merge SHA when cited in tracked evidence; otherwise `NONE`.
 Abbreviations: ODR = `ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`; LAD = `ARCH_FREEZE_SHA_LADDER.md`; GAP = `ARCH_FREEZE_CLOSED_WORLD_GAP_REGISTER.md`.
 
@@ -25,7 +64,7 @@ Row count: 149
 | DS-Q | DONE-FORMAL | NONE | NONE | ODR L36; MEP L517; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | EVOL, FRZ |
 | ECAP-EXEC | UNK | T-IGX-052-E | NONE | ODR L63 (DP-54); @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-052-E=draft | N | - |
 | ENTRY | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| FCS | UNK | - | NONE | LAD L28 (FCS NOT SET); train product @ be0ce70d not merged to dev (P-R0-A) | N | - |
+| FCS | UNK | - | NONE | LAD L28 (FCS NOT SET); INTEGRATION_HEAD `11787a7e` ≠ FCS (P0); @dev 11787a7e / train e9bebe0ac | N | - |
 | M-NOW | REQ | NONE | NONE | eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md; WP12_DAG.md; @dev 51edb2a7 / train be0ce70d (P-R0-A) | Y | - |
 | M1 | DONE-FORMAL | - | feaa2a87d | DAG L67; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | M3 | OPEN | - | NONE | LAD L29 (M3 NOT SET); OPEN ladder (P-R0-A) | N | FRZ |
@@ -103,7 +142,7 @@ Row count: 149
 | PT-WF | PARTIAL | T-IGX-043-J | db69a9e44 | G-09 product e6b1d97f7 via PR #718; E2-E4 absent @ train (PLAN_T-IGX-043-J, DEF_CB_B2_S03_PT_WF_DISPOSITION.md); dev dc083f6ea not on train; T-IGX-043-J=in_progress | N | SEC |
 | REV-MASTER | PARTIAL | - | NONE | REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md L22; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 RM-03 PASS @ ebe45c26930a9291a3df2d6a75028c35c036cee2; continuation/RW_PLAN_AUDIT_STATUS.md; RED_FIRST INCOMPLETE; G2/FCS/M3 NOT SET | N | - |
+| SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 RM-03 PASS @ ebe45c269; RED_FIRST 36/39 INCOMPLETE; G2/R/FCS/M3 ABSENT @ INTEGRATION_HEAD 11787a7e (P0) | N | - |
 | T-AF2-BASELINE-PIN | DONE-FORMAL | - | 7960ae7f6 | LAD L25 (AUDIT_BASELINE_2 PINNED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | T-AF2-BND-CLOSURE | UNK | - | NONE | RC0 L59-73; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | BND |
 | T-AF2-CI-HEAD-RUN | PARTIAL | - | 43858457516 | GAP L52; KNOWN_RED_REGISTER.md L12; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | REG |
@@ -125,7 +164,7 @@ Row count: 149
 | T-AF2-RM499-ENTRY | UNK | T-IGX-050-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | T-AF2-RW-GATES | UNK | T-IGX-051-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | OBS |
 | T-AF2-RW-PLAN | PARTIAL | T-IGX-073-D | NONE | T-IGX-073-D L5; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-073-D=closed | N | all CODE_FIX rows |
-| T-AF2-RW-PLAN-AUDIT | UNK | T-IGX-050-N | NONE | continuation/RW_PLAN_AUDIT_STATUS.md L11,L13 (BLOCKED); T-IGX-050-N; no audit PASS @dev 51edb2a7 (P-R0-A) | N | - |
+| T-AF2-RW-PLAN-AUDIT | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 PASS @ ebe45c269 in RW_PLAN_AUDIT_STATUS.md @ 11787a7e; RED_FIRST blocks SCOPE close (P0) | N | - |
 | T-AF2-RW-RECOVERY | PARTIAL | T-IGX-051-E | NONE | RC0 L34-42; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-E=plan_approved | N | REL |
 | T-AF2-RW-RUNTIME | REQ | T-IGX-051-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-D=plan_approved | Y | CTR, REL |
 | T-AF2-RW-SUPPLY | REQ | T-IGX-051-B/N | 711ee4a11 | CHECKPOINT.md L120-124; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-B=plan_approved | Y | PLG, SEC |

@@ -1,5 +1,21 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
+## P0 fc-closure pin (INTEGRATION_HEAD)
+
+| Field | Value |
+| --- | --- |
+| Packet | P0 reconcile — dirty tree + node disposition (no product on fc-train) |
+| `origin/development` | `11787a7e196cbfea32a982bfa260f02a34fe05fc` (**INTEGRATION_HEAD** — **not** FCS / G2 / M3) |
+| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of INTEGRATION_HEAD) |
+| Product train branch (new) | `arch-freeze/fc-train` @ worktree `D:/Projekty/_wt/intergrax/af-fc-p0` |
+| Dirty tree | 165 paths on **main checkout** — classified in [`P0_DIRTY_TREE_DISPOSITION.md`](P0_DIRTY_TREE_DISPOSITION.md): **65** ARCH-FREEZE unpublished (local), **100** foreign local |
+| Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
+| SSOT disposition | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) P0 annex |
+
+Historical body sections below retain older pins (`e69e1ff58`, `dbaebfa8`, `c9ce6175f`) for cite-only audit trails unless superseded by the P0 annex.
+
+---
+
 **Updated:** 2026-11-21 (docs pin sync `e69e1ff58`; serial `af-dev-merge`)  
 **Base branch (pin dokumentacyjny):** `e69e1ff5819b98c316377bcadf749f61fe00abc2` (`e69e1ff58`) — liczniki gap @ [`TRAIN_DEV_GAP.md`](TRAIN_DEV_GAP.md)  
 **Arch-freeze train reference:** `origin/arch-freeze/rw-train` @ `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` — PR **#699** **MERGED** (slice do `1cec68222`)
@@ -18,17 +34,15 @@
 | **T-IGX-046-H** | plan_pending — PT-G01 AST gate ticket; no implementation claim |
 | **T-IGX-043-M** | in_progress — slices 1–3 green; Part E manifest work continues; **not closed** |
 
-## P-R0-A pin annex (ledger recount)
+## P-R0-A pin annex (ledger recount) — superseded by P0 header
 
 | Field | Value |
 | --- | --- |
-| Recount date | **2026-11-24** |
-| `origin/development` / docs ledger read | `c9ce6175f9a0da6a1dec622c4e4bb4b81683ea4e` (`c9ce6175f`) |
-| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (`e9bebe0ac`) |
+| Superseded recount date | **2026-11-24** @ `c9ce6175f` |
+| Current recount | **P0 header** @ INTEGRATION_HEAD `11787a7e` / train `e9bebe0ac` |
 | Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
-| SSOT | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) @ `c9ce6175f` |
 
-Body sections above retain the historical docs pin `e69e1ff58` and train `dbaebfa8`; do not treat them as current pins. Ledger rows cite this annex for factual recount @ `c9ce6175f` / `e9bebe0ac`.
+Body sections below retain historical pins for cite-only trails; **current** pins are the P0 fc-closure table at document top.
 
 ## Train CI @ current pin `e9bebe0ac` (PT-Q02 `gh` replay)
 
