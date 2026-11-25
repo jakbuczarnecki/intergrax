@@ -1,0 +1,412 @@
+{
+  "schema": "af2.red_first_strict.v1",
+  "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+  "branch": "af-fc/red-strict",
+  "worktree": "D:/Projekty/_wt/intergrax/af-fc-reds",
+  "generated_at": "2026-11-25T08:48:19.061454+00:00",
+  "source_replay": "D:/Projekty/_wt/intergrax/af-fc-red1/docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REPLAY_11787a7e.json",
+  "rows_measured": 17,
+  "counts": {
+    "RED_AT_PREFIX": 9,
+    "RED_FIRST_UNREPRODUCIBLE": 8,
+    "NOT_RUN": 0,
+    "INTEGRATED_FAIL": 0
+  },
+  "results": [
+    {
+      "frz_id": "FRZ-BND-04",
+      "negative_test_id": "NT-BND-04",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_wa_integrations_shared_leakage.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-BND-04.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_b9c77869.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_wa_integrations_shared_leakage.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-BND-04.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_wa_integrations_shared_leakage.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-BND-05",
+      "negative_test_id": "NT-BND-05",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+        "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-BND-05.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_1bec09bf.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+        "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-BND-05.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-CFG-06",
+      "negative_test_id": "NT-CFG-06",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-CFG-06.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_bc1052db.log",
+      "overlaid_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-CFG-06.log",
+      "pytest_cmd": "uv run pytest tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-CTR-01",
+      "negative_test_id": "NT-CTR-01",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-CTR-01.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_87372c7.log",
+      "overlaid_test_paths": [
+        "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-CTR-01.log",
+      "pytest_cmd": "uv run pytest tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "negative test file absent at prefix SHA"
+    },
+    {
+      "frz_id": "FRZ-CTR-02",
+      "negative_test_id": "NT-CTR-02",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-CTR-02.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_bc1052db.log",
+      "overlaid_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-CTR-02.log",
+      "pytest_cmd": "uv run pytest tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-CTR-06",
+      "negative_test_id": "NT-CTR-06",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-CTR-06.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_bc1052db.log",
+      "overlaid_test_paths": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-CTR-06.log",
+      "pytest_cmd": "uv run pytest tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-OWN-05",
+      "negative_test_id": "NT-OWN-05",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-OWN-05.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_ebc97193.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-OWN-05.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-PLG-01",
+      "negative_test_id": "NT-PLG-01",
+      "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
+      "negative_test_paths": [
+        "tests/unit/applications/test_harness_evaluation_wiring.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-PLG-01.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_44a6828b.log",
+      "overlaid_test_paths": [],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-PLG-01.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_harness_evaluation_wiring.py @ 22993254b13af1ebae3dfd304c902523b4236129 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "error: Extra `dev-unit-cert` is not defined in the `optional-dependencies` table for `intergrax-ai`"
+    },
+    {
+      "frz_id": "FRZ-PLG-02",
+      "negative_test_id": "NT-PLG-02",
+      "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
+      "negative_test_paths": [
+        "tests/unit/applications/test_harness_evaluation_wiring.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-PLG-02.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_44a6828b.log",
+      "overlaid_test_paths": [],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-PLG-02.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_harness_evaluation_wiring.py @ 22993254b13af1ebae3dfd304c902523b4236129 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "error: Extra `dev-unit-cert` is not defined in the `optional-dependencies` table for `intergrax-ai`"
+    },
+    {
+      "frz_id": "FRZ-PLG-07",
+      "negative_test_id": "NT-PLG-07",
+      "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
+      "negative_test_paths": [
+        "tests/unit/applications/test_harness_evaluation_wiring.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-PLG-07.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_44a6828b.log",
+      "overlaid_test_paths": [],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-PLG-07.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_harness_evaluation_wiring.py @ 22993254b13af1ebae3dfd304c902523b4236129 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "error: Extra `dev-unit-cert` is not defined in the `optional-dependencies` table for `intergrax-ai`"
+    },
+    {
+      "frz_id": "FRZ-TEN-01",
+      "negative_test_id": "NT-TEN-01",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/applications/test_rw_tenant_strict_unscoped_memory.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TEN-01.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_669aaa0b.log",
+      "overlaid_test_paths": [
+        "tests/unit/applications/test_rw_tenant_strict_unscoped_memory.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TEN-01.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_rw_tenant_strict_unscoped_memory.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "negative test file absent at prefix SHA"
+    },
+    {
+      "frz_id": "FRZ-TEN-02",
+      "negative_test_id": "NEG-0",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TEN-02.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_ccf7f646.log",
+      "overlaid_test_paths": [
+        "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 0,
+      "output_has_failed": false,
+      "output_has_error": false,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TEN-02.log",
+      "pytest_cmd": "uv run pytest tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 0; failed=False; error=False; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "negative test file absent at prefix SHA"
+    },
+    {
+      "frz_id": "FRZ-TEN-07",
+      "negative_test_id": "NEG-P",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TEN-07.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_40f3cba5.log",
+      "overlaid_test_paths": [
+        "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TEN-07.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "negative test file absent at prefix SHA"
+    },
+    {
+      "frz_id": "FRZ-TEN-10",
+      "negative_test_id": "NT-TEN-10",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/applications/test_rw_tenant_hosted_session_per_tenant.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TEN-10.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_42067a04.log",
+      "overlaid_test_paths": [
+        "tests/unit/applications/test_rw_tenant_hosted_session_per_tenant.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TEN-10.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_rw_tenant_hosted_session_per_tenant.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log",
+      "prior_prefix_log_excerpt": "negative test file absent at prefix SHA"
+    },
+    {
+      "frz_id": "FRZ-TYP-01",
+      "negative_test_id": "NEG-0",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TYP-01.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_2ba10b57.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TYP-01.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-TYP-03",
+      "negative_test_id": "NEG-P",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TYP-03.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_15902b10.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TYP-03.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    },
+    {
+      "frz_id": "FRZ-TYP-05",
+      "negative_test_id": "NT-TYP-05",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py"
+      ],
+      "integration_head": "a678671fe6dfc95bc74b8095387146dbcc5d361a",
+      "prior_replay_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-red1/logs/FRZ-TYP-05.log",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/_pytest_c0938e75.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "strict_log_path": "D:/Projekty/_wt/intergrax/_scratch/af-fc-reds/logs/FRZ-TYP-05.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 (overlay negatives from a678671fe6df)",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)"
+    }
+  ]
+}
