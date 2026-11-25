@@ -1,0 +1,22 @@
+{
+  "schema": "eqo.session_e_cx.task_state.v1",
+  "source_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
+  "recorded_at": "2026-11-22T18:30:00+01:00",
+  "ticket_ref": "governance/tickets/T-IGX-046-F.md",
+  "tasks": {
+    "EQO-C-01": {"status": "DISPOSITIONED_NOT_CLOSED", "verdict": "30/33 sample binds at A_BASELINE; 3 disagreements open", "evidence": "eqo_closure/c/A3-004/C01_SESSION_E.md"},
+    "EQO-C-02": {"status": "GAP_EVIDENCE", "verdict": "225 FRZ IDs vs 85 ENT-AUDIT rows; join incomplete", "evidence": "eqo_closure/c/A6-004/C02_SESSION_E.md"},
+    "EQO-C-03": {"status": "ACCOUNTED", "verdict": "18 named layers; TENANT-X MISSING_SURFACE", "evidence": "eqo_closure/sessions/e-cx/C03_LAYER_ACCOUNTING.md"},
+    "EQO-C-04": {"status": "BLOCKED", "verdict": "Prior replay exit 1; no re-run this session", "evidence": "eqo_closure/runs/c/C04_STATUS.md"},
+    "EQO-C-05": {"status": "WAIT_FOR_INTEGRATION", "verdict": "FCS / PT-Q05–Q13", "evidence": null},
+    "EQO-C-CLS": {"status": "NOT_READY", "verdict": "C-04 + C-05 block formal close", "evidence": "eqo_closure/c/C_CLS_PREP.md"},
+    "EQO-X-01": {"status": "EXACT_BLOCKER", "verdict": "WB05 AUD BLOCKED; no W2-02 named gate PASS", "evidence": "eqo_closure/x/A4-003/X01_SESSION_E.md"},
+    "EQO-X-02": {"status": "WAIT_FOR_INTEGRATION", "verdict": "L499 PT-Q08/Q09", "evidence": "eqo_closure/x/A2-002/L499_EVIDENCE_CURRENCY_READ.md"},
+    "EQO-X-03": {"status": "BLOCKED", "verdict": "IN_FORCE != EQO cert; RB-2", "evidence": "eqo_closure/x/A0-007/IIAC_RB2_BLOCK_READ.md"},
+    "EQO-X-04": {"status": "READ_RECORDED", "verdict": "RRX zeroing deferred PT-Q05", "evidence": "eqo_closure/x/A5-007/RRX_COUNTER_READ.md"},
+    "EQO-X-05": {"status": "NOT_CLOSED", "verdict": "MISSING_SURFACE + WB02 ENV_PROVEN", "evidence": "eqo_closure/x/A3-012/TENANT_X_DRIFT_READ.md"},
+    "EQO-X-06": {"status": "NOT_CLOSED", "verdict": "0/28 SETTLED", "evidence": "eqo_closure/x/KR/X06_KR_SETTLEMENT_READ.md"},
+    "EQO-X-07": {"status": "ROUTED", "verdict": "Session F owner", "evidence": "eqo_closure/x/N-0001/EDER_E03_ROUTE.md"},
+    "EQO-X-08": {"status": "READ_RECORDED", "verdict": "BLOCKS findings; no auto-downgrade", "evidence": "eqo_closure/x/X-08/BLOCKS_IMPACT_READ.md"}
+  }
+}

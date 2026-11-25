@@ -1,9 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""PT-WF E4 — SQLite experiment registry tenant filtering."""
+"""PT-T01 NT-15 — SQLite experiment store tenant contract probe (owner T-IGX-043-J)."""
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import pytest
@@ -13,24 +14,11 @@ from intergrax.experiments.store import SQLiteExperimentStore
 pytestmark = pytest.mark.unit
 
 
-def test_experiment_store_scopes_list_and_get_by_tenant(tmp_path: Path) -> None:
+def test_nt15_experiment_store_tenant_api_not_implemented_on_train(tmp_path: Path) -> None:
+    """T-IGX-065-A tracks NT-15; tenant isolation on the store is PT-WF (T-IGX-043-J), not PT-T01."""
     store = SQLiteExperimentStore(db_path=tmp_path / "experiments.db")
-    record_a = store.register(
-        RegisterExperimentRequest(
-            tenant_id="tenant-a",
-            hypothesis="a",
-            capability="cap",
-        )
-    )
-    store.register(
-        RegisterExperimentRequest(
-            tenant_id="tenant-b",
-            hypothesis="b",
-            capability="cap",
-        )
-    )
-    listed_b = store.list_experiments(tenant_id="tenant-b")
-    assert all(row.tenant_id == "tenant-b" for row in listed_b)
-    assert record_a.experiment_id not in {row.experiment_id for row in listed_b}
-    with pytest.raises(ValueError, match="not found"):
-        store.get(record_a.experiment_id, tenant_id="tenant-b")
+    store.register(RegisterExperimentRequest(hypothesis="a", capability="cap"))
+    store.register(RegisterExperimentRequest(hypothesis="b", capability="cap"))
+    assert len(store.list_experiments()) == 2
+    assert "tenant_id" not in inspect.signature(store.list_experiments).parameters
+    assert "tenant_id" not in inspect.signature(store.get).parameters

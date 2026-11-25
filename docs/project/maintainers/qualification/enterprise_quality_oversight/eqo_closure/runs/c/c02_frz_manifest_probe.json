@@ -1,0 +1,11 @@
+{
+  "schema": "eqo.c02_frz_manifest_probe.v1",
+  "source_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
+  "command": "python inline read (session E)",
+  "exit_code": 0,
+  "checklist_frz_ids": 225,
+  "frz_coverage_path": "docs/project/maintainers/qualification/ent_audit_x/b6_independent_handoff/qualification_at_b8bb88c9db1060153ec0a6a29bbb79ba16e00078/l3-cli-full/frz_coverage.v1.json",
+  "frz_coverage_row_count": 85,
+  "exact_frz_id_intersection": 0,
+  "verdict": "GAP_EVIDENCE"
+}

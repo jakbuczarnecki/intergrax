@@ -20,9 +20,8 @@ Plan digest: d4e9005e793e3c429839580bc305400fc2d8dd299c46d2e9336b0ef37c7b7e3d
 
 ## Approved
 
-Approved: operator-delegate @ 2026-11-24T18:15:00+01:00
-Delegation: docs/project/maintainers/qualification/arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md@0889a64bf93003548b73e3e282b09e3bc0be20b8
-Delegate session: package-c-publication
+Approved: operator @ 2026-11-23T13:30:00+01:00
+
 
 ## Test contract
 

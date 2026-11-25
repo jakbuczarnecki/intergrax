@@ -37,13 +37,32 @@ Delegate session: local_491df1e7-9f89-43d0-a7d8-ffdbbfb9cab4
 
 ## Lifecycle state
 
-plan_approved
+in_progress
+
+## Closure batch (F-GOV-01)
+
+| Field | Value |
+| --- | --- |
+| G6 corrective publication | `7c16d9b5488234475e80a2e758158decca5e5ac5` |
+| F-GOV-01 disposition | [`OD-SFX-R2-GOV-01.md`](../docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-R2-GOV-01.md) |
+| G6 delta | **ACCEPT** (auditor `local_039b59d4-5f1c-4360-8fd7-28315b244478`) |
+| `G6_GOVERNANCE_VERDICT` | **NONCOMPLIANT** (preserved) |
+
+## Checkpoint
+
+```text
+verify_plan_approval: PASS (2026-11-23, .venv python)
+test contract (6 JSON schemas): PASS (2026-11-23, .venv python)
+verify_ticket_lifecycle: pending after ticket edit
+igx_gov ticket: FAIL/BLOCKED — push-fast exit=2, tiktoken pyd install Odmowa dostępu (os error 5); not claimed PASS
+```
 
 ## Deliverables
 
 - `governance/tickets/plans/SFX-MASTER-PLAN.md` §18 overlay
 - Updated R2 publication dossiers + hub index
 - [`OD-SFX-R2-CANONICAL-ADOPTION.md`](../docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-R2-CANONICAL-ADOPTION.md)
+- [`OD-SFX-R2-GOV-01.md`](../docs/project/maintainers/qualification/scenario_factory_x/operator_decisions/OD-SFX-R2-GOV-01.md) (F-GOV-01 disposition)
 
 ## Implementer session
 
