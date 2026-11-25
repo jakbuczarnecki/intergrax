@@ -1,91 +1,86 @@
-# T-IGX-024-A — ENT-AUDIT-X formal closure under IIAC: W0 reconciliation and W1 corrective batch
+# T-IGX-024-A — C0 correction: terminalise the durable external-operation record when `pool.submit` fails in the no-boundary branch of `RuntimeToolInvoker._execute_once`
 
 ## Scope
 
-Master plan: `agent-env/plans/pasted-content-id-00e5-integrax-expressive-bubble.md` (target status
-`ENT-AUDIT-X — CLOSED — INDEPENDENTLY AUDITED (INTERNAL AGENT CERTIFICATION) — PUBLISHED`; this ticket covers waves W0 and W1 only).
+**Product-code correction in a certification campaign.** Defect (C0-TLX, CONFIRMED, runtime reproduction): in `intergrax/runtime/nexus/tools/invoker.py` `_execute_once`, branch `dep_boundary is None`, `ext_op.mark_running()` is followed by an unguarded `self._execution_pool.submit(...)`. If `submit` raises (always after `RuntimeToolInvoker.close()`, which also nulls the boundary), the durable physical record stays `RUNNING` although the executor never ran. Violates roadmap section 3.0.5 ("No Tool invocation may remain RUNNING without end"); blocks retry of that operation id; nothing sweeps it (Batch C removed orphan sweeps). The boundary branch of the same function already has the guard (`except BaseException: ext_op.mark_failed(); ...; raise`). Pre-dates Batch C (since `e8264ff2e`).
 
-**W0 (docs only, branch `t-igx-024-a-docs`)**
+Why this is a correction, not new functionality: it applies to one branch the exact terminalisation the sibling branch already performs for the same event; no new state, error code, API or typed rejection; result mapping and idempotency-ledger semantics are unchanged; it stays inside the signed OD-TLX-C Option A (Options B/C unsigned).
 
-1. W0-04: status overlay `docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_IIAC_CLOSURE_MATRIX.md` (status only, requirements by reference) and append-only ladder rows (IIAC activation, EVOL closure/handoff/B6 pins).
-2. W0-05: one stale-text batch (SUPERSEDED-BY-IIAC pointers, factual roadmap/CAAP/FRZ-checklist/WBS fixes that do not promote any status). Excludes every path in `MATERIAL_GOVERNANCE_PATHS` and all EVOL-X artifacts.
+Change: wrap only the `submit` call in `try/except BaseException: ext_op.mark_failed(); raise`. `mark_running()` and `bind_future()` stay OUTSIDE the guard (a `bind_future` failure after a successful `submit` must not be marked FAILED because the worker already runs; it remains an open residual R-1, not fixed here). The diff text of plan section 3 is binding, not the +/- counts.
 
-**W1 (code and tests; lanes in worktrees under `<parent>/_wt/intergrax/`, merged A, then B, then C by PR)**
+Files (exact): `intergrax/runtime/nexus/tools/invoker.py` (modify, one hunk); `tests/unit/runtime/nexus/tools/test_tool_life_x_c0_no_boundary_submit_failure_terminal.py` (new); this ticket and `plans/PLAN_T-IGX-024-A.md`. No other file.
 
-| Lane | Defect | Files |
-|------|--------|-------|
-| A | D-1 validator rejects the current disposition (CI red on every PR and the nightly) | `scripts/enterprise_audit/master_plan_ssot_lib.py`, `tests/qualification/ent_audit_x/unit/test_validate_post_implementation_master_plan.py` |
-| B | D-2 baseline promotion is human-only (no IIAC/delegated path; GAP-RC-OD-TRUST, C001/C002/C003/C042/C057/C065) | `intergrax/platform/enterprise_audit/baseline.py` and its tests |
-| C | D-3 closure preflight (Gate A/B split; fail-open on `*unset*` pins; wrong EVOL key; manifest path), D-5 OD-ENT-02 verifiers, D-6 status JSON and ladder fields | `scripts/qualification/ent_audit_x_formal_closure_preflight.py`, `scripts/governance/verify_ent_audit_branch_protection.py`, `scripts/governance/verify_od_ent_02_compensating_control.py` and their tests |
+Approved plan (byte-unedited copy of the signed plan): [`plans/PLAN_T-IGX-024-A.md`](plans/PLAN_T-IGX-024-A.md).
 
-Then: requalification at the merged tip (TES'), B5 evidence publication, handoff to the independent IIAC auditor (W2).
+Signed decisions: `.tmp/session/cert-campaign/SIGNING/SIGN-7_C0/SIGNED_DECISIONS.md` (OD-C0-PRODUCT-CORRECTION-2026-11-07, OD-C0-PLAN-APPROVAL-2026-11-07; both SIGNED_WITH_CONDITIONS).
 
-**Corrective loop 1 (plan section 15, W2-03; triggered by the first independent audit, verdict CONDITIONAL on `audit_execution_sha` 15347255ac62dbccfb7b64762b4c0f8af7ec38fa, 2 HIGH / 11 MEDIUM / 5 LOW / 2 INFO)**
+Signed conditions (binding): (1) the product diff under `intergrax/` is exactly the one hunk of plan section 3 and nothing else; (2) the independent AUDITOR additionally checks, at the post-fix SHA, a retry case (effective max attempts > 1, `pool.submit` failing) and confirms final result mapping and ledger semantics are unchanged; (3) the TOOL-LIFE-X replay of plan section 7 is mandatory and the TOOL-LIFE-X acceptance remains open until it is done. No PASS, closure, FRZ promotion or stage-parent change is implied.
 
-Fixed in this loop (minimal diffs, `scripts/` and `tests/` only, no `intergrax/` change, so ACT-N11 stays satisfied):
-
-| Finding | Change |
-|---------|--------|
-| F-02 (HIGH) `promote-baseline` judged the OD-ENT-01 gate against the current working directory | `scripts/enterprise_audit/run_enterprise_audit.py` passes `repo_root` of its own repository (this edit is qualification-sensitive and therefore requires a new TES) |
-| F-01 (HIGH) B5 digests only verify on a CRLF checkout | `.gitattributes` marks every new `qualification_at_*` tree `-text` (legacy 89c76eb7 tree waived explicitly); `publish_b5_evidence_bundle.py` writes the index with LF; the ladder-pinned tree must verify strictly (no skip) once it is not the legacy tree |
-| F-09 preflight accepted a fabricated manifest and pass record | preflight now runs `verify_iiac_audit_manifest`, requires real ancestor commits, report/evidence-index digests that match the files, and a pass record that cites the verdict and `audit_execution_sha` |
-| F-10 compensating route unsatisfiable by default wiring | preflight reads the active branch rules and judges ruleset controls against them |
-| F-11 LIVE verifier required context strings GitHub never emits | verifier accepts the bare job names (and the exact `Enterprise audit (ENT-AUDIT-X) / <job>` form) |
-
-Carried as declared limitations (not fixed here; the cause is under `intergrax/`, qualification-sensitive, or a documented design property): F-03, F-04, F-05, F-06, F-07, F-08, F-12, F-13, F-14, F-15, F-16, F-17, F-18, F-19, F-20 (details: audit report `IIAC_ENT_AUDIT_REPORT.md`, `findings.json`). Requalification at the new TES, republication of the B5 tree and a second independent audit follow.
-
-## Constraints (must be honoured)
-
-- No change to any of the six `MATERIAL_GOVERNANCE_PATHS` (`scripts/governance/iiac_activation_gate.py:40-49`, incl. the IIAC protocol) and no change to the IIAC activation record; `verify_iiac_policy_activation --require-in-force` stays IN_FORCE.
-- No change to EVOL-X artifacts (history, status JSON, `evol_x_closure_publication_preflight.py`).
-- Ladder is append-only. New exact-name `TEST_EXECUTION_SHA` / `EVIDENCE_PUBLICATION_SHA` rows go below the current ones (`parse_sha_ladder_table`: last wins); old rows get a suffix.
-- `ENT_AUDIT_X_PROTOCOL_03_DOSSIER.md` must keep: TES pin, `Audited IMPLEMENTATION_SHA`, `b6_independent_handoff`, `## External blockers (GAP-B)`, "no pass declared" (`mechanical_readiness_check.py:368-384`).
-- Thresholds are not lowered; functional code is not changed to satisfy documentation.
-- The implementer declares no PASS, promotes no FRZ-AUD row, and writes no CLOSED text. No claim of equivalence between LIVE and COMPENSATING branch protection.
-- PRs are merged with a merge commit (not squash or rebase), so SHA pins stay valid.
-- Verification is serial: one `uv run pytest` per step (`intergrax-test-process-budget`).
+Roles: IMPLEMENTER != AUDITOR != CERTIFIER (three distinct sessions). The implementer records no PASS.
 
 ## Plan digest
 
-Plan digest: c1e2a3a975f80bbe791aa7a8e208b4e0fe012c9560fa32a9631f32d9213b96ed
-
-(computed by `scripts/governance/plan_digest.py` over the plan file including its section 21 W0 execution log; if the plan file is edited again, recompute and re-record the digest before the operator approval line is written.)
+Plan digest: 40a9672ef0c9a2f153b42113eb29159ad699a614bbffb7784ea1ee48d91083be
 
 ## Approved
 
-(no `Approved:` line exists; none is written by the implementer. Same form as `T-IGX-023-A`: the batch runs on the operator's explicit chat instructions of 2026-11-08. The master plan was approved in chat via plan mode; branch `t-igx-024-a-docs` and this ticket were approved by the operator in chat; the standing authorization below was agreed by the operator in chat on 2026-11-08 ("tak, zgadzam się na tę regułę, zapisz ją i ruszaj"). If a gate requires the literal `Approved: <operator> @ <ISO8601>` line, the operator must write it; it must not be synthesized.)
+Approved: operator-delegate @ 2026-11-07T21:59:15+01:00 (Delegation: .tmp/session/cert-campaign/SIGNING/DELEGATION_2026-11-07_MASTER.md@sha256:5264bca38037664e5cfb03cf847305648c5611ea44ca37427406426c7321bdab)
 
-## Standing authorization (operator, chat 2026-11-08)
+Signature lines (verbatim from the signed record):
 
-Recorded verbatim so that fresh sessions (auditor, certifier, signing session) can see it; sessions cannot see the chat:
-
-> „W zakresie planu ENT-AUDIT-X (T-IGX-024-A) udzielam z góry zgody na: push, PR, merge commit, workflow_dispatch, worktree i subagenty oraz na uruchamianie niezależnych sesji audytora, certyfikatora i podpisującej na podstawie rekordu delegacji. Zatrzymaj się przy FAIL/CONDITIONAL po 2 pętlach, przy każdej zmianie poza planem i przed publikacją zamknięcia."
-
-Interpretation (binding on every session working under this ticket):
-
-1. Covered: `git push` of `t-igx-024-a-*` and `ent-w1-*` branches; PR creation; merge **with a merge commit** (never squash/rebase); `workflow_dispatch` of the ENT workflows; worktrees under `<parent>/_wt/intergrax/`; sub-agents; launching the independent auditor, certifier and signing sessions as separate sub-agents with fresh context.
-2. Disclosed to and accepted by the operator: independent sessions run as sub-agents of the orchestrator, so the assurance level is `process_enforced`, not cryptographic. The manifest `limitations` must say so. Session ids in manifests are the real harness ids; none may be invented.
-3. **Not covered and not delegable:** the operator's delegation record for the signing session (O-1) and any `operator` / `operator-delegate` signature line. Until the operator signs that record, W3-01..W3-03 and W5 OD-ENT-08 cannot be written. Work up to and including W2 is unaffected.
-4. Hard stops regardless of this authorization: a failing gate whose cause is outside this plan; auditor FAIL/CONDITIONAL after the second loop; any change outside the plan (new material governance path, EVOL-X artifact, lowered threshold); anything that would require fabricating a signature, id, timestamp or test result; and the **final publication** (OD-ENT-08, roadmap CLOSED headline, W5 phase 1), where the orchestrator pauses for operator review before the commit.
-5. Nothing here promotes a status, certifies an implementation, or waives an independence rule.
+```text
+Approved OD-C0-PRODUCT-CORRECTION-2026-11-07: operator-delegate @ 2026-11-07T21:59:15+01:00
+Delegation: .tmp/session/cert-campaign/SIGNING/DELEGATION_2026-11-07_MASTER.md@sha256:5264bca38037664e5cfb03cf847305648c5611ea44ca37427406426c7321bdab
+Approved OD-C0-PLAN-APPROVAL-2026-11-07: operator-delegate @ 2026-11-07T21:59:15+01:00
+Delegation: .tmp/session/cert-campaign/SIGNING/DELEGATION_2026-11-07_MASTER.md@sha256:5264bca38037664e5cfb03cf847305648c5611ea44ca37427406426c7321bdab
+```
 
 ## Test contract
 
-```powershell
-uv run python scripts/governance/verify_iiac_policy_activation.py --require-in-force
-uv run pytest tests/qualification/ent_audit_x/unit tests/qualification/ent_audit_x/integration tests/qualification/ent_audit_x/l3 -q
-uv run python scripts/enterprise_audit/validate_post_implementation_master_plan.py
-uv run python scripts/enterprise_audit/check_manifest_annex_c_alignment.py
-uv run python scripts/enterprise_audit/mechanical_readiness_check.py
-uv run python -m scripts.governance.igx_gov ticket
-```
+Heavy-test mutex; one `uv run pytest` at a time; `-p no:xdist`; logs under the IMPL-C0 dossier `logs/`.
 
-W0 (docs only) needs only the first, third and last command. W1 additionally needs a green `Enterprise audit (ENT-AUDIT-X)` run on each PR head (read the actual run) and a nightly `workflow_dispatch` FULL run on TES'. Exact flags are confirmed from the scripts before use.
+1. Red-first: tests-only commit; run the new file on the unfixed tree — T1/T2(record)/T3 fail only on the record-state assertion; T2(result/ledger), N1 pass.
+2. After the fix commit:
+   ```powershell
+   uv run pytest -p no:xdist tests/unit/runtime/nexus/tools/test_tool_life_x_c0_no_boundary_submit_failure_terminal.py tests/unit/runtime/nexus/tools/test_tool_life_x_r4_terminal_lifecycle_invoker.py tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_dependency_admission.py tests/unit/runtime/tools/test_tools_side_effect_safety.py tests/unit/runtime/nexus/tools/test_tool_life_x_batch_b_retry_idempotency_unknown_outcome.py tests/unit/runtime/nexus/tools/test_tool_life_x_batch_b_real_governance_authorization.py tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py tests/unit/runtime/nexus/tools/test_tool_life_x_batch_c_stalled_abandoned_recovery.py -q
+   ```
+3. EBH-7 C4 change-class set for `invoker.py`:
+   ```powershell
+   uv run pytest -p no:xdist tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_policy.py tests/unit/runtime/nexus/tools/test_tool_runtime_scope_enforcement.py tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py tests/unit/runtime/security/test_tenant_scope.py tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_integrated_tenant_boundary_proofs.py -q
+   ```
+4. `uv run ruff check` (two files, one invocation); configured type check on the changed files; `uv run python -m scripts.governance.igx_gov ticket`.
+5. Diff guard: `git diff --name-only <base>..HEAD` = the product/test files above + this ticket and the plan copy; `git diff <base>..HEAD -- intergrax` = the single hunk of the plan.
+
+Required tests (new file): T1 post-close store-level (record FAILED, not RUNNING; call-1 record SUCCEEDED; `executor.calls == 1`); T2 post-close via `invoke()`, both C0 parametrisations (OD-TLX-C Option A unchanged: ABANDONED/"abandoned", ledger UNCERTAIN, replay blocked, `executor.calls` unchanged); T3 generic `submit` failure on an open invoker (exception propagated unchanged, record FAILED); N1 `bind_future` failure after a real `submit` is NOT marked FAILED (asserts `!= FAILED` only); N2/N3/N4 existing success-path, boundary-branch and 023-A tests unchanged and green. Signed condition (2) retry case (effective max attempts > 1, `submit` failing): added by the implementer as T4 inside the same planned new test file (no other file touched); the auditor performs the condition (2) check.
 
 ## Out of scope
 
-IIAC audit and certification (W2), operator decisions and baseline promotion (W3), certifying FREEZE and FRZ-AUD promotion (W4), formal closure (W5), ARCH-FREEZE handoff (W6), Docker, vendor integrations, production configuration, PROD-Q, edits of the IIAC protocol or Amendment 01. PR merges with a merge commit are covered by the standing authorization above.
+OD-TLX-C Options B/C; new `RuntimeErrorCode`; NOT_STARTED typed rejection; pre-admission "closed" check; `ensure_terminal_recorded()` safety net; `bind_future` residual R-1; editing any existing test (incl. `test_tools_side_effect_safety.py`); durable SQLite store variant; repair/sweep of existing RUNNING records; FRZ-* promotion; closing TOOL-LIFE-X or any stage parent; IIAC paths and the IIAC global authority impact matrix; roadmap/acceptance text rewrite; Docker, vendor, production configuration (C10/C15); push, PR, commit to `development`.
+
+## Risk and rollback
+
+Risk low (error-only path, parity with existing guard). Residuals: FAILED vs NOT_STARTED classification (decided: FAILED, OQ-1); R-1 `bind_future` (accepted, unfixed, OQ-2); `mark_failed()` raising would mask the original error (parity); with the fix a failed submit leaves FAILED so attempt>1 is admitted (condition 2). Change class RUNTIME_BEHAVIOR + SECURITY_GOVERNANCE_TENANT (EBH-7 C4). Rollback: `git revert` of the fix commit; no migration; previously stuck records are not repaired.
+
+## Re-audit impact
+
+`invoker.py` is in the TOOL-LIFE-X replay sets. An independent AUDITOR replays at the exact post-fix SHA (plan section 7): Batch B L2 set; F8 12-module inventory (67/67 at baseline); Batch A-E L2 union (incl. Batch C); W4-C/W4-D cancellation modules (recommended); L3/TL11 17-module set with `--extra mcp` (recommended; reason recorded if skipped); EBH-7 C4 set; catalogs naming `invoker.py` and the wide-pyright per-file counts; report whether `invoker.py` is a covered path of the IIAC impact matrix. Original acceptance/reconciliation verdicts are not rewritten.
 
 ## Lifecycle state
 
-in_progress
+quality_gate
+
+## Lease holder
+
+IMPL-C0 (worktree `D:/Projekty/_wt/intergrax/cx-ic3`, branch `cert-wave/impl-c0`)
+
+## Checkpoint
+
+IMPL-C0 implementer checkpoint (not an audit; no PASS claimed; handed over READY_FOR_INDEPENDENT_AUDIT). Base `2d14bd76f29366a6eda562c22cf857b55d515700`.
+
+- `verify_plan_approval.py` ticket vs plan: OK.
+- Red-first (tests-only commit `98b4bf514`, unfixed tree): T1, T2 (x2), T3, T4 fail only on the record-state assertion (RUNNING != FAILED); N1 passes (5 failed, 1 passed).
+- After fix: test contract command 1 = 102 passed; command 2 (EBH-7 C4) = 20 passed. Mutation check (hunk reverted): 5 new tests fail, N1 passes.
+- `ruff check` on both changed Python files: OK.
+- `igx_gov ticket` stages run individually: `verify_commit_ticket_refs.py --mode range --rev-range <base>..HEAD` OK (branch has no upstream, so `--mode push` degrades to a whole-history walk); `validate_policy_registry.py` OK; `run_regression_gate_ci.py --profile fast` PASS.
+- Diff guard: `intergrax/` diff = the single hunk of plan section 3 in `invoker.py`.
+- Full logs and report: IMPL-C0 dossier (`.tmp/session/cert-campaign/IMPL-C0/`).
