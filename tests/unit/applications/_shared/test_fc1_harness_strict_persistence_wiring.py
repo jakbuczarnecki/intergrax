@@ -323,7 +323,9 @@ async def test_reject_and_escalate_verdicts_are_recorded_through_materialization
             message="sensitive action",
             context=TaskContext(capability="hitl.basic"),
             task_id=task_id,
-            options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
+            options=TaskExecutionOptions(
+                long_running=TaskLongRunningOptions(enabled=True, notify_channel="log"),
+            ),
         ),
         run_id=run_id,
     )
@@ -340,7 +342,11 @@ async def test_reject_and_escalate_verdicts_are_recorded_through_materialization
         context=TaskContext(capability="hitl.basic"),
         task_id=task_id,
         options=TaskExecutionOptions(
-            long_running=TaskLongRunningOptions(enabled=True, resume_token=resume_token),
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=resume_token,
+                notify_channel="log",
+            ),
             human=TaskHumanInput(response_text=word, verdict=verdict),
         ),
         metadata={"human_response": word, "resume_token": resume_token},
