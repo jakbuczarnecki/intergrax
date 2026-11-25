@@ -401,7 +401,11 @@ def wire_application_environment(
             },
         )
 
-    memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    memory_wiring = resolve_memory_platform_wiring(
+        env,
+        integration_profile=resolved_integration,
+        tenant_id=normalized_tenant_id,
+    )
     assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
     from intergrax.applications._shared.memory_wiring import (
         build_session_manager_from_environment,
@@ -507,9 +511,6 @@ def wire_application_environment(
         manifest,
         tool_wiring,
         application_tool_registry,
-    )
-    sandbox_manager = wire_sandbox_sessions(
-        env.model_copy(update={"tool_profile": tool_wiring.profile}),
     )
     policy_bundle = wire_policy_bundle(
         env.model_copy(
@@ -617,7 +618,7 @@ def wire_application_environment(
         policy_bundle=policy_bundle,
         composition=composition,
         shadow_manager=wire_shadow_workspace(env),
-        sandbox_manager=sandbox_manager,
+        sandbox_manager=wire_sandbox_sessions(env),
         integration_health=integration_health,
         prompt_registry=prompt_registry,
         registry_snapshot=registry_snapshot,

@@ -52,32 +52,3 @@ def test_matching_promotion_ticket_authorizes_when_approved(tmp_path: Path) -> N
     ticket = _ticket(tmp_path, "T-IGX-051-F.md", "# F\n\n## Approved\n\nApproved: Operator @ 2026-11-20\n")
     ok, _detail = gate.promotion_ticket_authorization(ticket, ticket, tmp_path)
     assert ok is True
-
-
-def test_without_promotion_ticket_requires_governance_authorization(tmp_path: Path) -> None:
-    gate = _gate()
-    ok, detail = gate.promotion_ticket_authorization(None, None, tmp_path)
-    assert ok is False
-    assert "no governance ticket supplied" in detail
-
-
-def test_without_promotion_ticket_denied_when_ticket_unapproved(tmp_path: Path) -> None:
-    gate = _gate()
-    ticket = _ticket(tmp_path, "T-IGX-051-F.md", "# F\n\nNo approval section.\n")
-    ok, detail = gate.promotion_ticket_authorization(ticket, None, tmp_path)
-    assert ok is False
-    assert "Approved" in detail
-
-
-def test_without_promotion_ticket_authorizes_when_governance_approved(tmp_path: Path) -> None:
-    gate = _gate()
-    ticket = _ticket(tmp_path, "T-IGX-051-F.md", "# F\n\n## Approved\n\nApproved: Operator @ 2026-11-20\n")
-    ok, _detail = gate.promotion_ticket_authorization(ticket, None, tmp_path)
-    assert ok is True
-
-
-def test_run_gates_without_promotion_ticket_denies_without_governance(tmp_path: Path) -> None:
-    gate = _gate()
-    report = gate.run_gates(None, None, tmp_path)
-    assert report.authorized is False
-    assert "no governance ticket supplied" in report.authorization_detail

@@ -99,6 +99,39 @@ def persistent_canonical_user_profile_memory_required(
     return memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
 
 
+def tenant_scoped_memory_capability_enabled(env: ApplicationEnvironmentProfile) -> bool:
+    """True when any closed-list memory flag requires a tenant in fail-closed posture."""
+    memory_profile = env.memory_profile
+    return (
+        memory_profile.enable_user_memory or memory_profile.enable_org_memory or memory_profile.enable_long_term_memory
+    )
+
+
+class MemoryTenantScopeError(ValueError):
+    """Raised when fail-closed posture composes tenant-scoped memory without a tenant."""
+
+    def __init__(
+        self,
+        message: str = "memory capabilities require a tenant in fail-closed posture",
+    ) -> None:
+        super().__init__(message)
+
+
+def validate_memory_tenant_scope_admission(
+    env: ApplicationEnvironmentProfile,
+    *,
+    tenant_id: str | None,
+) -> None:
+    """Refuse unscoped memory composition in STRICT or PRODUCT postures (EX-D2-06)."""
+    if not wiring_fails_closed(env):
+        return
+    if not tenant_scoped_memory_capability_enabled(env):
+        return
+    if tenant_id is not None and tenant_id.strip():
+        return
+    raise MemoryTenantScopeError()
+
+
 def session_turn_index_vector_memory_required(
     env: ApplicationEnvironmentProfile,
 ) -> bool:
