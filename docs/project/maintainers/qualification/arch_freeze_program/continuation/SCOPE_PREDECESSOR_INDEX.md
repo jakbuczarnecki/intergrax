@@ -37,4 +37,8 @@ Failures recorded in [`PT_V04_REPLAY.md`](PT_V04_REPLAY.md) remain the S1 baseli
 
 S03 scaffold node `test_harness_01_new_agent_scaffold_generates_nexus_free_authoring_package`: **PASS_WITH_UV_ON_PATH** @ `689b277e62db18613a415e6b2e404864412112b8` (evidence [`CAMPAIGN_B_B02_UV_RERUN.md`](CAMPAIGN_B_B02_UV_RERUN.md); measured from base `66d0aef63af462535bac75ef377497b436844b8f`, 19.02s, exit 0). The outer phase **b2** campaign process has **no exit-0 record** and is not cited as a hard predecessor. No G2, FCS, M3, or ARCH-FREEZE CLOSED claim.
 
-SCOPE_MILESTONE: NOT_SET
+## Phase-b2 campaign process waiver (orchestrator binding)
+
+The killed phase-b2 `run_campaign_b_w2_alpha.py` process (exit `4294967295`, ~56 minutes, no campaign summary) is **not** a product residual and **not** a reason to keep **PT-B02** open as a hard SCOPE predecessor on this train. Node-level in-repo evidence is sufficient for **PT-B02**: six b2 manifest nodes **PASS** @ `87b1a7bec29c603515b058c8337402b1e813cc56` ([`CAMPAIGN_B_B02_RERUN.md`](CAMPAIGN_B_B02_RERUN.md); product tree unchanged by later docs-only commits on this train); S03 scaffold **PASS_WITH_UV_ON_PATH** @ `689b277e62db18613a415e6b2e404864412112b8` ([`CAMPAIGN_B_B02_UV_RERUN.md`](CAMPAIGN_B_B02_UV_RERUN.md)). All other WP-12 SCOPE hard predecessors in the table above remain **ON_TRAIN** with recorded disposition. Local **ci-smoke** and **rag-gate** exit 0 @ train tip are supplementary in [`CI_SMOKE_RAG_GATE_MEASURE.md`](CI_SMOKE_RAG_GATE_MEASURE.md) (not DAG hard predecessors). This paragraph waives only the outer phase-b2 process exit; it does not set G2, FCS, M3, or ARCH-FREEZE CLOSED.
+
+SCOPE_MILESTONE: READY_TO_RECORD
