@@ -1,0 +1,591 @@
+{
+  "schema": "af2.red_first_rest.v1",
+  "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+  "branch": "af-v4/p1b-red-rest",
+  "worktree": "D:/Projekty/_wt/intergrax/af-v4-p1b",
+  "generated_at": "2026-11-25T16:42:33.666636+00:00",
+  "rows_measured": 20,
+  "counts": {
+    "RED_AT_PREFIX": 5,
+    "RED_FIRST_UNREPRODUCIBLE": 15,
+    "EVIDENCE_MISSING": 0,
+    "INTEGRATED_FAIL": 0,
+    "NOT_RUN": 0
+  },
+  "results": [
+    {
+      "frz_id": "FRZ-BND-06",
+      "negative_test_id": "NT-BND-06",
+      "regression_scope": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py; ENT-A-BND-01..03",
+      "negative_test_paths": [
+        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-BND-06.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+      "red_first_prefix_sha": "307a871c059f150a6b744e39135a737399467e88",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_c465af2c.log",
+      "overlaid_test_paths": [
+        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "plan_status": "RED_AT_PREFIX",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_c465af2c.log",
+      "pytest_cmd": "uv run pytest tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py @ 307a871c059f150a6b744e39135a737399467e88 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-CFG-02",
+      "negative_test_id": "NT-CFG-02",
+      "regression_scope": "ENT-A-VBN-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-CFG-02.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-CFG-08",
+      "negative_test_id": "NT-CFG-08",
+      "regression_scope": "ENT-A-VBN-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-CFG-08.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-DEBT-04",
+      "negative_test_id": "NT-DEBT-04",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/architecture/test_rw_gates_eval_digest_denied.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-DEBT-04.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/architecture/test_rw_gates_eval_digest_denied.py",
+      "red_first_prefix_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_24729835.log",
+      "overlaid_test_paths": [
+        "tests/unit/architecture/test_rw_gates_eval_digest_denied.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_24729835.log",
+      "pytest_cmd": "uv run pytest tests/unit/architecture/test_rw_gates_eval_digest_denied.py @ 8bdb0038d7a8fe506b5490a0ec2acad227e6b938 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-EXE-02",
+      "negative_test_id": "NT-EXE-02",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/agents/test_wa_agent_import_rule.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-EXE-02.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/agents/test_wa_agent_import_rule.py",
+      "red_first_prefix_sha": "b7855b83e98e3cbf2589775dabd64d990385dc24",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a78e0f2e.log",
+      "overlaid_test_paths": [
+        "tests/unit/agents/test_wa_agent_import_rule.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "plan_status": "RED_AT_PREFIX",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a78e0f2e.log",
+      "pytest_cmd": "uv run pytest tests/unit/agents/test_wa_agent_import_rule.py @ b7855b83e98e3cbf2589775dabd64d990385dc24 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-FRZ-10",
+      "negative_test_id": "NT-FRZ-10",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/governance/test_arch_freeze_plan_traceability.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-FRZ-10.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/governance/test_arch_freeze_plan_traceability.py",
+      "red_first_prefix_sha": "332c5217c390202a911ad5592e88a8f366845587",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_7090a760.log",
+      "overlaid_test_paths": [
+        "tests/unit/governance/test_arch_freeze_plan_traceability.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_7090a760.log",
+      "pytest_cmd": "uv run pytest tests/unit/governance/test_arch_freeze_plan_traceability.py @ 332c5217c390202a911ad5592e88a8f366845587 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-OWN-02",
+      "negative_test_id": "NT-OWN-02",
+      "regression_scope": "ENT-A-OWN-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-OWN-02.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a774ea93.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a774ea93.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-OWN-03",
+      "negative_test_id": "NT-OWN-03",
+      "regression_scope": "ENT-A-OWN-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-OWN-03.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a774ea93.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_a774ea93.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_own_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-PLG-05",
+      "negative_test_id": "NT-PLG-05",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-PLG-05.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py",
+      "red_first_prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_5cf70b65.log",
+      "overlaid_test_paths": [
+        "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "plan_status": "RED_AT_PREFIX",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_5cf70b65.log",
+      "pytest_cmd": "uv run pytest tests/unit/core/plugins/test_rw_supply_installed_file_digest.py @ 459dfebc712f54eef6d9e025557930f1171c40d8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-PLG-06",
+      "negative_test_id": "NT-PLG-06",
+      "regression_scope": "tests/qualification/governance/gr11/catalog.py",
+      "negative_test_paths": [
+        "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-PLG-06.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py",
+      "red_first_prefix_sha": "2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_4eb6441a.log",
+      "overlaid_test_paths": [
+        "tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_4eb6441a.log",
+      "pytest_cmd": "uv run pytest tests/qualification/governance/gr11/test_gr11_plugin_enterprise_certification.py @ 2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-PRD-03",
+      "negative_test_id": "NT-PRD-03",
+      "regression_scope": "ENT-A-PRD-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-PRD-03.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-PRD-05",
+      "negative_test_id": "NT-PRD-05",
+      "regression_scope": "ENT-A-PRD-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-PRD-05.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-PRD-08",
+      "negative_test_id": "NT-PRD-08",
+      "regression_scope": "ENT-A-PRD-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-PRD-08.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_85f80506.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-REG-09",
+      "negative_test_id": "NT-REG-09",
+      "regression_scope": "ENT-A-REG-01; ENT-A-REG-02",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_02.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-REG-09.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_f89198ba.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_02.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_f89198ba.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_reg_02.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-REL-07",
+      "negative_test_id": "NT-REL-07",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/applications/test_fc2_wiring_posture.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-REL-07.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/applications/test_fc2_wiring_posture.py",
+      "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_ba5e763a.log",
+      "overlaid_test_paths": [
+        "tests/unit/applications/test_fc2_wiring_posture.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 3,
+      "output_has_failed": false,
+      "output_has_error": false,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "exit 3 without FAILED at prefix; failed=False; error=False",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_ba5e763a.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_fc2_wiring_posture.py @ 66664e2bffa1de7ee5405b4d16d771302d676080 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-REL-09",
+      "negative_test_id": "NT-REL-09",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-REL-09.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/applications/test_fc2_queue_worker_fail_closed.py",
+      "red_first_prefix_sha": "ec7f1e27c4a0a81b60ffad3feb2ff7ab696152a2",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_1cf803cd.log",
+      "overlaid_test_paths": [
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_1cf803cd.log",
+      "pytest_cmd": "uv run pytest tests/unit/applications/test_fc2_queue_worker_fail_closed.py @ ec7f1e27c4a0a81b60ffad3feb2ff7ab696152a2 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-REL-10",
+      "negative_test_id": "NT-REL-10",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-REL-10.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py",
+      "red_first_prefix_sha": "a01b7e415797a0ff1ecfb961ce7d5c5857415106",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_abdbb28e.log",
+      "overlaid_test_paths": [
+        "tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_abdbb28e.log",
+      "pytest_cmd": "uv run pytest tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py @ a01b7e415797a0ff1ecfb961ce7d5c5857415106 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-RPL-04",
+      "negative_test_id": "NEG-P",
+      "regression_scope": "ENT-A-VBN-01..03",
+      "negative_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-RPL-04.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "overlaid_test_paths": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 2,
+      "output_has_failed": false,
+      "output_has_error": true,
+      "measurement": "RED_FIRST_UNREPRODUCIBLE",
+      "plan_status": "RED_FIRST_UNREPRODUCIBLE",
+      "reason": "collection/interpreter issue at prefix: exit 2; error=True",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_836506f7.log",
+      "pytest_cmd": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_01.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_02.py tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_03.py @ 754ee000675d71c1734656702beb0aef8ba58fd8 (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-SEC-04",
+      "negative_test_id": "NT-SEC-04",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-SEC-04.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "red_first_prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_9c360f86.log",
+      "overlaid_test_paths": [
+        "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "plan_status": "RED_AT_PREFIX",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_9c360f86.log",
+      "pytest_cmd": "uv run pytest tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py @ ccc7287c40670b421cc36cf3fc2eb331cdba310c (overlay negatives from b1107cb215a4)"
+    },
+    {
+      "frz_id": "FRZ-SEC-06",
+      "negative_test_id": "NEG-0",
+      "regression_scope": "ENT-A / stage pytest",
+      "negative_test_paths": [
+        "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py"
+      ],
+      "integration_head": "b1107cb215a4ebd1c07c5434d04224dbf6ee71b2",
+      "strict_log_path": ".tmp/session/arch-freeze/red-first-rest/logs/FRZ-SEC-06.log",
+      "prefix_resolution": "earliest negative test add parent",
+      "regression_path_for_prefix": "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py",
+      "red_first_prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+      "integrated_exit_code": 0,
+      "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_2a80314a.log",
+      "overlaid_test_paths": [
+        "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py"
+      ],
+      "strict_mode": "detach_prefix_with_integration_negative_overlay",
+      "pytest_exit_code": 1,
+      "output_has_failed": true,
+      "output_has_error": false,
+      "measurement": "RED_AT_PREFIX",
+      "plan_status": "RED_AT_PREFIX",
+      "reason": "exit 1 with FAILED at prefix (strict overlay)",
+      "pytest_log": ".tmp/session/arch-freeze/red-first-rest/pytest_2a80314a.log",
+      "pytest_cmd": "uv run pytest tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py @ 459dfebc712f54eef6d9e025557930f1171c40d8 (overlay negatives from b1107cb215a4)"
+    }
+  ]
+}
