@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 
 from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
@@ -43,10 +43,6 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceResolveStatus,
 )
 from intergrax.memory.user_profile_store import UserProfileStore
-
-if TYPE_CHECKING:
-    from intergrax.runtime.execution.session_host_composition import SessionStorage
-    from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
 
 class _EmptyDurabilityEvidenceRegistry:
@@ -101,39 +97,6 @@ def persistent_canonical_user_profile_memory_required(
 ) -> bool:
     memory_profile = env.memory_profile
     return memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
-
-
-def tenant_scoped_memory_capability_enabled(env: ApplicationEnvironmentProfile) -> bool:
-    """True when any closed-list memory flag requires a tenant in fail-closed posture."""
-    memory_profile = env.memory_profile
-    return (
-        memory_profile.enable_user_memory or memory_profile.enable_org_memory or memory_profile.enable_long_term_memory
-    )
-
-
-class MemoryTenantScopeError(ValueError):
-    """Raised when fail-closed posture composes tenant-scoped memory without a tenant."""
-
-    def __init__(
-        self,
-        message: str = "memory capabilities require a tenant in fail-closed posture",
-    ) -> None:
-        super().__init__(message)
-
-
-def validate_memory_tenant_scope_admission(
-    env: ApplicationEnvironmentProfile,
-    *,
-    tenant_id: str | None,
-) -> None:
-    """Refuse unscoped memory composition in STRICT or PRODUCT postures (EX-D2-06)."""
-    if not wiring_fails_closed(env):
-        return
-    if not tenant_scoped_memory_capability_enabled(env):
-        return
-    if tenant_id is not None and tenant_id.strip():
-        return
-    raise MemoryTenantScopeError()
 
 
 def session_turn_index_vector_memory_required(
@@ -343,7 +306,6 @@ class MemoryOrgSessionAdmissionReason(StrEnum):
     ORG_STORE_UNSUPPORTED_BACKEND = "ORG_STORE_UNSUPPORTED_BACKEND"
     ORG_STORE_MISSING = "ORG_STORE_MISSING"
     ORG_STORE_NOT_DURABLE = "ORG_STORE_NOT_DURABLE"
-    SESSION_STORAGE_NOT_DURABLE = "SESSION_STORAGE_NOT_DURABLE"
 
 
 class MemoryOrgSessionAdmissionError(ValueError):
@@ -359,14 +321,14 @@ def organization_profile_store_required(env: ApplicationEnvironmentProfile) -> b
     return env.memory_profile.enable_org_memory
 
 
-def _declared_durable(store: SessionStorage | OrganizationProfileStore) -> bool:
+def _declared_durable(store: object) -> bool:
     return (
         isinstance(store, MemoryStoreProviderMetadata)
         and store.memory_provider_durability is MemoryProviderDurability.DURABLE
     )
 
 
-def _organization_store_is_durable(store: OrganizationProfileStore) -> bool:
+def _organization_store_is_durable(store: object) -> bool:
     """Known-ephemeral and unclassifiable stores are not durable; SQLite or declared-durable are."""
     from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
         InMemoryOrganizationProfileStore,
@@ -382,30 +344,16 @@ def _organization_store_is_durable(store: OrganizationProfileStore) -> bool:
     return _declared_durable(store)
 
 
-def _session_storage_is_durable(storage: SessionStorage) -> bool:
-    """SQLite or declared-durable plugin storage only.
-
-    ``DocumentStoreSessionStorage`` exposes no public backing-store handle, so its restart
-    durability cannot be established here and it is refused in fail-closed postures.
-    """
-    from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
-
-    if isinstance(storage, SQLiteSessionStorage):
-        return True
-    return _declared_durable(storage)
-
-
 def validate_organization_and_session_admission(
     env: ApplicationEnvironmentProfile,
     *,
-    session_storage: SessionStorage,
-    organization_profile_store: OrganizationProfileStore | None,
+    session_storage: object,
+    organization_profile_store: object | None,
 ) -> None:
     """Pure admission gate on the final session storage and organization store.
 
-    Applies in PRODUCT or STRICT postures (DP-24). Session storage is checked only when
-    persistent user or long-term memory is required (decision Q2 = A); the organization store
-    only when organization memory is enabled. No provider mutation.
+    Applies in PRODUCT or STRICT postures (DP-24). The organization store is checked only when
+    organization memory is enabled. No provider mutation.
     """
     if not wiring_fails_closed(env):
         return
@@ -421,9 +369,3 @@ def validate_organization_and_session_admission(
                 f"organization profile store {type(organization_profile_store).__name__} "
                 "is ephemeral or cannot be classified as durable",
             )
-    if persistent_canonical_user_profile_memory_required(env) and not _session_storage_is_durable(session_storage):
-        raise MemoryOrgSessionAdmissionError(
-            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
-            f"session storage {type(session_storage).__name__} is ephemeral or cannot be "
-            "classified as durable while persistent memory is required",
-        )

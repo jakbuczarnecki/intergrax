@@ -5,116 +5,63 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from intergrax.applications._shared.wiring_posture import wiring_fails_closed
-from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.runtime.sandbox.manager import ENV_SANDBOX_ROOT, SandboxSessionManager
-from intergrax.tools.contracts.tool_profile import ToolProfile
-from intergrax.tools.registry.catalog import (
-    UnknownToolBundleError,
-    get_bundle,
-    iter_bundles,
-    list_catalog_tool_ids,
-)
+from intergrax.tools.registry.profile import ToolProfile
 
 _SIDE_EFFECT_TOOL_PREFIXES = ("sandbox.", "workspace.", "gitlab.", "websearch.")
 
 
-class SandboxCompositionError(ValueError):
-    """Raised when guarded composition cannot bind sandbox isolation."""
+class SandboxCompositionError(RuntimeError):
+    """Raised when a fail-closed posture enables side-effect tools without an explicit sandbox root."""
 
 
-def _is_side_effect_tool_id(tool_id: str) -> bool:
-    return tool_id.startswith(_SIDE_EFFECT_TOOL_PREFIXES) or tool_id == "sandbox.exec"
-
-
-def _effective_enabled_tool_ids(
-    profile: ToolProfile,
-    *,
-    strict_bundle_resolution: bool,
-) -> set[str]:
-    if profile.register_all_catalog_bundles:
-        return set(list_catalog_tool_ids())
-    for bundle_id in profile.enabled_bundles:
-        try:
-            get_bundle(bundle_id)
-        except UnknownToolBundleError:
-            if strict_bundle_resolution:
-                raise
-    enabled = set(profile.enabled)
-    for entry in iter_bundles():
-        if profile.should_register_bundle(entry.bundle_id, tool_ids=entry.tool_ids):
-            enabled.update(entry.tool_ids)
-    if profile.enabled and not profile.enabled_bundles:
-        enabled &= set(profile.enabled)
-    return enabled
-
-
-def _profile_has_side_effect_tools(
-    profile: ToolProfile,
-    *,
-    strict_bundle_resolution: bool,
-) -> bool:
-    for tool_id in _effective_enabled_tool_ids(
-        profile,
-        strict_bundle_resolution=strict_bundle_resolution,
-    ):
-        if _is_side_effect_tool_id(tool_id):
-            return True
-    return False
+def _has_side_effect_tools(env: ApplicationEnvironmentProfile) -> bool:
+    enabled = set(env.tool_profile.enabled)
+    for bundle in env.tool_profile.enabled_bundles:
+        enabled.add(bundle)
+    return any(tool_id.startswith(_SIDE_EFFECT_TOOL_PREFIXES) or tool_id == "sandbox.exec" for tool_id in enabled)
 
 
 def sandbox_required_for_posture(env: ApplicationEnvironmentProfile) -> bool:
-    """Guarded postures with effective side-effect tool enablement require explicit sandbox."""
-    if not wiring_fails_closed(env):
-        return False
-    return _profile_has_side_effect_tools(env.tool_profile, strict_bundle_resolution=True)
-
-
-def product_requires_sandbox(env: ApplicationEnvironmentProfile) -> bool:
-    """AUDIT-IDEAL-11.1 — product hosts with side-effect tools require sandbox wiring."""
-    if env.application_profile is not ApplicationProfile.PRODUCT:
-        return False
-    return _profile_has_side_effect_tools(
-        env.tool_profile,
-        strict_bundle_resolution=True,
-    )
-
-
-def _resolve_guarded_sandbox_root(sandbox_profile: SandboxProfile) -> Path:
-    if sandbox_profile.root is not None:
-        return sandbox_profile.root
-    env_root = os.environ.get(ENV_SANDBOX_ROOT, "").strip()
-    if env_root:
-        return Path(env_root)
-    raise SandboxCompositionError(
-        "guarded sandbox composition requires explicit sandbox root (SandboxProfile.root or INTERGRAX_SANDBOX_ROOT)",
-    )
+    """PRODUCT or STRICT posture (DP-24) with side-effect tools enabled requires a sandbox."""
+    return wiring_fails_closed(env) and _has_side_effect_tools(env)
 
 
 def wire_sandbox_sessions(
     env: ApplicationEnvironmentProfile,
 ) -> SandboxSessionManager | None:
-    """Bind sandbox manager; enable ``sandbox.exec`` on tool profile when configured."""
+    """Bind sandbox manager; enable ``sandbox.exec`` on tool profile when configured.
+
+    In a fail-closed posture with side-effect tools, a configured sandbox profile with an
+    explicit root (profile root or ``INTERGRAX_SANDBOX_ROOT``) is required; the relative
+    default root is never used silently.
+    """
     sandbox_profile = env.sandbox
-    requires_isolation = sandbox_required_for_posture(env)
-    guarded_exec_tool = wiring_fails_closed(env) and sandbox_profile is not None and sandbox_profile.enable_exec_tool
-    if requires_isolation:
-        if sandbox_profile is None:
-            raise SandboxCompositionError(
-                "guarded composition requires SandboxProfile when side-effect tools are enabled",
-            )
-        root = _resolve_guarded_sandbox_root(sandbox_profile)
-        return SandboxSessionManager(root=root)
-    if guarded_exec_tool and sandbox_profile is not None:
-        root = _resolve_guarded_sandbox_root(sandbox_profile)
-        return SandboxSessionManager(root=root)
+    required = sandbox_required_for_posture(env)
     if sandbox_profile is None:
+        if required:
+            raise SandboxCompositionError(
+                "side-effect tools are enabled in a PRODUCT/STRICT posture but no sandbox profile is configured"
+            )
         return None
+    if required and sandbox_profile.root is None and not os.environ.get(ENV_SANDBOX_ROOT, "").strip():
+        raise SandboxCompositionError(
+            "sandbox composition in a PRODUCT/STRICT posture requires an explicit root "
+            f"(SandboxProfile.root or {ENV_SANDBOX_ROOT})"
+        )
     return SandboxSessionManager(root=sandbox_profile.root)
+
+
+def product_requires_sandbox(env: ApplicationEnvironmentProfile) -> bool:
+    """AUDIT-IDEAL-11.1 — product hosts with side-effect tools require sandbox wiring."""
+    from intergrax.applications.contracts.application_host import ApplicationProfile
+
+    if env.application_profile is not ApplicationProfile.PRODUCT:
+        return False
+    return _has_side_effect_tools(env)
 
 
 def tool_profile_with_sandbox(env: ApplicationEnvironmentProfile) -> ToolProfile:
