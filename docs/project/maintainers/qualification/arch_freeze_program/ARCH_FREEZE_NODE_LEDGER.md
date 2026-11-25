@@ -163,7 +163,7 @@ Row count: 149
 | T-AF2-REQUAL-HIST-PASS | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | HIST, CMP, TEN, EVOL, FRZ-11, AUD |
 | T-AF2-RM499-ENTRY | UNK | T-IGX-050-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | T-AF2-RW-GATES | UNK | T-IGX-051-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | OBS |
-| T-AF2-RW-PLAN | PARTIAL | T-IGX-073-D | NONE | T-IGX-073-D L5; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-073-D=closed | N | all CODE_FIX rows |
+| T-AF2-RW-PLAN | VALIDATED | T-IGX-073-D | ebe45c269 | T-IGX-073-D L5; T-AF2-RW-PLAN-AUDIT AR-12-07 PASS @ ebe45c269 (`continuation/RW_PLAN_AUDIT_STATUS.md`); not CLOSED | N | all CODE_FIX rows |
 | T-AF2-RW-PLAN-AUDIT | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 PASS @ ebe45c269 in RW_PLAN_AUDIT_STATUS.md @ 11787a7e; RED_FIRST blocks SCOPE close (P0) | N | - |
 | T-AF2-RW-RECOVERY | PARTIAL | T-IGX-051-E | NONE | RC0 L34-42; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-E=plan_approved | N | REL |
 | T-AF2-RW-RUNTIME | REQ | T-IGX-051-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-D=plan_approved | Y | CTR, REL |
