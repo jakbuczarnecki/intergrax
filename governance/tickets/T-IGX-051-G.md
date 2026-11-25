@@ -20,8 +20,7 @@ Plan digest: d4e9005e793e3c429839580bc305400fc2d8dd299c46d2e9336b0ef37c7b7e3d
 
 ## Approved
 
-Approved: operator @ 2026-11-23T13:30:00+01:00
-
+Awaiting operator signature. This file is not an approval.
 
 ## Test contract
 
@@ -45,4 +44,4 @@ Commands and paths are only in the promoted plan §7; this ticket does not run p
 
 ## Lifecycle state
 
-in_progress
+plan_pending
