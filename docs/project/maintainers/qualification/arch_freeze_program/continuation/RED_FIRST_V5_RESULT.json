@@ -24,10 +24,10 @@
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_341db5a.log",
-      "pytest_exit_code": 2,
-      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_282607ba.log",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-CTR-01.log",
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py::test_streaming_flag_matches_the_stream_messages_method[openai-chat] FAILED at prefix"
     },
     {
       "frz_id": "FRZ-TEN-01",
@@ -353,10 +353,10 @@
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_b7131a7a.log",
-      "pytest_exit_code": 2,
-      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_ddf1c715.log",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-DEBT-04.log",
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node tests/unit/architecture/test_rw_gates_eval_digest_denied.py::test_nt_debt_04_enforce_eval_run_digest_guard FAILED at prefix"
     },
     {
       "frz_id": "FRZ-REL-10",

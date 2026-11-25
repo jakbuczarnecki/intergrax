@@ -97,13 +97,13 @@
       "owner_ticket": "T-IGX-051-D",
       "negative_test_id": "NT-CTR-01",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CTR-01",
       "regression_scope": "ENT-A-CTR-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-D",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "NT-CTR-01 node test_streaming_flag_matches_the_stream_messages_method[openai-chat] FAILED at prefix (streaming flag parity)"
     },
     {
       "frz_id": "FRZ-CTR-02",
@@ -163,13 +163,13 @@
       "owner_ticket": "T-IGX-051-F",
       "negative_test_id": "NT-DEBT-04",
       "red_first_prefix_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-DEBT-04",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "NT-DEBT-04 node test_nt_debt_04_enforce_eval_run_digest_guard FAILED at prefix (enforce_eval_run_digests missing)"
     },
     {
       "frz_id": "FRZ-EXE-02",
@@ -1428,6 +1428,6 @@
       "traceability validator"
     ],
     "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
-    "qualified_at_head": "Not claimed — diagnostic W2 outputs only"
+    "qualified_at_head": "Not claimed \u2014 diagnostic W2 outputs only"
   }
 }

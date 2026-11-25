@@ -26,7 +26,14 @@ from unittest.mock import MagicMock
 import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.llm_adapters.contracts.capabilities import LLMCapabilityMismatchError
+
+try:
+    from intergrax.llm_adapters.contracts.capabilities import LLMCapabilityMismatchError
+except ModuleNotFoundError:
+
+    class LLMCapabilityMismatchError(RuntimeError):  # red-first replay shim before capabilities.py
+        """Historical prefix lacks typed capability error module."""
+
 
 pytestmark = pytest.mark.unit
 
