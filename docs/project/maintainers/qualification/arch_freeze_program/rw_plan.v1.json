@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-25T18:07:09.426199+00:00",
-  "execution_sha": "7b93d75c6bda9124f8cfbc0b2da5adfcfa16a35d",
+  "generated_at": "2026-11-25T18:08:07.347573+00:00",
+  "execution_sha": "dff5449c97bf9a637c59e09e41c1177be420a730",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -197,7 +197,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-052-*",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
+      "red_first_reason": "E   AttributeError: module 'scripts.governance.verify_arch_freeze_plan_traceability' has no attribute '_self_test_cases'",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-B7-PFP-ACTIVATE",
       "owner_wave": "W5",
@@ -301,7 +301,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "E   ModuleNotFoundError: No module named 'tests.qualification.governance.gr11.catalog'"
     },
     {
       "frz_id": "FRZ-PLG-07",
@@ -399,7 +399,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "E   ImportError: cannot import name 'UnsupportedQueueBackendError' from 'intergrax.applications._shared.production_queue_resolver'"
     },
     {
       "frz_id": "FRZ-REL-10",
@@ -413,7 +413,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "E   ImportError: cannot import name 'CapacityQualification' from 'intergrax.applications._shared.production_capacity_wiring'"
     },
     {
       "frz_id": "FRZ-RPL-04",
@@ -427,7 +427,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
+      "red_first_reason": "'ent_semantic_gate' not found in `markers` configuration option",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",

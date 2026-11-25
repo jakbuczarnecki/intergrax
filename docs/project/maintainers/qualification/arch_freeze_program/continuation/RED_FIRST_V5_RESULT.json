@@ -155,7 +155,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_d79e9634.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "E   ModuleNotFoundError: No module named 'tests.qualification.governance.gr11.catalog'"
     },
     {
       "frz_id": "FRZ-FRZ-10",
@@ -172,7 +172,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_a720015.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "E   AttributeError: module 'scripts.governance.verify_arch_freeze_plan_traceability' has no attribute '_self_test_cases'"
     },
     {
       "frz_id": "FRZ-REL-07",
@@ -343,7 +343,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_40c38433.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "'ent_semantic_gate' not found in `markers` configuration option"
     },
     {
       "frz_id": "FRZ-DEBT-04",
@@ -377,7 +377,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_78927f86.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "E   ImportError: cannot import name 'CapacityQualification' from 'intergrax.applications._shared.production_capacity_wiring'"
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -394,7 +394,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_679c655c.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "E   ImportError: cannot import name 'UnsupportedQueueBackendError' from 'intergrax.applications._shared.production_queue_resolver'"
     }
   ]
 }
