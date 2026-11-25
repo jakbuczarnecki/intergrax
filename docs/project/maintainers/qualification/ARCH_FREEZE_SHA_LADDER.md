@@ -30,4 +30,6 @@
 
 **Rungs added 2026-11-16** (ticket `T-IGX-050-A`; definitions in [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md) section J): `AUDIT_BASELINE_2` is pinned; `G2`, `R`, `FCS` and `M3` are placeholders and nothing here claims they exist. The `Status @ CLOSURE_DOC_HEAD` column header above still describes the older rungs.
 
+**V4 read pin (2026-11-25, not a ladder rung):** canonical integration head is `origin/development` `7657745c38500653c57980b0b477f611a86cccdc`. It is not `G2`, `R`, `FCS`, or `M3`. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is stale and is not an ancestor of this pin.
+
 **Rules:** Do not overwrite G6 / B1 / B2–B4 rungs. **FREEZE_CERTIFICATION_SHA** is the single consumer SHA for L3 FREEZE, ECAP §2.C, VBN independent accept, and authorized FRZ promotions.

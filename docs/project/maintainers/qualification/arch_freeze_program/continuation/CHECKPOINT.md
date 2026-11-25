@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| Packet | P0 reconcile — dirty tree + node disposition (no product on fc-train) |
-| `origin/development` | `11787a7e196cbfea32a982bfa260f02a34fe05fc` (**INTEGRATION_HEAD** — **not** FCS / G2 / M3) |
-| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of INTEGRATION_HEAD) |
-| Product train branch (new) | `arch-freeze/fc-train` @ worktree `D:/Projekty/_wt/intergrax/af-fc-p0` |
+| Packet | V4 identity lock — canonical development pin (no G2 / FCS / M3) |
+| `origin/development` | `7657745c38500653c57980b0b477f611a86cccdc` (**canonical integration head** — **not** FCS / G2 / M3) |
+| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of `7657745c`) |
+| Shadow train | local `arch-freeze/fc-train` `ad1fb7f24` tree-identical to `7657745c`; remote ref absent; do not extend |
 | Dirty tree | 165 paths on **main checkout** — classified in [`P0_DIRTY_TREE_DISPOSITION.md`](P0_DIRTY_TREE_DISPOSITION.md): **65** ARCH-FREEZE unpublished (local), **100** foreign local |
 | Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
 | SSOT disposition | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) P0 annex |

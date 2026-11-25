@@ -1,9 +1,11 @@
 # ARCH-FREEZE node ledger (R0)
 
-Packet: P0 fc-closure reconcile (@ INTEGRATION_HEAD). Prior packet: P-R0-A recount (2026-11-24).
+Packet: V4 identity lock (@ canonical development). Prior packet: P0 fc-closure reconcile (2026-11-25).
 DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
 
-**Recount pins (P0 @ 2026-11-25, INTEGRATION_HEAD):** `origin/development` = `11787a7e196cbfea32a982bfa260f02a34fe05fc`; `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a`. **`11787a7e` is INTEGRATION_HEAD** (merge `arch-freeze/rw-train` product into `development`); **not** G2, **not** FCS, **not** M3. Prior recount @ `c9ce6175f` superseded for disposition reads. Local `arch-freeze/rw-train` ref may be stale — use `origin/` only.
+**Recount pins (V4 @ 2026-11-25):** `origin/development` = `7657745c38500653c57980b0b477f611a86cccdc` (**canonical integration head**; **not** G2, **not** FCS, **not** M3). `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of `7657745c`). Prior P0 pin `11787a7e196cbfea32a982bfa260f02a34fe05fc` is an ancestor, not the read pin. Local `arch-freeze/fc-train` `ad1fb7f24eec2e730b0e286c60d6dc5b1aeb640a` has the **same tree** as `7657745c` and is not a second product line. `origin/arch-freeze/fc-train` is absent. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **not** an ancestor of `7657745c` (31-file delta) and is **not** G2. Local `arch-freeze/rw-train` is behind `origin/` — use `origin/` only.
+
+**Main-table status histogram (149 data rows):** `UNK` 90, `REQ` 22, `PARTIAL` 17, `DONE-FORMAL` 13, `VOID` 3, `OPEN` 2, `VALIDATED` 2 (T-AF2-RW-PLAN and REV-MASTER). G2, R, FCS, M3, ENTRY and ARCH-FREEZE remain unset.
 
 Dirty tree classification: [`continuation/P0_DIRTY_TREE_DISPOSITION.md`](continuation/P0_DIRTY_TREE_DISPOSITION.md) (165 paths; not applied to fc-train in P0).
 
@@ -64,7 +66,7 @@ Row count: 149
 | DS-Q | DONE-FORMAL | NONE | NONE | ODR L36; MEP L517; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | EVOL, FRZ |
 | ECAP-EXEC | UNK | T-IGX-052-E | NONE | ODR L63 (DP-54); @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-052-E=draft | N | - |
 | ENTRY | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| FCS | UNK | - | NONE | LAD L28 (FCS NOT SET); INTEGRATION_HEAD `11787a7e` ≠ FCS (P0); @dev 11787a7e / train e9bebe0ac | N | - |
+| FCS | UNK | - | NONE | LAD L28 (FCS NOT SET); canonical head `7657745c` ≠ FCS (V4); historical P0 pin `11787a7e` is an ancestor only | N | - |
 | M-NOW | REQ | NONE | NONE | eqo_a_remediation/OPERATOR_DECISIONS_EQOA_REMEDIATION.md; WP12_DAG.md; @dev 51edb2a7 / train be0ce70d (P-R0-A) | Y | - |
 | M1 | DONE-FORMAL | - | feaa2a87d | DAG L67; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | M3 | OPEN | - | NONE | LAD L29 (M3 NOT SET); OPEN ladder (P-R0-A) | N | FRZ |
@@ -140,7 +142,7 @@ Row count: 149
 | PT-WD | PARTIAL | T-IGX-043-I/M | NONE | CHECKPOINT.md L40; RC0 L20-32; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-043-I=plan_approved | N | - |
 | PT-WE | VOID | - | NONE | DAG L104 (OPTIONAL, conditional on DP-43/RA-1); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | PT-WF | PARTIAL | T-IGX-043-J | db69a9e44 | G-09 product e6b1d97f7 via PR #718; E2-E4 absent @ train (PLAN_T-IGX-043-J, DEF_CB_B2_S03_PT_WF_DISPOSITION.md); dev dc083f6ea not on train; T-IGX-043-J=in_progress | N | SEC |
-| REV-MASTER | PARTIAL | - | NONE | REV_MASTER_CORRECTIVE_CLOSURE_RECORD.md L22; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
+| REV-MASTER | VALIDATED | - | deea67621120403edb2d9bdd33e3eed8903199de | REV_MASTER_FORMAL_CLOSEOUT_RECORD.md FORMAL_PASSED=YES; corrective record L22; ancestor of `7657745c` (V4). Not SCOPE, not G2. | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | AR-12-07 RM-03 PASS @ ebe45c269; RED_FIRST 36/39 INCOMPLETE; G2/R/FCS/M3 ABSENT @ INTEGRATION_HEAD 11787a7e (P0) | N | - |
 | T-AF2-BASELINE-PIN | DONE-FORMAL | - | 7960ae7f6 | LAD L25 (AUDIT_BASELINE_2 PINNED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
