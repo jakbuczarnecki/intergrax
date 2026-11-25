@@ -16,7 +16,9 @@ Approval source: covered by the Operator's acceptance of `agent-env/plans/cursor
 
 ```text
 scripts/demo/**
+scripts/demob/**
 tests/unit/demo/**
+tests/unit/demob/**
 ```
 
 ## Test contract
