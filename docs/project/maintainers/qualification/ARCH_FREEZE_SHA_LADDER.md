@@ -32,4 +32,6 @@
 
 **V4 read pin (2026-11-25, not a ladder rung):** canonical integration head is `origin/development` `7657745c38500653c57980b0b477f611a86cccdc`. It is not `G2`, `R`, `FCS`, or `M3`. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is stale and is not an ancestor of this pin.
 
+**V5 read pin (2026-11-25, not a ladder rung):** canonical integration head is `origin/development` `5935fa4f0cd3596852b3a6500f9d4e1d613a53df`. It is **not** `G2`, **not** `R`, **not** `FCS`, and **not** `M3`. `origin/arch-freeze/rw-train` remains `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a`. The V4 pin `7657745c` is historical. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is stale and is **not** `G2`.
+
 **Rules:** Do not overwrite G6 / B1 / B2–B4 rungs. **FREEZE_CERTIFICATION_SHA** is the single consumer SHA for L3 FREEZE, ECAP §2.C, VBN independent accept, and authorized FRZ promotions.

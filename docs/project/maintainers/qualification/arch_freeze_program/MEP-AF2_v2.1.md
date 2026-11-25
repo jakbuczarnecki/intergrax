@@ -861,3 +861,58 @@ Sources: WP-12 `TICKETS_DRAFT.md` for the PT-* nodes, and this file (sections E,
 | DS-ADM | T-B7-FRZ-FRZ + T-B8-ROADMAP admission steps |
 
 All other PT-* nodes are added to the WBS as their own rows under batch `EQOA-W<n>`.
+
+---
+
+## Appendix V5. Execution amendment (package ANNEX — binding for implementers)
+
+**Status:** authoritative execution pin and recovery doctrine for ARCH-FREEZE package V5. **Does not** set `G2`, `R`, `FCS`, `M3`, `SCOPE`, `ENTRY`, or `ARCH-FREEZE CLOSED`. **Does not** amend or replace sections A–Q above. Packages **P1–P9** remain governed by sections J and N1–N13; this appendix does not close them.
+
+### V5.1 Read pins and ladder discipline
+
+| Ref | SHA / branch | Role |
+| --- | --- | --- |
+| Integration head | `origin/development` `5935fa4f0cd3596852b3a6500f9d4e1d613a53df` | **Canonical integration read pin** for V5 recounts and docs SSOT. **Not** `G2`, **not** `R`, **not** `FCS`, **not** `M3`, **not** a ladder rung promotion. |
+| RW train (published) | `origin/arch-freeze/rw-train` `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` | Train tip for RW evidence and G2 candidacy base lineage; **not** `G2` by itself. |
+| Stale PT-Q02 candidate | `ea923cf03d88fc9d22637796e9002eb9d68e6e59` | **Stale**; **not** an ancestor of the V5 integration head; **not** `G2`. |
+| Historical V4 integration pin | `7657745c38500653c57980b0b477f611a86cccdc` | Superseded for **read** purposes by `5935fa4f`; retained for cite-only audit trails. |
+| Historical P0 pin | `11787a7e196cbfea32a982bfa260f02a34fe05fc` | Ancestor; not the V5 read pin. |
+
+**G2 candidacy (expectation, not a pin decision):** a new `arch-freeze/rw-train` tip **after** `e9bebe0ac`, carrying RW product drift observable on `5935fa4f`, then published as `af2/pin-<sha>`. **Do not** pin `5935fa4f` as `G2`. `ACT-N11` failure before RB-2 remains **expected-red**, not a waiver trigger.
+
+### V5.2 Red-first and phase-check 3 evidence
+
+Positive red-first evidence is **only** the `RED_AT_PREFIX` class whose log names the **exact negative test node** and the **FRZ mechanism** under audit. A file-level pytest exit code `1` **without** that pairing is **insufficient**.
+
+`verify_rw_plan_phase_check3.py` **must** continue to reject `RED_FIRST_UNREPRODUCIBLE` and `GREEN_AT_PREFIX`. The note in `RED_FIRST_G2_DISPOSITION.md` is **non-blocking** and **historical**; it **does not** close WP-12 phase-check 3 or satisfy REV-MASTER red-first.
+
+### V5.3 Prefix recovery path (no waiver by default)
+
+1. Worktree at the **prefix SHA** (negative-test era).
+2. Overlay **only** the test file from the fix commit (minimal surface).
+3. Run **one** pytest node for the mapped negative test.
+4. **Rebind** the evidence SHA only if the defect is still present **and** the test collects.
+5. **No** waiver on this path.
+6. **OUT** / operator disposition (`OD-*`) **only** after the mechanical path above is exhausted.
+
+### V5.4 Campaign B alpha baseline
+
+Campaign B **alpha** anchors at **`AUDIT_BASELINE_2`** `7960ae7f6c82da60ca9acdc0ceebf63810002a42`, **not** at `HEAD_DIAGNOSTIC`. Nodes **R04**, **R24**, and **R25** must be **recovered or rebuilt** to the AB contract with an explicit **assertion map**. **Omega** remains at **`FCS`** (placeholder rung until set; this appendix does not set `FCS`).
+
+### V5.5 Operator signatures — reserved, not decided
+
+The following operator cards remain **reserved**; implementers **must not** mark them **DECIDED** in product or qualification paths:
+
+| Card | Note |
+| --- | --- |
+| **OD-AF-12** | Reserved. |
+| **RB-2** certifier and activation delegate | Reserved. |
+| **OD-AF-17** | Reserved; MEP **option A** remains the documented recommendation only. |
+| **OD-AF-15** | Reserved. |
+| **OD-AF-16b** | Reserved. |
+| **OD-ARCH-FREEZE-01** | Reserved. |
+| **ENTRY** | Reserved. |
+
+### V5.6 Package boundary
+
+Delivery packages **P1** through **P9** follow the wave map in section J and obligations in sections N1–N13. Appendix V5 records pins and execution doctrine only; it **does not** close any package or promote ledger row statuses.

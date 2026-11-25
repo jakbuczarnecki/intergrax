@@ -1,11 +1,10 @@
 # ARCH-FREEZE node ledger (R0)
 
-Packet: V4 identity lock (@ canonical development). Prior packet: P0 fc-closure reconcile (2026-11-25).
-DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
+Packet: V5 read pin (@ canonical development). Prior packet: V4 identity lock (2026-11-25). DAG SSOT: [`WP12_DAG.md`](./WP12_DAG.md).
 
-**Recount pins (V4 @ 2026-11-25):** `origin/development` = `7657745c38500653c57980b0b477f611a86cccdc` (**canonical integration head**; **not** G2, **not** FCS, **not** M3). `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of `7657745c`). Prior P0 pin `11787a7e196cbfea32a982bfa260f02a34fe05fc` is an ancestor, not the read pin. Local `arch-freeze/fc-train` `ad1fb7f24eec2e730b0e286c60d6dc5b1aeb640a` has the **same tree** as `7657745c` and is not a second product line. `origin/arch-freeze/fc-train` is absent. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **not** an ancestor of `7657745c` (31-file delta) and is **not** G2. Local `arch-freeze/rw-train` is behind `origin/` — use `origin/` only.
+**Recount pins (V5 @ 2026-11-25):** `origin/development` = `5935fa4f0cd3596852b3a6500f9d4e1d613a53df` (**canonical integration head**; **not** G2, **not** R, **not** FCS, **not** M3). `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (published train tip; **not** G2). Historical V4 pin `7657745c38500653c57980b0b477f611a86cccdc` and P0 pin `11787a7e196cbfea32a982bfa260f02a34fe05fc` are ancestors, not the V5 read pin. Local `arch-freeze/fc-train` `ad1fb7f24eec2e730b0e286c60d6dc5b1aeb640a` is cite-only vs prior recounts; use `origin/` for train evidence. `origin/arch-freeze/fc-train` is absent. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **stale**, is **not** an ancestor of `5935fa4f`, and is **not** G2. Local `arch-freeze/rw-train` may be behind `origin/` — use `origin/` only.
 
-**Main-table status histogram (149 data rows):** `UNK` 90, `REQ` 22, `PARTIAL` 17, `DONE-FORMAL` 13, `VOID` 3, `OPEN` 2, `VALIDATED` 2 (T-AF2-RW-PLAN and REV-MASTER). G2, R, FCS, M3, ENTRY and ARCH-FREEZE remain unset.
+**Main-table status histogram (149 data rows):** `UNK` 90, `REQ` 22, `PARTIAL` 17, `DONE-FORMAL` 13, `VOID` 3, `OPEN` 2, `VALIDATED` 2 (T-AF2-RW-PLAN and REV-MASTER). G2, R, FCS, M3, ENTRY and ARCH-FREEZE remain unset. **V5 refresh does not re-close** any ledger row status; the 149 data rows below are unchanged except for this header recount.
 
 Dirty tree classification: [`continuation/P0_DIRTY_TREE_DISPOSITION.md`](continuation/P0_DIRTY_TREE_DISPOSITION.md) (165 paths; not applied to fc-train in P0).
 

@@ -1,18 +1,19 @@
 # ARCH-FREEZE continuation checkpoint (development train)
 
-## P0 fc-closure pin (INTEGRATION_HEAD)
+## V5 read pin (INTEGRATION_HEAD)
 
 | Field | Value |
 | --- | --- |
-| Packet | V4 identity lock — canonical development pin (no G2 / FCS / M3) |
-| `origin/development` | `7657745c38500653c57980b0b477f611a86cccdc` (**canonical integration head** — **not** FCS / G2 / M3) |
-| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (ancestor of `7657745c`) |
-| Shadow train | local `arch-freeze/fc-train` `ad1fb7f24` tree-identical to `7657745c`; remote ref absent; do not extend |
+| Packet | V5 read pin — MEP-AF2 Appendix V5 + ledger recount (no G2 / FCS / M3) |
+| `origin/development` | `5935fa4f0cd3596852b3a6500f9d4e1d613a53df` (**canonical integration head** — **not** FCS / G2 / M3) |
+| `origin/arch-freeze/rw-train` | `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (published train tip; **not** G2) |
+| Historical V4 pin | `7657745c38500653c57980b0b477f611a86cccdc` — cite-only |
+| Shadow train | local `arch-freeze/fc-train` `ad1fb7f24` — cite-only vs prior P0/V4 recounts; do not extend |
 | Dirty tree | 165 paths on **main checkout** — classified in [`P0_DIRTY_TREE_DISPOSITION.md`](P0_DIRTY_TREE_DISPOSITION.md): **65** ARCH-FREEZE unpublished (local), **100** foreign local |
 | Ticket | [`T-IGX-075-A`](../../../../../../governance/tickets/T-IGX-075-A.md) |
-| SSOT disposition | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) P0 annex |
+| SSOT disposition | [`ARCH_FREEZE_NODE_LEDGER.md`](../ARCH_FREEZE_NODE_LEDGER.md) V5 header |
 
-Historical body sections below retain older pins (`e69e1ff58`, `dbaebfa8`, `c9ce6175f`) for cite-only audit trails unless superseded by the P0 annex.
+Historical body sections below retain older pins (`e69e1ff58`, `dbaebfa8`, `c9ce6175f`, `7657745c`) for cite-only audit trails unless superseded by the V5 header table.
 
 ---
 
