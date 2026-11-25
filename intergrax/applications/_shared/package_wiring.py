@@ -88,10 +88,15 @@ class PackageGateQualificationRun:
     def release(self) -> None:
         if self._released:
             return
+        root = self._qualification_root
+        if root is not None and root.is_dir():
+            shutil.rmtree(root)
+        self._qualification_root = None
         self._released = True
-        if self._qualification_root is not None and self._qualification_root.is_dir():
-            shutil.rmtree(self._qualification_root, ignore_errors=True)
-            self._qualification_root = None
+        try:
+            _active_package_gate_qualifications.remove(self)
+        except ValueError:
+            pass
 
 
 def _package_gate_has_side_effect_tools(env: ApplicationEnvironmentProfile) -> bool:
@@ -139,7 +144,7 @@ def _compose_package_gate_environment(
     sandbox = metadata_env.sandbox
     if sandbox is not None and sandbox.root is not None:
         return metadata_env, None
-    sandbox = sandbox or SandboxProfile(enable_exec_tool=True)
+    sandbox = sandbox or SandboxProfile()
     qualification_root = Path(tempfile.mkdtemp(prefix=_PACKAGE_GATE_SANDBOX_PREFIX))
     qualification_root.mkdir(parents=True, exist_ok=True)
     composition_env = metadata_env.model_copy(
