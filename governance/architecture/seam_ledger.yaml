@@ -69,10 +69,19 @@ import_rules:
     seam_type: contract
     owner: T-IGX-046-H
     direction: tier2_to_tier0_contract_leaves
+    report_missing_seam_outside_scan_roots: true
+    missing_seam_jurisdiction_roots:
+      - agents
+      - intergrax/agents
     scan_roots:
       - agents
+      - intergrax/agents
     allowed_module_prefixes:
       - intergrax.integrations.contracts
+      - intergrax.tools.registry
+      - intergrax.tools.tool_execution_profile
+      - intergrax.tools.execution_models
+      - intergrax.tools.providers.filesystem.allowlist
     denied_module_prefixes:
       - intergrax.integrations.providers
       - intergrax.integrations._shared
@@ -84,6 +93,13 @@ import_rules:
     seam_type: policy_enforcement
     owner: T-IGX-043-G
     direction: tier01_to_tier3_forbidden
+    report_missing_seam_outside_scan_roots: true
+    missing_seam_jurisdiction_roots:
+      - agents
+      - intergrax
+    missing_seam_jurisdiction_exclude_prefixes:
+      - intergrax/applications
+      - applications
     scan_roots:
       - agents
       - intergrax/agents
@@ -96,6 +112,19 @@ import_rules:
     denied_module_prefixes:
       - intergrax.applications
       - applications
+  - id: tier0_cli_harness_application_wiring
+    seam_type: runtime_assembly
+    owner: T-IGX-043-A
+    direction: tier0_cli_harness_to_tier3_shared
+    scan_roots:
+      - intergrax/cli
+      - intergrax/harness
+      - intergrax/scaffold
+      - intergrax/agent_distribution
+      - intergrax/debug
+    allowed_module_prefixes:
+      - intergrax.applications._shared
+      - intergrax.applications.contracts
 
 external_registries:
   - id: closed_provider_roots

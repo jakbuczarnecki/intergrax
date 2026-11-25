@@ -222,15 +222,55 @@ def test_lkw_docker_compose_uses_persistent_otel_collector_storage_contract() ->
     assert '"4318:4318"' in text
 
 
-def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_lkw_package_closure_accepts_pipeline_graph_trigger(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     from testing_support.mcp_ac3_strict_product_memory_test_wiring import (
         apply_strict_product_memory_test_patches,
     )
 
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "ollama")
+    monkeypatch.setenv("INTERGRAX_EMBEDDING_MODEL", "nomic-embed-text")
     apply_strict_product_memory_test_patches(monkeypatch)
+    import intergrax.applications._shared.memory_wiring as memory_wiring_module
+    from intergrax.memory.contracts.provider_identity import BUILTIN_SQLITE_USER_PROFILE_ID
+    from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
+        _durability_for_provider,
+        _evidence_for_provider,
+    )
+
+    _build_session_manager = memory_wiring_module.build_session_manager_from_environment
+
+    def _session_manager_with_qualification_evidence(*args, **kwargs):
+        kwargs.setdefault(
+            "qualification_evidence_registry",
+            _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID),
+        )
+        kwargs.setdefault(
+            "durability_evidence_registry",
+            _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID),
+        )
+        return _build_session_manager(*args, **kwargs)
+
+    monkeypatch.setattr(
+        memory_wiring_module,
+        "build_session_manager_from_environment",
+        _session_manager_with_qualification_evidence,
+    )
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = build_local_workspace_environment_profile()
+    env = env.model_copy(
+        update={
+            "integration_profile": env.integration_profile.model_copy(
+                update={"embedding_provider": "ollama"},
+            ),
+        },
+    )
+    env.observability_profile = env.observability_profile.model_copy(
+        update={"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"},
+    )
+    from intergrax.contracts.sandbox_profile import SandboxProfile
+
+    env = env.model_copy(update={"sandbox": SandboxProfile(root=tmp_path / "sandbox", enable_exec_tool=True)})
     wiring = wire_application_environment(
         manifest,
         env,

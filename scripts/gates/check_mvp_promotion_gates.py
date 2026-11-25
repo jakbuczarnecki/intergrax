@@ -141,7 +141,7 @@ def promotion_ticket_authorization(
     root: Path = REPO_ROOT,
 ) -> tuple[bool, str]:
     if promotion_ticket is None:
-        return True, "no promotion-ticket binding required"
+        return governance_authorization(governance_ticket, root)
     if governance_ticket is None:
         return False, "promotion binding requires --governance-ticket"
     gov = governance_ticket.strip().replace("\\", "/")

@@ -15,6 +15,7 @@ from typing import Any
 import yaml
 
 DEFAULT_LEDGER_PATH = Path("governance/architecture/seam_ledger.yaml")
+_MISSING_SEAM_PRODUCT_ROOTS: tuple[str, ...] = ("agents", "intergrax", "applications")
 
 
 class SeamFindingKind(StrEnum):
@@ -239,7 +240,12 @@ def _extract_imports(source: str) -> list[tuple[int, str]]:
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
-            result.append((node.lineno, node.module))
+            base = node.module
+            for alias in node.names:
+                if alias.name == "*":
+                    result.append((node.lineno, base))
+                else:
+                    result.append((node.lineno, f"{base}.{alias.name}"))
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 result.append((node.lineno, alias.name))
@@ -335,8 +341,52 @@ def collect_import_rule_findings(ledger: Mapping[str, Any], *, repo_root: Path) 
     return findings
 
 
+def collect_missing_seam_findings(ledger: Mapping[str, Any], *, repo_root: Path) -> list[SeamFinding]:
+    rules = ledger.get("import_rules")
+    if not isinstance(rules, list):
+        return []
+    if not any(isinstance(rule, dict) and rule.get("report_missing_seam_outside_scan_roots") for rule in rules):
+        return []
+    findings: list[SeamFinding] = []
+    for rel_path, path in _iter_source_modules(repo_root, _MISSING_SEAM_PRODUCT_ROOTS):
+        try:
+            imports = _extract_imports(path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for line, module in imports:
+            missing = detect_unregistered_cross_boundary_import(
+                module=module,
+                source_path=rel_path,
+                ledger=ledger,
+            )
+            if missing is not None:
+                findings.append(replace(missing, line=line))
+    return findings
+
+
 def _path_in_scan_roots(rel_path: str, scan_roots: Sequence[str]) -> bool:
     return any(rel_path == root or rel_path.startswith(root + "/") for root in scan_roots)
+
+
+def _path_under_prefixes(rel_path: str, prefixes: Sequence[str]) -> bool:
+    return any(rel_path == prefix or rel_path.startswith(f"{prefix}/") for prefix in prefixes)
+
+
+def _missing_seam_source_in_scope(rule: Mapping[str, Any], source_path: str) -> bool:
+    scan_roots = [str(r) for r in rule.get("scan_roots") or [] if isinstance(r, str)]
+    if _path_in_scan_roots(source_path, scan_roots):
+        return False
+    jurisdiction = rule.get("missing_seam_jurisdiction_roots")
+    if jurisdiction is None:
+        return True
+    if not isinstance(jurisdiction, list) or not jurisdiction:
+        return False
+    jurisdiction_roots = [str(r) for r in jurisdiction if isinstance(r, str)]
+    if not _path_under_prefixes(source_path, jurisdiction_roots):
+        return False
+    excludes = rule.get("missing_seam_jurisdiction_exclude_prefixes") or []
+    exclude_prefixes = [str(e) for e in excludes if isinstance(e, str)]
+    return not _path_under_prefixes(source_path, exclude_prefixes)
 
 
 def detect_unregistered_cross_boundary_import(
@@ -356,6 +406,8 @@ def detect_unregistered_cross_boundary_import(
             continue
         denied = rule.get("denied_module_prefixes") or []
         if not any(isinstance(p, str) and _module_prefix_match(module, p) for p in denied):
+            continue
+        if not _missing_seam_source_in_scope(rule, source_path):
             continue
         governed = False
         for other in rules:
@@ -447,6 +499,7 @@ def run_seam_ledger_check(
     findings: list[SeamFinding] = []
     findings.extend(validate_ledger_structure(ledger, repo_root=repo_root))
     findings.extend(collect_import_rule_findings(ledger, repo_root=repo_root))
+    findings.extend(collect_missing_seam_findings(ledger, repo_root=repo_root))
     findings.extend(collect_external_registry_findings(ledger))
     return findings
 
