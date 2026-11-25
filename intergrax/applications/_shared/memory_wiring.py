@@ -474,6 +474,7 @@ def resolve_memory_platform_wiring(
     3. In-memory fallbacks for session and user LTM.
     4. Explicit external Memory store plugin ids overlay their owned slots only.
     """
+    validate_memory_tenant_scope_admission(env, tenant_id=tenant_id)
     profile = integration_profile or env.integration_profile
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
@@ -515,7 +516,6 @@ def resolve_memory_platform_wiring(
         session_storage=wiring.session_storage,
         organization_profile_store=wiring.organization_profile_store,
     )
-    validate_memory_tenant_scope_admission(env, tenant_id=tenant_id)
     if memory_store_plugin_catalog is not None:
         wiring = replace(
             wiring,
