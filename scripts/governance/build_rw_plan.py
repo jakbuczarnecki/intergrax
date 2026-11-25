@@ -262,6 +262,9 @@ def parse_appendix_a_code_fix_inventory(section: str | None = None) -> list[Code
     return list(seen.values())
 
 
+_PRESERVED_RED_FIRST_STATUSES = frozenset({"RED_AT_PREFIX", "RED_FIRST_UNREPRODUCIBLE"})
+
+
 def _load_prior_red_first() -> dict[str, dict[str, object]]:
     if not _RW_PLAN_JSON.is_file():
         return {}
@@ -277,12 +280,16 @@ def _load_prior_red_first() -> dict[str, dict[str, object]]:
         status = row.get("red_first_status")
         sha = row.get("red_first_prefix_sha")
         ref = row.get("red_first_evidence_ref")
-        if frz and status == "RED_AT_PREFIX" and isinstance(sha, str) and len(sha) == 40 and ref:
-            out[str(frz)] = {
+        if frz and status in _PRESERVED_RED_FIRST_STATUSES and isinstance(sha, str) and len(sha) == 40 and ref:
+            prior: dict[str, object] = {
                 "red_first_prefix_sha": sha,
                 "red_first_status": status,
                 "red_first_evidence_ref": ref,
             }
+            reason = row.get("red_first_reason")
+            if isinstance(reason, str) and reason.strip():
+                prior["red_first_reason"] = reason
+            out[str(frz)] = prior
     return out
 
 
@@ -351,6 +358,8 @@ def build() -> dict[str, object]:
             "delta_findings": r.delta_findings,
             "remediation_track": r.remediation_track,
         }
+        if prior and prior.get("red_first_reason"):
+            entry["red_first_reason"] = prior["red_first_reason"]
         for key, val in ownership.items():
             if key != "owner_ticket":
                 entry[key] = val

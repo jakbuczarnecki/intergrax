@@ -162,6 +162,43 @@ def test_red_at_prefix_requires_sha_and_ref():
     assert any("evidence reference" in e for e in errors)
 
 
+def test_red_first_unreproducible_accepted_by_structure():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+            "red_first_prefix_sha": "a" * 40,
+            "red_first_evidence_ref": "docs/x.json#FRZ-BND-04",
+            "red_first_reason": "strict exit 2",
+        }
+    )
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert not errors
+
+
+def test_red_first_unreproducible_incomplete_evidence():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+            "red_first_prefix_sha": "a" * 40,
+            "red_first_evidence_ref": "docs/x.json#FRZ-BND-04",
+            "red_first_reason": "strict exit 2",
+        }
+    )
+    errors = mod.validate_red_first_evidence(plan)
+    assert any("does not demonstrate red-first replay" in e for e in errors)
+
+
+def test_evidence_missing_rows_report_incomplete():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    errors = mod.validate_red_first_evidence(plan)
+    assert any("EVIDENCE_MISSING" in e for e in errors)
+
+
 def test_frz_frz_10_node_ownership_accepted():
     mod = _load_verify()
     plan = _minimal_plan()

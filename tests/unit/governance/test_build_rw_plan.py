@@ -179,6 +179,41 @@ def test_preserve_red_at_prefix_evidence(tmp_path: Path, monkeypatch: pytest.Mon
     assert inv["red_first_prefix_sha"] == "a" * 40
 
 
+def test_preserve_red_first_unreproducible_reason(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    mod = _import_build()
+    prior = {
+        "code_fix_inventory": [
+            {
+                "frz_id": "FRZ-CTR-01",
+                "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+                "red_first_prefix_sha": "b" * 40,
+                "red_first_evidence_ref": "docs/x.json#FRZ-CTR-01",
+                "red_first_reason": "strict exit 2",
+            }
+        ]
+    }
+    rw_json = tmp_path / "rw_plan.v1.json"
+    rw_json.write_text(json.dumps(prior), encoding="utf-8")
+    monkeypatch.setattr(mod, "_RW_PLAN_JSON", rw_json)
+    monkeypatch.setattr(
+        mod,
+        "parse_appendix_a_code_fix_inventory",
+        lambda: [
+            mod.CodeFixRow(
+                frz_id="FRZ-CTR-01",
+                summary="s",
+                negative_test="NT-CTR-01",
+                remediation_track="CODE_FIX:",
+                owner_ticket="T-IGX-051-D",
+                regression_scope="ENT-A",
+            )
+        ],
+    )
+    inv = mod.build()["code_fix_inventory"][0]
+    assert inv["red_first_status"] == "RED_FIRST_UNREPRODUCIBLE"
+    assert inv["red_first_reason"] == "strict exit 2"
+
+
 def test_pt_wa_precedes_pt_wb():
     mod = _import_build()
     labels = [e[2] for e in mod.LANE_ORDER if isinstance(e, (list, tuple)) and len(e) >= 3 and isinstance(e[2], str)]
