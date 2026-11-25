@@ -47,7 +47,7 @@ def _no_sandbox_root_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_product_side_effect_tools_without_sandbox_profile_raises() -> None:
     env = _product(tool_ids=["sandbox.exec"], sandbox=None)
-    with pytest.raises(SandboxCompositionError, match="SandboxProfile when side-effect"):
+    with pytest.raises(SandboxCompositionError, match="no sandbox profile"):
         wire_sandbox_sessions(env)
 
 
@@ -56,7 +56,7 @@ def test_product_side_effect_tools_without_explicit_root_raises(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     env = _product(tool_ids=_TOOLS, sandbox=SandboxProfile(root=None, enable_exec_tool=True))
-    with pytest.raises(SandboxCompositionError, match="explicit sandbox root"):
+    with pytest.raises(SandboxCompositionError, match="explicit root"):
         wire_sandbox_sessions(env)
     assert not (tmp_path / "build").exists()
 

@@ -73,14 +73,14 @@ def test_product_org_memory_on_mongo_raises_unsupported_org_store() -> None:
     env = _product(_org_only_memory())
     env.integration_profile = _mongo_profile()
     with pytest.raises(MemoryOrgSessionAdmissionError) as refusal:
-        resolve_memory_platform_wiring(env, tenant_id="tenant-fc2")
+        resolve_memory_platform_wiring(env)
     assert refusal.value.reason is _Reason.ORG_STORE_UNSUPPORTED_BACKEND
 
 
 def test_product_org_memory_without_backend_raises_instead_of_silent_skip() -> None:
     env = _product(_org_only_memory())
     with pytest.raises(MemoryOrgSessionAdmissionError) as refusal:
-        resolve_memory_platform_wiring(env, tenant_id="tenant-fc2")
+        resolve_memory_platform_wiring(env)
     assert refusal.value.reason is _Reason.ORG_STORE_MISSING
 
 
@@ -99,7 +99,7 @@ def test_strict_lab_org_memory_with_in_memory_org_store_raises() -> None:
     env = _lab_strict(_org_only_memory())
     assert env.application_profile is ApplicationProfile.LAB
     with pytest.raises(MemoryOrgSessionAdmissionError) as refusal:
-        resolve_memory_platform_wiring(env, tenant_id="tenant-fc2")
+        resolve_memory_platform_wiring(env)
     assert refusal.value.reason is _Reason.ORG_STORE_MISSING
     with pytest.raises(MemoryOrgSessionAdmissionError) as in_memory_refusal:
         validate_organization_and_session_admission(
@@ -114,7 +114,7 @@ def test_lab_balanced_keeps_in_memory_org_store() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="fc2.mem.lab")
     env.integration_profile = _mongo_profile()
     env.memory_profile = MemoryProfile(enable_org_memory=True, enable_user_memory=True)
-    wiring = resolve_memory_platform_wiring(env, tenant_id="tenant-fc2")
+    wiring = resolve_memory_platform_wiring(env)
     assert isinstance(wiring.organization_profile_store, InMemoryOrganizationProfileStore)
     validate_organization_and_session_admission(
         env,
@@ -125,7 +125,7 @@ def test_lab_balanced_keeps_in_memory_org_store() -> None:
 
 def test_product_without_persistent_memory_flags_keeps_in_memory_baseline() -> None:
     env = _product(MemoryProfile())
-    wiring = resolve_memory_platform_wiring(env, tenant_id="tenant-fc2")
+    wiring = resolve_memory_platform_wiring(env)
     assert isinstance(wiring.session_storage, InMemorySessionStorage)
     assert wiring.organization_profile_store is None
 
