@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-25T17:43:34.680985+00:00",
-  "execution_sha": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
+  "generated_at": "2026-11-25T18:07:09.426199+00:00",
+  "execution_sha": "7b93d75c6bda9124f8cfbc0b2da5adfcfa16a35d",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -337,13 +337,13 @@
       "owner_ticket": "T-IGX-043-H",
       "negative_test_id": "NT-PRD-05",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-PRD-05",
       "regression_scope": "ENT-A-PRD-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "negative test file absent"
+      "red_first_reason": "AssertionError: NT-PRD-05 missing hosting lifecycle entry: run_governed_contractor_hosted_strict_production_application"
     },
     {
       "frz_id": "FRZ-PRD-08",
@@ -357,7 +357,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "negative test file absent"
+      "red_first_reason": "pytest exit 0 at prefix for test_ee_a1_p0_inventory_reports_zero_production_bypass (production-only bypass already 0 in P0 inventory at prefix)"
     },
     {
       "frz_id": "FRZ-REG-09",
@@ -371,7 +371,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "AssertionError: assert offenders == [] \u2014 ollama SDK imported outside provider package (test_no_module_outside_the_provider_package_imports_the_ollama_sdk)"
+      "red_first_reason": "AssertionError: assert offenders == [] — ollama SDK imported outside provider package (test_no_module_outside_the_provider_package_imports_the_ollama_sdk)"
     },
     {
       "frz_id": "FRZ-REL-07",
@@ -385,7 +385,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "unexpected exit 3"
+      "red_first_reason": "INTERNALERROR> ModuleNotFoundError: No module named 'intergrax.applications._shared.wiring_posture' (pytest exit 3; not REL mechanism)"
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -1428,6 +1428,6 @@
       "traceability validator"
     ],
     "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
-    "qualified_at_head": "Not claimed \u2014 diagnostic W2 outputs only"
+    "qualified_at_head": "Not claimed — diagnostic W2 outputs only"
   }
 }

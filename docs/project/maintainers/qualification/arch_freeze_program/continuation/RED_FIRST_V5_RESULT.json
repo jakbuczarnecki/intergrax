@@ -189,7 +189,7 @@
       "pytest_exit_code": 3,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_ab23a971.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "unexpected exit 3"
+      "reason": "ModuleNotFoundError: intergrax.applications._shared.wiring_posture (exit 3)"
     },
     {
       "frz_id": "FRZ-CFG-02",
@@ -281,27 +281,24 @@
       "negative_test_id": "NT-PRD-05",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "negative_test_paths": [
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+        "tests/unit/architecture/test_nt_prd_red_first_probes.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-PRD-05.log",
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": -2,
       "integrated_pytest_log": "",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "negative test file absent",
-      "pytest_exit_code": 2
+      "measurement": "RED_AT_PREFIX",
+      "reason": "NT-PRD-05 missing hosting lifecycle entry: run_governed_contractor_hosted_strict_production_application",
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-PRD-05.log"
     },
     {
       "frz_id": "FRZ-PRD-08",
       "negative_test_id": "NT-PRD-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "negative_test_paths": [
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+        "tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-PRD-08.log",
@@ -309,8 +306,8 @@
       "integrated_exit_code": -2,
       "integrated_pytest_log": "",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "negative test file absent",
-      "pytest_exit_code": 2
+      "reason": "production-only bypass count already 0 at prefix (ee_a1 inventory gate)",
+      "pytest_exit_code": 0
     },
     {
       "frz_id": "FRZ-REG-09",
