@@ -27,6 +27,12 @@ def _agents_tree(tmp_path: Path, rel: str, source: str) -> Path:
         "import intergrax.integrations.contracts.foo as alias\n",
         "from intergrax.integrations.contracts import Foo\n",
         "from intergrax.integrations.contracts.foo import Bar\n",
+        "import intergrax.tools_extra\n",
+        "import intergrax.tools_extra.foo as tools_extra_alias\n",
+        "import intergrax.integrations_extra\n",
+        "import intergrax.integrations_extra.foo\n",
+        "from intergrax.tools_extra import Foo\n",
+        "from intergrax.integrations_extra import Bar as extra_bar\n",
     ],
 )
 def test_ast_allows_contract_leaf_imports(tmp_path: Path, source: str) -> None:
@@ -48,6 +54,9 @@ def test_ast_allows_contract_leaf_imports(tmp_path: Path, source: str) -> None:
         "from intergrax import integrations\n",
         "from intergrax.tools import Foo\n",
         "from intergrax import tools\n",
+        "import intergrax.tools as tools_alias\n",
+        "import intergrax.integrations as integrations_alias\n",
+        "from intergrax.tools.providers import Baz as provider_alias\n",
     ],
 )
 def test_ast_denies_non_contract_integrations_and_tools(tmp_path: Path, source: str) -> None:

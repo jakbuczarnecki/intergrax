@@ -25,7 +25,7 @@ from intergrax.applications._shared.roster_agent_contract_authority import (
     materialize_manifest_contract_authority_lab_compat,
 )
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile, SandboxProfile
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryCollaborativeOperationPolicyProfileRepository,
@@ -117,6 +117,20 @@ def _strict_harness(
     manifest = build_governed_contractor_manifest()
     base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
     env = resolve_reference_production_strict_host_environment(base_env)
+    env = env.model_copy(
+        update={
+            "observability_profile": env.observability_profile.model_copy(
+                update={"bounded_event_delivery_enabled": False},
+            ),
+        },
+    )
+    sandbox_root = tmp_path / "sandbox"
+    if env.sandbox is None:
+        env = env.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+    else:
+        env = env.model_copy(
+            update={"sandbox": env.sandbox.model_copy(update={"root": sandbox_root})},
+        )
     if env.reliability_profile.dependency_concurrency_admission is None:
         env = env.model_copy(
             update={
@@ -309,7 +323,9 @@ async def test_reject_and_escalate_verdicts_are_recorded_through_materialization
             message="sensitive action",
             context=TaskContext(capability="hitl.basic"),
             task_id=task_id,
-            options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
+            options=TaskExecutionOptions(
+                long_running=TaskLongRunningOptions(enabled=True, notify_channel="log"),
+            ),
         ),
         run_id=run_id,
     )
@@ -326,7 +342,11 @@ async def test_reject_and_escalate_verdicts_are_recorded_through_materialization
         context=TaskContext(capability="hitl.basic"),
         task_id=task_id,
         options=TaskExecutionOptions(
-            long_running=TaskLongRunningOptions(enabled=True, resume_token=resume_token),
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=resume_token,
+                notify_channel="log",
+            ),
             human=TaskHumanInput(response_text=word, verdict=verdict),
         ),
         metadata={"human_response": word, "resume_token": resume_token},
