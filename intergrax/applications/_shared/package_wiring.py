@@ -89,14 +89,14 @@ class PackageGateQualificationRun:
         if self._released:
             return
         root = self._qualification_root
+        if root is not None and root.is_dir():
+            shutil.rmtree(root)
         self._qualification_root = None
+        self._released = True
         try:
             _active_package_gate_qualifications.remove(self)
         except ValueError:
             pass
-        if root is not None and root.is_dir():
-            shutil.rmtree(root)
-        self._released = True
 
 
 def _package_gate_has_side_effect_tools(env: ApplicationEnvironmentProfile) -> bool:
