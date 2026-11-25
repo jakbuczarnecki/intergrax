@@ -46,6 +46,8 @@ from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.tools.registry.factory import enabled_tool_ids_for_profile
 
 PACKAGE_GATE_TENANT_ID = "ci-package-gate-tenant"
+PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT = "http://127.0.0.1:0/v1/logs"
+PACKAGE_GATE_SANDBOX_QUALIFICATION_ROOT = Path("build/ci/package_gate_sandbox")
 
 
 def package_gate_integration_profile() -> IntegrationProfile:
@@ -66,15 +68,41 @@ def package_gate_integration_profile() -> IntegrationProfile:
 
 
 def package_gate_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
-    """Lab integration swap for CI package closure checks (no vendor drivers required)."""
-    return env.model_copy(
+    """Lab integration bindings plus guarded-composition qualification for CI package gates.
+
+    Preserves STRICT/PRODUCT posture (no BALANCED/LAB downgrade). Qualification supplies
+    OTLP, in-memory integration backends, and an explicit sandbox root when guarded wiring
+    requires one.
+    """
+    from intergrax.applications._shared.sandbox_wiring import (
+        product_requires_sandbox,
+        sandbox_required_for_posture,
+    )
+    from intergrax.applications._shared.wiring_posture import wiring_fails_closed
+    from intergrax.contracts.sandbox_profile import SandboxProfile
+
+    gate_env = env.model_copy(
         update={
             "integration_profile": package_gate_integration_profile(),
-            "meta": env.meta.model_copy(
-                update={
-                    "execution_mode": ExecutionMode.BALANCED,
-                    "application_profile": ApplicationProfile.LAB,
-                },
+            "observability_profile": env.observability_profile.model_copy(
+                update={"otlp_export_endpoint": PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT},
+            ),
+        },
+    )
+    needs_sandbox_root = (
+        sandbox_required_for_posture(gate_env)
+        or product_requires_sandbox(gate_env)
+        or (wiring_fails_closed(gate_env) and gate_env.sandbox is not None and gate_env.sandbox.enable_exec_tool)
+    )
+    if not needs_sandbox_root:
+        return gate_env
+    sandbox = gate_env.sandbox or SandboxProfile(enable_exec_tool=True)
+    if sandbox.root is not None:
+        return gate_env
+    return gate_env.model_copy(
+        update={
+            "sandbox": sandbox.model_copy(
+                update={"root": PACKAGE_GATE_SANDBOX_QUALIFICATION_ROOT},
             ),
         },
     )

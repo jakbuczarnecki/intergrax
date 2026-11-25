@@ -65,6 +65,8 @@ from echo.echo_agent import EchoAgent
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = CI_SMOKE_PRODUCT_TENANT
+_DF5_QUALIFICATION_OTLP_ENDPOINT = "http://127.0.0.1:0/v1/logs"
+_DF5_QUALIFICATION_SANDBOX_ROOT = Path("build/df5_qualification/sandbox")
 
 
 @pytest.fixture(autouse=True)
@@ -73,6 +75,10 @@ def _df5_close_host_owned_runtime_resources(
 ) -> Generator[None, None, None]:
     """Release dependency-admission threads so pytest and CI smoke can exit cleanly."""
     monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "ollama")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.runtime_event_delivery_wiring.require_otlp_observability_dependency_profile",
+        lambda **_: None,
+    )
     from intergrax.applications._shared import declarative_tool_wiring as declarative_tool_wiring_module
     from intergrax.applications._shared import harness_host_runtime as harness_host_runtime_module
     from intergrax.applications._shared.declarative_tool_wiring import (
@@ -145,8 +151,19 @@ def _echo_registry() -> AgentRegistry:
 def _product_manifest(profile_id: str = "df5.product.host") -> ApplicationManifest:
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id=profile_id)
     environment.execution_mode = ExecutionMode.BALANCED
+    if environment.sandbox is not None:
+        environment = environment.model_copy(
+            update={
+                "sandbox": environment.sandbox.model_copy(
+                    update={"root": _DF5_QUALIFICATION_SANDBOX_ROOT},
+                ),
+            },
+        )
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={"otel_enabled": False},
+        update={
+            "otel_enabled": False,
+            "otlp_export_endpoint": _DF5_QUALIFICATION_OTLP_ENDPOINT,
+        },
     )
     return ApplicationManifest.lab(
         app_id="df5_product_host",
