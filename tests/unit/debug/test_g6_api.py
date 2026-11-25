@@ -16,6 +16,7 @@ from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port,
 )
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -138,6 +139,7 @@ async def test_debug_api_human_response_resume(tmp_path):
         registry,
         checkpoint_store=checkpoint_store,
         runtime_event_store=event_store,
+        notification_adapter=LoggingNotificationAdapter(),
         production_mode=False,
     )
     runner = UnifiedTaskRunner(
@@ -163,6 +165,7 @@ async def test_debug_api_human_response_resume(tmp_path):
         registry=registry,
         checkpoint_store=checkpoint_store,
         runtime_event_store=event_store,
+        nexus_loop=loop,
     )
     with TestClient(app) as client:
         approved = client.post(
