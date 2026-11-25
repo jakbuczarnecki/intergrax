@@ -54,8 +54,6 @@ R1_FROZEN_P0_AUTHORITY_MECHANISM_IDS: Final[tuple[str, ...]] = (
     "intergrax/applications/_shared/agent_platform_admin_routes.py::"
     "literal_rewrite::resolve_agent_platform_admin_request_identity",
     "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
-    "intergrax/applications/_shared/environment_wiring.py::mint_positive::wire_application_environment",
-    "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
     "intergrax/runtime/execution/decision_finalization_conformance.py::"
     "literal_rewrite::assert_concurrent_finalization_race",
     "EXECUTION|ROOT_TENANT_SELECTION|domain:runtime_request_execution|"
@@ -152,23 +150,6 @@ def _resolution_for(mechanism: TenantAuthorityMechanism) -> R1AuthorityMechanism
             owner_evidence=("qualification_historical: conformance module entrypoint only",),
             scope_evidence_refs=("explicit: conformance factory tenant-a/b fixtures",),
             production_classification_evidence=("conformance-only entrypoint — not production root",),
-        )
-    if "environment_wiring.py" in mid and "mint_positive" in mid:
-        return R1AuthorityMechanismResolution(
-            mechanism_id=mid,
-            decision_kind=decision,
-            semantic_owner="APPLICATION_BOUNDARY",
-            authority_scope="host_composition_sandbox_tenant",
-            scope_evidence=TenantAuthorityScopeEvidence.STRUCTURAL_CURRENT_HEAD,
-            owner_disposition=TenantAuthorityOwnerDisposition.OWNER_CONFIRMED,
-            authority_class=R1MechanismAuthorityClass.APPLICATION_LOCAL_INGRESS,
-            canonical_contract="intergrax/applications/_shared/environment_wiring.py",
-            notes="T-IGX-051-A Part A: host-normalized tenant binds hosted sandbox session",
-            owner_evidence=("production_composition_boundary: wire_application_environment",),
-            scope_evidence_refs=("structural: normalized host tenant propagated to resolve_hosted_sandbox_session",),
-            production_classification_evidence=(
-                "Tier-3 host composition ingress — subordinate to root admission; not competing platform root",
-            ),
         )
     if "agent_platform_admin_routes.py" in mid:
         return R1AuthorityMechanismResolution(
