@@ -1,0 +1,104 @@
+# ec-v6-ec02-closure
+
+Enterprise Campaign EC-02 closure factory plan (`development` @ `530d9fa48`). Integration branch `factory/ec-v6-ec02-closure/int`. No QUAL or CLOSE steps here; parent runs those after integrate.
+
+**Policy pin:** `BLOCKED_AUTHORITY` per `.tmp/session/ec-v6/policy-pin-verdict.md` — no factory step edits `governance/TRUSTED_POLICY_PIN.yaml` or `governance/policy-registry.yaml`.
+
+**Parked (no factory step):** `T-IGX-043-A` / `T-IGX-043-C` (no `Approved:`); `T-IGX-043-M` Part E (no `Approved:`); `T-IGX-046-H` AST rewrite (verification-only per EC-V6; `check_agent_registry_bypass.py` omitted — behavior verified @ `d80ed0875`).
+
+- [x] S01 GOV ARCH-FREEZE traceability self-test
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-050-B.md
+  - write: scripts/governance/verify_arch_freeze_plan_traceability.py, tests/unit/governance/test_arch_freeze_plan_traceability.py
+  - tests: uv run pytest tests/unit/governance/test_arch_freeze_plan_traceability.py
+- [x] S02 W01 EC-V3 providers and FC-2 admission (T-IGX-043-B)
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-043-B.md
+  - write: intergrax/runtime/capacity/production_adapters.py, intergrax/applications/_shared/production_capacity_wiring.py, intergrax/applications/_shared/production_queue_resolver.py, intergrax/applications/_shared/queue_worker_wiring.py, intergrax/applications/_shared/memory_provider_admission.py, intergrax/applications/_shared/memory_wiring.py, intergrax/applications/_shared/wiring_posture.py, intergrax/runtime/integrations/observability_otlp.py, intergrax/runtime/observability/export_boundary.py, tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py, tests/unit/applications/test_fc2_queue_worker_fail_closed.py, tests/unit/applications/test_fc2_memory_org_session_admission.py, tests/unit/applications/test_fc2_otlp_composition_fail_closed.py, tests/unit/applications/test_fc2_sandbox_composition_fail_closed.py, tests/unit/applications/architecture/test_fc2_capacity_ci_posture_not_used_by_product_code.py, tests/unit/runtime/observability/test_fc2_kr19_import_order_independent.py, tests/unit/runtime/capacity/test_ecp_depth_gate.py, tests/unit/runtime/capacity/test_ecp_control_plane_governance.py, docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md, docs/project/architecture/BACKGROUND_TASKS.md, docs/project/architecture/MEMORY_ARCHITECTURE.md, docs/project/technical/guides/PLATFORM_CONFIGURATION.md, governance/tickets/T-IGX-043-B.md, governance/tickets/plans/PLAN_T-IGX-043-B.md
+  - tests: uv run pytest tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py tests/unit/applications/test_fc2_queue_worker_fail_closed.py tests/unit/applications/test_fc2_memory_org_session_admission.py tests/unit/applications/test_fc2_otlp_composition_fail_closed.py tests/unit/applications/test_fc2_sandbox_composition_fail_closed.py tests/unit/applications/architecture/test_fc2_capacity_ci_posture_not_used_by_product_code.py
+- [x] S03 W02 guarded OTLP, sandbox, DF5 qualification fixtures
+  - deps: S02
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-074-A.md
+  - write: intergrax/applications/_shared/package_wiring.py, intergrax/applications/_shared/environment_wiring.py, intergrax/applications/_shared/runtime_event_delivery_wiring.py, intergrax/applications/_shared/sandbox_wiring.py, intergrax/applications/_shared/strict_product_manifest_ci_gates.py, scripts/maintenance/check_sandbox_policy_wiring.py, tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py, tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py, tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py, tests/unit/applications/task_control_product_host_test_support.py, tests/unit/applications/test_reference_capability_bundle.py, applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py
+  - tests: uv run pytest tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py
+- [ ] S04 W03 A4-007 import allowlist callers
+  - deps: S02
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-I.md
+  - write: intergrax/applications/_shared/import_policy.py, intergrax/applications/_shared/agent_resolution.py, intergrax/applications/_shared/wiring.py, intergrax/applications/_shared/environment_conformance.py, intergrax/applications/_shared/roster_agent_contract_authority.py, intergrax/applications/_shared/environment_diff_wiring.py, scripts/maintenance/check_application_migrations.py, scripts/gates/check_application_production_gates.py, tests/unit/applications/test_a4007_caller_import_refusal.py, tests/unit/applications/test_a4007_import_policy_derivation.py, tests/unit/scripts/test_a4007_migration_gate_allowlist.py
+  - tests: uv run pytest tests/unit/applications/test_a4007_caller_import_refusal.py tests/unit/applications/test_a4007_import_policy_derivation.py tests/unit/scripts/test_a4007_migration_gate_allowlist.py
+- [ ] S05A W04 FC-1 harness HDS tool wiring forward
+  - deps: S03
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-043-N.md
+  - write: intergrax/applications/_shared/tool_wiring.py, intergrax/applications/_shared/harness_host_runtime.py, tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py
+  - tests: uv run pytest tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py
+- [x] S05B W04 RW supply chain and defense-in-depth
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-B.md
+  - write: intergrax/agent_distribution/trust.py, intergrax/agent_distribution/admin_service.py, intergrax/applications/_shared/deploy_activate_pipeline.py, intergrax/applications/_shared/production_agent_capability_runtime.py, applications/governed_contractor_application/host/package_b_strict_production_serving_command.py, applications/governed_contractor_application/host/single_node_profile_v1_strict_startup.py, intergrax/core/plugins/*, intergrax/runtime/security/security_audit_trail.py, intergrax/runtime/security/tenant_scope.py, intergrax/runtime/security/defense_plugin_loader.py, intergrax/contracts/agent_run.py, intergrax/core/security/secret_safety.py, intergrax/llm_adapters/governance/quota.py, intergrax/applications/_shared/security_assembly_resolver.py, intergrax/tools/providers/rag/service.py, intergrax/runtime/architecture/online_evaluation_registry.py, intergrax/runtime/nexus/artifacts/retention.py, intergrax/runtime/nexus/artifacts/store_base.py, intergrax/runtime/nexus/artifacts/sqlite_artifact_store.py, intergrax/runtime/nexus/artifacts/in_memory_artifact_store.py, intergrax/core/security_bootstrap.py, intergrax/applications/_shared/security_runtime_bridge.py, scripts/maintenance/check_static_secret_literals.py, scripts/maintenance/check_sandbox_isolation_strength.py, tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py, tests/unit/agent_distribution/test_rw_supply_attestation_and_revocation.py, tests/unit/applications/test_rw_supply_trust_hook_before_persist.py, tests/unit/core/plugins/test_rw_supply_installed_file_digest.py, tests/unit/runtime/security/test_rw_supply_audit_trail_tamper_evidence.py, tests/unit/runtime/security/test_rw_supply_fail_open_set.py, tests/unit/applications/test_rw_supply_strict_validator_refuses_weak.py, tests/unit/scripts/test_rw_supply_static_secret_gate.py, tests/unit/runtime/nexus/test_rw_supply_retention_and_legal_hold.py
+  - tests: uv run pytest tests/unit/agent_distribution/test_rw_supply_attestation_and_revocation.py tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py tests/unit/applications/test_rw_supply_trust_hook_before_persist.py
+- [x] S05C W04 RW trust message and context boundaries
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-C.md
+  - write: intergrax/llm/messages.py, intergrax/runtime/nexus/context/graph_assembly.py, intergrax/context/planner.py, intergrax/context/provider_lifecycle.py, tests/unit/context/test_trust_fail_closed.py
+  - tests: uv run pytest tests/unit/context/test_trust_fail_closed.py tests/unit/context/test_context_formatter.py tests/unit/llm/test_messages.py tests/unit/tools/providers/rag/test_rag_scope.py
+- [ ] S05D W04 RW recovery CAS and queue durability
+  - deps: S02
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-E.md
+  - write: intergrax/background_tasks/*, intergrax/queueing/providers/document_store/document_store_task_queue.py, intergrax/queueing/providers/document_store/colocated_worker.py, applications/local_workspace_application/background_ingest/worker_handler.py, intergrax/hosting/engine/engine.py, intergrax/hosting/shutdown.py, intergrax/hosting/runner.py, intergrax/runtime/long_running/scheduler.py, intergrax/applications/_shared/durable_registry_projection_input_store.py, intergrax/memory/retention_sweep.py, intergrax/runtime/long_running/uncertain_reconciler.py, tests/unit/queueing/test_rw_recovery_no_double_execution.py, tests/unit/hosting/test_rw_recovery_drain_wait_for_idle.py, tests/unit/runtime/long_running/test_rw_recovery_uncertain_reconciler.py, tests/unit/applications/test_rw_recovery_durable_cas_projection.py, tests/unit/queueing/test_rw_recovery_producer_identity.py
+  - tests: uv run pytest tests/unit/queueing/test_rw_recovery_no_double_execution.py tests/unit/hosting/test_rw_recovery_drain_wait_for_idle.py tests/unit/runtime/long_running/test_rw_recovery_uncertain_reconciler.py tests/unit/applications/test_rw_recovery_durable_cas_projection.py tests/unit/queueing/test_rw_recovery_producer_identity.py
+- [x] S05E W04 RW supply attestation residual GM-AB-1
+  - deps: S05B
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-N.md
+  - write: testing_support/canonical_agent_lifecycle_composition.py, platform_proofs/scenarios/ai_incident_investigation/integration/production_validation.py, tests/unit/applications/test_ac4_phase9_production_composition_e2e.py, tests/qualification/compat_x/_compat_x_event_evolution_inventory.py, tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py
+  - tests: uv run pytest tests/unit/applications/test_ac4_phase9_production_composition_e2e.py tests/qualification/compat_x/test_compat_x_event_evolution_r3_p0_gates.py
+- [x] S06A W05 RW tenant binding
+  - deps: S05A, S05B
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-051-A.md
+  - write: intergrax/runtime/sandbox/hosted_session.py, intergrax/tools/providers/storage/service.py, intergrax/tools/providers/workspace/service.py, intergrax/tools/registry/wiring.py, intergrax/runtime/nexus/artifacts/governed_access.py, intergrax/runtime/architecture/online_evaluation_models.py, intergrax/applications/_shared/policy_wiring.py, intergrax/applications/_shared/mcp_harness_principal.py, intergrax/applications/_shared/mcp_application_server.py, intergrax/applications/_shared/mcp_nexus_server.py, intergrax/applications/_shared/mcp_catalog_tools.py, intergrax/rag/governance/embedding_version_policy.py, intergrax/rag/ingest/ingest_pipeline.py, intergrax/rag/governance/source_freshness.py, tests/unit/runtime/sandbox/test_rw_tenant_hosted_session_per_tenant.py, tests/unit/tools/providers/test_rw_tenant_storage_workspace_keys.py, tests/unit/runtime/nexus/test_rw_tenant_artifact_read_binding.py, tests/unit/applications/test_rw_tenant_online_evaluation_observation.py, tests/unit/agent_distribution/test_rw_tenant_install_cas.py, tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py, tests/unit/rag/governance/test_rw_tenant_reindex_hook_scope.py, tests/unit/applications/test_rw_tenant_strict_unscoped_memory.py
+  - tests: uv run pytest tests/unit/runtime/sandbox/test_rw_tenant_hosted_session_per_tenant.py tests/unit/tools/providers/test_rw_tenant_storage_workspace_keys.py tests/unit/applications/test_rw_tenant_strict_unscoped_memory.py tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py
+- [ ] S06B W05 PT-WF harness evaluation wave
+  - deps: S05A
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-043-J.md
+  - write: intergrax/applications/_shared/evaluation_wiring.py, intergrax/runtime/execution/runtime.py, intergrax/compat/langchain/documents.py, intergrax/experiments/workflow.py, intergrax/experiments/store.py, intergrax/debug/router.py
+  - tests: uv run pytest tests/unit/applications/test_harness_evaluation_wiring.py
+- [x] S06C W05 PT-T01 campaign B matrix registry
+  - deps: S06A, S06B
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-065-A.md
+  - write: tests/unit/campaign_b/_pt_t01_matrix.py
+  - tests: uv run pytest tests/unit/campaign_b/_pt_t01_matrix.py
+- [ ] S07A W06 ENT-AUDIT engine CHANGED-SINCE and FRZ attribution
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-043-I.md
+  - write: intergrax/platform/enterprise_audit/impact_map.py, intergrax/platform/enterprise_audit/changed_since.py, intergrax/platform/enterprise_audit/runner.py, intergrax/platform/enterprise_audit/digests.py, intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json, intergrax/platform/enterprise_audit/data/schemas/frz_coverage.v1.schema.json, scripts/enterprise_audit/run_enterprise_audit.py, scripts/enterprise_audit/build_impact_map.py, tests/qualification/ent_audit_x/unit/test_wd_changed_since_default_deny.py, tests/qualification/ent_audit_x/unit/test_wd_evol_x_tree_mapping.py, tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py, tests/qualification/ent_audit_x/unit/test_wd_fast_promotion_disclosure.py
+  - tests: uv run pytest tests/qualification/ent_audit_x/unit/test_wd_changed_since_default_deny.py tests/qualification/ent_audit_x/unit/test_wd_evol_x_tree_mapping.py tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py tests/qualification/ent_audit_x/unit/test_wd_fast_promotion_disclosure.py
+- [x] S07B W06 ENT-AUDIT OD-ENT-02 branch protection verifier
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-022-B.md
+  - write: scripts/governance/verify_ent_audit_branch_protection.py, tests/unit/governance/test_verify_ent_audit_branch_protection.py
+  - tests: uv run pytest tests/unit/governance/test_verify_ent_audit_branch_protection.py tests/qualification/ent_audit_x/unit/test_od_ent_02_verifiers.py
+- [x] S07C W06 ENT-AUDIT master-plan disposition SSOT
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-022-A.md
+  - write: scripts/enterprise_audit/master_plan_ssot_lib.py, tests/qualification/ent_audit_x/unit/test_validate_post_implementation_master_plan.py
+  - tests: uv run pytest tests/qualification/ent_audit_x/unit/test_validate_post_implementation_master_plan.py
+- [x] S07D W06 ROADMAP-REPLAY-X prod-delta disposition
+  - deps: -
+  - agent: igx-implementer
+  - ticket: governance/tickets/T-IGX-066-A.md
+  - write: tests/qualification/roadmap_replay_x/_w06_eqo_prod_delta.py, tests/qualification/roadmap_replay_x/_prod_delta_disposition.py, docs/project/maintainers/qualification/pre_ent_enterprise_certification/W06_REPLAY_PROD_DELTA.md, docs/project/maintainers/qualification/ROADMAP_REPLAY_X_PROD_QUAL_DRIFT_LOG.md, docs/project/maintainers/qualification/ROADMAP_REPLAY_X_ECAP_CURRENT_HEAD_AUDIT_REPORT.md, governance/tickets/T-IGX-066-A.md, governance/tickets/plans/PLAN_T-IGX-066-A.md
+  - tests: uv run pytest tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py
