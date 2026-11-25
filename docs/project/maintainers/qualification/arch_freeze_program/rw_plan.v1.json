@@ -56,13 +56,13 @@
       "owner_ticket": "T-IGX-043-C",
       "negative_test_id": "NT-CFG-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CFG-02",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-C",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "E   AssertionError: ENT-A-VBN-02 failed exit=4 (semantic gate at prefix)"
     },
     {
       "frz_id": "FRZ-CFG-06",
@@ -83,13 +83,13 @@
       "owner_ticket": "T-IGX-043-F",
       "negative_test_id": "NT-CFG-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-CFG-08",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-F",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "E   AssertionError: VBN-SHADOW-SELECTION failed exit=4 (semantic gate at prefix)"
     },
     {
       "frz_id": "FRZ-CTR-01",
@@ -212,13 +212,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-OWN-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-02",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "semantic gate ENT-A-OWN-02 FAILED at prefix (non-zero ENT exit)"
     },
     {
       "frz_id": "FRZ-OWN-03",
@@ -226,13 +226,13 @@
       "owner_ticket": "T-IGX-043-H",
       "negative_test_id": "NT-OWN-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-03",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
+      "red_first_reason": "E   AssertionError: ENT-A-OWN-03 failed exit=4 (semantic gate at prefix)"
     },
     {
       "frz_id": "FRZ-OWN-05",
@@ -259,7 +259,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "exit 1 without matching node for NT-PLG-01: no FAILED line in pytest output"
+      "red_first_reason": "E   ModuleNotFoundError: No module named 'langchain_ollama' (original collection); probe test_nt_plg_01 exits 0 at prefix"
     },
     {
       "frz_id": "FRZ-PLG-02",
@@ -273,7 +273,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "exit 1 without matching node for NT-PLG-02: no FAILED line in pytest output"
+      "red_first_reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin' (original collection); probe test_nt_plg_02 exits 0 at prefix"
     },
     {
       "frz_id": "FRZ-PLG-05",
@@ -315,7 +315,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "exit 1 without matching node for NT-PLG-07: no FAILED line in pytest output"
+      "red_first_reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin' (original collection); probe test_nt_plg_07 exits 0 at prefix"
     },
     {
       "frz_id": "FRZ-PRD-03",

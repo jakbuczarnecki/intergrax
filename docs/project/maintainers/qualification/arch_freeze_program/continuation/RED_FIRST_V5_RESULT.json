@@ -94,51 +94,51 @@
       "negative_test_id": "NT-PLG-01",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "negative_test_paths": [
-        "tests/unit/applications/test_harness_evaluation_wiring.py"
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-PLG-01.log",
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_b720c879.log",
-      "pytest_exit_code": 1,
+      "pytest_exit_code": 0,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_e25248c.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "exit 1 without matching node for NT-PLG-01: no FAILED line in pytest output"
+      "reason": "E   ModuleNotFoundError: No module named 'langchain_ollama'"
     },
     {
       "frz_id": "FRZ-PLG-02",
       "negative_test_id": "NT-PLG-02",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "negative_test_paths": [
-        "tests/unit/applications/test_harness_evaluation_wiring.py"
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-PLG-02.log",
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_b720c879.log",
-      "pytest_exit_code": 1,
+      "pytest_exit_code": 0,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_e25248c.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "exit 1 without matching node for NT-PLG-02: no FAILED line in pytest output"
+      "reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin'"
     },
     {
       "frz_id": "FRZ-PLG-07",
       "negative_test_id": "NT-PLG-07",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "negative_test_paths": [
-        "tests/unit/applications/test_harness_evaluation_wiring.py"
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-PLG-07.log",
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_b720c879.log",
-      "pytest_exit_code": 1,
+      "pytest_exit_code": 0,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_e25248c.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "exit 1 without matching node for NT-PLG-07: no FAILED line in pytest output"
+      "reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin'"
     },
     {
       "frz_id": "FRZ-PLG-06",
@@ -203,25 +203,27 @@
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_7d2140e2.log",
-      "pytest_exit_code": 2,
-      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_7010ea61.log",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-CFG-02.log",
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node test_acceptance_ent_a_vbn_02_semantic_gate FAILED at prefix"
     },
     {
       "frz_id": "FRZ-CFG-08",
       "negative_test_id": "NT-CFG-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "negative_test_paths": [
-        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_vbn_08.py"
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_vbn_shadow_selection.py"
       ],
       "integration_head": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
       "strict_log_path": ".tmp/session/arch-freeze/red-first-v5/logs/FRZ-CFG-08.log",
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": -2,
       "integrated_pytest_log": "",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "integrated guard failed on HEAD (exit -2); prefix not measured"
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node test_acceptance_vbn_shadow_selection_semantic_gate FAILED at prefix",
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-CFG-08.log"
     },
     {
       "frz_id": "FRZ-OWN-02",
@@ -235,10 +237,10 @@
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_a978fa46.log",
-      "pytest_exit_code": 2,
-      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_1c68a3c5.log",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-OWN-02.log",
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node test_acceptance_ent_a_own_02_semantic_gate FAILED at prefix"
     },
     {
       "frz_id": "FRZ-OWN-03",
@@ -252,10 +254,10 @@
       "strict_mode": "nested_prefix_worktree_with_integration_negative_overlay",
       "integrated_exit_code": 0,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_e7e4de4b.log",
-      "pytest_exit_code": 2,
-      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_dad487ca.log",
-      "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "pytest_exit_code": 1,
+      "pytest_log": ".tmp/session/arch-freeze/red-first-v5/prefix_FRZ-OWN-03.log",
+      "measurement": "RED_AT_PREFIX",
+      "reason": "node test_acceptance_ent_a_own_03_semantic_gate FAILED at prefix"
     },
     {
       "frz_id": "FRZ-PRD-03",
