@@ -1,43 +1,68 @@
-# T-IGX-022-B — Independent audit of the B-4 delta introduced by T-IGX-022-A
+# T-IGX-022-B — CT-ENT-02: make the OD-ENT-02 branch-protection verifier and packet satisfiable and ruleset-aware
 
 ## Scope
 
-`T-IGX-022-A` (merged in PR #396, commit `00cc594a9`, merge `cc86e4d80`) edited two state-pinned tests, one of them in the pinned B-4 corrective test set (`tests/unit/qualification/test_evol_x_closure_preflight_b4.py`). Under OD-3 condition 3 (operator reading: preflight script, its P2 constant, preflight tests) that edit voids the B-4 acceptance until an independent audit of the delta is done.
+Certification-control corrective (no product change, no GitHub write). Verified at base `2f6664d53`:
 
-This batch is the audit of that delta by a separate, independent session that is NOT the implementer of `T-IGX-022-A`. The audit answers:
+- **NF-02** `scripts/governance/verify_ent_audit_branch_protection.py:15-18` requires contexts `Enterprise audit (ENT-AUDIT-X) / ent-audit-fast|pr-gate`. Actual check-run names (GitHub check-runs API on `dd07d15ff`; workflow jobs without `name:`) are `ent-audit-fast` and `ent-audit-pr-gate`. A correctly configured protection would still fail the verifier; a protection configured per the prefixed names would require checks that never report and block every PR.
+- **NF-03** the verifier reads only `branches/development/protection` (404 today). `development` carries active ruleset 20844442 with `deletion` and `non_fast_forward` only; `GET rules/branches/development` returns a top-level **list** the current parser cannot read (**NF-02b**).
+- **NF-02c** `OD_ENT_02_OPERATOR_PACKET.md:12-13` and three other ENT docs state the prefixed names as "as shown on PR" — the operator/admin would be told the wrong strings.
 
-1. Is the delta exactly the two test functions and the ticket (no other byte of the preflight script, its P2 constant, `.gitattributes` or the preflight tests changed since the pinned B-4 implementation)?
-2. Does the edited preflight test still discriminate (pending or scope-limited rows still classify as not recorded; signed rows as recorded)?
-3. Does the edited attestation test still catch a premature CLOSED claim (mutation probes)?
-4. Are there findings that should block relying on the B-4 corrective again?
+Change:
 
-The implementer (this ticket's author) does not set the verdict.
+- `scripts/governance/verify_ent_audit_branch_protection.py`: required contexts = bare `ent-audit-fast`, `ent-audit-pr-gate`; evidence = union of classic protection (404 "Branch not protected" tolerated) and rulesets via `rules/branches/{branch}` (list parser); any other endpoint error or malformed payload → fail closed; legacy prefixed strings → explicit "never reports" error; nightly-only guard kept; same CLI flags and exit codes; still read-only (`gh api` GET).
+- new `tests/unit/governance/test_verify_ent_audit_branch_protection.py` (inline fixtures, monkeypatched `_gh_api`, no network): positives (classic, ruleset-only, split), negatives (today's real state, single check, legacy strings, nightly-only, classic 403/500, ruleset error, non-JSON/non-list, empty list), workflow-job-name drift guard, `main()` exit codes.
+- docs, string correction only: `…/ent_audit_x/OD_ENT_02_OPERATOR_PACKET.md` (rows 12-13 + one clarifying sentence: status-check context = job name; PR UI renders `Workflow / job`; classic or ruleset both read), `…/ENT_AUDIT_X_CI_ENFORCEMENT_RUNBOOK.md:17`, `…/ENT_AUDIT_X_OPERATOR_DECISION_AND_EXTERNAL_AUTHORITY_PACKET.md:71`, `…/ENT_AUDIT_X_COMPLETE_FORMAL_CERTIFICATION_AND_CLOSURE_MASTER_PLAN.md:168`.
+
+Files (exhaustive): the verifier, the new test, the four docs above. Material governance paths touched: **none**. Not edited: terminal report, compensating-control package, cross-stage matrix, `T-IGX-015-A.md`, `operator_records/`, IIAC protocol/verifiers/gate/activation record/impact matrix, `.github/workflows/*`.
+
+Plan: `governance/tickets/plans/CT_ENT_02_PLAN_AND_RISKS.md` §1–§3, §5–§7 (byte-identical copy of the signed plan).
 
 ## Plan digest
 
-(none - audit batch; operator instruction in chat on 2026-11-08: "Tak, wykonaj" after the proposal to open T-IGX-022-B)
+Plan digest: eb8707e113cfdee3ed87cb4b1406da22e77e41c77e9c7ec1aa66162792b1b5a0
+
+(Same plan content and digest as `T-IGX-022-A`; the plan is not edited.)
 
 ## Approved
 
-(not written by the implementer; the batch was started on the operator's explicit chat instruction of 2026-11-08)
+Approved: operator-delegate @ 2026-11-07T18:20:10+01:00 (Delegation: .tmp/session/cert-campaign/SIGNING/DELEGATION_2026-11-07_MASTER.md@sha256:5264bca38037664e5cfb03cf847305648c5611ea44ca37427406426c7321bdab; decision OD-CTENT02-PLAN-2026-11-07)
+Plan digest: eb8707e113cfdee3ed87cb4b1406da22e77e41c77e9c7ec1aa66162792b1b5a0
+
+Signed record: `.tmp/session/cert-campaign/SIGNING/SIGN-3_CTENT/SIGNED_DECISIONS.md` (SIGNED_WITH_CONDITIONS). The `operator-delegate` form is a process-enforced delegated record, not a cryptographic signature.
 
 ## Test contract
 
 ```powershell
-git diff --name-only 65ccf681a cc86e4d80
-uv run python scripts/qualification/evol_x_closure_publication_preflight.py --gate formal-closure
+uv run pytest tests/unit/governance/test_verify_ent_audit_branch_protection.py tests/qualification/ent_audit_x/integration/test_adversarial_adv01_30.py -q
+uv run python scripts/governance/verify_od_ent_02_compensating_control.py        # exit 0 unchanged
+uv run python scripts/governance/verify_ent_audit_branch_protection.py           # EXPECTED exit 1 today: required checks not configured; message must name both missing checks and both sources
+uv run python scripts/governance/verify_iiac_policy_activation.py                # exit 0 IN_FORCE (no-regression)
+uv run python -m scripts.governance.igx_gov ticket                               # checkpoint pasted below
 ```
 
-The auditor runs only the targeted tests and mutation probes in a scratch clone (one pytest at a time). The full 520-test run of 022-A is not repeated.
+Acceptance: positives PASS / negatives FAIL as listed; unit tests never touch the network; the live run stays honestly red until the operator/admin acts — **no GitHub write by the implementer** (no `gh api -X PUT/POST`, no ruleset edit). `evaluate`-mode ruleset behaviour of `/rules/branches` is confirmed against the real endpoint and reported; if such rules can be returned, STOP and report instead of improvising.
 
 ## Out of scope
 
-Editing the preflight script or constants, any material governance path, IIAC activation, FRZ rows, OD records, the three `roadmap_replay_x` failures, `ent-audit-fast`, a new IIAC audit manifest and certifier disposition (a formal re-certification of B-4 is a separate operator-ordered step), merging.
+Configuring branch protection or rulesets, enabling required checks, choosing live vs compensating mode (OD-ENT-02), `od_ent_02_mode` in the status JSON (NF-06), NF-01 (CT-ENT-01), NF-05 narrative reconciliation (CT-ENT-03), editing any workflow, the compensating-control package, any signed/operator record, IIAC protocol/verifiers/gate/anchor/activation record/impact matrix, FRZ-* promotion, ENT-AUDIT-X/EVOL-X/B6 closure, Docker, vendor integrations, production configuration (C10/C15 freeze).
 
-## Audit result
+## Sequencing (outside the ticket)
 
-Independent audit completed 2026-11-08 by a separate session: `Verdict: PASS_WITH_FINDINGS` - see [`T-IGX-022-B_AUDIT_REPORT.md`](./T-IGX-022-B_AUDIT_REPORT.md). Preflight script, P2 pin, `.gitattributes` and the six material governance paths are unchanged since the accepted B-4 implementation `fdb1e7a62`; the preflight test file differs by one hunk (the register assertion); 12/12 mutants of the register test and 14/16 of the attestation test are detected. Four LOW findings (F-1 ladder SHA checked by shape only, covered by preflight B-08/B-10; F-2 pre-existing substring check on OD-EVOL-14; F-3 governance SHA not compared with the ladder in the test, covered by B-02; F-4 session independence is process_enforced). Session independence is not provable from git. Whether the certifier must re-disposition B-4 formally is the operator's decision and is not done here. The implementer does not set the lifecycle beyond `ready_for_audit`.
+Operator/admin enables required checks on `development` only after CT-ENT-01 is merged and `ent-audit-fast` is green (NF-04), using the bare names from the corrected packet; then the live verifier turns green. The previously issued OD-ENT-02 packet must be re-issued.
+
+## Roles
+
+IMPLEMENTER ≠ REVIEWER/TESTER ≠ independent AUDITOR (separate session) ≠ CERTIFIER (≠ ENT Session D certifier = implementer of this ticket). Implementer may not record PASS.
+
+## Risk / rollback
+
+Low–medium: LIVE evidence path of OD-ENT-02; main risk is a false PASS (mitigated by union + fail-closed + negatives). Rollback: revert the single commit; no GitHub state changed.
 
 ## Lifecycle state
 
-ready_for_audit
+in_progress
+
+## Checkpoint
+
+(empty — implementer pastes `igx_gov ticket` stdout here before push)

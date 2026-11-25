@@ -7,10 +7,12 @@
 
 ## Required status checks (pin these exact names after green CI @ TEST_EXECUTION_SHA)
 
-| Priority | GitHub check name (as shown on PR) | Workflow file | Job ID |
+| Priority | GitHub status-check context = job name (the PR UI renders `Workflow / job`) | Workflow file | Job ID |
 | --- | --- | --- | --- |
-| P0 | `Enterprise audit (ENT-AUDIT-X) / ent-audit-fast` | `.github/workflows/enterprise-audit.yml` | `ent-audit-fast` |
-| P0 | `Enterprise audit (ENT-AUDIT-X) / ent-audit-pr-gate` | `.github/workflows/enterprise-audit.yml` | `ent-audit-pr-gate` |
+| P0 | `ent-audit-fast` | `.github/workflows/enterprise-audit.yml` | `ent-audit-fast` |
+| P0 | `ent-audit-pr-gate` | `.github/workflows/enterprise-audit.yml` | `ent-audit-pr-gate` |
+
+Enter the bare job names above as the required status-check context; the prefixed `Enterprise audit (ENT-AUDIT-X) / ...` label is display-only and never reports, so requiring it would block every PR. A classic branch-protection rule or a ruleset `required_status_checks` rule are both acceptable; `verify_ent_audit_branch_protection.py` reads both.
 | P1 | Nightly enterprise audit (verify label @ Actions UI post-dispatch) | `.github/workflows/enterprise-audit-nightly.yml` | (nightly FULL profile) |
 | P1 | Unit tests (existing org gate) | `.github/workflows/unit-tests.yml` | — |
 
