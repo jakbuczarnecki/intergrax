@@ -1150,6 +1150,11 @@
       "VBN-SILENT-FALLBACK",
       "VBN-SQLITE-EFFECTIVE"
     ],
+    "intergrax/compat/langchain/documents.py": [
+      "ENT-A-CTR-01",
+      "ENT-A-CTR-02",
+      "ENT-A-CTR-03"
+    ],
     "intergrax/context": [
       "ENT-A-BND-01",
       "TEN-ASYNC",
@@ -1364,6 +1369,18 @@
       "ENT-A-CTR-01",
       "ENT-A-OWN-01",
       "ENT-A-TYP-01"
+    ],
+    "intergrax/experiments/models.py": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
+    "intergrax/experiments/persistence_contract.py": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
+    ],
+    "intergrax/experiments/store.py": [
+      "ENT-A-REL-02",
+      "ENT-A-REL-03"
     ],
     "intergrax/experiments/workflow.py": [
       "ENT-A-REL-02",
@@ -1935,6 +1952,11 @@
       "C026",
       "C027",
       "C069"
+    ],
+    "intergrax/platform/enterprise_audit/vbn.py": [
+      "C002",
+      "C004",
+      "C009"
     ],
     "intergrax/queueing": [
       "ENT-A-REC-01",

@@ -96,9 +96,13 @@ def unmapped_evol_changed_paths(
 ) -> frozenset[str]:
     """Paths under evol_x/ changed but not mapped to any manifest check (fail-closed).
 
-    Without ``prefixes`` only entrypoint files count as mapped (legacy behaviour). With ``prefixes`` a path is also
-    mapped when its longest impact-map prefix names at least one manifest check id.
+    When ``prefixes`` is omitted the shipped default impact map is used so evol_x test-support paths count as mapped.
+    A path is unmapped only when neither an EVOL entrypoint nor the impact map names a manifest check id for it.
     """
+    if prefixes is None:
+        from intergrax.platform.enterprise_audit.impact_map import load_default_impact_map
+
+        prefixes = load_default_impact_map()
     mapping = evol_checks_by_path(checks)
     manifest_ids = frozenset(c.check_id for c in checks)
     unmapped: set[str] = set()
