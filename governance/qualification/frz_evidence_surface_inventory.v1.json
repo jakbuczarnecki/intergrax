@@ -1,0 +1,53 @@
+{
+  "schema_version": "frz_evidence_surface_inventory.v1",
+  "owner_ticket": "T-IGX-046-G",
+  "families": [
+    {
+      "family_id": "BND",
+      "frz_rows": ["FRZ-BND-05", "FRZ-BND-06"],
+      "gate_inventory": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+      "companion": "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py"
+    },
+    {
+      "family_id": "TYP",
+      "frz_rows": ["FRZ-TYP-05"],
+      "gate_inventory": "scripts/maintenance/measure_frozen_contract_typ05.py",
+      "companion": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py"
+    },
+    {
+      "family_id": "PLG",
+      "frz_rows": [
+        "FRZ-PLG-03",
+        "FRZ-PLG-04",
+        "FRZ-PLG-05",
+        "FRZ-PLG-06",
+        "FRZ-PLG-07",
+        "FRZ-PLG-08"
+      ],
+      "gate_inventory": "tests/qualification/ebh_6/_family_l9_evidence.py"
+    },
+    {
+      "family_id": "OWN",
+      "frz_rows": ["FRZ-OWN-02", "FRZ-OWN-03", "FRZ-OWN-04", "FRZ-OWN-05"],
+      "gate_inventory": "tests/qualification/ebh_6/_family_l9_evidence.py"
+    },
+    {
+      "family_id": "CTR",
+      "frz_rows": ["FRZ-CTR-01", "FRZ-CTR-02", "FRZ-CTR-04", "FRZ-CTR-06"],
+      "gate_inventory": "tests/qualification/ebh_6/_family_l9_evidence.py"
+    },
+    {
+      "family_id": "DEBT",
+      "frz_rows": ["FRZ-DEBT-02", "FRZ-DEBT-03", "FRZ-DEBT-04"],
+      "gate_inventory": "tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py"
+    }
+  ],
+  "state_x_citation_repair": {
+    "finding_id": "A3-018",
+    "stage_ids": ["STATE-X"],
+    "qualification_roots": [
+      "tests/qualification/state_x/test_state_x_p0_baseline.py",
+      "tests/qualification/state_x/_state_x_final_support.py"
+    ]
+  }
+}

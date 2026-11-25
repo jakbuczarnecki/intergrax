@@ -93,11 +93,11 @@ PARTIAL_DISPOSITION = "ENT-AUDIT-X — PLAN PARTIAL / EXACT BLOCKERS"
 
 TECHNICAL_PARTIAL_DISPOSITION = "ENT-AUDIT-X — TECHNICAL PARTIAL / EXACT BLOCKERS"
 
-# Byte-identical to the published master-plan disposition line (plan line 3 since 477017f15).
-# This is a claim string only; it is NOT formal ENT-AUDIT-X closure, an FRZ promotion or a B6 PASS.
+# Published since 477017f15 (post-B4 internal closure). Internal closure only: it is NOT the formal
+# IIAC closure vocabulary and must not be read as one; formal closure is never declared in this plan.
 INTERNALLY_CLOSED_DISPOSITION = "ENT-AUDIT-X — INTERNALLY CLOSED — AUTOMATED INTERNAL AUDIT ACCEPTED — PUBLISHED"
 
-ACCEPTED_DISPOSITIONS = (
+KNOWN_DISPOSITIONS = (
     READY_DISPOSITION,
     PARTIAL_DISPOSITION,
     TECHNICAL_PARTIAL_DISPOSITION,
@@ -437,15 +437,24 @@ def _line_has_negated_cert(line: str, phrase: str) -> bool:
     return any(x in lower for x in ("no ", "not ", "without ", "≠", "— no", "does not"))
 
 
+def _disposition_errors(text: str) -> list[str]:
+    """The ``**Disposition:**`` line must carry exactly one known constant (checked on that line only)."""
+    line = next((ln for ln in text.splitlines() if ln.startswith("**Disposition:**")), None)
+    if line is None:
+        return ["disposition line '**Disposition:**' is missing"]
+    if not any(known in line for known in KNOWN_DISPOSITIONS):
+        return [
+            "disposition must declare READY, PLAN PARTIAL, TECHNICAL PARTIAL, or INTERNALLY CLOSED constant"
+            f" (got: {line[:90]})"
+        ]
+    return []
+
+
 def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     root = root or repo_root()
 
-    if not any(constant in text for constant in ACCEPTED_DISPOSITIONS):
-        errors.append(
-            "disposition must declare one accepted constant "
-            "(READY, PLAN PARTIAL, TECHNICAL PARTIAL, or INTERNALLY CLOSED)"
-        )
+    errors.extend(_disposition_errors(text))
 
     for line in text.splitlines():
         for phrase in FORBIDDEN_SELF_CERT:
@@ -594,9 +603,6 @@ def validate_master_plan(text: str, root: Path | None = None) -> list[str]:
 
     if READY_DISPOSITION in text and errors:
         errors.append("READY disposition incompatible with validation errors")
-
-    if INTERNALLY_CLOSED_DISPOSITION in text and errors:
-        errors.append("INTERNALLY CLOSED disposition incompatible with validation errors")
 
     if order:
         if order.index("C066") < order.index("C051"):
