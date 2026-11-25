@@ -1,19 +1,19 @@
 {
   "schema": "campaign_b_w2_manifest.v1",
-  "b1_baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
-  "b2_baseline_sha": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+  "b1_baseline_sha": "7960ae7f6c82da60ca9acdc0ceebf63810002a42",
+  "b2_baseline_sha": "7960ae7f6c82da60ca9acdc0ceebf63810002a42",
   "diagnostic_sha_default": "HEAD",
   "coverage_metadata": {
     "b1": {
       "canonical_planned_cases": 18,
       "canonical_reserve_slots": 4,
-      "manifest_defined_cases": 17,
+      "manifest_defined_cases": 19,
       "coverage_classification": "PARTIAL_DIAGNOSTIC"
     },
     "b2": {
       "canonical_planned_cases": 9,
       "canonical_reserve_slots": 3,
-      "manifest_defined_cases": 7,
+      "manifest_defined_cases": 9,
       "coverage_classification": "PARTIAL_DIAGNOSTIC"
     }
   },
@@ -23,6 +23,7 @@
     {"case_id": "R01b", "contract": "AB-05", "command": "python scripts/maintenance/check_agent_registry_bypass.py", "read_only": true},
     {"case_id": "R02", "contract": "AB-05", "command": "python -m pytest tests/unit/governance/test_arch_freeze_plan_traceability.py -q --tb=line", "read_only": true},
     {"case_id": "R03", "contract": "AB-06", "command": "python scripts/governance/arch_freeze_b1_closed_world_inventory.py --report-only --output-dir .tmp/session/w2-recovery-01/b1/closed-world", "read_only": true},
+    {"case_id": "R04", "contract": "AB-06", "command": "python -m pytest .tmp/campaign-b-overlay/probes/pp_ten.py -q --tb=line", "read_only": true},
     {"case_id": "R05", "contract": "AB-07", "command": "python scripts/governance/lint_iiac_closure_regex.py", "read_only": true},
     {"case_id": "R06", "contract": "AB-08", "command": "python -m pytest tests/unit/applications/test_mcp_identity_mode_fail_closed.py tests/unit/applications/test_mcp_rc_audit_corrections.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py -q --tb=line", "read_only": true},
     {"case_id": "R07", "contract": "AB-07", "command": "python -m pytest tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q02_restart_resume_closed_world_parity tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q10_semantic_owner_discovery_exact_parity tests/qualification/trace_x/test_trace_x_p5_r2_closed_world_gates.py::test_txp5cw_q03_configured_execution_paths_closed_world_parity tests/qualification/trace_x/test_trace_x_p5_r2_closed_world_gates.py::test_txp5cw_q13_semantic_owner_duplicate_matrix -q --tb=line", "read_only": true},
@@ -42,6 +43,8 @@
     {"case_id": "R21", "contract": "AB-10", "command": "python scripts/governance/verify_arch_freeze_plan_traceability.py", "read_only": true},
     {"case_id": "R22", "contract": "AB-10", "command": "python -m pytest tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py -q --tb=line", "read_only": true},
     {"case_id": "R23", "contract": "AB-10", "command": "python scripts/docs/check_docs_domain_pairs.py", "read_only": true},
+    {"case_id": "R24", "contract": "AB-10", "command": "python -m pytest .tmp/campaign-b-overlay/probes/pp_nt19.py -q --tb=line", "read_only": true},
+    {"case_id": "R25", "contract": "AB-10", "command": "python -I .tmp/campaign-b-overlay/scripts/r25_impact12.py .tmp/campaign-b-overlay/r25-out", "read_only": true},
     {"case_id": "S01", "contract": "AB-10", "command": "python -m pytest tests/unit/architecture/test_ebh_2d_d_application_contract_surface_recertification.py::test_whole_surface_forbids_contract_to_implementation_edges -q --tb=line", "read_only": true},
     {"case_id": "S02", "contract": "AB-10", "command": "python -m pytest tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py -q --tb=line", "read_only": true},
     {"case_id": "S03", "contract": "AB-10", "command": "python -m pytest tests/qualification/harness_01 -q --maxfail=3 --tb=line", "read_only": true}
