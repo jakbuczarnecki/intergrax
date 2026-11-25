@@ -113,14 +113,6 @@ class GraphNodePayloadV1(RuntimeEventPayload):
     message: str = ""
 
 
-def graph_node_step_started_message(node_id: str) -> str:
-    """Trace-bridge prefix that selects `GraphNodePayloadV1` for `step_started` events."""
-    normalized = node_id.strip()
-    if not normalized:
-        raise ValueError("node_id is required for graph node step_started message")
-    return f"graph node start: {normalized}"
-
-
 class LlmCallPayloadV1(RuntimeEventPayload):
     schema_id = "llm_call.v1"
 

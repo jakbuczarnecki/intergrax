@@ -310,6 +310,12 @@ def test_nt_e05_07_receipt_not_at_an_ancestor_or_without_the_session_id(world, t
     result = _separation(world, tmp_path / "b", manifest)
     assert result.returncode == 1
     assert "does not contain the session uuid" in result.stderr
+    # A non-commit audit_execution_sha is an error, not a skipped ancestry check (direct callers of the script).
+    manifest = _fresh(world)
+    manifest["audit_execution_sha"] = "ab" * 20
+    result = _separation(world, tmp_path / "c", manifest)
+    assert result.returncode == 1
+    assert "host receipt ancestry cannot be checked" in result.stderr
 
 
 def test_nt_e05_08_v2_auditor_commit_under_governance_scripts(world, tmp_path) -> None:
@@ -374,6 +380,14 @@ def test_nt_e05_11_countersignature_digest_mismatch(world, tmp_path) -> None:
     assert plain.returncode == 0, plain.stderr
     with_bom = _audit_raw(world, tmp_path / "bom", b"\xef\xbb\xbf" + text.encode("utf-8"))
     assert with_bom.returncode == plain.returncode, with_bom.stderr
+    # A v1 manifest is read as before: a UTF-8 BOM is not tolerated there (only a v2 final manifest ignores it).
+    v1 = _v1(_fresh(world))
+    v1.pop("handoff_record_ref", None)
+    v1_text = (json.dumps(v1, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    v1_plain = _audit_raw(world, tmp_path / "v1plain", v1_text)
+    assert v1_plain.returncode == 0, v1_plain.stderr
+    v1_bom = _audit_raw(world, tmp_path / "v1bom", b"\xef\xbb\xbf" + v1_text)
+    assert v1_bom.returncode == 1 and "BOM" in v1_bom.stderr and "Traceback" not in v1_bom.stderr, v1_bom.stderr
     duplicate = _audit_raw(world, tmp_path / "dup", text.replace("{", '{"limitations": [], ', 1).encode("utf-8"))
     assert duplicate.returncode == 1 and "duplicate key" in duplicate.stderr.lower(), duplicate.stderr
     floaty = dict(good, extra_number=1.5)

@@ -3,8 +3,6 @@
 
 """Audit Tier-3 observability wiring from environment profile (Phase OBS-3 / DIAG-FOUNDATION-2)."""
 
-# ruff: noqa: E402
-
 from __future__ import annotations
 
 import sys
@@ -15,6 +13,8 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
     path_text = str(path)
     if path_text not in sys.path:
         sys.path.insert(0, path_text)
+
+# ruff: noqa: E402
 
 from intergrax.applications._shared.auditability_health_wiring import (
     assert_host_auditability_health_valid,
@@ -74,10 +74,7 @@ def _audit_product_host_auditability() -> int:
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id="obs.auditability.product")
     environment.execution_mode = ExecutionMode.BALANCED
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={
-            "otel_enabled": False,
-            "otlp_export_endpoint": "http://127.0.0.1:0/v1/logs",
-        },
+        update={"otel_enabled": False},
     )
     manifest = ApplicationManifest.lab(
         app_id="obs_auditability_product",
@@ -90,10 +87,6 @@ def _audit_product_host_auditability() -> int:
     registry = AgentRegistry()
     registry.register(EchoAgent())
     temp_dir = Path(tempfile.mkdtemp(prefix="obs-auditability-gate-"))
-    if environment.sandbox is not None:
-        environment = environment.model_copy(
-            update={"sandbox": environment.sandbox.model_copy(update={"root": temp_dir / "sandbox"})},
-        )
     runtime = build_harness_host_runtime(
         manifest,
         environment,

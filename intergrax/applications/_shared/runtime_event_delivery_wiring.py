@@ -8,7 +8,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -108,10 +107,6 @@ def _create_export_transport(
 
         config = _resolve_otlp_export_configuration(env, settings=settings)
         if config is None:
-            if wiring_fails_closed(env):
-                raise ConfigurationError(
-                    "OTLP export requires non-empty otlp_export_endpoint",
-                )
             return None
         require_otlp_observability_dependency_profile(
             exporter_kind=ExporterKind.OTLP,

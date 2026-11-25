@@ -296,11 +296,11 @@ _PACKAGE_TIER_RULES: tuple[tuple[str, str], ...] = (
     ("agents/", "tier2"),
     ("platform_proofs/", "tier3"),
     ("testing_support/change_safety/", "tooling"),
+    ("intergrax/", "tier0"),
 )
 
 _TIER_ENFORCEMENT_PREFIXES: tuple[str, ...] = ("intergrax/", "agents/", "applications/")
-_TIER0_INTERGRAX_RESERVED_TOPS: frozenset[str] = frozenset({"runtime", "applications"})
-_CW12_BASELINE_PATH = _REPO / "tests" / "qualification" / "evol_x" / "data" / "exclusion_register_cw12_baseline.v1.json"
+_UNCLASSIFIED_PRODUCT_PREFIXES: tuple[str, ...] = ("intergrax/unscoped/",)
 
 
 @dataclass(frozen=True)
@@ -326,20 +326,14 @@ class TierEnforcementReport:
 
 
 def classify_package_tier(rel_path: str) -> str | None:
-    """Classify production paths under AGENTS.md tiers (longest-prefix; no blanket intergrax/ tier0)."""
     normalized = rel_path.replace("\\", "/")
+    for prefix in _UNCLASSIFIED_PRODUCT_PREFIXES:
+        if normalized.startswith(prefix):
+            return None
     for prefix, tier in _PACKAGE_TIER_RULES:
         stem = prefix.rstrip("/")
         if normalized == stem or normalized.startswith(prefix):
             return tier
-    if normalized.startswith("intergrax/"):
-        rel = normalized.removeprefix("intergrax/")
-        if not rel or "/" not in rel:
-            return None
-        top = rel.split("/", 1)[0]
-        if top in _TIER0_INTERGRAX_RESERVED_TOPS:
-            return None
-        return "tier0"
     return None
 
 
@@ -377,12 +371,10 @@ def _module_path_by_id(inventory: ClosedWorldInventory) -> dict[str, str]:
 
 @lru_cache(maxsize=1)
 def baseline_accepted_exclusion_ids() -> frozenset[str]:
-    import json
-
-    if not _CW12_BASELINE_PATH.is_file():
-        raise FileNotFoundError(f"CW-12 canonical baseline missing: {_CW12_BASELINE_PATH}")
-    doc = json.loads(_CW12_BASELINE_PATH.read_text(encoding="utf-8"))
-    return frozenset(str(exc_id) for exc_id in doc.get("accepted_exclusion_ids", ()))
+    doc = load_evol_x_data_document("exclusion_register.v1.json")
+    return frozenset(
+        str(entry["exclusion_id"]) for entry in doc.get("entries", ()) if entry.get("status") == "ACCEPTED"
+    )
 
 
 def detect_forbidden_exclusion_expansion(exclusion_register: dict[str, Any]) -> tuple[str, ...]:

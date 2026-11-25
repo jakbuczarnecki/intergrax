@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from intergrax.applications._shared import memory_wiring as _memory_wiring_module
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
@@ -58,10 +59,7 @@ from intergrax.applications._shared.memory_vector_wiring import (
     build_user_profile_manager,
     resolve_rag_stack_for_memory_wiring,
 )
-from intergrax.applications._shared.memory_wiring import (
-    assert_strict_memory_bootstrap_acceptable,
-    resolve_memory_platform_wiring,
-)
+from intergrax.applications._shared.memory_wiring import assert_strict_memory_bootstrap_acceptable
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.notify_tool_wiring import (
     wire_scheduled_notification_tool_binding,
@@ -146,6 +144,7 @@ from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
 from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderConfigurationError
 from intergrax.rag.embedding.registry.provider_authority import lab_embedding_provider_slug
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
@@ -270,6 +269,7 @@ def wire_application_environment(
     platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
     llm_adapter: LLMAdapter | None = None,
     agent_contract_authority: ContractAuthority | None = None,
+    human_decision_store: HumanDecisionPersistence | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -401,7 +401,7 @@ def wire_application_environment(
             },
         )
 
-    memory_wiring = resolve_memory_platform_wiring(
+    memory_wiring = _memory_wiring_module.resolve_memory_platform_wiring(
         env,
         integration_profile=resolved_integration,
         tenant_id=normalized_tenant_id,
@@ -506,6 +506,7 @@ def wire_application_environment(
         sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
         security_profile=env.security_profile,
+        human_decision_store=human_decision_store,
     )
     tool_wiring = apply_application_owned_tool_registry(
         manifest,

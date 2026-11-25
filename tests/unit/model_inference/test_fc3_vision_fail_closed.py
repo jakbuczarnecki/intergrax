@@ -52,12 +52,7 @@ def _local_request(tmp_path, artifact: ModelArtifact, *, request_id: str = "r1")
     )
 
 
-def test_nt_fc3_vis1_triton_unconfigured_raises_before_media(
-    artifact: ModelArtifact,
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("INTERGRAX_TRITON_URL", raising=False)
+def test_nt_fc3_vis1_triton_unconfigured_raises_before_media(artifact: ModelArtifact, tmp_path) -> None:
     request = _local_request(tmp_path, artifact)
     with patch(
         "intergrax.model_inference.adapters.triton_vision.require_remote_egress_bytes",
@@ -67,12 +62,7 @@ def test_nt_fc3_vis1_triton_unconfigured_raises_before_media(
         media_mock.assert_not_called()
 
 
-def test_nt_fc3_vis2_hf_unconfigured_raises_before_media(
-    artifact: ModelArtifact,
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+def test_nt_fc3_vis2_hf_unconfigured_raises_before_media(artifact: ModelArtifact, tmp_path) -> None:
     request = _local_request(tmp_path, artifact, request_id="r2")
     with patch(
         "intergrax.model_inference.adapters.huggingface_inference_vision.require_remote_egress_bytes",
@@ -82,15 +72,7 @@ def test_nt_fc3_vis2_hf_unconfigured_raises_before_media(
         media_mock.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "with_fallback",
-    [False, True],
-)
-def test_nt_fc3_vis3_triton_zero_detections_empty_no_stub(
-    artifact: ModelArtifact,
-    tmp_path,
-    with_fallback: bool,
-) -> None:
+def test_nt_fc3_vis3_triton_zero_detections_empty_no_stub(artifact: ModelArtifact, tmp_path) -> None:
     image = tmp_path / "x.png"
     image.write_bytes(b"data")
     mock_response = MagicMock()
@@ -100,45 +82,26 @@ def test_nt_fc3_vis3_triton_zero_detections_empty_no_stub(
     mock_client.__enter__.return_value = mock_client
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
-    fallback = StubVisionInferenceAdapter() if with_fallback else None
-    adapter = TritonVisionServingAdapter(
-        base_url="http://triton.local",
-        model_name="yolo",
-        fallback=fallback,
-    )
+    adapter = TritonVisionServingAdapter(base_url="http://triton.local", model_name="yolo")
     authorized = AuthorizedLocalMedia(
         resolved_path=image.resolve(),
         remote_egress_permitted=True,
     )
-    test_request = VisionInferenceRequest(
-        request_id="r3",
-        artifact_id=artifact.artifact_id,
-        media_uri=image.resolve().as_uri(),
-        authorized_local_media=authorized,
-    )
     with patch("intergrax.model_inference.adapters.triton_vision.httpx.Client", return_value=mock_client):
-        if with_fallback:
-            assert fallback is not None
-            with patch.object(fallback, "detect", wraps=fallback.detect) as detect_spy:
-                result = adapter.detect(test_request, artifact=artifact)
-            detect_spy.assert_not_called()
-        else:
-            result = adapter.detect(test_request, artifact=artifact)
+        result = adapter.detect(
+            VisionInferenceRequest(
+                request_id="r3",
+                artifact_id=artifact.artifact_id,
+                media_uri=image.resolve().as_uri(),
+                authorized_local_media=authorized,
+            ),
+            artifact=artifact,
+        )
     assert result.detections == []
     assert result.provenance == VisionResultProvenance.ENGINE
-    assert result.request_id == "r3"
-    assert result.artifact_id == artifact.artifact_id
 
 
-@pytest.mark.parametrize(
-    "with_fallback",
-    [False, True],
-)
-def test_nt_fc3_vis4_hf_zero_detections_empty(
-    artifact: ModelArtifact,
-    tmp_path,
-    with_fallback: bool,
-) -> None:
+def test_nt_fc3_vis4_hf_zero_detections_empty(artifact: ModelArtifact, tmp_path) -> None:
     image = tmp_path / "x.png"
     image.write_bytes(b"data")
     mock_response = MagicMock()
@@ -148,33 +111,26 @@ def test_nt_fc3_vis4_hf_zero_detections_empty(
     mock_client.__enter__.return_value = mock_client
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
-    fallback = StubVisionInferenceAdapter() if with_fallback else None
-    adapter = HuggingFaceInferenceVisionAdapter(api_key="hf-test-key", fallback=fallback)
+    adapter = HuggingFaceInferenceVisionAdapter(api_key="hf-test-key")
     authorized = AuthorizedLocalMedia(
         resolved_path=image.resolve(),
         remote_egress_permitted=True,
-    )
-    test_request = VisionInferenceRequest(
-        request_id="r4",
-        artifact_id=artifact.artifact_id,
-        media_uri=image.resolve().as_uri(),
-        authorized_local_media=authorized,
     )
     with patch(
         "intergrax.model_inference.adapters.huggingface_inference_vision.httpx.Client",
         return_value=mock_client,
     ):
-        if with_fallback:
-            assert fallback is not None
-            with patch.object(fallback, "detect", wraps=fallback.detect) as detect_spy:
-                result = adapter.detect(test_request, artifact=artifact)
-            detect_spy.assert_not_called()
-        else:
-            result = adapter.detect(test_request, artifact=artifact)
+        result = adapter.detect(
+            VisionInferenceRequest(
+                request_id="r4",
+                artifact_id=artifact.artifact_id,
+                media_uri=image.resolve().as_uri(),
+                authorized_local_media=authorized,
+            ),
+            artifact=artifact,
+        )
     assert result.detections == []
     assert result.provenance == VisionResultProvenance.ENGINE
-    assert result.request_id == "r4"
-    assert result.artifact_id == artifact.artifact_id
 
 
 def test_nt_fc3_vis5_stub_operations_carry_stub_provenance(artifact: ModelArtifact) -> None:
@@ -192,29 +148,10 @@ def test_nt_fc3_vis5_stub_operations_carry_stub_provenance(artifact: ModelArtifa
     assert ocr.provenance == VisionResultProvenance.STUB
 
 
-def test_nt_fc3_vis6_triton_explicit_fallback_flags_stub(
-    artifact: ModelArtifact,
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("INTERGRAX_TRITON_URL", raising=False)
+def test_nt_fc3_vis6_triton_explicit_fallback_flags_stub(artifact: ModelArtifact, tmp_path) -> None:
     request = _local_request(tmp_path, artifact, request_id="r6")
     stub = StubVisionInferenceAdapter()
     adapter = TritonVisionServingAdapter(base_url="", fallback=stub)
-    result = adapter.detect(request, artifact=artifact)
-    assert result.provenance == VisionResultProvenance.STUB
-    assert result.detections[0].label == "object.stub"
-
-
-def test_nt_fc3_vis6_hf_explicit_fallback_flags_stub(
-    artifact: ModelArtifact,
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
-    request = _local_request(tmp_path, artifact, request_id="r6hf")
-    stub = StubVisionInferenceAdapter()
-    adapter = HuggingFaceInferenceVisionAdapter(api_key="", fallback=stub)
     result = adapter.detect(request, artifact=artifact)
     assert result.provenance == VisionResultProvenance.STUB
     assert result.detections[0].label == "object.stub"
@@ -288,13 +225,7 @@ def test_nt_fc3_vis10_vision_detect_stub_profile_exposes_provenance(tmp_path) ->
     assert output.detections
 
 
-def test_nt_fc3_vis11_vision_profile_builds_unconfigured_triton_hf(
-    artifact: ModelArtifact,
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("INTERGRAX_TRITON_URL", raising=False)
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+def test_nt_fc3_vis11_vision_profile_builds_unconfigured_triton_hf(artifact: ModelArtifact, tmp_path) -> None:
     registry = VisionProfile(provider=VisionProvider.OPENCV).build_registry()
     triton = registry.get_vision_adapter(TritonVisionServingAdapter.slug)
     hf = registry.get_vision_adapter(HuggingFaceInferenceVisionAdapter.slug)

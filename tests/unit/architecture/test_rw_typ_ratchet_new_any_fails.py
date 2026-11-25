@@ -12,7 +12,7 @@ import pytest
 pytestmark = pytest.mark.unit
 
 _REPO = Path(__file__).resolve().parents[3]
-_TRACKED_BASELINE = _REPO / "scripts" / "qualification" / "typ_ratchet_baseline.v1.json"
+_TRACKED_BASELINE = _REPO / "governance" / "qualification" / "typ_ratchet_baseline.v1.json"
 
 
 def test_rw_typ_ratchet_new_any_fails(tmp_path: Path) -> None:

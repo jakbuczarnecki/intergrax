@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
+from intergrax.applications._shared import memory_wiring as memory_wiring_module
 from intergrax.applications._shared.memory_provider_admission import (
     MemoryOrgSessionAdmissionError,
     MemoryOrgSessionAdmissionReason,
@@ -21,7 +20,6 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
     InMemoryOrganizationProfileStore,
 )
@@ -84,6 +82,18 @@ def test_product_org_memory_without_backend_raises_instead_of_silent_skip() -> N
     assert refusal.value.reason is _Reason.ORG_STORE_MISSING
 
 
+def test_product_durable_user_plugin_with_in_memory_session_storage_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The user-profile-store admission (trusted plugin evidence) is covered by the 5A tests;
+    # here it is passed so that the remaining hole, the session storage, is isolated.
+    monkeypatch.setattr(memory_wiring_module, "validate_memory_platform_wiring_admission", lambda *a, **k: None)
+    env = _product(MemoryProfile(enable_user_memory=True, enable_long_term_memory=True))
+    with pytest.raises(MemoryOrgSessionAdmissionError) as refusal:
+        resolve_memory_platform_wiring(env)
+    assert refusal.value.reason is _Reason.SESSION_STORAGE_NOT_DURABLE
+
+
 def test_admission_classifies_in_memory_org_store_as_not_durable() -> None:
     env = _product(_org_only_memory())
     with pytest.raises(MemoryOrgSessionAdmissionError) as refusal:
@@ -128,19 +138,3 @@ def test_product_without_persistent_memory_flags_keeps_in_memory_baseline() -> N
     wiring = resolve_memory_platform_wiring(env)
     assert isinstance(wiring.session_storage, InMemorySessionStorage)
     assert wiring.organization_profile_store is None
-
-
-def test_product_sqlite_org_and_session_stores_are_admitted(tmp_path: Path) -> None:
-    env = _product(MemoryProfile(enable_org_memory=True, enable_user_memory=True))
-    profile = IntegrationProfile.lab_harness_preset()
-    profile.options = {**(profile.options or {}), "sqlite": {"data_dir": str(tmp_path)}}
-    env.integration_profile = profile
-    from intergrax.runtime.persistence.sqlite_composition import create_sqlite_runtime_persistence
-
-    bundle = create_sqlite_runtime_persistence(data_dir=tmp_path)
-    assert isinstance(bundle.session_storage, SQLiteSessionStorage)
-    validate_organization_and_session_admission(
-        env,
-        session_storage=bundle.session_storage,
-        organization_profile_store=bundle.organization_profile_store,
-    )

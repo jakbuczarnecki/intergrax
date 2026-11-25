@@ -15,8 +15,46 @@ from intergrax.applications._shared.production_queue_resolver import (
     UnsupportedQueueBackendReason,
 )
 from intergrax.applications._shared.queue_worker_wiring import wire_optional_queue_execution
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+class _DurableKV(DistributedKVStore):
+    """Minimal stub that derives from the current contract and reports durable (valid kv for QUE-1)."""
+
+    def __init__(self) -> None:
+        self._data: dict[tuple[str, str], bytes] = {}
+
+    @property
+    def survives_process_restart(self) -> bool:
+        return True
+
+    def get(self, tenant_id: str, key: str) -> bytes | None:
+        return self._data.get((tenant_id, key))
+
+    def set(self, tenant_id: str, key: str, value: bytes, *, ttl_seconds: int | None = None) -> None:
+        _ = ttl_seconds
+        self._data[(tenant_id, key)] = value
+
+    def delete(self, tenant_id: str, key: str) -> None:
+        self._data.pop((tenant_id, key), None)
+
+    def compare_and_set(
+        self,
+        tenant_id: str,
+        key: str,
+        expected: bytes | None,
+        new_value: bytes,
+        *,
+        ttl_seconds: int | None = None,
+    ) -> bool:
+        _ = ttl_seconds
+        if self._data.get((tenant_id, key)) != expected:
+            return False
+        self._data[(tenant_id, key)] = new_value
+        return True
 
 
 class _WorkerSpy:
@@ -35,8 +73,8 @@ def _wire(*, enabled: bool, production_mode: bool, backend: ProductionQueueBacke
         registry=MagicMock(),
         run_service=MagicMock(),
         queue_backend=backend,
-        kv_store=MagicMock(),
-        causal_evidence_persistence=MagicMock(),
+        kv_store=_DurableKV(),
+        causal_evidence_persistence=MagicMock(spec=CausalEvidencePersistence),
         production_mode=production_mode,
     )
 

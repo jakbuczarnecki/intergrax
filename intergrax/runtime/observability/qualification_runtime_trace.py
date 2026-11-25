@@ -24,7 +24,6 @@ from intergrax.contracts.tracing import (
     TraceComponent,
     TraceLevel,
 )
-from intergrax.runtime.events.payloads.canonical import graph_node_step_started_message
 from intergrax.runtime.execution.trace_persistence_models_bridge import (
     CompletionAlignmentDiagV1,
     EvaluatorModelAttemptDiagV1,
@@ -111,7 +110,7 @@ class TaskTraceRuntimeDiagnosticPort:
             self.task,
             component=TraceComponent.RUNTIME,
             step=EVALUATOR_MODEL_ATTEMPT_STEP,
-            message=graph_node_step_started_message(node_id),
+            message="evaluator loop model attempt",
             level=TraceLevel.INFO,
             payload=payload,
             extra_tags={"node_id": node_id},

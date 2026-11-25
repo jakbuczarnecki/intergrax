@@ -18,7 +18,9 @@ Plan digest: 8c9936aaecb16009aed52a3e743393dd293755d897c9cd169baace54ace5b91b
 
 ## Approved
 
-Awaiting operator signature. This file is not an approval.
+Approved: operator-delegate @ 2026-11-24T18:15:00+01:00
+Delegation: docs/project/maintainers/qualification/arch_freeze_program/continuation/OPERATOR_DECISIONS_AUTONOMY.md@0889a64bf93003548b73e3e282b09e3bc0be20b8
+Delegate session: package-c-publication
 
 ## Test contract
 
@@ -42,4 +44,4 @@ Exact pytest paths and gate script invocations are defined only in the approved 
 
 ## Lifecycle state
 
-plan_pending
+in_progress

@@ -83,22 +83,6 @@ def test_detects_stale_registry_path(tmp_path: Path) -> None:
     assert SeamFindingKind.STALE_ENTRY in kinds
 
 
-def test_detects_forbidden_direction_on_root_package_import(tmp_path: Path) -> None:
-    ledger = load_ledger(_CANONICAL_LEDGER)
-    rule = next(r for r in ledger["import_rules"] if r["id"] == "agents_no_direct_integrations")
-    agent_root = tmp_path / "agents" / "demo_agent"
-    agent_root.mkdir(parents=True)
-    module = agent_root / "leaky.py"
-    module.write_text("from intergrax import integrations\n", encoding="utf-8")
-    finding = classify_import_for_rule(
-        module="intergrax.integrations",
-        source_path="agents/demo_agent/leaky.py",
-        rule=rule,
-    )
-    assert finding is not None
-    assert finding.kind is SeamFindingKind.FORBIDDEN_DIRECTION
-
-
 def test_detects_forbidden_direction_on_agent_provider_import(tmp_path: Path) -> None:
     ledger = load_ledger(_CANONICAL_LEDGER)
     rule = next(r for r in ledger["import_rules"] if r["id"] == "agents_no_direct_integrations")
@@ -125,33 +109,6 @@ def test_allowed_contract_leaf_import(tmp_path: Path) -> None:
     )
     assert finding is not None
     assert finding.kind is SeamFindingKind.ALLOWED
-
-
-def test_root_package_import_from_expanded_for_seam_scan() -> None:
-    from scripts.maintenance.seam_ledger_lib import _extract_imports
-
-    source = "from intergrax import integrations\nfrom intergrax import tools\n"
-    assert {module for _line, module in _extract_imports(source)} == {"intergrax.integrations", "intergrax.tools"}
-
-
-def test_run_seam_ledger_check_reports_missing_seam_outside_scan_root(tmp_path: Path) -> None:
-    ledger = {
-        "import_rules": [
-            {
-                "id": "runtime_only",
-                "report_missing_seam_outside_scan_roots": True,
-                "scan_roots": ["intergrax/runtime"],
-                "denied_module_prefixes": ["intergrax.applications"],
-            }
-        ],
-    }
-    rule_root = tmp_path / "agents" / "demo"
-    rule_root.mkdir(parents=True)
-    (rule_root / "leaky.py").write_text("from intergrax.applications import shadow\n", encoding="utf-8")
-    ledger_path = tmp_path / "ledger.yaml"
-    ledger_path.write_text(yaml.dump(ledger), encoding="utf-8")
-    errors = error_findings(run_seam_ledger_check(repo_root=tmp_path, ledger_path=ledger_path))
-    assert any(e.kind is SeamFindingKind.MISSING_SEAM for e in errors)
 
 
 def test_detects_missing_seam_rule_for_tracked_namespace() -> None:

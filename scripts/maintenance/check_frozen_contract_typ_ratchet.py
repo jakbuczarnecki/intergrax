@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Fail on Any/object/reflection ratchet regressions vs scripts/qualification/typ_ratchet_baseline.v1.json."""
+"""Fail on Any/object/reflection ratchet regressions vs governance/qualification/typ_ratchet_baseline.v1.json."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_BASELINE = REPO_ROOT / "scripts" / "qualification" / "typ_ratchet_baseline.v1.json"
+DEFAULT_BASELINE = REPO_ROOT / "governance" / "qualification" / "typ_ratchet_baseline.v1.json"
 
 
 def _load_baseline(path: Path) -> dict:
