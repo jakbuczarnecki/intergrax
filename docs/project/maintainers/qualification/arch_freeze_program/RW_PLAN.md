@@ -1,7 +1,7 @@
 # RW-PLAN — T-AF2-RW-PLAN (canonical)
 
-**Generated:** 2026-11-25T18:08:07.347573+00:00
-**Execution SHA:** `dff5449c97bf9a637c59e09e41c1177be420a730`
+**Generated:** 2026-11-25T18:09:14.017906+00:00
+**Execution SHA:** `35967aaa676686fcf7fd2335f2e4f2bde0f6e53b`
 **Node:** T-AF2-RW-PLAN (W2, DOC)
 
 ## 0. Reconciliation (35 vs 45 CODE_FIX)

@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-25T18:08:07.347573+00:00",
-  "execution_sha": "dff5449c97bf9a637c59e09e41c1177be420a730",
+  "generated_at": "2026-11-25T18:09:14.017906+00:00",
+  "execution_sha": "35967aaa676686fcf7fd2335f2e4f2bde0f6e53b",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -473,7 +473,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
     },
     {
       "frz_id": "FRZ-TEN-02",
@@ -505,7 +505,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)",
-      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
+      "red_first_reason": "E   ImportError: cannot import name 'McpIdentityCompositionError' from 'intergrax.applications._shared.mcp_harness_principal'",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "PT-T01",
       "owner_wave": "W3",
@@ -523,7 +523,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-A",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
     },
     {
       "frz_id": "FRZ-TYP-01",

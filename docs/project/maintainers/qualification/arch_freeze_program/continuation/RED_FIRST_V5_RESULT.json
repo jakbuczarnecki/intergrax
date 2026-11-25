@@ -42,7 +42,7 @@
       "integrated_exit_code": 1,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_695bebe5.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "integrated guard failed on HEAD (exit 1); prefix not measured"
+      "reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
     },
     {
       "frz_id": "FRZ-TEN-02",
@@ -72,7 +72,7 @@
       "pytest_exit_code": 2,
       "pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_88873a37.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "collection/interpreter at prefix: exit 2; error=True"
+      "reason": "E   ImportError: cannot import name 'McpIdentityCompositionError' from 'intergrax.applications._shared.mcp_harness_principal'"
     },
     {
       "frz_id": "FRZ-TEN-10",
@@ -87,7 +87,7 @@
       "integrated_exit_code": 1,
       "integrated_pytest_log": ".tmp/session/arch-freeze/red-first-v5/pytest_695bebe5.log",
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
-      "reason": "integrated guard failed on HEAD (exit 1); prefix not measured"
+      "reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
     },
     {
       "frz_id": "FRZ-PLG-01",
