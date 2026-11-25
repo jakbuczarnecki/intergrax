@@ -1018,8 +1018,9 @@ def inventory_payload_schema_ids(inventory: EventEvolutionInventory) -> frozense
 
 
 def registered_canonical_payload_schema_ids() -> frozenset[str]:
+    """Canonical payload schema ids from the closed-world tuple, not the mutable registry."""
     bootstrap_canonical_payload_registry()
-    return frozenset(list_registered_payload_schema_ids(include_extensions=False))
+    return frozenset(schema_cls.schema_id for schema_cls in CANONICAL_PAYLOAD_TYPES)
 
 
 def envelope_fail_closed_probes() -> tuple[str, ...]:
