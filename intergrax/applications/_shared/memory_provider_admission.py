@@ -398,7 +398,7 @@ def _session_storage_is_durable(storage: SessionStorage) -> bool:
     ``DocumentStoreSessionStorage`` exposes no public backing-store handle, so its restart
     durability cannot be established here and it is refused in fail-closed postures.
     """
-    from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
+    from intergrax.runtime.execution.session_host_composition import SQLiteSessionStorage
 
     if isinstance(storage, SQLiteSessionStorage):
         return True

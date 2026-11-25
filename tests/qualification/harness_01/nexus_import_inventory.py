@@ -448,7 +448,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/execution/trace_persistence_models_bridge.py",
     "intergrax/runtime/execution/trace_store_debug_access.py",
     "intergrax/runtime/execution/worker_host_task_execution_composition.py",
-    "intergrax/applications/_shared/memory_provider_admission.py",
 )
 
 HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS: tuple[Harness01HigherLayerNexusImporter, ...] = tuple(
