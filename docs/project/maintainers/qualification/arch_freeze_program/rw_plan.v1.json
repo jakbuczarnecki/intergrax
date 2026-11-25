@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-24T16:49:22.654721+00:00",
-  "execution_sha": "deea67621120403edb2d9bdd33e3eed8903199de",
+  "generated_at": "2026-11-25T17:43:34.680985+00:00",
+  "execution_sha": "5935fa4f0cd3596852b3a6500f9d4e1d613a53df",
   "node": "T-AF2-RW-PLAN",
   "reconciliation": {
     "mep_historical_unplanned_count": 35,
@@ -57,12 +57,12 @@
       "negative_test_id": "NT-CFG-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-CFG-02",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CFG-02",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-C",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-CFG-06",
@@ -98,12 +98,12 @@
       "negative_test_id": "NT-CTR-01",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-CTR-01",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CTR-01",
       "regression_scope": "ENT-A-CTR-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-D",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-CTR-02",
@@ -164,12 +164,12 @@
       "negative_test_id": "NT-DEBT-04",
       "red_first_prefix_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-DEBT-04",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-DEBT-04",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-EXE-02",
@@ -192,19 +192,19 @@
       "negative_test_id": "NT-FRZ-10",
       "red_first_prefix_sha": "332c5217c390202a911ad5592e88a8f366845587",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-FRZ-10",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-FRZ-10",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-052-*",
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-B7-PFP-ACTIVATE",
       "owner_wave": "W5",
       "owner_source": "MEP-AF2 v2.1 / W5 and W8",
       "verification_node": "T-B7-PFP-VERIFY",
       "verification_wave": "W8",
-      "owner_ticket_family": "T-IGX-052-*",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "owner_ticket_family": "T-IGX-052-*"
     },
     {
       "frz_id": "FRZ-OWN-02",
@@ -213,12 +213,12 @@
       "negative_test_id": "NT-OWN-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-OWN-02",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-02",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-OWN-03",
@@ -227,12 +227,12 @@
       "negative_test_id": "NT-OWN-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-OWN-03",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-03",
       "regression_scope": "ENT-A-OWN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-OWN-05",
@@ -254,12 +254,12 @@
       "negative_test_id": "NT-PLG-01",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-PLG-01",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-01",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "exit 1 without matching node for NT-PLG-01: no FAILED line in pytest output"
     },
     {
       "frz_id": "FRZ-PLG-02",
@@ -268,12 +268,12 @@
       "negative_test_id": "NT-PLG-02",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-PLG-02",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-02",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "exit 1 without matching node for NT-PLG-02: no FAILED line in pytest output"
     },
     {
       "frz_id": "FRZ-PLG-05",
@@ -296,12 +296,12 @@
       "negative_test_id": "NT-PLG-06",
       "red_first_prefix_sha": "2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-PLG-06",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-06",
       "regression_scope": "tests/qualification/governance/gr11/catalog.py",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-PLG-07",
@@ -310,12 +310,12 @@
       "negative_test_id": "NT-PLG-07",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-PLG-07",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-07",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "red_first_reason": "exit 1 without matching node for NT-PLG-07: no FAILED line in pytest output"
     },
     {
       "frz_id": "FRZ-PRD-03",
@@ -324,12 +324,12 @@
       "negative_test_id": "NT-PRD-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-PRD-03",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PRD-03",
       "regression_scope": "ENT-A-PRD-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-PRD-05",
@@ -366,12 +366,12 @@
       "negative_test_id": "NT-REG-09",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-REG-09",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REG-09",
       "regression_scope": "ENT-A-REG-01; ENT-A-REG-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-REL-07",
@@ -380,12 +380,12 @@
       "negative_test_id": "NT-REL-07",
       "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-REL-07",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REL-07",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "exit 3 without FAILED at prefix; failed=False; error=False"
+      "red_first_reason": "unexpected exit 3"
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -394,12 +394,12 @@
       "negative_test_id": "NT-REL-09",
       "red_first_prefix_sha": "ec7f1e27c4a0a81b60ffad3feb2ff7ab696152a2",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-REL-09",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REL-09",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-REL-10",
@@ -408,12 +408,12 @@
       "negative_test_id": "NT-REL-10",
       "red_first_prefix_sha": "a01b7e415797a0ff1ecfb961ce7d5c5857415106",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-REL-10",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REL-10",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True"
     },
     {
       "frz_id": "FRZ-RPL-04",
@@ -422,16 +422,16 @@
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-RPL-04",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-RPL-04",
       "regression_scope": "ENT-A-VBN-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",
-      "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
-      "red_first_reason": "collection/interpreter issue at prefix: exit 2; error=True"
+      "owner_source": "MEP-AF2 v2.1 / section G / DP-36"
     },
     {
       "frz_id": "FRZ-SEC-04",
@@ -481,17 +481,17 @@
       "owner_ticket": null,
       "negative_test_id": "NEG-0",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-TEN-02",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-TEN-02",
       "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)",
+      "red_first_reason": "NEG-0 node test_nt02_strict_host_flag_prepares_production_mode FAILED at prefix (production_mode ignored host strict flag)",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "PT-T01",
       "owner_wave": "W3",
-      "owner_source": "WP12 DAG / PT-T01 / A4-006",
-      "red_first_reason": "strict exit 0; failed=False; error=False; quoting prior prefix replay log"
+      "owner_source": "WP12 DAG / PT-T01 / A4-006"
     },
     {
       "frz_id": "FRZ-TEN-07",
@@ -500,16 +500,16 @@
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-TEN-07",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-TEN-07",
       "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (WP-4; impact not BLOCKS; ticket per family node)",
+      "red_first_reason": "collection/interpreter at prefix: exit 2; error=True",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "PT-T01",
       "owner_wave": "W3",
-      "owner_source": "WP12 DAG / PT-T01 / A4-006",
-      "red_first_reason": "strict exit 2; failed=False; error=True; quoting prior prefix replay log"
+      "owner_source": "WP12 DAG / PT-T01 / A4-006"
     },
     {
       "frz_id": "FRZ-TEN-10",
@@ -1428,174 +1428,6 @@
       "traceability validator"
     ],
     "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
-    "qualified_at_head": "Not claimed \u2014 diagnostic W2 outputs only"
-  },
-  "known_red_fix_inventory": [
-    {
-      "kr_id": "KR-03",
-      "owner_node": "T-AF2-RW-GATES",
-      "file_scope": [
-        "tests/unit/runtime/nexus/test_reference_harness_strict.py"
-      ],
-      "negative_test_id": "NT-KR-03-01"
-    },
-    {
-      "kr_id": "KR-04",
-      "owner_node": "T-AF2-RW-GATES",
-      "file_scope": [
-        "tests/unit/runtime/policy/test_acp_token_budget_enforcement.py"
-      ],
-      "negative_test_id": "NT-KR-04-01"
-    },
-    {
-      "kr_id": "KR-07",
-      "owner_node": "T-AF2-RW-SUPPLY",
-      "file_scope": [
-        "scripts/ci/durable_diagnostics_external_proof.py"
-      ],
-      "negative_test_id": "NT-KR-07-01"
-    },
-    {
-      "kr_id": "KR-08",
-      "owner_node": "PT-Q03",
-      "file_scope": [
-        "scripts/governance/iiac_activation_gate.py"
-      ],
-      "negative_test_id": "NT-KR-08-01"
-    },
-    {
-      "kr_id": "KR-09",
-      "owner_node": "PT-Q11",
-      "file_scope": [
-        "scripts/qualification/render_ebh7_f10_normative_matrix.py"
-      ],
-      "negative_test_id": "NT-KR-09-01"
-    },
-    {
-      "kr_id": "KR-10",
-      "owner_node": "PT-Q04",
-      "file_scope": [
-        "tests/qualification/roadmap_replay_x/test_replay_x_closure_counters_computed.py"
-      ],
-      "negative_test_id": "NT-KR-10-01"
-    },
-    {
-      "kr_id": "KR-11",
-      "owner_node": "PT-Q06",
-      "file_scope": [
-        "tests/qualification/trace_x/test_txp6_q02_restart_resume_closed_world_parity.py",
-        "intergrax/platform/enterprise_audit/impact_map.py"
-      ],
-      "negative_test_id": "NT-KR-11-01"
-    },
-    {
-      "kr_id": "KR-13",
-      "owner_node": "T-AF2-RW-GATES",
-      "file_scope": [
-        "tests/qualification/platform_domain_completeness/"
-      ],
-      "negative_test_id": "NT-KR-13-01"
-    },
-    {
-      "kr_id": "KR-14",
-      "owner_node": "T-AF2-RW-GATES",
-      "file_scope": [
-        "tests/unit/applications/test_scenario_runtime_baseline.py"
-      ],
-      "negative_test_id": "NT-KR-14-01"
-    },
-    {
-      "kr_id": "KR-15",
-      "owner_node": "T-B7-CMP-REVAL",
-      "file_scope": [
-        "tests/qualification/compat_x/"
-      ],
-      "negative_test_id": "NT-KR-15-01"
-    },
-    {
-      "kr_id": "KR-16",
-      "owner_node": "PT-WB",
-      "file_scope": [
-        "tests/unit/applications/test_fixture_dataset_ingestion.py",
-        "tests/unit/applications/test_image_smart_document_handler.py"
-      ],
-      "negative_test_id": "NT-KR-16-01"
-    },
-    {
-      "kr_id": "KR-17",
-      "owner_node": "T-AF2-RW-RUNTIME",
-      "file_scope": [
-        "intergrax/integrations/providers/relational_store/mongodb/client.py"
-      ],
-      "negative_test_id": "NT-KR-17-01"
-    },
-    {
-      "kr_id": "KR-18",
-      "owner_node": "PT-WA",
-      "file_scope": [
-        "intergrax/applications/contracts/environment_profile/root.py"
-      ],
-      "negative_test_id": "NT-KR-18-01"
-    },
-    {
-      "kr_id": "KR-19",
-      "owner_node": "PT-WF",
-      "file_scope": [
-        "intergrax/runtime/observability_otlp/export_boundary.py"
-      ],
-      "negative_test_id": "NT-KR-19-01"
-    },
-    {
-      "kr_id": "KR-20",
-      "owner_node": "PT-WF",
-      "file_scope": [
-        "tests/qualification/trace_x/",
-        "intergrax/applications/local_workspace_application/"
-      ],
-      "negative_test_id": "NT-KR-20-01"
-    },
-    {
-      "kr_id": "KR-23",
-      "owner_node": "PT-Q07",
-      "file_scope": [
-        "tests/unit/applications/test_mcp_surface_opt_in.py",
-        "tests/unit/applications/test_mcp_surface_opt_in_runtime.py",
-        "tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py"
-      ],
-      "negative_test_id": "NT-KR-23-01"
-    },
-    {
-      "kr_id": "KR-24",
-      "owner_node": "T-IGX-039-A",
-      "file_scope": [
-        "tests/unit/applications/test_mcp_surface_opt_in.py"
-      ],
-      "negative_test_id": "NT-KR-24-01"
-    },
-    {
-      "kr_id": "KR-26",
-      "owner_node": "PT-WD",
-      "file_scope": [
-        "intergrax/platform/enterprise_audit/validators.py"
-      ],
-      "negative_test_id": "NT-KR-26-01"
-    },
-    {
-      "kr_id": "KR-27",
-      "owner_node": "PT-G01",
-      "file_scope": [
-        "intergrax/integrations/providers/embedding_provider/ollama/register.py"
-      ],
-      "negative_test_id": "NT-KR-27-01"
-    },
-    {
-      "kr_id": "KR-28",
-      "owner_node": "PT-G01",
-      "file_scope": [
-        "tests/acceptance/llm_routing/test_llm_routing_acceptance.py",
-        "tests/acceptance/llm_routing/test_llm_routing_resolver_acceptance.py"
-      ],
-      "negative_test_id": "NT-KR-28-01"
-    }
-  ]
+    "qualified_at_head": "Not claimed — diagnostic W2 outputs only"
+  }
 }
