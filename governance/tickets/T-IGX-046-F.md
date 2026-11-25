@@ -73,76 +73,7 @@ Edits of the roadmap, the freeze checklist, PDC-owned records, generated registe
 | CI at merge | Red on required contexts — pre-existing on `development`, outside EQO wave-2 write set: `ci-smoke` (DF5 `vector_store` config), `governance-fast` (ACT-N11 / IIAC activation drift), `ent-audit-fast` cascade (`ENT-A-PRD-01/02`, `ENT-A-REG-03`). Triage: subagent session `41aa0042`. |
 | CI record | PR #690 conversation comment «CI triage (post-`gh pr checks 690 --watch`)»; completion table in «EQO wave-2 completion signal». |
 
-## Checkpoint — EQO wave-3 (2026-11-21)
-
-| Field | Value |
-|-------|-------|
-| Integrator branch | `eqo/wave-3/integ` |
-| Base | `origin/development` `8631b1e84` (PR #690) |
-| Deliverables | `AUD_PACKET.md` WB01–12, `W4-03_OWNER_DECISION_BATCH.md`, `EQO_WAVE3_MANIFEST.md`, matrix AUD § |
-| PR | [#692](https://github.com/jakbuczarnecki/intergrax/pull/692) merged `b533ed051` |
-| `development` head | `b533ed0510ee3b6eef88e5a19249404540064937` (merge commit) |
-| AUD verdicts | **none** — packets `PRE_AUD` / `OPEN` only |
-| EQO-C-04 | executed @ TRAIN_PIN — **BLOCKED** (pytest exit 1); `runs/c/C04_RUN_MANIFEST.json` |
-| E-02 apply | out of scope |
-| Session E — **PRE_AUD** | WB02, WB03, WB05, WB12 |
-| Session E — **OPEN** | WB01, WB04, WB06, WB07, WB08, WB09, WB10, WB11 |
-
-**AUD packet summary** (from `EQO_WAVE3_MANIFEST.md`; entry path `eqo_closure/runs/wbNN/AUD_PACKET.md`):
-
-| WB | Packet status | EXE exit |
-|----|---------------|---------:|
-| WB01 | OPEN | 1 |
-| WB02 | PRE_AUD | 0 |
-| WB03 | PRE_AUD | 0 |
-| WB04 | OPEN | 1 |
-| WB05 | PRE_AUD | 0 |
-| WB06 | OPEN | 4 |
-| WB07 | OPEN | 1 |
-| WB08 | OPEN | — |
-| WB09 | OPEN | 1 |
-| WB10 | OPEN | 1 |
-| WB11 | OPEN | 1 |
-| WB12 | PRE_AUD | 0 |
-
-Session E: separate chat per WB; implementer must not self-PASS (`EQO_WAVE3_MANIFEST.md`).
-
-## Checkpoint — EQO wave-4 (2026-11-21)
-
-| Field | Value |
-|-------|-------|
-| Integrator branch | `eqo/wave-4/integ` |
-| Base | `origin/development` `bb4738c94` (post #692 waiver; wave-4 lanes rebased before commits) |
-| Lanes merged | `eqo/wave-4/w2`, `w4`, `x`, `matrix` |
-| W2 | `78744c1b5` — W2-02..11 read pass; `#680` track-only |
-| W4 | `42276e586` — `W4-04_REQUALIFY_BATCH.md`, `W4-05_NONE_JUSTIFICATION.md` |
-| X | `a1912e895` — X-01..08 read memos / refreshes |
-| Matrix | `84d14f559` — partial CLS § (no AUD verdicts) |
-| Deliverables | `EQO_WAVE4_MANIFEST.md`, README phase index row 26 |
-| AUD verdicts | **none** — DES/read band only |
-| EQO-C-04 | out of scope this wave |
-| E-02 apply | out of scope |
-| #680 | track-only (no new ticket) |
-
 **Operator merge policy correction:** After incident PR #690, an autonomous agent MUST NOT run `gh pr merge` unless required docs gates are green (`ticket-governance` minimum) and operator `merge_on_green` applies to the full required check set, or an explicit operator waiver is documented in the ticket or PR thread. Ref: T-IGX-046-F.
-
-## Checkpoint — EQO AUD-1 (2026-11-21)
-
-Session E verdicts @ TRAIN_PIN `28c27cb` (`runs/wbNN/AUD_SESSION_E.md`): WB02 FAIL, WB03 FAIL, WB05 BLOCKED, WB12 BLOCKED; integrator `eqo/aud/wave-1-integ`; no product change, no G6/IIAC/FRZ claim.
-
-## Checkpoint — EQO AUD-2 (2026-11-21)
-
-Session E verdicts @ TRAIN_PIN `28c27cb` (`runs/wbNN/AUD_SESSION_E.md`): WB01 FAIL, WB04 BLOCKED, WB06 FAIL, WB07 FAIL, WB08 BLOCKED, WB09 FAIL, WB10 FAIL, WB11 FAIL; integrator `eqo/aud/wave-2-integ`; read-only source inspection, pytest not re-run; no product change, no G6/IIAC/FRZ claim. WB04, WB06, WB08 and parts of WB09 need an EXE re-run with the optional extras (`mcp`, `llm-langchain-ollama`).
-
-## Checkpoint — EQO post-AUD integrator (2026-11-21)
-
-AUD waves 1–2 merged on `development` ([#695](https://github.com/jakbuczarnecki/intergrax/pull/695), [#696](https://github.com/jakbuczarnecki/intergrax/pull/696), [#697](https://github.com/jakbuczarnecki/intergrax/pull/697)); matrix AUD column WB01–12 + partial W3 `CLS_PRE.md`; session E aggregate **8 FAIL / 4 BLOCKED / 0 PASS**; integrator `eqo/post-aud/matrix-cls`; docs only — no `EQO_CLOSED`, pytest not re-run, no product change.
-
-## Operator waiver — docs merge platform CI
-
-Operator decision **`waiver_both`** @ **2026-11-21** (coordinator chat): retroactive acceptance of docs/ticket merges **[#690](https://github.com/jakbuczarnecki/intergrax/pull/690)** (EQO wave-2 integration) and **[#691](https://github.com/jakbuczarnecki/intergrax/pull/691)** (wave-2 checkpoint + CI triage on this ticket) despite **red platform CI** on `development` at merge time (`ci-smoke`, `governance-fast`, `ent-audit-fast`). Docs gates were **green**: `ticket-governance`, `governance-policy-pin`.
-
-**Going forward (docs-only integrator PRs under T-IGX-046-F / same merge-policy pattern):** merge when **`ticket-governance`** + **`governance-policy-pin`** pass; **do not** block on full `ci-smoke` / `governance-fast` / `ent-audit-fast` green when failure is acknowledged pre-existing platform drift outside the PR write set. Autonomous `gh pr merge` still requires either that docs gate pair green **or** a fresh operator waiver line on this ticket (see merge policy correction above). PR [#692](https://github.com/jakbuczarnecki/intergrax/pull/692) thread noted `AWAITING_OPERATOR_WAIVER` — resolved by this section.
 
 ## Lifecycle state
 
