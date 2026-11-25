@@ -152,6 +152,21 @@ class EnterpriseAuditRunner:
                     baseline_sha=baseline.accepted_baseline_sha,
                 )
 
+        if effective_certifying:
+            fallthrough = frz_default_fallback_check_ids(self._checks)
+            if fallthrough:
+                return self._blocked_report(
+                    mode,
+                    identity,
+                    output_dir,
+                    finding_id="FRZ:COVERAGE_DEFAULT_FALLBACK",
+                    message=(
+                        "certifying runs forbid checks without an explicit FRZ family attribution: "
+                        + ", ".join(sorted(fallthrough))
+                    ),
+                    certifying_run=certifying_run,
+                )
+
         planned_all = checks_for_mode(self._checks, mode, changed_check_ids=changed_check_ids)
         filtered = bool(check_ids_filter)
         if check_ids_filter:
@@ -182,16 +197,12 @@ class EnterpriseAuditRunner:
         ordered = topological_order(planned_all)
         sandbox = CheckExecutionSandbox(self._repo_root)
         output_dir.mkdir(parents=True, exist_ok=True)
-        vbn_cached = output_dir / "vbn_domains.v1.json"
-        if self._dry_run and not vbn_cached.is_file():
-            domain_report = None
-        else:
-            domain_report = load_vbn_domain_report(
-                self._repo_root,
-                output_dir,
-                expected_sha=identity.head_sha,
-                expected_manifest_digest=manifest_digest(),
-            )
+        domain_report = load_vbn_domain_report(
+            self._repo_root,
+            output_dir,
+            expected_sha=identity.head_sha,
+            expected_manifest_digest=manifest_digest(),
+        )
         outcomes: list[CheckRunOutcome] = []
         failed_prereqs: set[str] = set()
 
