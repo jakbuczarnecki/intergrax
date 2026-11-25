@@ -259,7 +259,12 @@ def validate_plan_structure(
         if row.get("regression_scope") in (None, "", "MAPPING_MISSING"):
             errors.append(f"{frz}: missing regression_scope mapping")
         status = row.get("red_first_status")
-        if status not in ("EVIDENCE_MISSING", "RED_AT_PREFIX", "GREEN_AT_PREFIX"):
+        if status not in (
+            "EVIDENCE_MISSING",
+            "RED_AT_PREFIX",
+            "GREEN_AT_PREFIX",
+            "RED_FIRST_UNREPRODUCIBLE",
+        ):
             errors.append(f"{frz}: invalid red_first_status {status!r}")
 
     plan_set = set(plan_ids)
@@ -306,10 +311,21 @@ def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
         status = row.get("red_first_status")
         sha = row.get("red_first_prefix_sha")
         ref = row.get("red_first_evidence_ref")
-        if status == "EVIDENCE_MISSING" and sha:
-            errors.append(f"{frz}: EVIDENCE_MISSING must not carry prefix SHA")
+        if status == "EVIDENCE_MISSING":
+            errors.append(f"{frz}: red-first evidence not recorded (EVIDENCE_MISSING)")
+            if sha:
+                errors.append(f"{frz}: EVIDENCE_MISSING must not carry prefix SHA")
         if status == "GREEN_AT_PREFIX":
             errors.append(f"{frz}: GREEN_AT_PREFIX does not demonstrate red-first replay")
+        if status == "RED_FIRST_UNREPRODUCIBLE":
+            errors.append(f"{frz}: RED_FIRST_UNREPRODUCIBLE does not demonstrate red-first replay")
+            if not sha or not isinstance(sha, str) or len(sha) != 40:
+                errors.append(f"{frz}: RED_FIRST_UNREPRODUCIBLE without valid historical prefix SHA")
+            if not ref:
+                errors.append(f"{frz}: RED_FIRST_UNREPRODUCIBLE without evidence reference")
+            reason = row.get("red_first_reason")
+            if not reason or not str(reason).strip():
+                errors.append(f"{frz}: RED_FIRST_UNREPRODUCIBLE without red_first_reason")
         if status == "RED_AT_PREFIX":
             if not sha or not isinstance(sha, str) or len(sha) != 40:
                 errors.append(f"{frz}: RED_AT_PREFIX without valid historical prefix SHA")
@@ -348,7 +364,7 @@ def _emit(
     if red_first:
         print("RED_FIRST_EVIDENCE=INCOMPLETE")
     else:
-        print("RED_FIRST_EVIDENCE=INCOMPLETE")
+        print("RED_FIRST_EVIDENCE=COMPLETE")
     for e in audit_notes:
         print(f"[RW_PLAN_AUDIT] {e}")
     print("RW_PLAN_AUDIT=NOT_PERFORMED")
