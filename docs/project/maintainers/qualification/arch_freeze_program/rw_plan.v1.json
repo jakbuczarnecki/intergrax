@@ -132,9 +132,9 @@
       "summary": "unresolved transitional authority = 0",
       "owner_ticket": "T-IGX-051-H",
       "negative_test_id": "NT-DEBT-02",
-      "red_first_prefix_sha": null,
-      "red_first_status": "EVIDENCE_MISSING",
-      "red_first_evidence_ref": null,
+      "red_first_prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": ".tmp/session/arch-freeze/red-first/FRZ-DEBT-02.log",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
@@ -145,9 +145,9 @@
       "summary": "temporary compatibility seam in frozen scope = 0",
       "owner_ticket": "T-IGX-051-H",
       "negative_test_id": "NT-DEBT-03",
-      "red_first_prefix_sha": null,
-      "red_first_status": "EVIDENCE_MISSING",
-      "red_first_evidence_ref": null,
+      "red_first_prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": ".tmp/session/arch-freeze/red-first/FRZ-DEBT-03.log",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
@@ -1400,7 +1400,7 @@
       "traceability validator"
     ],
     "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
-    "qualified_at_head": "Not claimed — diagnostic W2 outputs only"
+    "qualified_at_head": "Not claimed \u2014 diagnostic W2 outputs only"
   },
   "known_red_fix_inventory": [
     {
