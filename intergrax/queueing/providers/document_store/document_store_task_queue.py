@@ -112,6 +112,18 @@ class TaskRowClaimContext:
     lease_seconds: int = 300
 
 
+@dataclass(frozen=True)
+class DocumentStoreWakeClaim:
+    """Successful durable-row claim for a targeted Celery wake delivery."""
+
+    request: TaskRequest
+    presented_claim: LeaseOwnership
+
+
+class DocumentStoreWakeClaimNotGrantedError(RuntimeError):
+    """The wake target row could not be claimed; the broker message must not be acknowledged."""
+
+
 class TaskDeliveryMismatchError(ValueError):
     """Delivery tenant or identity does not match the durable task row."""
 
@@ -486,6 +498,104 @@ class DocumentStoreTaskQueue(TaskQueue):
                 if not cursor:
                     break
             return claimed
+
+    def claim_task_for_wake(
+        self,
+        handle: TaskHandle,
+        *,
+        claim_context: TaskRowClaimContext,
+    ) -> DocumentStoreWakeClaim | None:
+        """Transition one pending row to running for a targeted Celery wake."""
+        with self._lock:
+            tenant_id = handle.tenant_id or ""
+            task_id = handle.task_id
+            row = self._load(handle)
+            if row is None:
+                return None
+            if TaskStatus(str(row["status"])) is not TaskStatus.PENDING:
+                return None
+            if _float_field(row, "available_at_epoch") > time.time():
+                return None
+            ledger_claim: InvocationClaim | None = None
+            if self._idempotency_store is not None:
+                request_probe = self._request_from_row(tenant_id, row)
+                ledger_key = task_row_ledger_key(
+                    logical_task_name=request_probe.task_name,
+                    idempotency_key=request_probe.idempotency_key,
+                    task_id=task_id,
+                )
+                claim_result = self._idempotency_store.claim(
+                    tenant_id=tenant_id,
+                    key=ledger_key,
+                    owner_id=claim_context.owner_id,
+                    lease_seconds=claim_context.lease_seconds,
+                )
+                if claim_result.outcome is ClaimOutcome.BLOCKED_ACTIVE:
+                    return None
+                if claim_result.outcome is ClaimOutcome.UNCERTAIN:
+                    ledger_claim = None
+                elif claim_result.outcome is ClaimOutcome.REPLAY_COMPLETED:
+                    self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tenant_id, task_id))
+                    return None
+                else:
+                    ledger_claim = claim_result.claim
+                    if ledger_claim is None:
+                        return None
+
+            def _claim(row: dict[str, object]) -> dict[str, object] | None:
+                updated = DocumentStoreTaskQueue._claim_mutation(row)
+                if updated is None:
+                    return None
+                ledger_key = task_row_ledger_key(
+                    logical_task_name=str(row["task_name"]),
+                    idempotency_key=(str(row["idempotency_key"]) if row.get("idempotency_key") else None),
+                    task_id=task_id,
+                )
+                claim_to_write = ledger_claim or invocation_claim_for_new_attempt(
+                    updated,
+                    tenant_id=tenant_id,
+                    owner_id=claim_context.owner_id,
+                    lease_seconds=claim_context.lease_seconds,
+                    ledger_key=ledger_key,
+                )
+                write_claim_to_row(updated, claim=claim_to_write, ledger_key=ledger_key)
+                return updated
+
+            result = self._cas_update(tenant_id, task_id, _claim)
+            if result.kind != "applied" or result.updated is None:
+                if ledger_claim is not None and self._idempotency_store is not None:
+                    ledger_key = task_row_ledger_key(
+                        logical_task_name=str(row.get("task_name") or ""),
+                        idempotency_key=(str(row.get("idempotency_key")) if row.get("idempotency_key") else None),
+                        task_id=task_id,
+                    )
+                    try:
+                        self._idempotency_store.abandon_pre_effect_with_claim(
+                            tenant_id=tenant_id,
+                            key=ledger_key,
+                            claim=ledger_claim,
+                        )
+                    except StaleClaimError:
+                        pass
+                return None
+            self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tenant_id, task_id))
+            self._store.put(
+                DocumentRecord(
+                    partition_key=_RUNNING_INDEX_PARTITION,
+                    row_key=_index_row(tenant_id, task_id),
+                    data={"tenant_id": tenant_id, "task_id": task_id},
+                )
+            )
+            request = self._request_from_row(tenant_id, result.updated)
+            row_claim = invocation_claim_from_row(result.updated, tenant_id=tenant_id)
+            if row_claim is None:
+                return None
+            presented = LeaseOwnership(
+                owner_id=row_claim.owner_id,
+                lease_expires_at=row_claim.lease_expires_at,
+                fence=row_claim.fence,
+            )
+            return DocumentStoreWakeClaim(request=request, presented_claim=presented)
 
     @staticmethod
     def _claim_mutation(row: dict[str, object]) -> dict[str, object] | None:
