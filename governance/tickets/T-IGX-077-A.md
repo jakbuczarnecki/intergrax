@@ -20,3 +20,11 @@ The live rules must be covered, not only a synthetic ledger.
 
 Product trees, T-IGX-046-H, roadmap, FRZ checklist, closed-world gate.
 
+
+## Approved
+
+Approved: operator @ 2026-11-26T13:05:00+01:00
+
+## Lifecycle state
+
+plan_approved

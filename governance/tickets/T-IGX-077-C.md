@@ -18,3 +18,11 @@ One pytest command: the new classification test plus TRACE gates q02, q08, and q
 
 Product trees, roadmap, FRZ checklist, seam ledger, closed-world gate.
 
+
+## Approved
+
+Approved: operator @ 2026-11-26T13:05:00+01:00
+
+## Lifecycle state
+
+plan_approved

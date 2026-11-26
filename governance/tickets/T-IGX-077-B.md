@@ -20,3 +20,11 @@ Include one unknown-import failure and one proof that the live exclusion registe
 
 Product trees, seam ledger, roadmap, FRZ checklist.
 
+
+## Approved
+
+Approved: operator @ 2026-11-26T13:05:00+01:00
+
+## Lifecycle state
+
+plan_approved
