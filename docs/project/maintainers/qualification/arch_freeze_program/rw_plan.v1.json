@@ -56,13 +56,13 @@
       "owner_ticket": "T-IGX-043-C",
       "negative_test_id": "NT-CFG-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-CFG-02",
-      "regression_scope": "ENT-A-VBN-01..03",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_02_missing_embedding_config_must_not_silently_select_vendor",
+      "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_02_missing_embedding_config_must_not_silently_select_vendor",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-C",
-      "red_first_reason": "E   AssertionError: ENT-A-VBN-02 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero'"
+      "red_first_reason": "AssertionError: NT-CFG-02 missing or invalid required configuration must not silently select a vendor/backend when embedding provider is unset"
     },
     {
       "frz_id": "FRZ-CFG-06",
@@ -83,13 +83,13 @@
       "owner_ticket": "T-IGX-043-F",
       "negative_test_id": "NT-CFG-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-CFG-08",
-      "regression_scope": "ENT-A-VBN-01..03",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default",
+      "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-F",
-      "red_first_reason": "E   AssertionError: VBN-SHADOW-SELECTION failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/qualification/config_x/test_config_x_final_reconciliation_gates.py'"
+      "red_first_reason": "AssertionError: NT-CFG-08 silent fallback: embedding profile must not carry a hard-coded provider constant"
     },
     {
       "frz_id": "FRZ-CTR-01",
@@ -212,13 +212,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-OWN-02",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-02",
-      "regression_scope": "ENT-A-OWN-01..03",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_02_application_artifact_ref_has_one_canonical_definition",
+      "regression_scope": "ENT-A-OWN-01..03; tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_02_application_artifact_ref_has_one_canonical_definition",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "E   AssertionError: ENT-A-OWN-02 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py'"
+      "red_first_reason": "AssertionError: NT-OWN-02 duplicate canonical contract: ApplicationArtifactRef defined in ['intergrax/applications/contracts/application_artifacts.py', 'intergrax/contracts/task_artifacts.py']"
     },
     {
       "frz_id": "FRZ-OWN-03",
@@ -226,13 +226,13 @@
       "owner_ticket": "T-IGX-043-H",
       "negative_test_id": "NT-OWN-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-OWN-03",
-      "regression_scope": "ENT-A-OWN-01..03",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_03_one_sanctioned_llm_adapter_composition_owner",
+      "regression_scope": "ENT-A-OWN-01..03; tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_03_one_sanctioned_llm_adapter_composition_owner",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-H",
-      "red_first_reason": "E   AssertionError: ENT-A-OWN-03 failed exit=4 findings=... message='Gate check failed (non-zero exit)', source_path='tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py'"
+      "red_first_reason": "AssertionError: NT-OWN-03 multiple composition owners construct LLM adapters: intergrax/applications/_shared/llm_resolver.py, intergrax/runtime/wiring/llm_resolver.py"
     },
     {
       "frz_id": "FRZ-OWN-05",
