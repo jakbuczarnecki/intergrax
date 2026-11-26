@@ -4,16 +4,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Optional
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
 class PromptPinConfig:
     """
-    Mapping prompt_id -> pinned version.
+    Mapping prompt_id -> pinned version and optional content digests for resume checks.
     """
-    pins: Dict[str, int]
+    pins: dict[str, int]
+    content_digests: dict[str, str] = field(default_factory=dict)
 
-    def get(self, prompt_id: str) -> Optional[int]:
+    def get(self, prompt_id: str) -> int | None:
         return self.pins.get(prompt_id)
+
+    def get_content_digest(self, prompt_id: str) -> str | None:
+        return self.content_digests.get(prompt_id)

@@ -4,18 +4,17 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import threading
-from typing import Dict, Optional
+from pathlib import Path
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.prompts.registry.governance_validation import validate_prompt_document_governance
+from intergrax.prompts.registry.pin_config import PromptPinConfig
 from intergrax.prompts.schema.prompt_schema import (
     LocalizedContent,
 )
-from intergrax.prompts.registry.governance_validation import validate_prompt_document_governance
-from intergrax.prompts.registry.pin_config import PromptPinConfig
-from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
 from intergrax.prompts.storage.models import LoadedPrompt, PromptNotFound, PromptValidationError
+from intergrax.prompts.storage.yaml_loader import YamlPromptLoader
 
 
 class YamlPromptRegistry:
@@ -23,17 +22,17 @@ class YamlPromptRegistry:
     Production registry backed by YAML catalog.
     """
 
-    _default_instance : Dict[Path, "YamlPromptRegistry"] = {}
+    _default_instance : dict[Path, YamlPromptRegistry] = {}
     _default_lock = threading.Lock()
 
     def __init__(
         self,
         catalog_dir: Path,
-        loader: Optional[YamlPromptLoader] = None,
+        loader: YamlPromptLoader | None = None,
     ) -> None:
         self._catalog_dir = catalog_dir
         self._loader = loader or YamlPromptLoader()
-        self._cache: Dict[str, Dict[int, LoadedPrompt]] = {}
+        self._cache: dict[str, dict[int, LoadedPrompt]] = {}
 
     # ---------------------------------------------------------------------
 
@@ -79,7 +78,7 @@ class YamlPromptRegistry:
     def resolve(
         self,
         prompt_id: str,
-        pin: Optional[PromptPinConfig] = None,
+        pin: PromptPinConfig | None = None,
     ) -> LoadedPrompt:
         """
         Resolve prompt version (pin -> stable).
@@ -95,7 +94,13 @@ class YamlPromptRegistry:
         if pin is not None:
             pinned_version = pin.get(prompt_id)
             if pinned_version is not None and pinned_version in versions:
-                return versions[pinned_version]
+                loaded = versions[pinned_version]
+                expected_digest = pin.get_content_digest(prompt_id)
+                if expected_digest is not None and loaded.content_hash != expected_digest:
+                    raise PromptNotFound(
+                        f"pinned prompt content digest mismatch for '{prompt_id}'",
+                    )
+                return loaded
 
         # 2. Stable version
         stable_version = self._read_stable(prompt_id)
@@ -110,8 +115,8 @@ class YamlPromptRegistry:
     def resolve_localized(
         self,
         prompt_id: str,
-        language: Optional[str] = None,
-        pin: Optional[PromptPinConfig] = None,
+        language: str | None = None,
+        pin: PromptPinConfig | None = None,
     ) -> LocalizedContent:
         """
         Resolve prompt and return localized content.
@@ -185,7 +190,7 @@ class YamlPromptRegistry:
     @classmethod
     def create_default(
         cls, 
-        path: Optional[str] = None, 
+        path: str | None = None, 
         load:bool = True
     )-> YamlPromptRegistry:
 
@@ -206,7 +211,7 @@ class YamlPromptRegistry:
         
 
     @classmethod
-    def reset_defaults(cls, path: Optional[str] = None) -> None:
+    def reset_defaults(cls, path: str | None = None) -> None:
         if path is None:
             cls._default_instance.clear()
         else:

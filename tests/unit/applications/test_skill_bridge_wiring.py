@@ -1,7 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-
 from intergrax.applications._shared.skill_bridge_wiring import (
     merge_skill_policy_fragments,
     skill_prompt_metadata,
@@ -44,7 +43,17 @@ def test_skill_prompt_metadata() -> None:
     assert meta["skill_prompt_instruction_ids"] == ["rag.hybrid_qa.system"]
 
 
-def test_merge_skill_policy_fragments() -> None:
+def test_merge_skill_policy_fragments_requires_catalog_entry() -> None:
+    from intergrax.applications._shared.skill_bridge_wiring import SkillBridgeCompositionError
+
     pack = _pack_for_bridge_test(policy_fragment_ids=frozenset({"policy.frag.a"}))
-    bundle = merge_skill_policy_fragments(RuntimePolicyBundle(), pack)
-    assert "policy.frag.a" in bundle.domain_fragments
+    with pytest.raises(SkillBridgeCompositionError, match="host catalog"):
+        merge_skill_policy_fragments(RuntimePolicyBundle(), pack)
+
+
+def test_merge_skill_policy_fragments_merges_catalog_payload() -> None:
+    pack = _pack_for_bridge_test(policy_fragment_ids=frozenset({"policy.frag.a"}))
+    bundle = RuntimePolicyBundle(domain_fragments={"policy.frag.a": {"declarative_rules": []}})
+    merged = merge_skill_policy_fragments(bundle, pack)
+    assert merged.domain_fragments["policy.frag.a"]["composition_layer"] == "skill"
+    assert "catalog_payload" in merged.domain_fragments["policy.frag.a"]

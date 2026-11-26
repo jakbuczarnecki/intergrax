@@ -38,6 +38,10 @@ from intergrax.skills.execution_binding import (
     SkillExecutionPinningStorageError,
     bindings_equivalent_for_pinning,
 )
+from intergrax.skills.instruction_policy_pins import (
+    SkillPolicyFragmentPin,
+    SkillPromptInstructionPin,
+)
 from intergrax.skills.resolver import ResolvedSkillPack
 
 _PINNING_KV_PREFIX = "skill_execution_pinning"
@@ -155,6 +159,21 @@ def _binding_storage_payload(binding: SkillExecutionBinding) -> dict[str, Any]:
             {"skill_id": skill_id, "content_digest": digest}
             for skill_id, digest in binding.registry_content_witness_digests
         ],
+        "pinned_prompt_instructions": [
+            {
+                "prompt_id": item.prompt_id,
+                "version": item.version,
+                "content_digest": item.content_digest,
+            }
+            for item in binding.pinned_prompt_instructions
+        ],
+        "pinned_policy_fragments": [
+            {
+                "fragment_id": item.fragment_id,
+                "content_digest": item.content_digest,
+            }
+            for item in binding.pinned_policy_fragments
+        ],
     }
 
 
@@ -208,6 +227,23 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         registry_content_witness_digests = tuple(
             sorted((str(item["skill_id"]), str(item["content_digest"])) for item in witness_raw),
         )
+        prompt_pin_raw = binding_raw.get("pinned_prompt_instructions", [])
+        pinned_prompt_instructions = tuple(
+            SkillPromptInstructionPin(
+                prompt_id=str(item["prompt_id"]),
+                version=int(item["version"]),
+                content_digest=str(item["content_digest"]),
+            )
+            for item in prompt_pin_raw
+        )
+        policy_pin_raw = binding_raw.get("pinned_policy_fragments", [])
+        pinned_policy_fragments = tuple(
+            SkillPolicyFragmentPin(
+                fragment_id=str(item["fragment_id"]),
+                content_digest=str(item["content_digest"]),
+            )
+            for item in policy_pin_raw
+        )
     except (KeyError, TypeError, ValueError) as exc:
         raise SkillExecutionPinningStorageError(
             "corrupt skill execution binding snapshot",
@@ -224,6 +260,8 @@ def decode_skill_execution_binding(raw: bytes) -> SkillExecutionBinding:
         binding_integrity_version=binding_integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
         registry_content_witness_digests=registry_content_witness_digests,
+        pinned_prompt_instructions=pinned_prompt_instructions,
+        pinned_policy_fragments=pinned_policy_fragments,
     )
     from intergrax.skills.execution_binding import verify_skill_execution_binding_integrity
 

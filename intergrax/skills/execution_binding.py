@@ -11,14 +11,22 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import ExecutionId, peek_active_execution_id
 from intergrax.contracts.validation import compute_sha256_content_digest
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
+)
 from intergrax.skills.contribution_provenance import (
     SkillContributionProvenance,
     build_skill_contribution_provenance,
 )
-from intergrax.skills.contracts.skill_runtime_binding_metadata import (
-    SkillRuntimeBindingMetadata,
-)
 from intergrax.skills.core.contracts import SkillManifest
+from intergrax.skills.instruction_policy_pins import (
+    SkillPolicyFragmentPin,
+    SkillPromptInstructionPin,
+    apply_skill_bridge_at_bind,
+    verify_skill_bridge_on_resume,
+)
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -64,6 +72,8 @@ class SkillExecutionBinding:
     binding_integrity_version: str = BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1
     content_bound_skill_ids: tuple[str, ...] = ()
     registry_content_witness_digests: tuple[tuple[str, str], ...] = ()
+    pinned_prompt_instructions: tuple[SkillPromptInstructionPin, ...] = ()
+    pinned_policy_fragments: tuple[SkillPolicyFragmentPin, ...] = ()
     # Catalog witness at pin time — not replay authenticity without live registry cross-check.
 
 
@@ -395,6 +405,19 @@ def verify_skill_execution_binding_integrity(
     if skill_registry is not None:
         _verify_registry_content_witness_against_catalog(binding, skill_registry)
 
+    pack_prompt_ids = frozenset(binding.resolved_pack.prompt_instruction_ids)
+    pinned_prompt_ids = frozenset(item.prompt_id for item in binding.pinned_prompt_instructions)
+    if pack_prompt_ids != pinned_prompt_ids:
+        raise SkillResolutionError(
+            "pinned prompt instructions must cover resolved pack prompt ids",
+        )
+    pack_fragment_ids = frozenset(binding.resolved_pack.policy_fragment_ids)
+    pinned_fragment_ids = frozenset(item.fragment_id for item in binding.pinned_policy_fragments)
+    if pack_fragment_ids != pinned_fragment_ids:
+        raise SkillResolutionError(
+            "pinned policy fragments must cover resolved pack policy fragment ids",
+        )
+
 
 def _build_skill_execution_binding(
     *,
@@ -405,6 +428,8 @@ def _build_skill_execution_binding(
     runtime_content_digests: tuple[tuple[str, str], ...] = (),
     observed_runtime_binding_metadata: tuple[SkillRuntimeBindingMetadata, ...] = (),
     skill_registry: SkillRegistry | None = None,
+    pinned_prompt_instructions: tuple[SkillPromptInstructionPin, ...] = (),
+    pinned_policy_fragments: tuple[SkillPolicyFragmentPin, ...] = (),
 ) -> SkillExecutionBinding:
     pack_skill_ids = frozenset(ref.skill_id for ref in composition.pack.resolved_skills)
     integrity_version, content_bound_skill_ids = _binding_integrity_profile_for_digests(
@@ -444,6 +469,8 @@ def _build_skill_execution_binding(
         binding_integrity_version=integrity_version,
         content_bound_skill_ids=content_bound_skill_ids,
         registry_content_witness_digests=registry_content_witness_digests,
+        pinned_prompt_instructions=pinned_prompt_instructions,
+        pinned_policy_fragments=pinned_policy_fragments,
     )
     verify_skill_execution_binding_integrity(binding, skill_registry=skill_registry)
     return binding
@@ -481,6 +508,8 @@ def bind_resolved_skill_pack(
     skill_registry: SkillRegistry,
     pinning_store: SkillExecutionPinningStore,
     resolved_composition: ResolvedSkillComposition | None = None,
+    prompt_registry: YamlPromptRegistry | None = None,
+    host_policy_bundle: RuntimePolicyBundle | None = None,
 ) -> SkillExecutionBinding:
     """Pin one immutable resolved skill pack for an execution."""
     normalized_tenant = tenant_id.strip()
@@ -497,6 +526,11 @@ def bind_resolved_skill_pack(
         composition.pack,
     )
     runtime_digests = collect_runtime_content_digests(skill_registry, composition.pack)
+    prompt_pins, policy_pins = apply_skill_bridge_at_bind(
+        composition=composition,
+        prompt_registry=prompt_registry,
+        host_policy_bundle=host_policy_bundle,
+    )
     binding = _build_skill_execution_binding(
         tenant_id=normalized_tenant,
         execution_id=execution_id,
@@ -505,6 +539,8 @@ def bind_resolved_skill_pack(
         runtime_content_digests=runtime_digests,
         observed_runtime_binding_metadata=metadata_snapshots,
         skill_registry=skill_registry,
+        pinned_prompt_instructions=prompt_pins,
+        pinned_policy_fragments=policy_pins,
     )
     pinning_store.pin(binding)
     return binding
@@ -528,6 +564,20 @@ def require_bound_skill_pack(
     )
     verify_skill_execution_binding_integrity(binding)
     return binding
+
+
+def resume_skill_execution_bridge(
+    binding: SkillExecutionBinding,
+    *,
+    prompt_registry: YamlPromptRegistry | None,
+    host_policy_bundle: RuntimePolicyBundle | None,
+) -> None:
+    verify_skill_bridge_on_resume(
+        binding.pinned_prompt_instructions,
+        binding.pinned_policy_fragments,
+        prompt_registry=prompt_registry,
+        host_policy_bundle=host_policy_bundle,
+    )
 
 
 def recover_skill_execution_binding(
@@ -575,6 +625,8 @@ def resolve_bound_skill_pack(
     execution_id: ExecutionId | None = None,
     explicit_binding: SkillExecutionBinding | None = None,
     skill_execution_recovery_required: bool = False,
+    prompt_registry: YamlPromptRegistry | None = None,
+    host_policy_bundle: RuntimePolicyBundle | None = None,
 ) -> ResolvedSkillPack:
     """
     Canonical consumer entry — resolve once per execution, then reuse bound pack.
@@ -594,6 +646,11 @@ def resolve_bound_skill_pack(
         verify_skill_execution_binding_integrity(
             explicit_binding,
             skill_registry=skill_registry,
+        )
+        resume_skill_execution_bridge(
+            explicit_binding,
+            prompt_registry=prompt_registry,
+            host_policy_bundle=host_policy_bundle,
         )
         return explicit_binding.resolved_pack
 
@@ -621,6 +678,11 @@ def resolve_bound_skill_pack(
                 existing,
                 skill_registry=skill_registry,
             )
+            resume_skill_execution_bridge(
+                existing,
+                prompt_registry=prompt_registry,
+                host_policy_bundle=host_policy_bundle,
+            )
             return existing.resolved_pack
         binding = bind_resolved_skill_pack(
             tenant_id=tenant_id,
@@ -628,6 +690,8 @@ def resolve_bound_skill_pack(
             skill_profile=skill_profile,
             skill_registry=skill_registry,
             pinning_store=pinning_store,
+            prompt_registry=prompt_registry,
+            host_policy_bundle=host_policy_bundle,
         )
         return binding.resolved_pack
 

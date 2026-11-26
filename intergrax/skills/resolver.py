@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence, Set
 from dataclasses import dataclass
-from typing import AbstractSet, Protocol, Sequence
+from typing import Protocol
 
 from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
 from intergrax.skills.core.version_binding import (
@@ -92,7 +93,7 @@ class SkillResolverProtocol(Protocol):
 
     def resolve_composition(self, skill_ids: Sequence[str]) -> ResolvedSkillComposition: ...
 
-    def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None: ...
+    def validate_skill_ids(self, skill_ids: Set[str] | Sequence[str]) -> None: ...
 
     def validate_skills(self, skills: Sequence[SkillManifest]) -> None: ...
 
@@ -264,10 +265,14 @@ class SkillResolver:
             risk_tier=max_risk,
             snapshot_digest=compute_resolved_skill_pack_digest(resolved_tuple),
         )
-        return ResolvedSkillComposition(
+        composition = ResolvedSkillComposition(
             pack=pack,
             observed_manifests=tuple(observed_in_order),
         )
+        from intergrax.skills.instruction_policy_pins import collect_prompt_version_requests
+
+        collect_prompt_version_requests(composition)
+        return composition
 
     def _resolve_composition(
         self,
@@ -284,7 +289,7 @@ class SkillResolver:
     def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack:
         return self.resolve_composition(skill_ids).pack
 
-    def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None:
+    def validate_skill_ids(self, skill_ids: Set[str] | Sequence[str]) -> None:
         for skill_id in skill_ids:
             sid = skill_id.strip()
             if sid and not self._skill_registry.has(sid):
