@@ -253,13 +253,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-PLG-01",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-01",
-      "regression_scope": "ENT-A / stage pytest",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_01_evaluation_wiring_exposes_tenant_scoped_registry_contract",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_01_evaluation_wiring_exposes_tenant_scoped_registry_contract",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "E   ModuleNotFoundError: No module named 'langchain_ollama' (original collection); probe test_nt_plg_01 exits 0 at prefix"
+      "red_first_reason": "AssertionError: NT-PLG-01 extensible mechanisms expose platform contracts: evaluation wiring must bind TenantScopedOnlineEvaluationRegistry for tenant-scoped hosts"
     },
     {
       "frz_id": "FRZ-PLG-02",
@@ -268,12 +268,12 @@
       "negative_test_id": "NT-PLG-02",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-02",
-      "regression_scope": "ENT-A / stage pytest",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-02",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_tier3_llm_resolver_must_not_construct_adapters_locally",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin' (original collection); probe test_nt_plg_02 exits 0 at prefix"
+      "red_first_reason": "Rejected probe reused the OWN-03 Tier-3 llm_resolver delegation surface. It does not show an external structural implementation that works without a core patch."
     },
     {
       "frz_id": "FRZ-PLG-05",
@@ -295,13 +295,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-PLG-06",
       "red_first_prefix_sha": "2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-06",
-      "regression_scope": "tests/qualification/governance/gr11/catalog.py",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab",
+      "regression_scope": "tests/qualification/governance/gr11/catalog.py; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "E   ModuleNotFoundError: No module named 'tests.qualification.governance.gr11.catalog'"
+      "red_first_reason": "AssertionError: NT-PLG-06 plugin package is not capability authority: STRICT product capability graph gate must not downgrade PRODUCT hosts to LAB integration profile"
     },
     {
       "frz_id": "FRZ-PLG-07",
@@ -310,12 +310,12 @@
       "negative_test_id": "NT-PLG-07",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PLG-07",
-      "regression_scope": "ENT-A / stage pytest",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-07",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_manifest_capabilities_cannot_exceed_registry_contract",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "ModuleNotFoundError: No module named 'testing_support.pytest_temp_plugin' (original collection); probe test_nt_plg_07 exits 0 at prefix"
+      "red_first_reason": "agent_runtime_governance_wiring.py is absent at prefix 22993254b13af1ebae3dfd304c902523b4236129. A missing file is not a self-expansion assertion."
     },
     {
       "frz_id": "FRZ-PRD-03",
@@ -323,13 +323,13 @@
       "owner_ticket": "T-IGX-043-B",
       "negative_test_id": "NT-PRD-03",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-PRD-03",
-      "regression_scope": "ENT-A-PRD-01..03",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_03_unsupported_queue_backend_must_not_fall_back_to_eager_celery",
+      "regression_scope": "ENT-A-PRD-01..03; tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_03_unsupported_queue_backend_must_not_fall_back_to_eager_celery",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "'ent_semantic_gate' not found in `markers` configuration option"
+      "red_first_reason": "AssertionError: NT-PRD-03 unsupported production configuration fails closed: Kafka/RabbitMQ queue backends must not be rewritten to in-process eager Celery"
     },
     {
       "frz_id": "FRZ-PRD-05",
@@ -371,7 +371,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-F",
-      "red_first_reason": "AssertionError: assert offenders == [] — ollama SDK imported outside provider package (test_no_module_outside_the_provider_package_imports_the_ollama_sdk)"
+      "red_first_reason": "AssertionError: assert offenders == [] \u2014 ollama SDK imported outside provider package (test_no_module_outside_the_provider_package_imports_the_ollama_sdk)"
     },
     {
       "frz_id": "FRZ-REL-07",
@@ -422,12 +422,12 @@
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-RPL-04",
-      "regression_scope": "ENT-A-VBN-01..03",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-RPL-04",
+      "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_embedding_resolver_must_not_default_vendor_slug_for_consumers",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
-      "red_first_reason": "'ent_semantic_gate' not found in `markers` configuration option",
+      "red_first_reason": "Rejected probe repeated the CFG-02 embedding default on the same prefix. It does not show a vendor or backend switch modifying consumers."
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",
@@ -1428,6 +1428,6 @@
       "traceability validator"
     ],
     "published_on_rw_train_only": "Most product remediation (PT-WA..WF, T-IGX-051-*)",
-    "qualified_at_head": "Not claimed — diagnostic W2 outputs only"
+    "qualified_at_head": "Not claimed \u2014 diagnostic W2 outputs only"
   }
 }
