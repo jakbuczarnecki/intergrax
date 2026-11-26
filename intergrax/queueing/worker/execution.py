@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -12,6 +11,7 @@ from pydantic import BaseModel
 from intergrax.contracts.idempotency_store import (
     ClaimOutcome,
     IdempotencyStore,
+    InvocationClaim,
     InvocationUncertaintyError,
 )
 from intergrax.queueing.worker.registry import (
@@ -33,6 +33,7 @@ class IdempotencyLockConflictError(RuntimeError):
 
     This is considered a retryable infrastructure-level exception.
     """
+
     pass
 
 
@@ -42,7 +43,7 @@ def _invoke_logical_task_handler(
     tenant_id: str,
     run_id: str,
     payload: bytes,
-    idempotency_key: Optional[str],
+    idempotency_key: str | None,
     execution_identity: BackgroundExecutionIdentity,
 ) -> ToolExecutionResult[BaseModel]:
     return handler(
@@ -60,6 +61,7 @@ class RetryableHandlerError(RuntimeError):
 
     This signals that the failure is retryable at the execution plane level.
     """
+
     pass
 
 
@@ -70,11 +72,12 @@ def execute_logical_task(
     tenant_id: str,
     run_id: str,
     payload: bytes,
-    idempotency_key: Optional[str],
-    idempotency_store: Optional[IdempotencyStore],
+    idempotency_key: str | None,
+    idempotency_store: IdempotencyStore | None,
     execution_identity: BackgroundExecutionIdentity,
-    lease_seconds: Optional[int] = None,
-    completed_ttl_seconds: Optional[int] = None,
+    lease_seconds: int | None = None,
+    completed_ttl_seconds: int | None = None,
+    existing_claim: InvocationClaim | None = None,
 ) -> ToolExecutionResult[BaseModel]:
     """
     Pure execution core for logical task dispatch.
@@ -95,7 +98,6 @@ def execute_logical_task(
     resolved_tenant_id = execution_identity.tenant_id
     resolved_run_id = str(execution_identity.run_id)
 
-    # No idempotency configured or no idempotency_key -> execute directly.
     if idempotency_store is None or idempotency_key is None:
         return _invoke_logical_task_handler(
             handler,
@@ -107,43 +109,48 @@ def execute_logical_task(
         )
 
     ledger_key = f"{logical_task_name}:{idempotency_key}"
-    owner_id = f"worker-attempt-{uuid4().hex}"
-    lease = lease_seconds if lease_seconds is not None else _DEFAULT_LEASE_SECONDS
 
-    claim_result = idempotency_store.claim(
-        tenant_id=resolved_tenant_id,
-        key=ledger_key,
-        owner_id=owner_id,
-        lease_seconds=lease,
-    )
+    if existing_claim is not None:
+        if existing_claim.tenant_id != resolved_tenant_id or existing_claim.key != ledger_key:
+            raise RuntimeError("existing_claim does not match logical task idempotency key")
+        claim = existing_claim
+    else:
+        owner_id = f"worker-attempt-{uuid4().hex}"
+        lease = lease_seconds if lease_seconds is not None else _DEFAULT_LEASE_SECONDS
 
-    if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
-        cached = claim_result.completed_result
-        if cached is None:
-            cached = idempotency_store.get_completed_result(
-                tenant_id=resolved_tenant_id,
-                key=ledger_key,
-            )
-        if cached is None:
-            raise RuntimeError(
-                "Ledger inconsistency: COMPLETED without stored result.",
-            )
-        return cached
-
-    if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
-        raise IdempotencyLockConflictError(
-            f"Invocation is already in progress for key '{ledger_key}'.",
+        claim_result = idempotency_store.claim(
+            tenant_id=resolved_tenant_id,
+            key=ledger_key,
+            owner_id=owner_id,
+            lease_seconds=lease,
         )
 
-    if claim_result.outcome == ClaimOutcome.UNCERTAIN:
-        raise InvocationUncertaintyError(
-            f"Invocation outcome uncertain for key '{ledger_key}'. "
-            "Reconciliation required before retry.",
-        )
+        if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
+            cached = claim_result.completed_result
+            if cached is None:
+                cached = idempotency_store.get_completed_result(
+                    tenant_id=resolved_tenant_id,
+                    key=ledger_key,
+                )
+            if cached is None:
+                raise RuntimeError(
+                    "Ledger inconsistency: COMPLETED without stored result.",
+                )
+            return cached
 
-    claim = claim_result.claim
-    if claim is None:
-        raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
+        if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
+            raise IdempotencyLockConflictError(
+                f"Invocation is already in progress for key '{ledger_key}'.",
+            )
+
+        if claim_result.outcome == ClaimOutcome.UNCERTAIN:
+            raise InvocationUncertaintyError(
+                f"Invocation outcome uncertain for key '{ledger_key}'. Reconciliation required before retry.",
+            )
+
+        claim = claim_result.claim
+        if claim is None:
+            raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
     result: ToolExecutionResult[BaseModel] = _invoke_logical_task_handler(
         handler,

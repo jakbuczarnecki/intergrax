@@ -11,7 +11,9 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from intergrax.integrations._shared.document_store_query_support import query_documents_with_data_filters
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
     DocumentDataEquality,
     DocumentDataSort,
     DocumentQueryCursorCodec,
@@ -28,7 +30,6 @@ from intergrax.integrations.contracts.partition_atomic_document_store import (
     PartitionReplaceIfMatchOnCreated,
     validate_partition_atomic_batch,
 )
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 
 
 def _record_to_row(document: DocumentRecord) -> str:
@@ -39,7 +40,7 @@ def _row_to_record(raw: str) -> DocumentRecord:
     return DocumentRecord.model_validate(json.loads(raw))
 
 
-class SqliteFileDocumentStore:
+class SqliteFileDocumentStore(ConditionalDocumentStore):
     """Process-safe document store for cross-process diagnostic persistence proofs."""
 
     def __init__(
@@ -62,6 +63,10 @@ class SqliteFileDocumentStore:
     @property
     def last_query_rows_examined(self) -> int:
         return self._last_query_rows_examined
+
+    @property
+    def survives_process_restart(self) -> bool:
+        return True
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -101,10 +106,7 @@ class SqliteFileDocumentStore:
                 INSERT INTO diagnostic_documents (partition_key, row_key, payload)
                 VALUES (?, ?, ?)
                 """,
-                [
-                    (pk, rk, _record_to_row(document))
-                    for (pk, rk), document in rows.items()
-                ],
+                [(pk, rk, _record_to_row(document)) for (pk, rk), document in rows.items()],
             )
 
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
@@ -184,13 +186,25 @@ class SqliteFileDocumentStore:
 
     def put_if_absent(self, document: DocumentRecord) -> bool:
         with self._lock:
-            rows = self._load_rows()
-            key = (document.partition_key, document.row_key)
-            if key in rows:
-                return False
-            rows[key] = document
-            self._persist_rows(rows)
-            return True
+            conn = self._connect()
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                cur = conn.execute(
+                    """
+                    INSERT INTO diagnostic_documents (partition_key, row_key, payload)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(partition_key, row_key) DO NOTHING
+                    """,
+                    (document.partition_key, document.row_key, _record_to_row(document)),
+                )
+                inserted = cur.rowcount == 1
+                conn.commit()
+                return inserted
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                conn.close()
 
     def replace_if_match(
         self,
@@ -199,15 +213,46 @@ class SqliteFileDocumentStore:
         replacement: DocumentRecord,
     ) -> bool:
         with self._lock:
-            rows = self._load_rows()
-            ok = InMemoryDocumentStore._replace_if_match_unlocked(
-                expected=expected,
-                replacement=replacement,
-                rows=rows,
-            )
-            if ok:
-                self._persist_rows(rows)
-            return ok
+            conn = self._connect()
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                row = conn.execute(
+                    """
+                    SELECT payload FROM diagnostic_documents
+                    WHERE partition_key = ? AND row_key = ?
+                    """,
+                    (expected.partition_key, expected.row_key),
+                ).fetchone()
+                rows: dict[tuple[str, str], DocumentRecord] = {}
+                if row is not None:
+                    current = _row_to_record(str(row[0]))
+                    rows[(current.partition_key, current.row_key)] = current
+                ok = InMemoryDocumentStore._replace_if_match_unlocked(
+                    expected=expected,
+                    replacement=replacement,
+                    rows=rows,
+                )
+                if not ok:
+                    conn.rollback()
+                    return False
+                conn.execute(
+                    """
+                    UPDATE diagnostic_documents SET payload = ?
+                    WHERE partition_key = ? AND row_key = ?
+                    """,
+                    (
+                        _record_to_row(replacement),
+                        replacement.partition_key,
+                        replacement.row_key,
+                    ),
+                )
+                conn.commit()
+                return True
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                conn.close()
 
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         with self._lock:

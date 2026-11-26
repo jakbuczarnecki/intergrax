@@ -9,10 +9,15 @@ import os
 import threading
 from collections.abc import Callable
 
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.lease_claim import LeaseOwnership, StaleClaimError
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
 from intergrax.queueing.providers.document_store.document_store_task_queue import (
     DocumentStoreTaskQueue,
+    TaskDeliveryMismatchError,
+    TaskRowClaimContext,
 )
+from intergrax.queueing.providers.document_store.task_row_lease import invocation_claim_from_row
 from intergrax.queueing.worker.execution import (
     IdempotencyLockConflictError,
     RetryableHandlerError,
@@ -65,6 +70,7 @@ class DocumentStoreTaskWorker:
         attempt_lifecycle: AttemptLifecycleService,
         execution_terminal: ExecutionTerminalService,
         retry_policy: RetryPolicy | None = None,
+        idempotency_store: IdempotencyStore | None = None,
     ) -> None:
         if retry_policy is not None:
             retry_policy.validate()
@@ -78,6 +84,7 @@ class DocumentStoreTaskWorker:
         self._causal_evidence_persistence = causal_evidence_persistence
         self._attempt_lifecycle = attempt_lifecycle
         self._execution_terminal = execution_terminal
+        self._idempotency_store = idempotency_store
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._in_flight = 0
@@ -152,7 +159,16 @@ class DocumentStoreTaskWorker:
             return self._idle.wait_for(lambda: self._in_flight == 0, timeout=timeout_seconds)
 
     def drain_once(self) -> int:
-        claimed = self._queue.claim_pending(limit=self._claim_limit)
+        owner_id = f"document-worker-{os.getpid()}"
+        claimed = self._queue.claim_pending(
+            limit=self._claim_limit,
+            claim_context=TaskRowClaimContext(
+                owner_id=owner_id,
+                lease_seconds=300,
+            )
+            if self._queue._idempotency_store is not None
+            else None,
+        )
         if claimed:
             with self._idle:
                 self._in_flight += len(claimed)
@@ -161,12 +177,23 @@ class DocumentStoreTaskWorker:
             for handle, request in claimed:
                 try:
                     try:
+                        presented: LeaseOwnership | None = None
                         transport_ref = BackgroundTransportExecutionRef(
                             tenant_id=request.tenant_id,
                             provider=handle.provider,
                             transport_task_id=handle.task_id,
                         )
                         self._seed_carried_identity(transport_ref, request)
+                        row = self._queue._load(handle)
+                        row_claim = (
+                            invocation_claim_from_row(row, tenant_id=request.tenant_id) if row is not None else None
+                        )
+                        if row_claim is not None:
+                            presented = LeaseOwnership(
+                                owner_id=row_claim.owner_id,
+                                lease_expires_at=row_claim.lease_expires_at,
+                                fence=row_claim.fence,
+                            )
                         reentry = admit_background_execution_reentry(
                             transport_ref=transport_ref,
                             identity_persistence=self._identity_persistence,
@@ -174,9 +201,22 @@ class DocumentStoreTaskWorker:
                             execution_terminal=self._execution_terminal,
                         )
                         if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
-                            self._queue.mark_succeeded(handle, output=None)
+                            self._queue.mark_succeeded(
+                                handle,
+                                output=None,
+                                presented_claim=presented,
+                            )
                             continue
                         execution_identity = reentry.identity
+                        try:
+                            self._queue.assert_delivery_matches(
+                                handle,
+                                tenant_id=request.tenant_id,
+                                identity=request.identity,
+                            )
+                        except TaskDeliveryMismatchError:
+                            continue
+                        idem_store = self._idempotency_store or self._queue._idempotency_store
                         result = admit_background_execution_handler(
                             transport_ref=transport_ref,
                             execution_identity=execution_identity,
@@ -188,25 +228,36 @@ class DocumentStoreTaskWorker:
                                 run_id=str(execution_identity.run_id),
                                 payload=request.payload,
                                 idempotency_key=request.idempotency_key,
-                                idempotency_store=None,
+                                idempotency_store=idem_store,
                                 execution_identity=execution_identity,
+                                existing_claim=row_claim,
                             ),
                         )
                         if result.success:
                             output = None
                             if result.output is not None:
                                 output = result.output.model_dump_json().encode("utf-8")
-                            self._queue.mark_succeeded(handle, output=output)
+                            self._queue.mark_succeeded(
+                                handle,
+                                output=output,
+                                presented_claim=presented,
+                            )
                         else:
                             message = result.error.error_message if result.error is not None else "handler_failed"
-                            self._queue.mark_failed(handle, error_message=message)
+                            self._queue.mark_failed(
+                                handle,
+                                error_message=message,
+                                presented_claim=presented,
+                            )
+                    except StaleClaimError:
+                        continue
                     except Exception as exc:  # noqa: BLE001 - worker plane normalizes failures
                         logger.exception(
                             "document_store_task_worker_failed task_id=%s task_name=%s",
                             handle.task_id,
                             request.task_name,
                         )
-                        self._settle_exception(handle, exc)
+                        self._settle_exception(handle, exc, presented_claim=presented)
                 finally:
                     remaining -= 1
                     self._settle_in_flight(1)
@@ -256,7 +307,13 @@ class DocumentStoreTaskWorker:
             ),
         )
 
-    def _settle_exception(self, handle: TaskHandle, exc: Exception) -> None:
+    def _settle_exception(
+        self,
+        handle: TaskHandle,
+        exc: Exception,
+        *,
+        presented_claim: LeaseOwnership | None = None,
+    ) -> None:
         """Retryable errors consume the retry budget; exhaustion dead-letters."""
         policy = self._retry_policy
         if policy is not None and _is_retryable(policy, exc):
@@ -264,9 +321,10 @@ class DocumentStoreTaskWorker:
                 handle,
                 error_message=str(exc),
                 retry_policy=policy,
+                presented_claim=presented_claim,
             )
             return
-        self._queue.mark_failed(handle, error_message=str(exc))
+        self._queue.mark_failed(handle, error_message=str(exc), presented_claim=presented_claim)
 
     def _run_loop(self, stop_event: threading.Event) -> None:
         delay_raw = (os.environ.get("INTERGRAX_DOCUMENT_STORE_TASK_WORKER_START_DELAY_SECONDS") or "").strip()

@@ -170,8 +170,14 @@ def test_rw_rec_02_recovery_is_compare_and_set() -> None:
 class _SettleFailsQueue(DocumentStoreTaskQueue):
     """Queue whose ``mark_failed`` raises, so settling a failed row escapes ``drain_once``."""
 
-    def mark_failed(self, handle: TaskHandle, *, error_message: str) -> None:
-        del handle, error_message
+    def mark_failed(
+        self,
+        handle: TaskHandle,
+        *,
+        error_message: str,
+        presented_claim: object = None,
+    ) -> None:
+        del handle, error_message, presented_claim
         raise RuntimeError("store unavailable while settling")
 
 
