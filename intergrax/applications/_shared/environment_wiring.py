@@ -104,6 +104,7 @@ from intergrax.applications._shared.session_tool_wiring import (
     wire_session_storage_tool_binding,
 )
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
+from intergrax.applications._shared.skill_bridge_wiring import merge_skill_policy_fragments
 from intergrax.applications._shared.skill_wiring import (
     ApplicationSkillWiring,
     assert_strict_skill_bootstrap_acceptable,
@@ -150,6 +151,8 @@ from intergrax.runtime.human.persistence_contract import HumanDecisionPersistenc
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
+from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
+from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ListStorageAccessAuditSink, ToolWiringContext
@@ -528,6 +531,18 @@ def wire_application_environment(
     )
     assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
+    if env.prompt_profile.load_on_startup and prompt_registry is not None:
+        prompt_registry.load_all()
+    enabled_skill_ids = enabled_skill_ids_for_profile(skill_wiring.profile)
+    if enabled_skill_ids:
+        skill_composition = SkillResolver(skill_wiring.registry).resolve_composition(
+            enabled_skill_ids,
+        )
+        policy_bundle = merge_skill_policy_fragments(
+            policy_bundle,
+            skill_composition.pack,
+            composition=skill_composition,
+        )
 
     # Canonical prebuilt registry from ApplicationToolWiring — single materialization
     # authority for composition + agent harness (RuntimeContext prefers prebuilt).
