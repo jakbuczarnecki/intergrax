@@ -23,7 +23,7 @@ from intergrax.runtime.observability.causal_evidence_persistence import (
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 class _DurableKV(DistributedKVStore):

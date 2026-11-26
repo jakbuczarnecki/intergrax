@@ -24,7 +24,7 @@ from intergrax.integrations.registry.catalog import clear_catalog, iter_entries
 from intergrax.integrations.registry.catalog_manifests import QDRANT
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 @pytest.fixture(autouse=True)

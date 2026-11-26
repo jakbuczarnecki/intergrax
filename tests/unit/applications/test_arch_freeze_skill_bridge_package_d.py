@@ -30,7 +30,7 @@ from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.skills.resolver import SkillResolver
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _prompt_catalog(tmp_path: Path, *, prompt_id: str, version: int, body: str) -> YamlPromptRegistry:

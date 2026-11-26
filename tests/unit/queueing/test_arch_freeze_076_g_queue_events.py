@@ -13,7 +13,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.schema_guard import assert_runtime_event_schema
 from testing_support.runtime_events import runtime_event_test_identity
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _canonical_identity() -> TaskExecutionIdentity:

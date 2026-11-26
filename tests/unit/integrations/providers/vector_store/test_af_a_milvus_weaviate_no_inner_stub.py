@@ -18,7 +18,7 @@ from intergrax.integrations.providers.vector_store.weaviate.rag_store import (
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord, VectorStoreScope
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _record() -> VectorStoreRecord:
