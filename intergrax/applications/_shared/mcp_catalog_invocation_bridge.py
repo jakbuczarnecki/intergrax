@@ -91,6 +91,7 @@ class McpCatalogInvocationComposition:
     default_tenant_id: str = "mcp"
     default_user_id: str = "mcp-user"
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    fails_closed: bool = False
     invoke_timeout_s: float | None = None
     """Optional bound for one catalog invoke (OD-MCP-RC-02); a synchronous tool thread cannot be killed."""
     cross_loop_wait_timeout_s: float = 120.0
@@ -336,6 +337,7 @@ async def execute_mcp_catalog_tool_invocation(
         default_tenant_id=composition.default_tenant_id,
         default_user_id=composition.default_user_id,
         identity_mode=composition.identity_mode,
+        fails_closed=composition.fails_closed,
     )
     if identity.request_identity is None:
         raise _tool_error(

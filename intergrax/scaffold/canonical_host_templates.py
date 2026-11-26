@@ -252,6 +252,7 @@ def render_canonical_mcp_server_py(
             registry: AgentRegistryRead,
             route_prefix: str,
             tool_registry: object | None = None,
+            fails_closed: bool = False,
         ) -> FastMCP:
             """MCP tools mirror the HTTP API (canonical host task execution)."""
             _ = route_prefix
@@ -265,6 +266,7 @@ def render_canonical_mcp_server_py(
             }}
             if isinstance(tool_registry, ToolRegistry):
                 kwargs["tool_registry"] = tool_registry
+            kwargs["fails_closed"] = fails_closed
             return build_nexus_mcp_server(**kwargs)
         '''
     )

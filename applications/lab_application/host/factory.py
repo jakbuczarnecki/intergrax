@@ -233,11 +233,14 @@ def create_lab_application(
             integration_profile=integrations.profile,
             harness=settings.harness,
         )
+        from intergrax.applications._shared.wiring_posture import wiring_fails_closed
+
         mcp = build_lab_mcp_server(
             host_execution=host_execution,
             registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=tool_wiring.registry,
+            fails_closed=wiring_fails_closed(lab_env),
         )
         extra_lifespans = build_factory_lifespans(runtime, schedulers=factory_schedulers)
         app = couple_harness_host_fastapi_with_mcp(

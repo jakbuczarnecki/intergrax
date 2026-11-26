@@ -18,6 +18,7 @@ def build_legal_mcp_server(
     default_capability: str = "legal.review",
     tool_registry=None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """MCP tools for the Legal product host (canonical host task execution)."""
     _ = route_prefix
@@ -33,4 +34,5 @@ def build_legal_mcp_server(
         default_user_id="legal-user",
         tool_registry=tool_reg,
         identity_mode=identity_mode,
+        fails_closed=fails_closed,
     )

@@ -151,11 +151,14 @@ def create_intergrax_assistant_application(
         from intergrax_assistant_application.mcp.server import build_intergrax_assistant_mcp_server
 
         tool_registry = runtime.env_wiring.tool_wiring.registry
+        from intergrax.applications._shared.wiring_posture import wiring_fails_closed
+
         mcp = build_intergrax_assistant_mcp_server(
             host_execution=host_execution,
             registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=tool_registry,
+            fails_closed=wiring_fails_closed(env),
         )
         extra_lifespans = build_factory_lifespans(
             runtime,

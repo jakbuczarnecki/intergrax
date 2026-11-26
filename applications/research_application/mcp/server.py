@@ -22,6 +22,7 @@ def build_research_mcp_server(
     route_prefix: str,
     tool_registry=None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """MCP tools for research host — includes research pipeline tool as host custom binding."""
     _ = route_prefix
@@ -44,6 +45,7 @@ def build_research_mcp_server(
             default_tenant_id="research",
             default_user_id="research-user",
             identity_mode=identity_mode,
+            fails_closed=fails_closed,
             intent="research_summarize",
         )
 
@@ -56,6 +58,7 @@ def build_research_mcp_server(
         default_user_id="research-user",
         tool_registry=tool_reg,
         identity_mode=identity_mode,
+        fails_closed=fails_closed,
         extra_bindings=(research_pipeline_binding(),),
         custom_host_tools={"run_research_pipeline": run_research_pipeline},
     )

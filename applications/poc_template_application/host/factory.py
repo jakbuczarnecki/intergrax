@@ -136,6 +136,7 @@ def create_poc_template_application(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+        from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 
         from poc_template_application.mcp.server import build_poc_template_mcp_server
 
@@ -144,6 +145,7 @@ def create_poc_template_application(
             registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
+            fails_closed=wiring_fails_closed(env),
         )
         extra_lifespans = build_factory_lifespans(
             runtime,
