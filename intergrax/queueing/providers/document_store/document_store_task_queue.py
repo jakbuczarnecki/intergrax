@@ -26,6 +26,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
 from intergrax.contracts.idempotency_store import (
     ClaimOutcome,
     IdempotencyStore,
@@ -60,6 +61,11 @@ from intergrax.queueing.providers.document_store.task_row_lease import (
 )
 from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.event_catalog import phase_for_event
+from intergrax.runtime.events.payloads.canonical import TaskLifecyclePayloadV1
+from intergrax.runtime.events.payloads.spine_families import TaskProgressPayloadV1
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
 DOCUMENT_STORE_TASK_QUEUE_PROVIDER = "document_store"
 _PARTITION_PREFIX = "intergrax.task_queue.v1"
@@ -173,6 +179,35 @@ def _require_live_row_claim(
     return claim
 
 
+def _queue_lifecycle_payload(
+    *,
+    event_type: RuntimeEventType,
+    document_task_id: str,
+    tenant_id: str,
+) -> dict[str, object]:
+    """Typed spine envelope plus the queue row identity the bus payload must carry."""
+    if event_type is RuntimeEventType.TASK_PROGRESS:
+        typed = TaskProgressPayloadV1(
+            progress_kind="queue_claim",
+            message=document_task_id,
+            auxiliary={
+                "document_task_id": document_task_id,
+                "tenant_id": tenant_id,
+            },
+        )
+    else:
+        task_state = "FAILED" if event_type is RuntimeEventType.TASK_FAILED else "SUCCEEDED"
+        typed = TaskLifecyclePayloadV1(
+            task_state=task_state,
+            message=document_task_id,
+            source="document_store_task_queue",
+        )
+    envelope = typed.to_envelope()
+    envelope["document_task_id"] = document_task_id
+    envelope["tenant_id"] = tenant_id
+    return envelope
+
+
 class DocumentStoreTaskQueue(TaskQueue):
     """Crash-safe local MessageBus using DocumentStore as the durable log."""
 
@@ -182,10 +217,12 @@ class DocumentStoreTaskQueue(TaskQueue):
         *,
         idempotency_store: IdempotencyStore | None = None,
         default_lease_seconds: int = 300,
+        runtime_event_bus: RuntimeEventBus | None = None,
     ) -> None:
         self._store = document_store
         self._idempotency_store = idempotency_store
         self._default_lease_seconds = default_lease_seconds
+        self._runtime_event_bus = runtime_event_bus
         self._lock = threading.RLock()
         self._conditional: ConditionalDocumentStore | None = (
             document_store if isinstance(document_store, ConditionalDocumentStore) else None
@@ -206,6 +243,58 @@ class DocumentStoreTaskQueue(TaskQueue):
     @property
     def document_store(self) -> DocumentStore:
         return self._store
+
+    @staticmethod
+    def _canonical_identity_from_row(row: dict[str, object]) -> TaskExecutionIdentity | None:
+        raw_identity = row.get("identity")
+        if not isinstance(raw_identity, dict):
+            return None
+        try:
+            identity = TaskExecutionIdentity.from_dict(raw_identity)
+        except ValueError:
+            return None
+        if not identity.has_canonical_execution_ids():
+            return None
+        return identity
+
+    def _emit_queue_lifecycle_event(
+        self,
+        row: dict[str, object],
+        *,
+        event_type: RuntimeEventType,
+    ) -> None:
+        bus = self._runtime_event_bus
+        if bus is None:
+            return
+        identity = self._canonical_identity_from_row(row)
+        if identity is None:
+            return
+        tenant_id = str(row.get("tenant_id") or "").strip()
+        document_task_id = str(row.get("task_id") or "").strip()
+        if not tenant_id or not document_task_id:
+            return
+        if identity.task_id is None or identity.run_id is None:
+            return
+        if identity.attempt_id is None or identity.execution_id is None:
+            return
+        phase = phase_for_event(event_type)
+        if phase is None:
+            return
+        event = RuntimeEvent(
+            tenant_id=tenant_id,
+            task_id=TaskId(identity.task_id),
+            run_id=RunId(identity.run_id),
+            attempt_id=AttemptId(identity.attempt_id),
+            execution_id=ExecutionId(identity.execution_id),
+            event_type=event_type,
+            phase=phase,
+            payload=_queue_lifecycle_payload(
+                event_type=event_type,
+                document_task_id=document_task_id,
+                tenant_id=tenant_id,
+            ),
+        )
+        bus.record(event, tenant_id=tenant_id)
 
     def enqueue(self, request: TaskRequest) -> TaskHandle:
         with self._lock:
@@ -491,6 +580,7 @@ class DocumentStoreTaskQueue(TaskQueue):
                         provider=DOCUMENT_STORE_TASK_QUEUE_PROVIDER,
                         tenant_id=tid,
                     )
+                    self._emit_queue_lifecycle_event(result.updated, event_type=RuntimeEventType.TASK_PROGRESS)
                     claimed.append((handle, self._request_from_row(tid, result.updated)))
                     if len(claimed) >= limit:
                         return claimed
@@ -587,6 +677,7 @@ class DocumentStoreTaskQueue(TaskQueue):
                 )
             )
             request = self._request_from_row(tenant_id, result.updated)
+            self._emit_queue_lifecycle_event(result.updated, event_type=RuntimeEventType.TASK_PROGRESS)
             row_claim = invocation_claim_from_row(result.updated, tenant_id=tenant_id)
             if row_claim is None:
                 return None
@@ -660,8 +751,14 @@ class DocumentStoreTaskQueue(TaskQueue):
 
         with self._lock:
             tenant_id = handle.tenant_id or ""
-            if self._cas_update(tenant_id, handle.task_id, _succeed).kind == "applied":
+            result = self._cas_update(tenant_id, handle.task_id, _succeed)
+            if result.kind == "applied":
                 self._drop_indexes(tenant_id, handle.task_id)
+                if result.updated is not None:
+                    self._emit_queue_lifecycle_event(
+                        result.updated,
+                        event_type=RuntimeEventType.TASK_COMPLETED,
+                    )
 
     def mark_failed(
         self,
@@ -684,8 +781,14 @@ class DocumentStoreTaskQueue(TaskQueue):
 
         with self._lock:
             tenant_id = handle.tenant_id or ""
-            if self._cas_update(tenant_id, handle.task_id, _fail).kind == "applied":
+            result = self._cas_update(tenant_id, handle.task_id, _fail)
+            if result.kind == "applied":
                 self._drop_indexes(tenant_id, handle.task_id)
+                if result.updated is not None:
+                    self._emit_queue_lifecycle_event(
+                        result.updated,
+                        event_type=RuntimeEventType.TASK_FAILED,
+                    )
 
     def mark_dead_lettered(
         self,
@@ -703,8 +806,14 @@ class DocumentStoreTaskQueue(TaskQueue):
 
         with self._lock:
             tenant_id = handle.tenant_id or ""
-            if self._cas_update(tenant_id, handle.task_id, _dead_letter).kind == "applied":
+            result = self._cas_update(tenant_id, handle.task_id, _dead_letter)
+            if result.kind == "applied":
                 self._drop_indexes(tenant_id, handle.task_id)
+                if result.updated is not None:
+                    self._emit_queue_lifecycle_event(
+                        result.updated,
+                        event_type=RuntimeEventType.TASK_FAILED,
+                    )
 
     def retry_or_dead_letter(
         self,
@@ -744,7 +853,13 @@ class DocumentStoreTaskQueue(TaskQueue):
             if result.kind == "rejected" and result.previous is not None:
                 return TaskStatus(str(result.previous["status"]))
             assert result.updated is not None
-            return self._after_settle(tenant_id, result.updated)
+            status = self._after_settle(tenant_id, result.updated)
+            if status is TaskStatus.DEAD_LETTERED:
+                self._emit_queue_lifecycle_event(
+                    result.updated,
+                    event_type=RuntimeEventType.TASK_FAILED,
+                )
+            return status
 
     @staticmethod
     def _standing_terminal(handle: TaskHandle, row: dict[str, object], operation: str) -> bool:
