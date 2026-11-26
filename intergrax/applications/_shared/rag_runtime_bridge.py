@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from intergrax.applications._shared.rag_lab_opt_in import resolve_rag_bootstrap_lab_opt_ins
+from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -102,6 +103,7 @@ def resolve_rag_stack_for_environment(
         profile=rag_profile,
         embedding_lab_opt_in=embedding_opt,
         vectorstore_lab_opt_in=vector_opt,
+        composition_fails_closed=wiring_fails_closed(env),
     )
 
 

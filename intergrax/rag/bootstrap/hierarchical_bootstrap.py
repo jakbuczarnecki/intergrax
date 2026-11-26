@@ -31,6 +31,7 @@ def create_toc_vectorstore_manager(
     tenant_id: str | None = None,
     chunks_store: BaseVectorstoreManager | None = None,
     lab_opt_in: LabSelectorOptIn | None = None,
+    composition_fails_closed: bool = False,
 ) -> BaseVectorstoreManager:
     """Sibling vector store for TOC entries (separate collection when backend supports it)."""
     overrides: dict[str, object] = {}
@@ -42,6 +43,7 @@ def create_toc_vectorstore_manager(
         profile=integration_profile,
         tenant_id=tenant_id,
         lab_opt_in=lab_opt_in,
+        composition_fails_closed=composition_fails_closed,
         **overrides,
     )
 
@@ -53,6 +55,7 @@ def resolve_toc_vectorstore_for_profile(
     tenant_id: str | None = None,
     chunks_store: BaseVectorstoreManager | None = None,
     lab_opt_in: LabSelectorOptIn | None = None,
+    composition_fails_closed: bool = False,
 ) -> BaseVectorstoreManager | None:
     if not profile_uses_hierarchical_index(profile):
         return None
@@ -61,4 +64,5 @@ def resolve_toc_vectorstore_for_profile(
         tenant_id=tenant_id,
         chunks_store=chunks_store,
         lab_opt_in=lab_opt_in,
+        composition_fails_closed=composition_fails_closed,
     )

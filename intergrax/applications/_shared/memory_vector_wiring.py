@@ -190,6 +190,7 @@ def resolve_rag_stack_for_memory_wiring(
             llm_adapter=llm_adapter,
         )
     from intergrax.applications._shared.rag_lab_opt_in import resolve_rag_bootstrap_lab_opt_ins
+    from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 
     profile = integration_profile or env.integration_profile
     resolved_tenant_id = _require_runtime_tenant(tenant_id)
@@ -200,6 +201,7 @@ def resolve_rag_stack_for_memory_wiring(
         llm_for_contextual=llm_adapter,
         embedding_lab_opt_in=embedding_opt,
         vectorstore_lab_opt_in=vector_opt,
+        composition_fails_closed=wiring_fails_closed(env),
     )
 
 

@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence
+from typing import Any
 
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     VectorStoreHit,
@@ -23,13 +24,15 @@ class MilvusConfig:
 
 
 class MilvusVectorStore(BaseVectorStore):
-    """Milvus-backed vector store — CRUD delegates to in-memory until full SDK mapping lands."""
+    """Milvus-backed vector store — refuses CRUD until native SDK mapping is wired."""
 
     def __init__(self, cfg: MilvusConfig, *, client: Any = None) -> None:
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
         self._client = client
-        self._inner = InMemoryVectorStore(tenant_id=cfg.tenant_id)
+
+    def _unsupported(self) -> IntegrationConfigurationError:
+        return IntegrationConfigurationError("Milvus vector store CRUD is not configured for native persistence")
 
     def add_records(
         self,
@@ -37,7 +40,8 @@ class MilvusVectorStore(BaseVectorStore):
         *,
         scope: VectorStoreScope,
     ) -> Sequence[str]:
-        return self._inner.add_records(records, scope=scope)
+        del records, scope
+        raise self._unsupported()
 
     def query(
         self,
@@ -45,24 +49,21 @@ class MilvusVectorStore(BaseVectorStore):
         *,
         scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> List[VectorStoreHit]:
-        return self._inner.query(
-            query_embedding,
-            scope=scope,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
-            include_embeddings=include_embeddings,
-        )
+    ) -> list[VectorStoreHit]:
+        del query_embedding, scope, top_k, metadata_filter, include_embeddings
+        raise self._unsupported()
 
     def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
-        self._inner.delete(ids, scope=scope)
+        del ids, scope
+        raise self._unsupported()
 
     def count(self, *, scope: VectorStoreScope) -> int:
-        return self._inner.count(scope=scope)
+        del scope
+        raise self._unsupported()
 
-    def list_collections(self) -> List[str]:
+    def list_collections(self) -> list[str]:
         if self._client is None:
             return [self.collection_name]
         try:
