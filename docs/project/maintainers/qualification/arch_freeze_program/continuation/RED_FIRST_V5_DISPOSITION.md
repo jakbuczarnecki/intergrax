@@ -2,7 +2,8 @@
 
 **Worktree / branch:** `D:/Projekty/_wt/intergrax/af-v5-p1-red` · `af-v5/p1-red-first`  
 **Evidence integration head:** `5935fa4f0cd3596852b3a6500f9d4e1d613a53df`  
-**Canonical counts (rw_plan.v1.json):** **21** `RED_AT_PREFIX` · **18** `RED_FIRST_UNREPRODUCIBLE`  
+**ENT-iso remeasurement (2026-11-26, `af-v5/ent-iso` @ `2a6e197ca`):** prefix `754ee000675d71c1734656702beb0aef8ba58fd8`; probes in `tests/unit/architecture/test_nt_ent_iso_red_first_probes.py`.  
+**Canonical counts (rw_plan.v1.json after ENT-iso pass):** **25** `RED_AT_PREFIX` · **14** `RED_FIRST_UNREPRODUCIBLE`  
 **Machine result:** [`RED_FIRST_V5_RESULT.json`](RED_FIRST_V5_RESULT.json)
 
 ## Phase-check 3 status
@@ -22,15 +23,20 @@
 | `import_not_mechanism` | Collection/import failure for a symbol that encodes fail-closed behavior **later** than the prefix tree; no behavioral assertion naming the FRZ mechanism at the prefix. |
 | `subprocess_timeout` | Nested subprocess hit `TimeoutExpired` (300s); not a failed product assertion. |
 
-## Row dispositions (18 × RED_FIRST_UNREPRODUCIBLE)
+## ENT-iso promotions (prefix `754ee000675d71c1734656702beb0aef8ba58fd8`)
+
+| `frz_id` | Prior cause | ENT-iso probe | Prefix assertion (mechanism) | Status |
+| --- | --- | --- | --- | --- |
+| `FRZ-CFG-02` | `nested_ent_gate_exit4` | `test_nt_cfg_02_missing_embedding_config_must_not_silently_select_vendor` | `NT-CFG-02 missing or invalid required configuration must not silently select a vendor/backend when embedding provider is unset` | **RED_AT_PREFIX** |
+| `FRZ-CFG-08` | `nested_ent_gate_exit4` | `test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default` | `NT-CFG-08 silent fallback: embedding profile must not carry a hard-coded provider constant` | **RED_AT_PREFIX** |
+| `FRZ-OWN-02` | `nested_ent_gate_exit4` | `test_nt_own_02_application_artifact_ref_has_one_canonical_definition` | `NT-OWN-02 duplicate canonical contract` (dual `ApplicationArtifactRef` definition) | **RED_AT_PREFIX** |
+| `FRZ-OWN-03` | `nested_ent_gate_exit4` | `test_nt_own_03_one_sanctioned_llm_adapter_composition_owner` | `NT-OWN-03 multiple composition owners construct LLM adapters` | **RED_AT_PREFIX** |
+
+## Row dispositions (14 × RED_FIRST_UNREPRODUCIBLE)
 
 | `frz_id` | Logged cause (summary) | Cause class | Why this is not positive red-first evidence | T-AF2-RED-CLASSES (recommendation) | Operator decision |
 | --- | --- | --- | --- | --- | --- |
-| `FRZ-CFG-02` | Nested ENT-A-VBN-02 exit 4, “Gate check failed” on EBH-6 gate | `nested_ent_gate_exit4` | Failure is the ENT nested gate harness, not a pytest assertion that invalid/missing config silently selects a vendor/backend. | **FIX** (later single-node probe can encode CFG fail-closed without ENT nesting) | not DECIDED |
-| `FRZ-CFG-08` | Nested VBN-SHADOW-SELECTION exit 4 on config_x gate | `nested_ent_gate_exit4` | Same nested-gate artefact; not a regression-gate assertion on hard-coded selection/fallback. | **FIX** | not DECIDED |
 | `FRZ-FRZ-10` | `AttributeError`: `verify_arch_freeze_plan_traceability` has no `_self_test_cases` | `historical_self_test` | Post-freeze policy activation is a later W5/W8 node; the logged break is a missing historical self-test hook, not matrix mechanism proof. | **FIX** (re-home policy probe when W5/W8 owns FRZ-10) | not DECIDED |
-| `FRZ-OWN-02` | Nested ENT-A-OWN-02 exit 4 on EBH-3 gate | `nested_ent_gate_exit4` | Nested audit exit, not “one canonical contract per responsibility” asserted in an isolated negative test. | **FIX** | not DECIDED |
-| `FRZ-OWN-03` | Nested ENT-A-OWN-03 exit 4 on EBH-3 gate | `nested_ent_gate_exit4` | Same as OWN-02 for composition-owner concern. | **FIX** | not DECIDED |
 | `FRZ-PLG-01` | `langchain_ollama` missing; `test_nt_plg_01` exit 0 at prefix | `optional_dep_probe_green` | Optional dep / collection noise; dedicated probe green at prefix does not prove PLG contract exposure red-first. | **ENV** (optional extra) + **FIX** (probe that fails on mechanism without optional SDK) | not DECIDED |
 | `FRZ-PLG-02` | `testing_support.pytest_temp_plugin` missing; probe exit 0 | `optional_dep_probe_green` | Harness module absent at collection; probe already passes at prefix. | **FIX** (stable harness path or ship helpers at prefix replay) | not DECIDED |
 | `FRZ-PLG-06` | `tests.qualification.governance.gr11.catalog` missing | `optional_dep_probe_green` | Qualification catalog module not on prefix tree; import error ≠ plugin-authority mechanism. | **FIX** | not DECIDED |
@@ -47,7 +53,7 @@
 
 ## Candidates not promoted (REL-09 / REL-10 / TEN-07)
 
-Grok binding: these three may become **RED_AT_PREFIX** only with a **one-node** probe that **fails at the recorded prefix** with an assertion **naming the FRZ mechanism** (not import/marker/timeout/nested ENT exit 4) and **passes** on integration head `5935fa4f`. Current V5 logs show **import-only** failures at prefix; `test_fc2_queue_worker_fail_closed.py` and integrated tenant MCP tests were **not** present or not overlayable without the later typed APIs. **No conversion** in this commit — counts remain **21 / 18**.
+Grok binding: these three may become **RED_AT_PREFIX** only with a **one-node** probe that **fails at the recorded prefix** with an assertion **naming the FRZ mechanism** (not import/marker/timeout/nested ENT exit 4) and **passes** on integration head `5935fa4f`. Current V5 logs show **import-only** failures at prefix; `test_fc2_queue_worker_fail_closed.py` and integrated tenant MCP tests were **not** present or not overlayable without the later typed APIs. **No conversion** for REL/TEN rows in the ENT-iso pass — residual UNREPRODUCIBLE count **14**.
 
 ## Explicit non-effects
 
