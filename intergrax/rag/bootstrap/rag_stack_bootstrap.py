@@ -67,6 +67,7 @@ def create_default_rag_stack(
     graph_store: GraphStore | None = None,
     embedding_lab_opt_in: LabSelectorOptIn | None = None,
     vectorstore_lab_opt_in: LabSelectorOptIn | None = None,
+    composition_fails_closed: bool = False,
 ) -> RagStack:
     profile = profile or rag_profile_from_env()
     graph_slug: str | None = None
@@ -89,6 +90,7 @@ def create_default_rag_stack(
             profile=integration_profile,
             tenant_id=tenant_id,
             lab_opt_in=vectorstore_lab_opt_in,
+            composition_fails_closed=composition_fails_closed,
         )
     if embedding_manager is None:
         embedding_manager = create_default_embedding_manager(
@@ -119,6 +121,7 @@ def create_default_rag_stack(
         tenant_id=tenant_id,
         chunks_store=vectorstore_manager,
         lab_opt_in=vectorstore_lab_opt_in,
+        composition_fails_closed=composition_fails_closed,
     )
 
     discover_entry_points = discover_plugins_enabled()

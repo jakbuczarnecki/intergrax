@@ -14,11 +14,13 @@ from __future__ import annotations
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationConfigurationError,
+    IntegrationStatus,
     LabSelectorOptIn,
 )
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.factory import build_profile_from_env, resolve
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
@@ -103,6 +105,31 @@ def lab_inmemory_vector_store_slug() -> str:
     return _LAB_INMEMORY_VECTOR_STORE_SLUG
 
 
+def _assert_strict_vector_store_catalog_admission(
+    *,
+    slug: str | None,
+    lab_opt_in: LabSelectorOptIn | None,
+    composition_fails_closed: bool,
+) -> None:
+    """Refuse non-STABLE catalog rows when strict host composition materializes a vector store."""
+    if not composition_fails_closed:
+        return
+    if slug is None:
+        if lab_opt_in is not None:
+            raise IntegrationConfigurationError(
+                "in-memory vector store laboratory opt-in is not permitted in strict host composition"
+            )
+        raise IntegrationConfigurationError("vector_store binding is required for strict host composition")
+    entry = get_entry(slug)
+    if IntegrationCategory.VECTOR_STORE not in entry.categories:
+        raise IntegrationConfigurationError(f"integration slug {slug!r} is not registered for vector_store")
+    if entry.status is not IntegrationStatus.STABLE:
+        raise IntegrationConfigurationError(
+            f"vector_store {slug!r} has catalog status {entry.status.value}; "
+            "strict host composition requires IntegrationStatus.STABLE"
+        )
+
+
 def _resolve_lab_inmemory_slug(lab_opt_in: LabSelectorOptIn) -> str:
     slug = lab_opt_in.selector.strip().lower()
     if slug != _LAB_INMEMORY_VECTOR_STORE_SLUG:
@@ -118,6 +145,7 @@ def create_vectorstore_from_integration(
     profile: IntegrationProfile | None = None,
     tenant_id: str | None = None,
     lab_opt_in: LabSelectorOptIn | None = None,
+    composition_fails_closed: bool = False,
     **config_overrides: object,
 ) -> VectorStore:
     """
@@ -129,6 +157,11 @@ def create_vectorstore_from_integration(
     register_default_integrations()
     resolved_profile = profile or build_profile_from_env()
     slug = resolved_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
+    _assert_strict_vector_store_catalog_admission(
+        slug=slug,
+        lab_opt_in=lab_opt_in,
+        composition_fails_closed=composition_fails_closed,
+    )
     configured_tenant_id: object | None = None
     if slug:
         configured_tenant_id = _profile_tenant_id(resolved_profile, slug)
@@ -171,6 +204,7 @@ def create_vectorstore_manager(
     tenant_id: str | None = None,
     profile: IntegrationProfile | None = None,
     lab_opt_in: LabSelectorOptIn | None = None,
+    composition_fails_closed: bool = False,
     **config_overrides: object,
 ) -> BaseVectorstoreManager:
     """Composition root for RAG — wraps catalog-resolved store in ``VectorstoreManager``."""
@@ -189,6 +223,7 @@ def create_vectorstore_manager(
         profile=resolved_profile,
         tenant_id=resolved_tenant_id,
         lab_opt_in=lab_opt_in,
+        composition_fails_closed=composition_fails_closed,
         **config_overrides,
     )
     scope = _scope_from_integration_config(
