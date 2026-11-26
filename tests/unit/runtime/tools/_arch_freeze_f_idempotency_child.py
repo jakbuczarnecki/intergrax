@@ -7,6 +7,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_task_id,
+)
 from intergrax.contracts.idempotency_store import (
     ClaimOutcome,
     InvocationUncertaintyError,
@@ -225,6 +231,12 @@ def main() -> None:
         "process_b_reconcile_and_call_once": _process_b_reconcile_and_call_once,
         "process_b_replay_completed": _process_b_replay_completed,
     }
+    bind_active_execution_identity(
+        run_id=_RUN_ID,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        task_id=mint_task_id(),
+    )
     handler = handlers.get(mode)
     if handler is None:
         raise SystemExit(f"unknown ARCH_FREEZE_F_MODE: {mode!r}")
