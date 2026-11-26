@@ -1,6 +1,6 @@
-# Campaign B alpha — manifest slots (P2 / V5)
+# Campaign B alpha — manifest slots (V5)
 
-Diagnostic mapping for **T-IGX-073-E** package P2. Alpha baseline **B**: `7960ae7f6c82da60ca9acdc0ceebf63810002a42`. Session logs under `.tmp/session/arch-freeze/campaign-b-v5/` (not committed).
+Diagnostic mapping for **T-IGX-073-E** (V5). Alpha baseline **B**: `7960ae7f6c82da60ca9acdc0ceebf63810002a42`. Session logs under `.tmp/session/arch-freeze/campaign-b-v5/` (not committed).
 
 ## Defined slots (manifest @ candidate branch)
 
@@ -23,7 +23,7 @@ Equivalence detail: [`CAMPAIGN_B_V5_EQUIVALENCE.md`](CAMPAIGN_B_V5_EQUIVALENCE.m
 
 ## Undefined slots
 
-None at P2 close-out (all 27 planned manifest cases have in-manifest commands).
+None at V5 close-out (all 27 planned manifest cases have in-manifest commands).
 
 ## Not present at baseline B tree (overlay / train-only nodes)
 

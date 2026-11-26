@@ -1,5 +1,9 @@
 # T-IGX-065-A — PT-T01: Campaign B tracked negative tests NT-01..NT-16
 
+## Owner
+
+AF-CLOSE (D-2, 2026-11-26)
+
 ## Approved
 
 Approved: operator @ 2026-11-23T13:30:00+01:00

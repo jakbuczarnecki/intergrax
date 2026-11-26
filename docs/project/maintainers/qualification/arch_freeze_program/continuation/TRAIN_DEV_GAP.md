@@ -1,5 +1,7 @@
 ﻿# Train ↔ development gap (docs pin `e69e1ff58`)
 
+> **RETIRED 2026-11-26 (AD-AF-DEVTRAIN; unsigned draft).** Under decision OD-AF-CLOSE-D1, `development` is the train: no `arch-freeze/rw-train` cherry-pick or merge queue is open. The text below is a historical record, kept so that links stay valid. See [`../MEP-AF2_v2.1.md`](../MEP-AF2_v2.1.md) Appendix V6.
+
 **Snapshot:** 2026-11-21 (worktree `af-dev-docs-pin` @ `e69e1ff58` — ci-smoke G-09 tenant registry; liczniki gap @ pin poniżej)  
 **Disposition:** **MERGED / replay OPEN (QUEUED / STOP)** — PR **#699** **MERGED** @ `dbaebfa8`; replay `governance-fast` na train pin **OPEN**. **Operator STOP:** bez green `governance-fast` — **brak** kolejnego cherry-pick / merge train.
 

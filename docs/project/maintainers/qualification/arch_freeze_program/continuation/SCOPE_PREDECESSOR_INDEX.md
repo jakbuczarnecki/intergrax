@@ -1,5 +1,7 @@
 # SCOPE hard predecessor index (WP-12)
 
+> **Status update 2026-11-26 (T-IGX-078-A, checked at `development` `646e63953`):** `RED_FIRST_EVIDENCE` is now **COMPLETE** (`CODE_FIX_OWNERSHIP=39/39`; the checker still reports `RW_PLAN_AUDIT=NOT_PERFORMED`). **SCOPE is not recorded** and T-AF2-RW-PLAN-AUDIT stays **PARTIAL**; a fresh independent audit is open. Statements below that `RED_FIRST` is `INCOMPLETE` are historical.
+
 > **Supersession (2026-11-26):** The train pin `689b277e` and the phase-b2 process waiver below are **historical records only**; they are **not** an authorized SCOPE close. **`SCOPE_MILESTONE: READY_TO_RECORD` does not apply** at `development` `2a8f15489ce522e7628678e12b92f9baae24d0ce`. **`RED_FIRST_EVIDENCE` remains `INCOMPLETE`**. This index makes **no** G2, FCS, M3, or **ARCH-FREEZE CLOSED** claim.
 
 **Train:** `arch-freeze/fc-train` @ `689b277e62db18613a415e6b2e404864412112b8`  

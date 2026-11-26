@@ -1,5 +1,9 @@
 ﻿# T-IGX-073-E — W2-RECOVERY-01: RW-PLAN, phase-check-3, PT-V04, Campaign B alpha
 
+## Owner
+
+AF-CLOSE (D-2, 2026-11-26)
+
 ## Scope
 
 Architecture mandate **W2-RECOVERY-01** on `development` @ `8aaa178a5d45736ed51efe7c03b638ce5e253e37`:

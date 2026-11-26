@@ -1,5 +1,9 @@
 # T-IGX-053-I — ARCH-FREEZE W5 PT-S06 enforcement stage + ENT prefreeze link
 
+## Owner
+
+AF-CLOSE (D-2, 2026-11-26)
+
 ## Scope
 
 WP-12 **PT-S06**: enforcement stage coordination and handoff to **T-IGX-052-A** (ENT baseline prefreeze). Governance + `.github/` when authorized.
