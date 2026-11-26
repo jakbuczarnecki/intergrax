@@ -37,7 +37,7 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
 )
 from intergrax.memory.provider_qualification import InMemoryMemoryProviderDurabilityEvidenceRegistry
-from intergrax.memory.provider_qualification.in_memory_qualification_evidence_registry import (
+from intergrax.memory.provider_qualification.in_memory_evidence_registry import (
     InMemoryMemoryProviderQualificationEvidenceRegistry,
 )
 from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage

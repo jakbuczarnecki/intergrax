@@ -591,6 +591,12 @@ def build_session_manager_from_environment(
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
+    if session_turn_index_store is None and rag_stack is None:
+        validate_episodic_recall_composition_admission(
+            env,
+            session_turn_index_store=None,
+        )
+
     if session_turn_index_store is not None:
         validate_session_turn_index_store_admission(
             env,

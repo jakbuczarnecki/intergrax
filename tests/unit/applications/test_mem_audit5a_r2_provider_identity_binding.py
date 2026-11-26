@@ -320,6 +320,9 @@ def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
+    for record in _sqlite_persistent_memory_durability_registry()._records:  # noqa: SLF001
+        if record.provider_id == "sqlite.session_storage":
+            durability_registry.register(record)
     wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
