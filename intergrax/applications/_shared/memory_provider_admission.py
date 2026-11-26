@@ -12,6 +12,14 @@ from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    topology_satisfies,
+)
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentStore,
+)
 from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionError,
     MemoryProviderAdmissionReasonCode,
@@ -32,8 +40,13 @@ from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityEvidenceLookup,
     MemoryProviderDurabilityEvidenceRegistry,
     MemoryProviderDurabilityEvidenceResolveStatus,
+    trusted_memory_provider_restart_reopen_admitted,
 )
-from intergrax.memory.contracts.provider_identity import MemoryProviderIdentity
+from intergrax.memory.contracts.provider_identity import (
+    MemoryProviderIdentity,
+    MemoryProviderIdentitySource,
+    memory_provider_backing_identity_mismatch,
+)
 from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderQualificationStatus,
@@ -46,6 +59,7 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
 from intergrax.memory.user_profile_store import UserProfileStore
 
 if TYPE_CHECKING:
+    from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
     from intergrax.runtime.execution.session_host_composition import SessionStorage
     from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
@@ -347,6 +361,11 @@ def validate_session_turn_index_store_admission(
     )
 
 
+_BUILTIN_SQLITE_SESSION_STORAGE_ID = "sqlite.session_storage"
+_BUILTIN_SQLITE_ORGANIZATION_PROFILE_STORE_ID = "sqlite.organization_profile"
+_BUILTIN_DOCUMENT_STORE_SESSION_STORAGE_ID = "document_store.session_storage"
+
+
 class MemoryOrgSessionAdmissionReason(StrEnum):
     """Reason codes of the organization-store and session-storage admission (T-IGX-043-B)."""
 
@@ -354,6 +373,7 @@ class MemoryOrgSessionAdmissionReason(StrEnum):
     ORG_STORE_MISSING = "ORG_STORE_MISSING"
     ORG_STORE_NOT_DURABLE = "ORG_STORE_NOT_DURABLE"
     SESSION_STORAGE_NOT_DURABLE = "SESSION_STORAGE_NOT_DURABLE"
+    EPISODIC_RECALL_NOT_BOUND = "EPISODIC_RECALL_NOT_BOUND"
 
 
 class MemoryOrgSessionAdmissionError(ValueError):
@@ -369,15 +389,42 @@ def organization_profile_store_required(env: ApplicationEnvironmentProfile) -> b
     return env.memory_profile.enable_org_memory
 
 
-def _declared_durable(store: SessionStorage | OrganizationProfileStore) -> bool:
-    return (
-        isinstance(store, MemoryStoreProviderMetadata)
-        and store.memory_provider_durability is MemoryProviderDurability.DURABLE
+def _durability_evidence_identity_matches(
+    identity: MemoryProviderIdentity,
+    evidence_lookup: MemoryProviderDurabilityEvidenceLookup,
+) -> bool:
+    evidence = evidence_lookup.evidence
+    if evidence is None:
+        return False
+    if evidence.capability is not identity.capability:
+        return False
+    if evidence.provider_id != identity.provider_id:
+        return False
+    return not memory_provider_backing_identity_mismatch(
+        identity,
+        backing_provider_id=evidence.backing_provider_id,
+        backing_provider_version=evidence.backing_provider_version,
     )
 
 
-def _organization_store_is_durable(store: OrganizationProfileStore) -> bool:
-    """Known-ephemeral and unclassifiable stores are not durable; SQLite or declared-durable are."""
+def _provider_has_restart_reopen_durability(
+    identity: MemoryProviderIdentity | None,
+    durability_registry: MemoryProviderDurabilityEvidenceRegistry,
+) -> bool:
+    if identity is None:
+        return False
+    lookup = lookup_trusted_user_profile_durability_evidence(
+        durability_registry,
+        identity,
+    )
+    if not trusted_memory_provider_restart_reopen_admitted(lookup):
+        return False
+    return _durability_evidence_identity_matches(identity, lookup)
+
+
+def _resolve_organization_profile_store_provider_identity(
+    store: OrganizationProfileStore,
+) -> MemoryProviderIdentity | None:
     from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
         InMemoryOrganizationProfileStore,
     )
@@ -386,23 +433,138 @@ def _organization_store_is_durable(store: OrganizationProfileStore) -> bool:
     )
 
     if isinstance(store, InMemoryOrganizationProfileStore):
-        return False
+        return None
     if isinstance(store, SQLiteOrganizationProfileStore):
-        return True
-    return _declared_durable(store)
+        return MemoryProviderIdentity(
+            provider_id=_BUILTIN_SQLITE_ORGANIZATION_PROFILE_STORE_ID,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.BUILT_IN,
+        )
+    if isinstance(store, MemoryStoreProviderMetadata):
+        return MemoryProviderIdentity(
+            provider_id=store.memory_provider_id,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.DIRECT_INJECTION,
+            provider_version=store.memory_provider_version,
+        )
+    return None
 
 
-def _session_storage_is_durable(storage: SessionStorage) -> bool:
-    """SQLite or declared-durable plugin storage only.
-
-    ``DocumentStoreSessionStorage`` exposes no public backing-store handle, so its restart
-    durability cannot be established here and it is refused in fail-closed postures.
-    """
+def _resolve_session_storage_provider_identity(
+    storage: SessionStorage,
+    *,
+    session_storage_plugin_id: str | None,
+    document_store_backing_provider_id: str | None,
+) -> MemoryProviderIdentity | None:
     from intergrax.runtime.execution.session_host_composition import SQLiteSessionStorage
+    from intergrax.runtime.nexus.session.document_store_session_storage import (
+        DocumentStoreSessionStorage,
+    )
+    from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 
+    if isinstance(storage, InMemorySessionStorage):
+        return None
     if isinstance(storage, SQLiteSessionStorage):
-        return True
-    return _declared_durable(storage)
+        return MemoryProviderIdentity(
+            provider_id=_BUILTIN_SQLITE_SESSION_STORAGE_ID,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.BUILT_IN,
+        )
+    if isinstance(storage, DocumentStoreSessionStorage):
+        return MemoryProviderIdentity(
+            provider_id=_BUILTIN_DOCUMENT_STORE_SESSION_STORAGE_ID,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.BUILT_IN,
+            backing_provider_id=document_store_backing_provider_id,
+        )
+    if session_storage_plugin_id is not None:
+        return MemoryProviderIdentity(
+            provider_id=session_storage_plugin_id,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.PLUGIN,
+        )
+    if isinstance(storage, MemoryStoreProviderMetadata):
+        return MemoryProviderIdentity(
+            provider_id=storage.memory_provider_id,
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            source=MemoryProviderIdentitySource.DIRECT_INJECTION,
+            provider_version=storage.memory_provider_version,
+        )
+    return None
+
+
+def _session_storage_backing_document_store(
+    storage: SessionStorage,
+) -> DocumentStore | None:
+    from intergrax.runtime.nexus.session.document_store_session_storage import (
+        DocumentStoreSessionStorage,
+    )
+
+    if isinstance(storage, DocumentStoreSessionStorage):
+        return storage.backing_document_store
+    return None
+
+
+def _validate_document_store_shared_posture(
+    env: ApplicationEnvironmentProfile,
+    *,
+    document_store: DocumentStore | None,
+    mechanism: str,
+) -> None:
+    required = env.meta.required_persistence_topology
+    if required is not PersistenceTopology.SHARED_MULTI_HOST:
+        return
+    if document_store is None:
+        raise MemoryOrgSessionAdmissionError(
+            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+            f"{mechanism} requires shared multi-host persistence topology but has no document-store backing",
+        )
+    provided = getattr(document_store, "persistence_topology", None)
+    if not isinstance(provided, PersistenceTopology) or not topology_satisfies(
+        required,
+        provided,
+    ):
+        raise MemoryOrgSessionAdmissionError(
+            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+            f"{mechanism} does not provide required shared multi-host persistence topology",
+        )
+    if not isinstance(document_store, ConditionalDocumentStore):
+        raise MemoryOrgSessionAdmissionError(
+            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+            f"{mechanism} requires conditional compare-and-swap writes but backing store "
+            "does not implement ConditionalDocumentStore",
+        )
+    replace_if_match = getattr(document_store, "replace_if_match", None)
+    if not callable(replace_if_match):
+        raise MemoryOrgSessionAdmissionError(
+            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+            f"{mechanism} requires replace_if_match but backing store does not expose it",
+        )
+
+
+def _organization_store_is_durable(
+    store: OrganizationProfileStore,
+    *,
+    durability_registry: MemoryProviderDurabilityEvidenceRegistry,
+) -> bool:
+    identity = _resolve_organization_profile_store_provider_identity(store)
+    return _provider_has_restart_reopen_durability(identity, durability_registry)
+
+
+def _session_storage_is_durable(
+    storage: SessionStorage,
+    *,
+    durability_registry: MemoryProviderDurabilityEvidenceRegistry,
+    session_storage_plugin_id: str | None,
+    document_store_backing_provider_id: str | None,
+) -> bool:
+    """Admit session storage only on trusted restart-reopen durability evidence (not declared flags)."""
+    identity = _resolve_session_storage_provider_identity(
+        storage,
+        session_storage_plugin_id=session_storage_plugin_id,
+        document_store_backing_provider_id=document_store_backing_provider_id,
+    )
+    return _provider_has_restart_reopen_durability(identity, durability_registry)
 
 
 def validate_organization_and_session_admission(
@@ -410,6 +572,9 @@ def validate_organization_and_session_admission(
     *,
     session_storage: SessionStorage,
     organization_profile_store: OrganizationProfileStore | None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    session_storage_plugin_id: str | None = None,
+    document_store_backing_provider_id: str | None = None,
 ) -> None:
     """Pure admission gate on the final session storage and organization store.
 
@@ -419,21 +584,55 @@ def validate_organization_and_session_admission(
     """
     if not wiring_fails_closed(env):
         return
+    durability_registry = durability_evidence_registry or _EmptyDurabilityEvidenceRegistry()
     if organization_profile_store_required(env):
         if organization_profile_store is None:
             raise MemoryOrgSessionAdmissionError(
                 MemoryOrgSessionAdmissionReason.ORG_STORE_MISSING,
                 "organization memory is enabled but no organization profile store is composed",
             )
-        if not _organization_store_is_durable(organization_profile_store):
+        if not _organization_store_is_durable(
+            organization_profile_store,
+            durability_registry=durability_registry,
+        ):
             raise MemoryOrgSessionAdmissionError(
                 MemoryOrgSessionAdmissionReason.ORG_STORE_NOT_DURABLE,
                 f"organization profile store {type(organization_profile_store).__name__} "
-                "is ephemeral or cannot be classified as durable",
+                "lacks trusted restart-reopen durability evidence",
             )
-    if persistent_canonical_user_profile_memory_required(env) and not _session_storage_is_durable(session_storage):
-        raise MemoryOrgSessionAdmissionError(
-            MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
-            f"session storage {type(session_storage).__name__} is ephemeral or cannot be "
-            "classified as durable while persistent memory is required",
+    if persistent_canonical_user_profile_memory_required(env):
+        if not _session_storage_is_durable(
+            session_storage,
+            durability_registry=durability_registry,
+            session_storage_plugin_id=session_storage_plugin_id,
+            document_store_backing_provider_id=document_store_backing_provider_id,
+        ):
+            raise MemoryOrgSessionAdmissionError(
+                MemoryOrgSessionAdmissionReason.SESSION_STORAGE_NOT_DURABLE,
+                f"session storage {type(session_storage).__name__} lacks trusted "
+                "restart-reopen durability evidence while persistent memory is required",
+            )
+        backing = _session_storage_backing_document_store(session_storage)
+        _validate_document_store_shared_posture(
+            env,
+            document_store=backing,
+            mechanism="session storage",
         )
+
+
+def validate_episodic_recall_composition_admission(
+    env: ApplicationEnvironmentProfile,
+    *,
+    session_turn_index_store: SessionTurnIndexStore | None,
+) -> None:
+    """Fail closed when episodic recall is enabled but no STI implementation is composed."""
+    if not env.memory_profile.enable_session_vector_index:
+        return
+    if not wiring_fails_closed(env):
+        return
+    if session_turn_index_store is not None:
+        return
+    raise MemoryOrgSessionAdmissionError(
+        MemoryOrgSessionAdmissionReason.EPISODIC_RECALL_NOT_BOUND,
+        "session vector index (episodic recall) is enabled but no implementation is bound",
+    )

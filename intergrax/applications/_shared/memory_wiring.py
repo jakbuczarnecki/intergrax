@@ -21,6 +21,7 @@ from intergrax.applications._shared.memory_observability_wiring import (
 from intergrax.applications._shared.memory_provider_admission import (
     MemoryOrgSessionAdmissionError,
     MemoryOrgSessionAdmissionReason,
+    validate_episodic_recall_composition_admission,
     validate_memory_platform_wiring_admission,
     validate_memory_tenant_scope_admission,
     validate_organization_and_session_admission,
@@ -515,6 +516,9 @@ def resolve_memory_platform_wiring(
         env,
         session_storage=wiring.session_storage,
         organization_profile_store=wiring.organization_profile_store,
+        durability_evidence_registry=durability_evidence_registry,
+        session_storage_plugin_id=env.memory_profile.session_storage_plugin_id,
+        document_store_backing_provider_id=_document_store_backing_provider_id(profile),
     )
     if memory_store_plugin_catalog is not None:
         wiring = replace(
@@ -556,12 +560,18 @@ def build_session_manager_from_environment(
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
     )
+    memory_profile = env.memory_profile
+    resolved_integration = integration_profile or env.integration_profile
     validate_organization_and_session_admission(
         env,
         session_storage=wiring.session_storage,
         organization_profile_store=wiring.organization_profile_store,
+        durability_evidence_registry=durability_evidence_registry,
+        session_storage_plugin_id=memory_profile.session_storage_plugin_id,
+        document_store_backing_provider_id=_document_store_backing_provider_id(
+            resolved_integration,
+        ),
     )
-    memory_profile = env.memory_profile
 
     user_manager = wiring.user_profile_manager
     if user_manager is None and (memory_profile.enable_user_memory or memory_profile.enable_long_term_memory):
@@ -581,7 +591,12 @@ def build_session_manager_from_environment(
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
-    resolved_integration = integration_profile or env.integration_profile
+    if session_turn_index_store is None and rag_stack is None:
+        validate_episodic_recall_composition_admission(
+            env,
+            session_turn_index_store=None,
+        )
+
     if session_turn_index_store is not None:
         validate_session_turn_index_store_admission(
             env,
@@ -599,6 +614,10 @@ def build_session_manager_from_environment(
             discover_entry_points=discover,
             memory_store_plugin_catalog=wiring.memory_store_plugin_catalog,
         )
+    validate_episodic_recall_composition_admission(
+        env,
+        session_turn_index_store=session_turn_index,
+    )
 
     resolved_memory_control_plane = memory_control_plane
     if resolved_memory_control_plane is None and user_manager is not None:

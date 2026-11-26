@@ -181,6 +181,7 @@ def _evidence_for_provider(
 def _durability_for_provider(
     provider_id: str,
     *,
+    capability: MemoryProviderCapabilityKind = MemoryProviderCapabilityKind.USER_PROFILE_STORE,
     status: MemoryProviderTrustedDurabilityStatus = MemoryProviderTrustedDurabilityStatus.DURABLE,
     provider_version: str | None = None,
     backing_provider_id: str | None = None,
@@ -191,7 +192,7 @@ def _durability_for_provider(
     registry.register(
         MemoryProviderDurabilityEvidence(
             provider_id=provider_id,
-            capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+            capability=capability,
             durability_status=status,
             qualification_run_id=run_id,
             reference_time_iso="2025-01-01T00:00:00+00:00",
@@ -200,6 +201,35 @@ def _durability_for_provider(
             provider_version=provider_version,
             backing_provider_id=backing_provider_id,
             backing_provider_version=backing_provider_version,
+        ),
+    )
+    return registry
+
+
+def _sqlite_persistent_memory_durability_registry(
+    run_id: str = "run-test",
+) -> InMemoryMemoryProviderDurabilityEvidenceRegistry:
+    registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
+    registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id="sqlite.user_profile",
+            capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+            durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
+            qualification_run_id=run_id,
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test_durability_registry",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
+        ),
+    )
+    registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id="sqlite.session_storage",
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
+            qualification_run_id=run_id,
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test_durability_registry",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
         ),
     )
     return registry
@@ -255,7 +285,7 @@ def test_product_sqlite_with_trusted_evidence_passes(tmp_path: Path) -> None:
         "sqlite": {"data_dir": str(tmp_path)},
     }
     registry = _evidence_for_provider("sqlite.user_profile")
-    durability_registry = _durability_for_provider("sqlite.user_profile")
+    durability_registry = _sqlite_persistent_memory_durability_registry()
     wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,
@@ -302,7 +332,29 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
     )
     env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
-    durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
+    durability_registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
+    durability_registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id="test.durable_qualified_user_profile",
+            capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+            durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
+            qualification_run_id="run-test",
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test_durability_registry",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
+        ),
+    )
+    durability_registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id="test.durable_declared_session_storage",
+            capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+            durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
+            qualification_run_id="run-test",
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test_durability_registry",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
+        ),
+    )
     wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
@@ -348,10 +400,15 @@ def test_strict_lab_not_product_still_allows_reference() -> None:
     env.integration_profile = IntegrationProfile()
     env.execution_mode = ExecutionMode.STRICT
     env.memory_profile = with_durable_session_plugin(_persistent_memory_profile())
+    session_durability = _durability_for_provider(
+        "test.durable_declared_session_storage",
+        capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+    )
     wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(DurableDeclaredSessionStoragePlugin,),
+        durability_evidence_registry=session_durability,
     )
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
     assert env.execution_mode is ExecutionMode.STRICT
@@ -463,8 +520,7 @@ async def test_runner_result_to_registry_to_admission_passes(tmp_path: Path) -> 
 
     registry = InMemoryMemoryProviderQualificationEvidenceRegistry()
     registry.register(evidence)
-    durability_registry = _durability_for_provider(
-        "sqlite.user_profile",
+    durability_registry = _sqlite_persistent_memory_durability_registry(
         run_id="audit5ar-sqlite",
     )
 
