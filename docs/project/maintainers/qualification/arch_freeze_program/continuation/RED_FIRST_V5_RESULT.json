@@ -541,6 +541,46 @@
       "evidence_commit": "ce0b63fab",
       "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
       "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-PLG-02",
+      "later_status": "RED_FIRST_UNREPRODUCIBLE",
+      "prefix_pytest_exit": 0,
+      "current_tree_pytest_exit": 0,
+      "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
+      "pytest_node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
+      "source_commit": "c06e58a3844af9251389e998538d56bc33b39fe7",
+      "note": "prefix pytest exit 0: register_plugins/load_plugin_types already accept an explicit external class. Original results[] measurement and integration_head stay unchanged."
+    },
+    {
+      "frz_id": "FRZ-PLG-07",
+      "later_status": "RED_FIRST_UNREPRODUCIBLE",
+      "prefix_pytest_exit": 0,
+      "current_tree_pytest_exit": 0,
+      "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
+      "pytest_node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
+      "source_commit": "c06e58a3844af9251389e998538d56bc33b39fe7",
+      "note": "prefix pytest exit 0: ToolAccessPolicy already refuses tool ids outside the declared registry contract. Original results[] measurement and integration_head stay unchanged."
+    },
+    {
+      "frz_id": "FRZ-RPL-04",
+      "later_status": "RED_FIRST_UNREPRODUCIBLE",
+      "prefix_pytest_exit": 0,
+      "current_tree_pytest_exit": 0,
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "pytest_node": "tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
+      "source_commit": "c06e58a3844af9251389e998538d56bc33b39fe7",
+      "note": "prefix pytest exit 0: queue worker call sites already bind MessageConsumer. Original results[] measurement and integration_head stay unchanged."
+    },
+    {
+      "frz_id": "FRZ-REL-07",
+      "later_status": "RED_FIRST_UNREPRODUCIBLE",
+      "prefix_pytest_exit": 0,
+      "current_tree_pytest_exit": 0,
+      "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
+      "pytest_node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
+      "source_commit": "c06e58a3844af9251389e998538d56bc33b39fe7",
+      "note": "prefix pytest exit 0: RetryEngine.decide already stops at declared max_retries. Original results[] measurement and integration_head stay unchanged."
     }
   ]
 }

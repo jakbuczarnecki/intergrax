@@ -268,12 +268,12 @@
       "negative_test_id": "NT-PLG-02",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-02",
-      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_tier3_llm_resolver_must_not_construct_adapters_locally",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "Rejected probe reused the OWN-03 Tier-3 llm_resolver delegation surface. It does not show an external structural implementation that works without a core patch."
+      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: register_plugins/load_plugin_types already accept an explicit external class without editing core."
     },
     {
       "frz_id": "FRZ-PLG-05",
@@ -310,12 +310,12 @@
       "negative_test_id": "NT-PLG-07",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-07",
-      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_manifest_capabilities_cannot_exceed_registry_contract",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "agent_runtime_governance_wiring.py is absent at prefix 22993254b13af1ebae3dfd304c902523b4236129. A missing file is not a self-expansion assertion."
+      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: capability_payload_to_tool_ids plus ToolAccessPolicy already refuse tool ids outside the declared registry contract."
     },
     {
       "frz_id": "FRZ-PRD-03",
@@ -380,12 +380,12 @@
       "negative_test_id": "NT-REL-07",
       "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-REL-07",
-      "regression_scope": "ENT-A / stage pytest",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
+      "regression_scope": "ENT-A / stage pytest; tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "Rejected probe repeated the REL-09 eager-Celery fallback comment. It does not show a hidden infinite retry."
+      "red_first_reason": "pytest exit 0 at prefix 66664e2bffa1: RetryEngine.decide already returns should_retry=False once attempt reaches declared max_retries."
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -422,12 +422,12 @@
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-RPL-04",
-      "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_embedding_resolver_must_not_default_vendor_slug_for_consumers",
+      "red_first_evidence_ref": "tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
+      "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
-      "red_first_reason": "Rejected probe repeated the CFG-02 embedding default on the same prefix. It does not show a vendor or backend switch modifying consumers.",
+      "red_first_reason": "pytest exit 0 at prefix 754ee000675d: Kafka/RabbitMQ worker call sites already bind MessageConsumer, not a concrete vendor consumer class.",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",

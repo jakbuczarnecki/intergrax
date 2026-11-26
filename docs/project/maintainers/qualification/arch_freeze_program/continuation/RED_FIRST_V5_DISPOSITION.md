@@ -2,6 +2,7 @@
 
 **Worktree / branch:** `D:/Projekty/_wt/intergrax/af-v5-p1-red` · `af-v5/p1-red-first`  
 **Evidence integration head:** `5935fa4f0cd3596852b3a6500f9d4e1d613a53df`  
+**Final-probes remeasurement (2026-11-26, `af-v5/final-probes`):** PLG-02, PLG-07, RPL-04 and REL-07 prefix pytest exit 0; rows stay `RED_FIRST_UNREPRODUCIBLE`.
 **ENT-iso remeasurement (2026-11-26, `af-v5/ent-iso` @ `2a6e197ca`):** prefix `754ee000675d71c1734656702beb0aef8ba58fd8`; probes in `tests/unit/architecture/test_nt_ent_iso_red_first_probes.py`.  
 **PLG-marker remeasurement (2026-11-26, `af-v5/plg-marker`):** probes in `tests/unit/applications/test_nt_plg_red_first_probes.py`, `tests/unit/architecture/test_nt_prd_red_first_probes.py`, `tests/unit/architecture/test_nt_rpl_red_first_probes.py`.
 **Prefix-API remeasurement (2026-11-26, `af-v5/prefix-api`):** probes in `tests/unit/architecture/test_nt_rel_red_first_probes.py`, `tests/unit/applications/test_nt_ten_red_first_probes.py`.
@@ -55,16 +56,16 @@
 
 | `frz_id` | Logged cause (summary) | Cause class | Why this is not positive red-first evidence | T-AF2-RED-CLASSES (recommendation) | Operator decision |
 | --- | --- | --- | --- | --- | --- |
-| `FRZ-PLG-02` | Tier-3 `llm_resolver` local `create_adapter()` | `import_not_mechanism` | Probe reused the OWN-03 delegation surface. It does not show an external structural implementation that works without a core patch. | **FIX** | not DECIDED |
-| `FRZ-PLG-07` | `agent_runtime_governance_wiring.py` absent at `22993254b13a` | `import_not_mechanism` | A missing file is not a self-expansion assertion. | **FIX** | not DECIDED |
-| `FRZ-RPL-04` | embedding resolver `default_embedding_provider_slug()` | `prefix_already_green` | Probe repeated CFG-02 on the same prefix. It does not show a vendor switch modifying consumers. | **FIX** | not DECIDED |
+| `FRZ-PLG-02` | `register_plugins` explicit path | `prefix_already_bounded` | pytest exit 0 @ `22993254b13a`: prefix already accepts explicit external classes via `register_plugins` / `load_plugin_types`. | **FIX** | not DECIDED |
+| `FRZ-PLG-07` | `capability_payload_to_tool_ids` + `ToolAccessPolicy` | `prefix_already_bounded` | pytest exit 0 @ `22993254b13a`: prefix already refuses tool ids outside the declared registry contract. | **FIX** | not DECIDED |
+| `FRZ-RPL-04` | `MessageConsumer` worker binding | `prefix_already_bounded` | pytest exit 0 @ `754ee000675d`: queue worker call sites already bind `MessageConsumer`, not concrete vendor classes. | **FIX** | not DECIDED |
 | `FRZ-FRZ-10` | `AttributeError`: `verify_arch_freeze_plan_traceability` has no `_self_test_cases` | `historical_self_test` | Post-freeze policy activation is a later W5/W8 node; the logged break is a missing historical self-test hook, not matrix mechanism proof. | **FIX** (re-home policy probe when W5/W8 owns FRZ-10) | not DECIDED |
 | `FRZ-PRD-08` | P0 inventory test exit 0 at prefix (bypass count already 0) | `prefix_already_green` | Prefix tree already satisfied the bypass-count invariant; no red mechanism to replay. | **OUT** (recommendation: stays **OPEN** as historical non-evidence; no OUT operator citation) | not DECIDED |
-| `FRZ-REL-07` | eager-Celery comment reused from REL-09 | `import_not_mechanism` | The probe repeated the REL-09 fallback string. It does not show a hidden infinite retry. | **FIX** | not DECIDED |
+| `FRZ-REL-07` | `RetryEngine.decide` budget | `prefix_already_bounded` | pytest exit 0 @ `66664e2bffa1`: `RetryEngine.decide` already returns `should_retry=False` at declared `max_retries`. | **FIX** | not DECIDED |
 
 ## Candidates not promoted
 
-TEN-01 and TEN-10 promoted in the `af-v5/short-rel` review. REL-07 stays unpromoted because the probe repeated the REL-09 eager-Celery comment. PLG-02, PLG-07, RPL-04, PRD-08 and FRZ-10 stay unpromoted. Residual UNREPRODUCIBLE count **6**.
+TEN-01 and TEN-10 promoted in the `af-v5/short-rel` review. PLG-02, PLG-07, RPL-04 and REL-07 stay unpromoted because the recorded prefixes already satisfy those mechanisms. PRD-08 and FRZ-10 stay unpromoted. Residual UNREPRODUCIBLE count **6**.
 
 ## Explicit non-effects
 
