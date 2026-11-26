@@ -419,6 +419,30 @@
         "kind": "source_evidence_note",
         "note": "Evidence is the missing tenant_id field on OnlineEvaluationObservation at prefix 0cee41a88. Review annotation only; not a new measurement."
       }
+    ],
+    "original_results_measurement_counts": {
+      "RED_AT_PREFIX": 7,
+      "RED_FIRST_UNREPRODUCIBLE": 16,
+      "results_length": 23
+    },
+    "original_results_count_note": "Recounting results[].measurement yields 7 RED_AT_PREFIX and 16 RED_FIRST_UNREPRODUCIBLE. That recount is the original batch. Top-level counts are the later 39-row aggregate and must not be derived from results[].",
+    "inventory_rows_absent_from_original_results": [
+      "FRZ-BND-04",
+      "FRZ-BND-05",
+      "FRZ-BND-06",
+      "FRZ-CFG-06",
+      "FRZ-CTR-02",
+      "FRZ-CTR-06",
+      "FRZ-DEBT-02",
+      "FRZ-DEBT-03",
+      "FRZ-EXE-02",
+      "FRZ-OWN-05",
+      "FRZ-PLG-05",
+      "FRZ-SEC-04",
+      "FRZ-SEC-06",
+      "FRZ-TYP-01",
+      "FRZ-TYP-03",
+      "FRZ-TYP-05"
     ]
   },
   "remeasurements": [
@@ -437,6 +461,86 @@
       "evidence_commit": "5a049f2b4",
       "original_integrated_exit_code_unchanged": 1,
       "note": "Later short-probe on current tree; original result object integrated_exit_code remains 1."
+    },
+    {
+      "frz_id": "FRZ-CFG-02",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_02_missing_embedding_config_must_not_silently_select_vendor",
+      "evidence_commit": "d5124582f",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-CFG-08",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default",
+      "evidence_commit": "d5124582f",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-OWN-02",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_02_application_artifact_ref_has_one_canonical_definition",
+      "evidence_commit": "d5124582f",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-OWN-03",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_03_one_sanctioned_llm_adapter_composition_owner",
+      "evidence_commit": "d5124582f",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-PLG-01",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_01_evaluation_wiring_exposes_tenant_scoped_registry_contract",
+      "evidence_commit": "db1436933",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-PLG-06",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab",
+      "evidence_commit": "db1436933",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-PRD-03",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_03_unsupported_queue_backend_must_not_fall_back_to_eager_celery",
+      "evidence_commit": "db1436933",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-REL-09",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_09_kafka_rabbitmq_must_not_be_silently_rewritten_to_eager_celery",
+      "evidence_commit": "ce0b63fab",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-REL-10",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_10_in_memory_kubernetes_scaler_must_not_substitute_when_cluster_url_unset",
+      "evidence_commit": "ce0b63fab",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
+    },
+    {
+      "frz_id": "FRZ-TEN-07",
+      "later_status": "RED_AT_PREFIX",
+      "pytest_node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_07_mcp_client_asserted_tenant_identity_must_fail_closed",
+      "evidence_commit": "ce0b63fab",
+      "original_measurement_unchanged": "RED_FIRST_UNREPRODUCIBLE",
+      "note": "Later probe promotion recorded in rw_plan.v1.json. The original results[] object keeps its historical measurement and reason."
     }
   ]
 }
