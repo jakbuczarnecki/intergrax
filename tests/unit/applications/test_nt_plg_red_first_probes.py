@@ -48,4 +48,3 @@ def test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab() -> N
         "NT-PLG-06 plugin package is not capability authority: "
         "STRICT product gates must use package_gate_qualification for admission-qualified wiring"
     )
-
