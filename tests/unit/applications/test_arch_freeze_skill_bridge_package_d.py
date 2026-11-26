@@ -68,6 +68,7 @@ def _policy_bundle_with_fragment(
     registry = PolicyRuleRegistry()
     provenance = PolicyBundleProvenance(
         source_kind="inline",
+        rules_path=None,
         rules_digest_sha256="test",
         handler_provenance=(),
         rejected_handler_ids=(),

@@ -77,11 +77,7 @@ def resolve_skill_prompt_instruction_pins(
 ) -> tuple[SkillPromptInstructionPin, ...]:
     if not pack.prompt_instruction_ids:
         return ()
-    explicit_versions = (
-        collect_prompt_version_requests(composition)
-        if composition is not None
-        else {}
-    )
+    explicit_versions = collect_prompt_version_requests(composition) if composition is not None else {}
     pins: list[SkillPromptInstructionPin] = []
     for prompt_id in sorted(pack.prompt_instruction_ids):
         pin_config: PromptPinConfig | None = None
@@ -124,7 +120,12 @@ def resolve_pinned_prompt_instructions(
     pin_config = prompt_pin_config_from_binding(pins)
     resolved: dict[str, LoadedPrompt] = {}
     for item in pins:
-        loaded = prompt_registry.resolve(item.prompt_id, pin_config)
+        try:
+            loaded = prompt_registry.resolve(item.prompt_id, pin_config)
+        except PromptNotFound as exc:
+            raise SkillBridgeCompositionError(
+                f"prompt content digest mismatch on resume: {item.prompt_id}",
+            ) from exc
         if loaded.content_hash != item.content_digest:
             raise SkillBridgeCompositionError(
                 f"prompt content digest mismatch on resume: {item.prompt_id}",
@@ -217,12 +218,17 @@ def verify_skill_bridge_on_resume(
     prompt_registry: YamlPromptRegistry | None,
     host_policy_bundle: RuntimePolicyBundle | None,
 ) -> dict[str, LoadedPrompt]:
+    loaded: dict[str, LoadedPrompt] = {}
     if binding_pins_prompt:
         if prompt_registry is None:
             raise SkillBridgeCompositionError(
                 "prompt_registry required to resume pinned skill prompts",
             )
-        return resolve_pinned_prompt_instructions(binding_pins_prompt, prompt_registry)
-    if binding_pins_policy and host_policy_bundle is not None:
+        loaded = resolve_pinned_prompt_instructions(binding_pins_prompt, prompt_registry)
+    if binding_pins_policy:
+        if host_policy_bundle is None:
+            raise SkillBridgeCompositionError(
+                "host policy bundle required to resume pinned skill policy fragments",
+            )
         verify_pinned_policy_fragments_on_resume(host_policy_bundle, binding_pins_policy)
-    return {}
+    return loaded
