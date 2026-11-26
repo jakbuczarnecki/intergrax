@@ -1,5 +1,7 @@
 # T-AF2-RW-PLAN-AUDIT — status raportu (RC-1)
 
+> **Status update 2026-11-26 (T-IGX-078-A, checked at `development` `646e63953`):** `RED_FIRST_EVIDENCE` is now **COMPLETE** (`CODE_FIX_OWNERSHIP=39/39`; the checker still reports `RW_PLAN_AUDIT=NOT_PERFORMED`). **SCOPE is not recorded** and T-AF2-RW-PLAN-AUDIT stays **PARTIAL**; a fresh independent audit is open. Statements below that `RED_FIRST` is `INCOMPLETE` are historical.
+
 **Werdykt tej sesji (AR-12-07, niezależny audytor @ `ebe45c26930a9291a3df2d6a75028c35c036cee2`):** `PASS` (RM-03 strukturalny).
 
 **Cytat audytora (bez redakcji):**

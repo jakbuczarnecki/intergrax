@@ -916,3 +916,62 @@ The following operator cards remain **reserved**; implementers **must not** mark
 ### V5.6 Package boundary
 
 Delivery packages **P1** through **P9** follow the wave map in section J and obligations in sections N1–N13. Appendix V5 records pins and execution doctrine only; it **does not** close any package or promote ledger row statuses.
+
+---
+
+## Appendix V6. AD-AF-DEVTRAIN: development as the train
+
+**Status: SIGNED 2026-11-26 (Operator, OP-A item 3), as relayed.** Records AF-CLOSE decision D-1, with the parts of D-2 and D-4 that touch this plan (Operator, 2026-11-26; register rows OD-AF-CLOSE-D1..D4 and AD-AF-DEVTRAIN in [`../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)). Ticket: T-IGX-078-A. This appendix does **not** set `SCOPE`, `RW_PLAN_AUDIT`, `G2`, `R`, `FCS`, `M3`, `ENTRY` or `ARCH-FREEZE CLOSED`, and earlier text is not rewritten. It governs wherever it names a section below.
+
+**Signature record.** The Operator's words in the AF-CLOSE orchestrator chat, quoted as given: "Accept recommendations". Source: `.tmp/session/arch-freeze/close/OP-A_RECORD.md`, an untracked session artefact written by the orchestrator session, which is also the session that receives the D-3 merge authority. That file says the answer covers OP-A items 3 to 5 and DW0-01..DW0-13, recommended option each, and its item 3 row records AD-AF-DEVTRAIN (D-1, this appendix) and the D-3 orchestrator merge-only override as signed. The writer of ticket T-IGX-078-A received this by relay and did not see the chat. The file was last modified on 2026-11-26 at 16:10:03 +01:00, before this appendix was first committed (`ac0bca160`, 16:18:33 +01:00), so it does not show that the Operator read the committed text; no confirmation against a commit is recorded. This records a decision. It is not a cryptographic signature and not a ticket `Approved:` line.
+
+### V6.1 Train and history
+
+- Remaining product work lands on `development`. There is no separate RW train branch.
+- `11787a7e196cbfea32a982bfa260f02a34fe05fc` is the **historical train absorption**. It is neither `G2` nor `FCS`.
+- Until `G2`, no session outside AF-CLOSE merges product changes into `development` (D-2). AF-CLOSE absorbs the EC-V7-A residuals, T-IGX-077-*, EC campaign F and the ownerless `PT-*` tickets.
+
+### V6.2 Ladder definitions (replace the section J definitions of these four rungs)
+
+| Rung | Definition |
+|---|---|
+| `G2` | The `development` commit after the last product change; the wave-audited SHA. The held-path freeze (V6.3) starts at this commit. |
+| `R` | The RB-2 phase-2 docs commit. `git diff G2 R` is docs only. |
+| `FCS` | The "product freeze confirmation" docs commit. Its held paths equal `G2`. It is not a train merge commit. |
+| `M3` | The EBH-7 pin. Product tree equal to `G2`. |
+
+All four stay **NOT SET** in [`../ARCH_FREEZE_SHA_LADDER.md`](../ARCH_FREEZE_SHA_LADDER.md). The definitions of the other rungs do not change.
+
+### V6.3 Held-path freeze from G2
+
+From `G2`, no change under: `intergrax/`, `agents/`, `applications/`, `pyproject.toml`, `uv.lock`, `scripts/`, `.github/`, and the IIAC paths (the IIAC protocol document, the 5 IIAC scripts and the 6 material governance paths of section K). A CI guard enforces this. The guard is a separate K3 ticket; this appendix does not build it.
+
+**Consequences:**
+
+- Section K allows edits to `scripts/maintenance`, non-IIAC `scripts/governance` gates and `.github/workflows` between `FCS` and `M3`. That allowance ends. PT-S05, PT-S06, the manifest drift gate, the held-path guard and any `scripts/` or `.github/` part of ECAP-EXEC (DP-54, W5, before LOCK) must land **before** `G2`.
+- Docs, `tests/` (within the EBH-7 allowlist ordering) and `governance/tickets/` stay as in section K. After `M3` the section K and section N rules do not change. Neither does the IIAC rule after RB-2.
+- `ACT-N11` measures product changes from `a73d15ab3`, so with product changes on `development` that check fails there until RB-2. Appendix V5.1 treats such a failure before RB-2 as expected-red. This appendix adds no waiver.
+
+### V6.4 Text this appendix amends
+
+| Place | Amendment |
+|---|---|
+| Section J ladder table | `G2`, `R`, `FCS`, `M3` as in V6.2. |
+| Section J waves W3 and W4, and the critical path | W3 runs on `development`; it ends with `G2` and CI green except the exact expected-red set. In W4, PT-Q02 and PT-Q03 stay; there is no train merge, and `FCS` is the V6.2 docs commit after `R`. |
+| Section K, concurrency | D-4: at most 6 live sub-sessions, at most 2 of them writing (disjoint write sets), one `uv run pytest` at a time. |
+| Section K, branches and merges | The `arch-freeze/rw-train` branch lines and "train PRs into the train" no longer apply. D-3 (the orchestrator merges reviewed worktree branches into local `development`; the Operator pushes) needs the separate merge-only override recorded in the register. |
+| Section K, development hold and held-path table | The hold "from now until FCS" and the "from FCS until M3" allowance are replaced by V6.1 and V6.3. |
+| N2 | Read as: every ladder SHA is an ancestor of `development`; `git diff G2 R` is docs only; the held paths at `FCS` and the product tree at `M3` equal those of `G2`. The rest of N2 stands. |
+| Appendix Z, `T-AF2-RW-MERGE` | No train merge. The DAG node id `FCS` is kept and retitled. |
+| Appendix V5.1, RW train row and G2 candidacy | Historical. No `arch-freeze/rw-train` tip is a `G2` candidate. |
+| Appendix V5.4 | "Omega remains at `FCS`" refers to the V6.2 rung. |
+| OD-AF-02 | Superseded in part (train branches, train PRs, development hold). The row is kept. |
+| OD-AF-22 | The approval-packet and delegate mechanism stands; only the "RW train" branch target changes. The row is kept. |
+
+### V6.5 EC campaign F
+
+Group B of the EC campaign F packet keeps its `SCOPE` and product-path-go gates. Only its branch target changes, from `arch-freeze/rw-train` to `development`. This is not a signature for that packet.
+
+### V6.6 `P1`-`P9` withdrawn
+
+The "packages P1-P9" named in the Appendix V5 status line and in V5.6 were never defined. They are **withdrawn**. Read section J and obligations N1-N13. The V5 text is not rewritten.
