@@ -392,5 +392,51 @@
       "measurement": "RED_FIRST_UNREPRODUCIBLE",
       "reason": "E   ImportError: cannot import name 'UnsupportedQueueBackendError' from 'intergrax.applications._shared.production_queue_resolver'"
     }
+  ],
+  "inventory_reconciliation": {
+    "original_rows_measured": 23,
+    "original_batch_note": "Top-level rows_measured 23 is the size of the original measured batch in this artifact, not a claim that all 39 CODE_FIX inventory rows were exercised in that single run.",
+    "aggregate_inventory_code_fix_rows": 39,
+    "current_aggregate_counts": {
+      "RED_AT_PREFIX": 33,
+      "RED_FIRST_UNREPRODUCIBLE": 6
+    },
+    "aggregate_counts_note": "Counts RED_AT_PREFIX 33 and RED_FIRST_UNREPRODUCIBLE 6 describe the later aggregate inventory alignment; they are not a claim that 39 rows were measured in the original run.",
+    "original_nested_run_note": "FRZ-TEN-01 and FRZ-TEN-10 integrated_exit_code 1 in results[] belong to the original nested-prefix run and are not the later short-probe current-tree outcome (see remeasurements).",
+    "review_annotations": [
+      {
+        "frz_id": "FRZ-REL-09",
+        "kind": "source_evidence_note",
+        "note": "Evidence is the source comment \"fall back to eager Celery\" at prefix ec7f1e27 in queue_worker_wiring.py. It matches the silent-rewrite clause and does not by itself prove backpressure behavior. Review annotation only; not a new measurement."
+      },
+      {
+        "frz_id": "FRZ-TEN-01",
+        "kind": "source_evidence_note",
+        "note": "Evidence is the missing tenant_id parameter on wire_application_evaluation at prefix 0cee41a88. Review annotation only; not a new measurement."
+      },
+      {
+        "frz_id": "FRZ-TEN-10",
+        "kind": "source_evidence_note",
+        "note": "Evidence is the missing tenant_id field on OnlineEvaluationObservation at prefix 0cee41a88. Review annotation only; not a new measurement."
+      }
+    ]
+  },
+  "remeasurements": [
+    {
+      "frz_id": "FRZ-TEN-01",
+      "later_current_tree_exit": 0,
+      "pytest_node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_01_canonical_tenant_identity_where_tenant_scope_applies",
+      "evidence_commit": "5a049f2b4",
+      "original_integrated_exit_code_unchanged": 1,
+      "note": "Later short-probe on current tree; original result object integrated_exit_code remains 1."
+    },
+    {
+      "frz_id": "FRZ-TEN-10",
+      "later_current_tree_exit": 0,
+      "pytest_node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_10_missing_or_invalid_tenant_must_not_silently_become_global_scope",
+      "evidence_commit": "5a049f2b4",
+      "original_integrated_exit_code_unchanged": 1,
+      "note": "Later short-probe on current tree; original result object integrated_exit_code remains 1."
+    }
   ]
 }
