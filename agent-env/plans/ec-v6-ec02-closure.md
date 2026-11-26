@@ -2,6 +2,8 @@
 
 Enterprise Campaign EC-02 closure factory plan (`development` @ `530d9fa48`). Integration branch `factory/ec-v6-ec02-closure/int`. No QUAL or CLOSE steps here; parent runs those after integrate.
 
+**EC-V7-A disposition note:** R2-04 (seam ledger missing-seam / parent-import enforcement) and R2-05 (closed-world CW-11/CW-12 production guarantees) remain **authority-blocked**, not QUALIFIED. Evidence: `.tmp/session/ec-v7-a/a01-a02-authority-packet.md`.
+
 **Policy pin:** `BLOCKED_AUTHORITY` per `.tmp/session/ec-v6/policy-pin-verdict.md` — no factory step edits `governance/TRUSTED_POLICY_PIN.yaml` or `governance/policy-registry.yaml`.
 
 **Parked (no factory step):** `T-IGX-043-A` / `T-IGX-043-C` (no `Approved:`); `T-IGX-043-M` Part E (no `Approved:`); `T-IGX-046-H` AST rewrite (verification-only per EC-V6; `check_agent_registry_bypass.py` omitted — behavior verified @ `d80ed0875`).
@@ -24,13 +26,13 @@ Enterprise Campaign EC-02 closure factory plan (`development` @ `530d9fa48`). In
   - ticket: governance/tickets/T-IGX-074-A.md
   - write: intergrax/applications/_shared/package_wiring.py, intergrax/applications/_shared/environment_wiring.py, intergrax/applications/_shared/runtime_event_delivery_wiring.py, intergrax/applications/_shared/sandbox_wiring.py, intergrax/applications/_shared/strict_product_manifest_ci_gates.py, scripts/maintenance/check_sandbox_policy_wiring.py, tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py, tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py, tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py, tests/unit/applications/task_control_product_host_test_support.py, tests/unit/applications/test_reference_capability_bundle.py, applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py
   - tests: uv run pytest tests/unit/applications/test_ec_v3_w02_otlp_fail_closed.py tests/unit/applications/test_ec_v3_w02_sandbox_fail_closed.py tests/unit/runtime/architecture/test_diag_foundation_5_destructive_proof.py
-- [ ] S04 W03 A4-007 import allowlist callers
+- [x] S04 W03 A4-007 import allowlist callers — EC-V7-A wave evidence: candidate `7ff094a24b7e7d59957eda7c1a01716a6dcf2f40`, 21 tests in combined wave pytest (166 total)
   - deps: S02
   - agent: igx-implementer
   - ticket: governance/tickets/T-IGX-051-I.md
   - write: intergrax/applications/_shared/import_policy.py, intergrax/applications/_shared/agent_resolution.py, intergrax/applications/_shared/wiring.py, intergrax/applications/_shared/environment_conformance.py, intergrax/applications/_shared/roster_agent_contract_authority.py, intergrax/applications/_shared/environment_diff_wiring.py, scripts/maintenance/check_application_migrations.py, scripts/gates/check_application_production_gates.py, tests/unit/applications/test_a4007_caller_import_refusal.py, tests/unit/applications/test_a4007_import_policy_derivation.py, tests/unit/scripts/test_a4007_migration_gate_allowlist.py
   - tests: uv run pytest tests/unit/applications/test_a4007_caller_import_refusal.py tests/unit/applications/test_a4007_import_policy_derivation.py tests/unit/scripts/test_a4007_migration_gate_allowlist.py
-- [ ] S05A W04 FC-1 harness HDS tool wiring forward
+- [x] S05A W04 FC-1 harness HDS tool wiring forward — EC-V7-A wave evidence: candidate `7ff094a24`, 10 tests in wave pytest
   - deps: S03
   - agent: igx-implementer
   - ticket: governance/tickets/T-IGX-043-N.md
@@ -48,7 +50,7 @@ Enterprise Campaign EC-02 closure factory plan (`development` @ `530d9fa48`). In
   - ticket: governance/tickets/T-IGX-051-C.md
   - write: intergrax/llm/messages.py, intergrax/runtime/nexus/context/graph_assembly.py, intergrax/context/planner.py, intergrax/context/provider_lifecycle.py, tests/unit/context/test_trust_fail_closed.py
   - tests: uv run pytest tests/unit/context/test_trust_fail_closed.py tests/unit/context/test_context_formatter.py tests/unit/llm/test_messages.py tests/unit/tools/providers/rag/test_rag_scope.py
-- [ ] S05D W04 RW recovery CAS and queue durability
+- [x] S05D W04 RW recovery CAS and queue durability — Part D only @ `7ff094a24b7e7d59957eda7c1a01716a6dcf2f40` (T-IGX-051-E EX-D1-07); 16 recovery-module tests in wave pytest. Schedule-store ports (Part E SQLite/PostgreSQL) and three non-A1 producer-identity enqueue sites remain **outside** this close (EC-V7-B).
   - deps: S02
   - agent: igx-implementer
   - ticket: governance/tickets/T-IGX-051-E.md
@@ -78,7 +80,7 @@ Enterprise Campaign EC-02 closure factory plan (`development` @ `530d9fa48`). In
   - ticket: governance/tickets/T-IGX-065-A.md
   - write: tests/unit/campaign_b/_pt_t01_matrix.py
   - tests: uv run pytest tests/unit/campaign_b/_pt_t01_matrix.py
-- [ ] S07A W06 ENT-AUDIT engine CHANGED-SINCE and FRZ attribution
+- [x] S07A W06 ENT-AUDIT engine CHANGED-SINCE and FRZ attribution — EC-V7-A wave evidence: candidate `7ff094a24`, 45 tests in wave pytest
   - deps: -
   - agent: igx-implementer
   - ticket: governance/tickets/T-IGX-043-I.md
