@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
+import importlib
+
 import pytest
-from intergrax.contracts.evaluation_contracts import (
-    EvalComparison,
-    EvalDigestMismatchError,
-    EvalRevisionRef,
-    EvalRun,
-    EvalThresholds,
-    enforce_eval_run_digests,
-    verify_eval_comparison_digests,
-)
 
 pytestmark = pytest.mark.unit
 
 
-def _minimal_run(*, tenant: str = "t1") -> EvalRun:
+def test_nt_debt_04_enforce_eval_run_digest_guard() -> None:
+    """NT-DEBT-04 red-first: eval-run digest enforcement must exist in frozen scope."""
+    mod = importlib.import_module("intergrax.contracts.evaluation_contracts")
+    fn = getattr(mod, "enforce_eval_run_digests", None)
+    assert callable(fn)
+
+
+def _minimal_run(*, tenant: str = "t1"):
+    from intergrax.contracts.evaluation_contracts import EvalRevisionRef, EvalRun
+
     agent = EvalRevisionRef(ref_id="a", revision="1")
     return EvalRun(
         tenant_id=tenant,
@@ -33,6 +35,11 @@ def _minimal_run(*, tenant: str = "t1") -> EvalRun:
 
 
 def test_tampered_result_digest_raises() -> None:
+    from intergrax.contracts.evaluation_contracts import (
+        EvalDigestMismatchError,
+        enforce_eval_run_digests,
+    )
+
     run = _minimal_run()
     tampered = run.model_copy(update={"dataset_version": "2"})
     with pytest.raises(EvalDigestMismatchError):
@@ -44,6 +51,11 @@ def test_tampered_result_digest_raises() -> None:
 
 
 def test_wrong_declared_result_digest_denied() -> None:
+    from intergrax.contracts.evaluation_contracts import (
+        EvalDigestMismatchError,
+        enforce_eval_run_digests,
+    )
+
     run = _minimal_run()
     with pytest.raises(EvalDigestMismatchError):
         bogus = "sha256:" + "c" * 64
@@ -55,6 +67,13 @@ def test_wrong_declared_result_digest_denied() -> None:
 
 
 def test_comparison_digest_mismatch_denied() -> None:
+    from intergrax.contracts.evaluation_contracts import (
+        EvalComparison,
+        EvalDigestMismatchError,
+        EvalThresholds,
+        verify_eval_comparison_digests,
+    )
+
     baseline = _minimal_run()
     candidate = _minimal_run()
     comparison = EvalComparison(

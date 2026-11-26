@@ -1,7 +1,7 @@
 # RW-PLAN — T-AF2-RW-PLAN (canonical)
 
-**Generated:** 2026-11-24T16:49:22.654721+00:00
-**Execution SHA:** `deea67621120403edb2d9bdd33e3eed8903199de`
+**Generated:** 2026-11-25T18:09:14.017906+00:00
+**Execution SHA:** `35967aaa676686fcf7fd2335f2e4f2bde0f6e53b`
 **Node:** T-AF2-RW-PLAN (W2, DOC)
 
 ## 0. Reconciliation (35 vs 45 CODE_FIX)
@@ -15,70 +15,45 @@
 
 | FRZ | Owner ticket | Negative test | Red-first | Regression |
 |-----|--------------|---------------|-----------|------------|
-| `FRZ-BND-04` | T-IGX-043-G | NT-BND-04 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-BND-01..03 |
-| `FRZ-BND-05` | T-IGX-043-H | NT-BND-05 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-BND-01..03 |
-| `FRZ-BND-06` | T-IGX-043-J | NT-BND-06 | RED_AT_PREFIX @ 307a871c059f… | tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py; ENT-A-BND-01..03 |
-| `FRZ-CFG-02` | T-IGX-043-C | NT-CFG-02 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-VBN-01..03 |
-| `FRZ-CFG-06` | T-IGX-043-C | NT-CFG-06 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-VBN-01..03 |
-| `FRZ-CFG-08` | T-IGX-043-F | NT-CFG-08 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-VBN-01..03 |
-| `FRZ-CTR-01` | T-IGX-051-D | NT-CTR-01 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88 | ENT-A-CTR-01..03 |
-| `FRZ-CTR-02` | T-IGX-051-D | NT-CTR-02 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-CTR-01..03 |
-| `FRZ-CTR-06` | T-IGX-051-D | NT-CTR-06 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-CTR-01..03 |
-| `FRZ-DEBT-02` | T-IGX-051-H | NT-DEBT-02 | RED_AT_PREFIX @ 6c9c8155d | ENT-A / stage pytest |
-| `FRZ-DEBT-03` | T-IGX-051-H | NT-DEBT-03 | RED_AT_PREFIX @ 6c9c8155d | ENT-A / stage pytest |
-| `FRZ-DEBT-04` | T-IGX-051-F | NT-DEBT-04 | RED_FIRST_UNREPRODUCIBLE @ 8bdb0038d7a8… | ENT-A / stage pytest |
-| `FRZ-EXE-02` | T-IGX-043-A | NT-EXE-02 | RED_AT_PREFIX @ b7855b83e98e… | ENT-A / stage pytest |
-| `FRZ-FRZ-10` | T-B7-PFP-ACTIVATE | NT-FRZ-10 | RED_FIRST_UNREPRODUCIBLE @ 332c5217c390… | ENT-A / stage pytest |
-| `FRZ-OWN-02` | T-IGX-043-J | NT-OWN-02 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-OWN-01..03 |
-| `FRZ-OWN-03` | T-IGX-043-H | NT-OWN-03 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-OWN-01..03 |
-| `FRZ-OWN-05` | T-IGX-043-H | NT-OWN-05 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-OWN-01..03 |
-| `FRZ-PLG-01` | T-IGX-043-J | NT-PLG-01 | RED_FIRST_UNREPRODUCIBLE @ 22993254b | ENT-A / stage pytest |
-| `FRZ-PLG-02` | T-IGX-043-J | NT-PLG-02 | RED_FIRST_UNREPRODUCIBLE @ 22993254b | ENT-A / stage pytest |
-| `FRZ-PLG-05` | T-IGX-043-A | NT-PLG-05 | RED_AT_PREFIX @ 459dfebc712f… | ENT-A / stage pytest |
-| `FRZ-PLG-06` | T-IGX-043-J | NT-PLG-06 | RED_FIRST_UNREPRODUCIBLE @ 2b12af1dc502… | tests/qualification/governance/gr11/catalog.py |
-| `FRZ-PLG-07` | T-IGX-043-J | NT-PLG-07 | RED_FIRST_UNREPRODUCIBLE @ 22993254b | ENT-A / stage pytest |
-| `FRZ-PRD-03` | T-IGX-043-B | NT-PRD-03 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-PRD-01..03 |
-| `FRZ-PRD-05` | T-IGX-043-H | NT-PRD-05 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-PRD-01..03 |
-| `FRZ-PRD-08` | T-IGX-043-J | NT-PRD-08 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-PRD-01..03 |
-| `FRZ-REG-09` | T-IGX-051-F | NT-REG-09 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-REG-01; ENT-A-REG-02 |
-| `FRZ-REL-07` | T-IGX-043-B | NT-REL-07 | RED_FIRST_UNREPRODUCIBLE @ 66664e2bffa1… | ENT-A / stage pytest |
-| `FRZ-REL-09` | T-IGX-043-B | NT-REL-09 | RED_FIRST_UNREPRODUCIBLE @ ec7f1e27c4a0… | ENT-A / stage pytest |
-| `FRZ-REL-10` | T-IGX-043-B | NT-REL-10 | RED_FIRST_UNREPRODUCIBLE @ a01b7e415797… | ENT-A / stage pytest |
-| `FRZ-RPL-04` | T-IGX-051-G | NEG-P | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d… | ENT-A-VBN-01..03 |
-| `FRZ-SEC-04` | T-IGX-043-C | NT-SEC-04 | RED_AT_PREFIX @ ccc7287c4067… | ENT-A / stage pytest |
-| `FRZ-SEC-06` | T-IGX-051-B | NEG-0 | RED_AT_PREFIX @ 459dfebc712f… | ENT-A / stage pytest |
-| `FRZ-TEN-01` | T-IGX-043-J | NT-TEN-01 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88 | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TEN-02` | PT-T01 | NEG-0 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88 | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TEN-07` | PT-T01 | NEG-P | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88 | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TEN-10` | T-IGX-051-A | NT-TEN-10 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88 | ENT-A-TEN-01; ENT-A-TEN-02 |
-| `FRZ-TYP-01` | T-IGX-051-G | NEG-0 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-TYP-01..03 |
-| `FRZ-TYP-03` | T-IGX-051-G | NEG-P | RED_AT_PREFIX @ 0cee41a88 | ENT-A-TYP-01..03 |
-| `FRZ-TYP-05` | T-IGX-051-G | NT-TYP-05 | RED_AT_PREFIX @ 0cee41a88 | ENT-A-TYP-01..03 |
-
-## 1b. Known-red FIX inventory (20)
-
-| KR | Owner node | Negative test | File scope (summary) |
-|----|------------|---------------|----------------------|
-| `KR-03` | T-AF2-RW-GATES | NT-KR-03-01 | tests/unit/runtime/nexus/test_reference_harness_strict.py |
-| `KR-04` | T-AF2-RW-GATES | NT-KR-04-01 | tests/unit/runtime/policy/test_acp_token_budget_enforcement.py |
-| `KR-07` | T-AF2-RW-SUPPLY | NT-KR-07-01 | scripts/ci/durable_diagnostics_external_proof.py |
-| `KR-08` | PT-Q03 | NT-KR-08-01 | scripts/governance/iiac_activation_gate.py |
-| `KR-09` | PT-Q11 | NT-KR-09-01 | scripts/qualification/render_ebh7_f10_normative_matrix.py |
-| `KR-10` | PT-Q04 | NT-KR-10-01 | tests/qualification/roadmap_replay_x/test_replay_x_closure_counters_computed.py |
-| `KR-11` | PT-Q06 | NT-KR-11-01 | tests/qualification/trace_x/test_txp6_q02_restart_resume_closed_world_parity.py; intergrax/platform/enterprise_audit/impact_map.py |
-| `KR-13` | T-AF2-RW-GATES | NT-KR-13-01 | tests/qualification/platform_domain_completeness/ |
-| `KR-14` | T-AF2-RW-GATES | NT-KR-14-01 | tests/unit/applications/test_scenario_runtime_baseline.py |
-| `KR-15` | T-B7-CMP-REVAL | NT-KR-15-01 | tests/qualification/compat_x/ |
-| `KR-16` | PT-WB | NT-KR-16-01 | tests/unit/applications/test_fixture_dataset_ingestion.py; tests/unit/applications/test_image_smart_document_handler.py |
-| `KR-17` | T-AF2-RW-RUNTIME | NT-KR-17-01 | intergrax/integrations/providers/relational_store/mongodb/client.py |
-| `KR-18` | PT-WA | NT-KR-18-01 | intergrax/applications/contracts/environment_profile/root.py |
-| `KR-19` | PT-WF | NT-KR-19-01 | intergrax/runtime/observability_otlp/export_boundary.py |
-| `KR-20` | PT-WF | NT-KR-20-01 | tests/qualification/trace_x/; intergrax/applications/local_workspace_application/ |
-| `KR-23` | PT-Q07 | NT-KR-23-01 | tests/unit/applications/test_mcp_surface_opt_in.py; tests/unit/applications/test_mcp_surface_opt_in_runtime.py (+1) |
-| `KR-24` | T-IGX-039-A | NT-KR-24-01 | tests/unit/applications/test_mcp_surface_opt_in.py |
-| `KR-26` | PT-WD | NT-KR-26-01 | intergrax/platform/enterprise_audit/validators.py |
-| `KR-27` | PT-G01 | NT-KR-27-01 | intergrax/integrations/providers/embedding_provider/ollama/register.py |
-| `KR-28` | PT-G01 | NT-KR-28-01 | tests/acceptance/llm_routing/test_llm_routing_acceptance.py; tests/acceptance/llm_routing/test_llm_routing_resolver_acceptance.py |
+| `FRZ-BND-04` | T-IGX-043-G | NT-BND-04 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-BND-01..03 |
+| `FRZ-BND-05` | T-IGX-043-H | NT-BND-05 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-BND-01..03 |
+| `FRZ-BND-06` | T-IGX-043-J | NT-BND-06 | RED_AT_PREFIX @ 307a871c059f150a6b744e39135a737399467e88 | tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py; ENT-A-BND-01..03 |
+| `FRZ-CFG-02` | T-IGX-043-C | NT-CFG-02 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-VBN-01..03 |
+| `FRZ-CFG-06` | T-IGX-043-C | NT-CFG-06 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-VBN-01..03 |
+| `FRZ-CFG-08` | T-IGX-043-F | NT-CFG-08 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-VBN-01..03 |
+| `FRZ-CTR-01` | T-IGX-051-D | NT-CTR-01 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-CTR-01..03 |
+| `FRZ-CTR-02` | T-IGX-051-D | NT-CTR-02 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-CTR-01..03 |
+| `FRZ-CTR-06` | T-IGX-051-D | NT-CTR-06 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-CTR-01..03 |
+| `FRZ-DEBT-02` | T-IGX-051-H | NT-DEBT-02 | RED_AT_PREFIX @ 6c9c8155da6227337e17c9f1f230cf78d7949f4b | ENT-A / stage pytest |
+| `FRZ-DEBT-03` | T-IGX-051-H | NT-DEBT-03 | RED_AT_PREFIX @ 6c9c8155da6227337e17c9f1f230cf78d7949f4b | ENT-A / stage pytest |
+| `FRZ-DEBT-04` | T-IGX-051-F | NT-DEBT-04 | RED_AT_PREFIX @ 8bdb0038d7a8fe506b5490a0ec2acad227e6b938 | ENT-A / stage pytest |
+| `FRZ-EXE-02` | T-IGX-043-A | NT-EXE-02 | RED_AT_PREFIX @ b7855b83e98e3cbf2589775dabd64d990385dc24 | ENT-A / stage pytest |
+| `FRZ-FRZ-10` | T-B7-PFP-ACTIVATE | NT-FRZ-10 | RED_FIRST_UNREPRODUCIBLE @ 332c5217c390202a911ad5592e88a8f366845587 | ENT-A / stage pytest |
+| `FRZ-OWN-02` | T-IGX-043-J | NT-OWN-02 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-OWN-01..03 |
+| `FRZ-OWN-03` | T-IGX-043-H | NT-OWN-03 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-OWN-01..03 |
+| `FRZ-OWN-05` | T-IGX-043-H | NT-OWN-05 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-OWN-01..03 |
+| `FRZ-PLG-01` | T-IGX-043-J | NT-PLG-01 | RED_FIRST_UNREPRODUCIBLE @ 22993254b13af1ebae3dfd304c902523b4236129 | ENT-A / stage pytest |
+| `FRZ-PLG-02` | T-IGX-043-J | NT-PLG-02 | RED_FIRST_UNREPRODUCIBLE @ 22993254b13af1ebae3dfd304c902523b4236129 | ENT-A / stage pytest |
+| `FRZ-PLG-05` | T-IGX-043-A | NT-PLG-05 | RED_AT_PREFIX @ 459dfebc712f54eef6d9e025557930f1171c40d8 | ENT-A / stage pytest |
+| `FRZ-PLG-06` | T-IGX-043-J | NT-PLG-06 | RED_FIRST_UNREPRODUCIBLE @ 2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4 | tests/qualification/governance/gr11/catalog.py |
+| `FRZ-PLG-07` | T-IGX-043-J | NT-PLG-07 | RED_FIRST_UNREPRODUCIBLE @ 22993254b13af1ebae3dfd304c902523b4236129 | ENT-A / stage pytest |
+| `FRZ-PRD-03` | T-IGX-043-B | NT-PRD-03 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-PRD-01..03 |
+| `FRZ-PRD-05` | T-IGX-043-H | NT-PRD-05 | RED_AT_PREFIX @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-PRD-01..03 |
+| `FRZ-PRD-08` | T-IGX-043-J | NT-PRD-08 | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-PRD-01..03 |
+| `FRZ-REG-09` | T-IGX-051-F | NT-REG-09 | RED_AT_PREFIX @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-REG-01; ENT-A-REG-02 |
+| `FRZ-REL-07` | T-IGX-043-B | NT-REL-07 | RED_FIRST_UNREPRODUCIBLE @ 66664e2bffa1de7ee5405b4d16d771302d676080 | ENT-A / stage pytest |
+| `FRZ-REL-09` | T-IGX-043-B | NT-REL-09 | RED_FIRST_UNREPRODUCIBLE @ ec7f1e27c4a0a81b60ffad3feb2ff7ab696152a2 | ENT-A / stage pytest |
+| `FRZ-REL-10` | T-IGX-043-B | NT-REL-10 | RED_FIRST_UNREPRODUCIBLE @ a01b7e415797a0ff1ecfb961ce7d5c5857415106 | ENT-A / stage pytest |
+| `FRZ-RPL-04` | T-IGX-051-G | NEG-P | RED_FIRST_UNREPRODUCIBLE @ 754ee000675d71c1734656702beb0aef8ba58fd8 | ENT-A-VBN-01..03 |
+| `FRZ-SEC-04` | T-IGX-043-C | NT-SEC-04 | RED_AT_PREFIX @ ccc7287c40670b421cc36cf3fc2eb331cdba310c | ENT-A / stage pytest |
+| `FRZ-SEC-06` | T-IGX-051-B | NEG-0 | RED_AT_PREFIX @ 459dfebc712f54eef6d9e025557930f1171c40d8 | ENT-A / stage pytest |
+| `FRZ-TEN-01` | T-IGX-043-J | NT-TEN-01 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-02` | PT-T01 | NEG-0 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-07` | PT-T01 | NEG-P | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TEN-10` | T-IGX-051-A | NT-TEN-10 | RED_FIRST_UNREPRODUCIBLE @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TEN-01; ENT-A-TEN-02 |
+| `FRZ-TYP-01` | T-IGX-051-G | NEG-0 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TYP-01..03 |
+| `FRZ-TYP-03` | T-IGX-051-G | NEG-P | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TYP-01..03 |
+| `FRZ-TYP-05` | T-IGX-051-G | NT-TYP-05 | RED_AT_PREFIX @ 0cee41a88274a53d14bb3558752d55bdde0d0b01 | ENT-A-TYP-01..03 |
 
 ## 2. Audit-flag conflicts (6)
 
