@@ -32,6 +32,7 @@ CLAUDE.md                  Claude-only rules + generated import block
 | `intergrax-core` | always |
 | `intergrax-english-only-commits` | always |
 | `igx-cursor-direct-execution` | cursor-always |
+| `igx-cursor-progress-reporting` | cursor-always |
 | `intergrax-iteration`, `intergrax-hep-step`, `intergrax-ci-hotfix`, `intergrax-micro-implement` | explicit |
 | `intergrax-agent-roles`, `intergrax-independent-audit`, `intergrax-env-vendor-qualification`, `intergrax-scenario-factory` | auto |
 | `loading: retired` (tombstone, no adapters) | `intergrax-token-budget`, `intergrax-test-process-budget`, `intergrax-session-artifacts`, `intergrax-git-branch-safety`, `intergrax-no-ai-attribution` |
