@@ -123,3 +123,5 @@ Both sit next to the ENT-AUDIT-X records and were added by `governance/tickets/T
 |---|---|
 | [`ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md`](ent_audit_x/ENT_AUDIT_X_IIAC_MANIFEST_DRAFT_POINT_IN_TIME_RECORD.md) | Point-in-time facts about the 3 of 40 IIAC manifests that fail the repository validators (EQOA-A2-006); declares no supersession |
 | [`ent_audit_x/FRZ_AUD_10_LIVE_ENFORCEMENT_AMENDMENT_DRAFT.md`](ent_audit_x/FRZ_AUD_10_LIVE_ENFORCEMENT_AMENDMENT_DRAFT.md) | Proposal text for a future FRZ-AUD-10 live-enforcement amendment; does not change the disposition, the checklist or the roadmap |
+
+| Integrax Intelligence (`INTELLIGENCE-X`, PROPOSED) | Hub: [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — future dossier `intelligence_x/` proposed in hub §14.1; not created until authorized |

@@ -4177,3 +4177,5 @@ Accepted Protocol v2 audit layer [`OBSERVABILITY_EVIDENCE`](../../audit_results/
 HOS single-spine architecture, `RuntimeEvent` / platform signal separation, Unified Run Journal read-model ownership, E/K/bitemporal boundaries, TRACE historical delivery facts, conservative A4/I4/P2/E3 honesty, and no universal distributed claims beyond existing evidence are preserved - remediation of these findings is **PLANNED**, not shipped.
 
 ---
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

@@ -1051,3 +1051,5 @@ Primary product abstraction: **Virtual Worker**.
 Future multi-worker product/cross-layer positioning: **Virtual Workforce**.
 
 Use `Virtual Employee` only as explanatory market language where useful; do not make it the canonical type/domain name.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

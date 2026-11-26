@@ -833,3 +833,5 @@ Accepted Protocol v2 audit layer [`ADAPTIVE_HARNESS_INTELLIGENCE`](../../audit_r
 - **Mapping to code:** `intergrax/runtime/adaptive/`, `intergrax/runtime/architecture/adaptive_governance.py`
 - **Implementation plan task IDs:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 - **ADR:** ADR-ADAPT-001 (AHI control plane), ADR-ADAPT-002 (ADAS placement)
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — cross-domain goal composition and qualification program (`INTELLIGENCE-X`). This domain (**Adaptive Harness Intelligence**) governs configuration adaptation under canonical contracts; it is distinct from Integrax Intelligence and does not own execution authority.

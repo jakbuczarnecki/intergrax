@@ -386,3 +386,5 @@ No separate Council Runtime.
 
 - **Implement deliberation:** this file + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md) hub.
 - **Architecture satellite:** [`satellites/DECISION_DELIBERATION_extended_depth.md`](satellites/DECISION_DELIBERATION_extended_depth.md) on demand.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

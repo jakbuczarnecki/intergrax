@@ -292,3 +292,5 @@ Replaceable ERL behavior is grouped by **`EnterpriseReliabilityCapabilityKind`**
 | [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md) | Post-uncertainty outcomes |
 | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | Retry, HITL, compensation queue (existing) |
 | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) | Platform hub index |
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

@@ -900,3 +900,5 @@ Reuse: `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`, `LLMAdap
 | Item | Note |
 | ---- | ---- |
 | `scripts/docs/generate_architecture_read_scopes.py` | Links routing_failover satellite - verify on next arch-scope maintenance pass |
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

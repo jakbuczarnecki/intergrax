@@ -346,3 +346,5 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 - **Implement verification:** this file + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) hub.
 - **Architecture satellite:** [`satellites/DECISION_VERIFICATION_extended_depth.md`](satellites/DECISION_VERIFICATION_extended_depth.md) on demand.
 - **Audit historical migration:** add [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) snapshot sections only.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

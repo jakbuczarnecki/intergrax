@@ -677,3 +677,5 @@ Before modifying ECP behavior, verify:
 
 - Plan rows mark AUDIT-IDEAL-30.4 Celery/K8s adapters **Done** - accurate for adapter **implementation**, not for default reference host wiring or production cluster evidence (reconciled in this hub).
 - Satellite may contain extended production-gate detail - verify against code before citing operational runbooks; do not duplicate satellite into hub.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

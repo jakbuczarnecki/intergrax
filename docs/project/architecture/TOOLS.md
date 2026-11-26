@@ -1060,3 +1060,5 @@ Agent → Skill → ToolRuntime → Tool handler → Integration (optional)
 - Git write ops (merge, approve, push) before read-only context tools ship
 - Global L1 critic on all read-only tools
 - Browser automation suite without a Tier-3 product driver
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

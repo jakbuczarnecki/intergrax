@@ -682,3 +682,5 @@ Accepted Protocol v2 audit layer [`CONTEXT_ENGINEERING`](../../audit_results/202
 Remediation tracked as **CE-POLICY-SOURCE-INTEGRITY** (findings 01–03), **CE-EXTENSION-RUNTIME-INTEGRITY** (finding 04), and **CE-CONTRACT-ACCOUNTING-INTEGRITY** (findings 05–06) in [plan](../maintainers/plans/CONTEXT_ENGINEERING.md#protocol-v2-context-engineering-remediation-2026-08-18). **Not implemented** by audit persistence.
 
 ---
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

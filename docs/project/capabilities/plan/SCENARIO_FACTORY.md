@@ -33,6 +33,11 @@ Do not duplicate the WBS here — edit the dossier files only.
 
 Every post-freeze wave ends with **REBIND-Wn** (ECAP A1–A8 delta audit, D1–D6 classification, IIAC ACT-N11 audited re-bind, independent reviewer session).
 
+
+## Proposed Integrax Intelligence dependency (not ratified)
+
+Architecture hub: [`INTEGRAX_INTELLIGENCE.md`](../architecture/INTEGRAX_INTELLIGENCE.md). Program `INTELLIGENCE-X` is proposed **after** ARCH-FREEZE and required Enterprise Campaign acceptance and **before** productive SFX-P5+ implementation. An additional scoped **`GATE-INTELLIGENCE-CONSUME`** entry condition for SFX-P5+ is **PROPOSED** pending amendment of the approved `SFX-MASTER-PLAN.md` digest (DEFERRED_PENDING_AUTHORITY). SFX-P0..P4 preparatory waves and existing gates remain unchanged.
+
 ## Gates
 
 | Gate | Opens | Conditions (SSOT) |

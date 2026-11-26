@@ -37,6 +37,10 @@ All platform domains and Tier-3 applications MUST comply with these principles.
 ---
 
 ## 2. Architectural hierarchy
+### Strategic product architecture (proposed cross-domain capability)
+
+The operator-proposed strategic sequence **Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem** complements — and does not replace — the Tier-0–Tier-3 physical architecture and the hierarchy in §2. [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) defines the horizontal capability contract, twelve pillars, and twelve `II-INV-*` invariants (PROPOSED, not ratified). Integrax Intelligence must not be classified as a second Execution Engine, competing Nexus runtime, alternative scheduler, duplicate governance engine, or new physical tier.
+
 
 Intergrax architecture is governed through the following hierarchy:
 

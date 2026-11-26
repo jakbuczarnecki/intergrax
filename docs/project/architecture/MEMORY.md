@@ -692,3 +692,5 @@ Accepted Protocol v2 audit layer [`MEMORY`](../../audit_results/2026-08-18/MEMOR
 21. Historical MEM / MEM-DEPTH / MEM-VEC plan **Done** rows remain valid delivery facts - not rewritten as current runtime claims ([plan](../maintainers/plans/MEMORY.md)).
 
 Remediation tracked as **MEMORY-SCOPE-AUTHORITY-INTEGRITY** (findings 01–02, 05), **MEMORY-DURABILITY-LIFECYCLE-INTEGRITY** (findings 03–04), and **MEMORY-READ-MUTATION-CONSISTENCY** (findings 06–07) in [plan](../maintainers/plans/MEMORY.md#protocol-v2-memory-remediation-2026-08-18). **Not implemented** by audit persistence.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

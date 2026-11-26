@@ -1387,3 +1387,5 @@ Accepted Protocol v2 audit layer [`UNIFIED_CONTEXT_LIFECYCLE`](../../audit_resul
 Remediation tracked as **UCL-GOVERNED-REVIEW-INTEGRITY** (findings 01–02), **UCL-DURABLE-VALIDATION-INTEGRITY** (findings 03, 05), and **UCL-REVISION-GENESIS-INTEGRITY** (finding 04) in [plan](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md#protocol-v2-unified-context-lifecycle-remediation-2026-08-18). **Not implemented** by audit persistence.
 
 ---
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

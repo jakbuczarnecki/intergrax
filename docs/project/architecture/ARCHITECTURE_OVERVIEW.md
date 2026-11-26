@@ -29,6 +29,11 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 | **Knowledge, tools, integrations, and model systems** | Source data, remote services, business systems, tool effects, and model access | Are selected behind configured boundaries; they do not own the product workflow or end-user experience |
 | **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
 
+
+## Strategic platform layers (proposed)
+
+Beyond the responsibility boundaries above, the proposed strategic architecture sequence is **Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem**. [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) describes the horizontal Integrax Intelligence capability (`INTELLIGENCE-X`, **PROPOSED / not qualified**). It composes existing domain mechanisms into goal-driven execution without adding a physical tier or competing execution authority.
+
 ## Why this foundation exists
 
 Specialized AI products repeatedly need governed knowledge access, policy and approval, tools and integrations, context, recovery, evidence and provenance, and observability. Without a shared operating layer, each product rebuilds those boundaries independently. Intergrax centralizes reusable mechanisms for those responsibilities.

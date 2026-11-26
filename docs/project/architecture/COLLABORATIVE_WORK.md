@@ -706,6 +706,10 @@ Collaborative Work (identity + authority semantics)
 
 Repository-level concurrency (CAS) and reassignment semantics are defined in this document (see the MP-2 section). Platform failure, retry and HITL semantics are owned by [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md); evidence and correlation by [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
+
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+
 ## Related documents
 
 | Document | Role |

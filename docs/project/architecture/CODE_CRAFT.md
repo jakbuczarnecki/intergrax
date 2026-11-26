@@ -759,3 +759,5 @@ Wiring **Done** (ECC-3): `wire_application_codecraft()` → `RuntimeConfig` → 
 | `autonomous` | yes | auto | auto | auto if gates pass | on policy violation only |
 
 Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`) - **Done** (ECC-MAINT-01); host profile remains default when metadata absent.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

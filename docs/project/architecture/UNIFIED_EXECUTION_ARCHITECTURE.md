@@ -1,4 +1,5 @@
 # Unified Execution Architecture
+**Integrax Intelligence (PROPOSED):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — goal-driven composition across domains. **This document retains sole legal Execution authority** (UEA-INV / II-INV-02). Intelligence behaviors adopt via existing admission, lifecycle, and child execution contracts.
 
 **Status:** Canonical cross-domain meta-architecture (frozen target semantics)  
 **Classification:** `META_ARCHITECTURE` - coordinates platform-wide cross-domain execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  

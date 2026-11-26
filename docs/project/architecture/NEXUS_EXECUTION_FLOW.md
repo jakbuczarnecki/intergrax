@@ -1078,3 +1078,5 @@ AgentGraph()
 `plan_to_execution_graph()` - `intergrax/runtime/nexus/execution/graph_builder.py`
 
 Each `PlanStep` → `ExecutionNode` with `depends_on`, optional `delegation`.
+
+**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

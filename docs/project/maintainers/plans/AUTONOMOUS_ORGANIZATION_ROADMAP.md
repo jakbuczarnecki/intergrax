@@ -6,6 +6,8 @@
 
 Roadmap entries are **outcome gates**, not release promises. Progress is measured by **qualified Scenario Proofs** and resolved **platform gaps**, not by documentation alone.
 
+**Integrax Intelligence (PROPOSED):** [../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — qualified shared cross-domain intelligence is a proposed adoption dependency for organizational scenarios; not implemented.
+
 ---
 
 ## Current program position (VO-DOC-0)
