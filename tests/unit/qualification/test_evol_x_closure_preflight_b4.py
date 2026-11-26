@@ -3659,6 +3659,7 @@ def test_w402_01_an_fsmonitor_hook_that_reports_no_changes_cannot_hide_an_edit(c
     root, _ = closed
     hook = tmp_path / "fsmonitor_stub.sh"
     hook.write_bytes(b"#!/bin/sh\nprintf 'stub-token\\0'\n")  # protocol v2: nothing changed since the token
+    hook.chmod(0o755)
     _git(root, "config", "core.fsmonitor", hook.as_posix())
     _git(root, "update-index", "--fsmonitor")
     _git(root, "update-index", "--refresh")

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition,
@@ -19,11 +20,12 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.vector_store import VectorStore as IntegrationVectorStore
+from intergrax.integrations.registry.catalog_manifests import QDRANT
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from testing_support.dependency_concurrency_admission_config import (
     tool_dependency_concurrency_admission_configuration,
 )
-from tests.fixtures.fc3_vector_store_profile import attach_inmemory_vector_store_slug
 
 from echo.echo_agent import EchoAgent
 
@@ -63,6 +65,19 @@ def minimal_echo_scenario_manifest(
 def production_attached_environment(profile_id: str) -> ApplicationEnvironmentProfile:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
     environment.execution_mode = ExecutionMode.STRICT
+    environment.memory_profile = environment.memory_profile.model_copy(
+        update={
+            "enable_org_memory": False,
+            "enable_user_memory": False,
+            "enable_long_term_memory": False,
+        },
+    )
+    lab_skill_bundles = list(environment.skill_profile.enabled_bundles)
+    environment.skill_profile = environment.skill_profile.model_copy(
+        update={
+            "enabled_bundles": [bundle for bundle in lab_skill_bundles if bundle not in ("harness", "legal")],
+        },
+    )
     environment.orchestration_profile = environment.orchestration_profile.model_copy(
         update={"max_parallel_nodes": 4, "max_inflight_nodes": 4},
     )
@@ -76,7 +91,19 @@ def production_attached_environment(profile_id: str) -> ApplicationEnvironmentPr
                 ),
             },
         )
-    attach_inmemory_vector_store_slug(environment)
+    base_profile = environment.integration_profile
+    environment.integration_profile = base_profile.model_copy(update={"vector_store": QDRANT})
+    if environment.sandbox is not None:
+        environment = environment.model_copy(
+            update={
+                "sandbox": environment.sandbox.model_copy(
+                    update={"root": Path("build/scenario_qualification/sandbox")},
+                ),
+            },
+        )
+    environment.observability_profile = environment.observability_profile.model_copy(
+        update={"otlp_export_endpoint": "http://127.0.0.1:0/v1/logs"},
+    )
     return environment
 
 
@@ -89,15 +116,20 @@ def build_valid_minimal_production_scenario_fixture(
     """Compose a production-attached scenario runtime with full package closure prerequisites."""
     manifest = minimal_echo_scenario_manifest(config.app_id)
     document_store = config.document_store
-    return build_scenario_production_runtime(
-        environment=production_attached_environment(config.profile_id),
-        manifest=manifest,
-        registry=registry or echo_agent_registry(),
-        tenant_id=config.tenant_id,
-        runtime_events_db_path=tmp_path / "events.db",
-        trace_db_path=tmp_path / "trace.db",
-        document_store=document_store,
-    )
+    sentinel = MagicMock(spec=IntegrationVectorStore)
+    with patch(
+        "intergrax.rag.vectorstore.bootstrap.integration_vectorstore.resolve",
+        return_value=sentinel,
+    ):
+        return build_scenario_production_runtime(
+            environment=production_attached_environment(config.profile_id),
+            manifest=manifest,
+            registry=registry or echo_agent_registry(),
+            tenant_id=config.tenant_id,
+            runtime_events_db_path=tmp_path / "events.db",
+            trace_db_path=tmp_path / "trace.db",
+            document_store=document_store,
+        )
 
 
 def build_valid_minimal_lab_scenario_fixture(

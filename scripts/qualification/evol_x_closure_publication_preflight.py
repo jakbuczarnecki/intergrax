@@ -408,31 +408,25 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+_GIT_BASE = (
+    "core.autocrlf=false",
+    "core.fsmonitor=false",
+    "core.commitGraph=false",
+)
+
+
+def _git_command(*args: str) -> list[str]:
+    cmd = ["git", "--no-replace-objects"]
+    for flag in _GIT_BASE:
+        cmd.extend(["-c", flag])
+    cmd.extend(args)
+    return cmd
+
+
 def _git(ctx: Context, *args: str) -> subprocess.CompletedProcess[bytes]:
     # W401-RA-01: replace refs must never substitute the content of a pinned commit.
     return subprocess.run(
-        [
-            "git",
-            "--no-replace-objects",
-            "-c",
-            "core.autocrlf=false",
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            "core.commitGraph=false",
-            *args,
-        ],
-        cwd=ctx.repo,
-        capture_output=True,
-        check=False,
-    )
-
-
-def _git_repo_config(ctx: Context, *args: str) -> subprocess.CompletedProcess[bytes]:
-    """Git with the repository's own configuration (no overrides): used to ask whether a file is *clean* by the
-    conventions the checkout was made with. Replace objects stay disabled."""
-    return subprocess.run(
-        ["git", "--no-replace-objects", "-c", "core.fsmonitor=false", "-c", "core.commitGraph=false", *args],
+        _git_command(*args),
         cwd=ctx.repo,
         capture_output=True,
         check=False,
@@ -527,6 +521,10 @@ def _text_conversion_applies(ctx: Context, rel: str) -> bool:
     if proc.returncode != 0:
         return True
     return proc.stdout.decode("utf-8", errors="replace").rsplit(":", 1)[-1].strip() != "unset"
+
+
+def _prefetch_text_attributes(ctx: Context, paths: list[str]) -> None:
+    ctx.cache["text_attr"] = {path: _text_conversion_applies(ctx, path) for path in paths}
 
 
 def _worktree_matches_blob(ctx: Context, rel: str, raw: bytes, blob: bytes) -> bool:
@@ -645,7 +643,7 @@ def _unset_text_paths(ctx: Context, rels: list[str]) -> set[str]:
     if not rels:
         return set()
     proc = subprocess.run(
-        ["git", "--no-replace-objects", "check-attr", "-z", "--stdin", "text"],
+        _git_command("check-attr", "-z", "--stdin", "text"),
         cwd=ctx.repo,
         input=("\x00".join(rels) + "\x00").encode("utf-8"),
         capture_output=True,
@@ -691,12 +689,12 @@ def _loaded_module_paths(ctx: Context) -> set[str]:
 def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
     """W401-RA-03 / W402-01 / W402-02: every verified input equals the committed ``HEAD`` content.
 
-    The oracle is the file content, never ``git status``: a ``skip-worktree`` / ``assume-unchanged`` bit or a
-    ``core.fsmonitor`` program makes status report a modified file as clean, so each file is compared byte for byte
-    with its ``HEAD`` blob under the RA-B4-01 byte contract (identical, or the exact CRLF expansion of a pure-LF blob
-    on a path that checkout converts). Covered: the inputs that were read, every file below the EVOL-X evidence root
-    and every file below ``scripts`` (the verifier code), plus untracked files in those trees and any index bit that
-    hides a path from status."""
+    The oracle is the file content, not the porcelain working-tree summary: a ``skip-worktree`` / ``assume-unchanged``
+    bit or a ``core.fsmonitor`` program can make a modified file look clean in porcelain output, so each file is
+    compared byte for byte with its ``HEAD`` blob under the RA-B4-01 byte contract (identical, or the exact CRLF
+    expansion of a pure-LF blob on a path that checkout converts). Covered: the inputs that were read, every file below
+    the EVOL-X evidence root and every file below ``scripts`` (the verifier code), plus untracked files in those trees
+    and any non-``H`` index tag on a covered path."""
     blobs: dict[str, str] = {}
     for tree in _BOUND_TREES:
         listed = _git(ctx, "ls-tree", "-r", "-z", ctx.head, "--", tree)
@@ -754,7 +752,13 @@ def _dirty_input_errors(ctx: Context, code: str) -> list[str]:
             if len(record) > 2 and record[0] != "H":
                 path = record[2:]
                 if path in blobs or path in read_paths:
-                    dirty.append(f"{path} [index flag {record[0]!r}: hidden from git status]")
+                    tag = record[0]
+                    if tag in {"S", "s"}:
+                        dirty.append(f"{path} [skip-worktree]")
+                    if tag.islower():
+                        dirty.append(f"{path} [assume-unchanged]")
+                    elif tag not in {"S", "s"}:
+                        dirty.append(f"{path} [index flag {tag!r}]")
     if dirty:
         shown = ", ".join(dirty[:5])
         return [
@@ -2682,6 +2686,12 @@ def evaluate(
         return PreflightResult(
             "INVALID", [f"A-99 internal error while evaluating the evidence ({message})"], ["B-00 Gate A not satisfied"]
         )
+    for extra in _dirty_input_errors(ctx, "A-21"):
+        if extra not in a_errors:
+            a_errors.append(extra)
+    for extra in _dirty_input_errors(ctx, "B-12"):
+        if extra not in b_errors:
+            b_errors.append(extra)
     if a_errors:
         b_errors = [f"B-00 Gate A not satisfied ({len(a_errors)} error(s))", *b_errors]
     return PreflightResult(mode, a_errors, b_errors)

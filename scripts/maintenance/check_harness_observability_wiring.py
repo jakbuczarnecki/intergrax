@@ -74,8 +74,22 @@ def _audit_product_host_auditability() -> int:
     environment = ApplicationEnvironmentProfile.product_defaults(profile_id="obs.auditability.product")
     environment.execution_mode = ExecutionMode.BALANCED
     environment.observability_profile = environment.observability_profile.model_copy(
-        update={"otel_enabled": False},
+        update={
+            "otel_enabled": False,
+            "otlp_export_endpoint": "http://127.0.0.1:0/v1/logs",
+        },
     )
+    temp_dir = Path(tempfile.mkdtemp(prefix="obs-auditability-gate-"))
+    if environment.sandbox is not None:
+        sandbox_root = temp_dir / "sandbox"
+        sandbox_root.mkdir(parents=True, exist_ok=True)
+        environment = environment.model_copy(
+            update={
+                "sandbox": environment.sandbox.model_copy(
+                    update={"root": sandbox_root},
+                ),
+            },
+        )
     manifest = ApplicationManifest.lab(
         app_id="obs_auditability_product",
         name="Observability Auditability Product Host",
@@ -86,7 +100,6 @@ def _audit_product_host_auditability() -> int:
     )
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    temp_dir = Path(tempfile.mkdtemp(prefix="obs-auditability-gate-"))
     runtime = build_harness_host_runtime(
         manifest,
         environment,
