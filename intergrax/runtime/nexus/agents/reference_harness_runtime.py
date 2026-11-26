@@ -9,6 +9,7 @@ from intergrax.runtime.execution.lab_reference_agent_runtime import (
     build_lab_agent_runtime_config_from_merged,
     build_lab_agent_runtime_context,
     build_lab_agent_runtime_context_from_merged,
+    lab_harness_context_from_modality_tooling,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "build_lab_agent_runtime_config_from_merged",
     "build_lab_agent_runtime_context",
     "build_lab_agent_runtime_context_from_merged",
+    "lab_harness_context_from_modality_tooling",
 ]
