@@ -1,0 +1,25 @@
+{
+  "igx-pre-tool-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "read_file|run_command|invoke_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python hooks/igx_agy_pre_tool_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "igx-stop-guard": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python hooks/igx_agy_stop_guard.py",
+        "timeout": 10
+      }
+    ]
+  }
+}
