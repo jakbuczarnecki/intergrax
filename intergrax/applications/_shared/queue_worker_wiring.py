@@ -153,6 +153,7 @@ def wire_optional_queue_execution(
             pipeline_capability_suffix=pipeline_capability_suffix,
             task_enricher=task_enricher,
             production_mode=production_mode,
+            document_store_task_queue=durable_queue,
         )
 
         def _publish_wake(handle, request) -> None:  # noqa: ANN001

@@ -13,6 +13,9 @@ from celery import Celery
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
+from intergrax.queueing.providers.document_store.document_store_task_queue import (
+    DocumentStoreTaskQueue,
+)
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
@@ -181,6 +184,7 @@ def create_nexus_celery_worker_app(
     artifact_governance: AgentRuntimeGovernancePort | None = None,
     artifact_audit: GovernanceAuditRecorder | None = None,
     on_artifact_services: Callable[[WorkerArtifactServices], None] | None = None,
+    document_store_task_queue: DocumentStoreTaskQueue | None = None,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -244,6 +248,7 @@ def create_nexus_celery_worker_app(
         causal_evidence_persistence=causal_evidence_persistence,
         attempt_lifecycle=admission.attempt_lifecycle,
         execution_terminal=admission.execution_terminal,
+        document_store_task_queue=document_store_task_queue,
     )
 
     return app
