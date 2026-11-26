@@ -15,9 +15,13 @@ from intergrax.applications._shared.production_queue_resolver import (
     require_celery_broker_url_for_strict,
     resolve_production_queue_backend,
 )
+from intergrax.applications._shared.reliability_wiring import (
+    assert_idempotency_store_satisfies_host_topology,
+)
 from intergrax.applications._shared.task_control_wiring import TaskEnricher
 from intergrax.background_tasks.active_work import ActiveWorkSource
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.persistence_topology import PersistenceTopology
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
@@ -77,6 +81,7 @@ def wire_optional_queue_execution(
     causal_evidence_persistence: CausalEvidencePersistence | None = None,
     document_store: DocumentStore | None = None,
     idempotency_store: IdempotencyStore | None = None,
+    required_idempotency_persistence_topology: PersistenceTopology | None = None,
     orchestration_triggers: frozenset[str] = frozenset(),
     pipeline_capability_suffix: str = ".pipeline",
     production_mode: bool,
@@ -107,6 +112,11 @@ def wire_optional_queue_execution(
             raise UnsupportedQueueBackendError(
                 UnsupportedQueueBackendReason.TASK_STORE_NOT_DURABLE,
                 "out-of-process queue execution requires a durable idempotency ledger for the task fence",
+            )
+        if required_idempotency_persistence_topology is not None:
+            assert_idempotency_store_satisfies_host_topology(
+                idempotency_store=idempotency_store,
+                required_topology=required_idempotency_persistence_topology,
             )
         if kv_store is None:
             raise ValueError(

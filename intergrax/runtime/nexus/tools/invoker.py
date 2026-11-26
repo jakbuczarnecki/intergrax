@@ -337,10 +337,11 @@ class RuntimeToolInvoker:
 
         if self._requires_idempotency_coordination(contract, request):
             coordinator = self._pre_effect_coordinator
-            if coordinator is None:
-                raise RuntimeError(
-                    "Side-effect tool with idempotency key requires a pre-effect coordinator.",
-                )
+            self.assert_side_effect_tool_requires_pre_effect_coordinator(
+                contract=contract,
+                request=request,
+                coordinator=coordinator,
+            )
             coordination = coordinator.before_external_effect(
                 state=state,
                 contract=contract,
@@ -1146,6 +1147,19 @@ class RuntimeToolInvoker:
                 ) from exc
 
     @staticmethod
+    @staticmethod
+    def assert_side_effect_tool_requires_pre_effect_coordinator(
+        *,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        coordinator: IdempotencyPreEffectCoordinator | None,
+    ) -> None:
+        if RuntimeToolInvoker._requires_idempotency_coordination(contract, request):
+            if coordinator is None:
+                raise RuntimeError(
+                    "Side-effect tool with idempotency key requires a pre-effect coordinator.",
+                )
+
     def _requires_idempotency_coordination(
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
