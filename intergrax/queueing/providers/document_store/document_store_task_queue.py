@@ -63,6 +63,8 @@ from intergrax.queueing.worker.retry_backoff import calculate_retry_countdown
 from intergrax.queueing.worker.retry_policy import RetryPolicy
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_catalog import phase_for_event
+from intergrax.runtime.events.payloads.canonical import TaskLifecyclePayloadV1
+from intergrax.runtime.events.payloads.spine_families import TaskProgressPayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
 DOCUMENT_STORE_TASK_QUEUE_PROVIDER = "document_store"
@@ -177,6 +179,35 @@ def _require_live_row_claim(
     return claim
 
 
+def _queue_lifecycle_payload(
+    *,
+    event_type: RuntimeEventType,
+    document_task_id: str,
+    tenant_id: str,
+) -> dict[str, object]:
+    """Typed spine envelope plus the queue row identity the bus payload must carry."""
+    if event_type is RuntimeEventType.TASK_PROGRESS:
+        typed = TaskProgressPayloadV1(
+            progress_kind="queue_claim",
+            message=document_task_id,
+            auxiliary={
+                "document_task_id": document_task_id,
+                "tenant_id": tenant_id,
+            },
+        )
+    else:
+        task_state = "FAILED" if event_type is RuntimeEventType.TASK_FAILED else "SUCCEEDED"
+        typed = TaskLifecyclePayloadV1(
+            task_state=task_state,
+            message=document_task_id,
+            source="document_store_task_queue",
+        )
+    envelope = typed.to_envelope()
+    envelope["document_task_id"] = document_task_id
+    envelope["tenant_id"] = tenant_id
+    return envelope
+
+
 class DocumentStoreTaskQueue(TaskQueue):
     """Crash-safe local MessageBus using DocumentStore as the durable log."""
 
@@ -257,10 +288,11 @@ class DocumentStoreTaskQueue(TaskQueue):
             execution_id=ExecutionId(identity.execution_id),
             event_type=event_type,
             phase=phase,
-            payload={
-                "document_task_id": document_task_id,
-                "tenant_id": tenant_id,
-            },
+            payload=_queue_lifecycle_payload(
+                event_type=event_type,
+                document_task_id=document_task_id,
+                tenant_id=tenant_id,
+            ),
         )
         bus.record(event, tenant_id=tenant_id)
 

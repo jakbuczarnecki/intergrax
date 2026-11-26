@@ -10,6 +10,7 @@ from intergrax.queueing.contracts.task_queue import TaskExecutionIdentity, TaskR
 from intergrax.queueing.providers.document_store.document_store_task_queue import DocumentStoreTaskQueue
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.schema_guard import assert_runtime_event_schema
 from testing_support.runtime_events import runtime_event_test_identity
 
 pytestmark = [pytest.mark.unit]
@@ -54,6 +55,8 @@ def test_claim_and_success_emit_runtime_events_with_row_identity() -> None:
     progress, completed = events
     assert progress.event_type is RuntimeEventType.TASK_PROGRESS
     assert completed.event_type is RuntimeEventType.TASK_COMPLETED
+    assert_runtime_event_schema(progress)
+    assert_runtime_event_schema(completed)
     assert progress.tenant_id == tenant_id
     assert completed.tenant_id == tenant_id
     assert progress.payload["document_task_id"] == document_task_id
