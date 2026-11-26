@@ -11,12 +11,14 @@ import pytest
 from testing_support.change_safety.data.loaders import load_evol_x_data_document
 from testing_support.change_safety.discovery.closed_world import (
     ClosedWorldInventory,
+    baseline_accepted_exclusion_ids,
     build_closed_world_inventory,
     build_tier_enforcement_report,
+    classify_package_tier,
     collect_unclassified_dependencies,
 )
 from testing_support.change_safety.discovery.closed_world_gates import run_cw11, run_cw12, run_tier_closed_world_gates
-from testing_support.change_safety.discovery.extractors import reset_fact_cache
+from testing_support.change_safety.discovery.extractors import GraphEdge, reset_fact_cache
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -119,9 +121,36 @@ def test_two_identical_tier_enforcement_runs_match(tier_fixture_inventory: Close
     assert first.enforcement_digest == second.enforcement_digest
 
 
-def test_unclassified_product_module_finding(tier_fixture_inventory: ClosedWorldInventory) -> None:
+def test_unscoped_modules_use_longest_prefix_tier_table(tier_fixture_inventory: ClosedWorldInventory) -> None:
+    assert classify_package_tier("intergrax/unscoped/mystery_module.py") == "tier0"
     report = build_tier_enforcement_report(tier_fixture_inventory)
-    assert any(f.kind == "UNCLASSIFIED_MODULE" and "unscoped" in f.location for f in report.findings)
+    assert not any(f.kind == "UNCLASSIFIED_MODULE" and "unscoped" in f.location for f in report.findings)
+
+
+def test_in_universe_unknown_import_fails_tier_gate(tier_fixture_inventory: ClosedWorldInventory) -> None:
+    src = "module:intergrax.contracts.allowed_import"
+    dotted = "agents.synthetic.missing_module"
+    unknown_target = f"unknown:import:{dotted}"
+    augmented_edges = tier_fixture_inventory.edges + (GraphEdge(src, unknown_target, "DEPENDS_UNKNOWN"),)
+    augmented = replace(
+        tier_fixture_inventory,
+        edges=augmented_edges,
+        unresolved_imports=((src, dotted),),
+    )
+    report = build_tier_enforcement_report(augmented)
+    assert any(f.kind == "UNKNOWN_IN_UNIVERSE_IMPORT" for f in report.findings)
+    assert not run_cw11(report).passed
+
+
+def test_cw12_baseline_unchanged_by_live_exclusion_register_edits() -> None:
+    baseline = baseline_accepted_exclusion_ids()
+    register = load_evol_x_data_document("exclusion_register.v1.json")
+    edited = dict(register)
+    entries = [dict(entry) for entry in edited.get("entries", ())]
+    entries[0]["glob_patterns"] = list(entries[0].get("glob_patterns", ())) + ["intergrax/editorial_only/**"]
+    edited["entries"] = entries
+    assert baseline_accepted_exclusion_ids() == baseline
+    assert run_cw12(edited).passed
 
 
 def test_tier_closed_world_gate_wrapper_passes_exclusion_baseline(

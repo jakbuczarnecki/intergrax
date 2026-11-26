@@ -11,6 +11,8 @@ from tests.qualification.trace_x._trace_x_p6_types import (
     RestartResumePathClass,
 )
 
+_INVENTORIED_RESTART_RESUME_PATHS: frozenset[str] = frozenset(path for path, _ in discover_restart_resume_path_keys())
+
 _CLASSIFICATION_OVERRIDES: dict[str, RestartResumePathClass] = {
     "applications/governed_contractor_application/host/offline_demo.py": (RestartResumePathClass.E_TEST_LAB_REFERENCE),
     "applications/governed_contractor_application/host/orchestrator.py": (RestartResumePathClass.E_TEST_LAB_REFERENCE),
@@ -92,8 +94,17 @@ def classify_restart_resume_path(path: str) -> RestartResumePathClass:
     ):
         return RestartResumePathClass.E_TEST_LAB_REFERENCE
     for prefix, classification in _PREFIX_CLASSIFICATION:
-        if path == prefix or path.startswith(prefix):
+        if path == prefix:
             return classification
+        if not path.startswith(prefix):
+            continue
+        if (
+            classification is RestartResumePathClass.A_CANONICAL_RESUME
+            and prefix.endswith("/")
+            and path not in _INVENTORIED_RESTART_RESUME_PATHS
+        ):
+            continue
+        return classification
     return RestartResumePathClass.G_UNCLEAR
 
 

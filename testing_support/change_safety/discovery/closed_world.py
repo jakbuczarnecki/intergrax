@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import fnmatch
+import json
 import subprocess
 from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
@@ -300,7 +301,7 @@ _PACKAGE_TIER_RULES: tuple[tuple[str, str], ...] = (
 )
 
 _TIER_ENFORCEMENT_PREFIXES: tuple[str, ...] = ("intergrax/", "agents/", "applications/")
-_UNCLASSIFIED_PRODUCT_PREFIXES: tuple[str, ...] = ("intergrax/unscoped/",)
+_CW12_BASELINE_REL = "tests/qualification/evol_x/data/exclusion_register_cw12_baseline.v1.json"
 
 
 @dataclass(frozen=True)
@@ -327,9 +328,6 @@ class TierEnforcementReport:
 
 def classify_package_tier(rel_path: str) -> str | None:
     normalized = rel_path.replace("\\", "/")
-    for prefix in _UNCLASSIFIED_PRODUCT_PREFIXES:
-        if normalized.startswith(prefix):
-            return None
     for prefix, tier in _PACKAGE_TIER_RULES:
         stem = prefix.rstrip("/")
         if normalized == stem or normalized.startswith(prefix):
@@ -371,10 +369,9 @@ def _module_path_by_id(inventory: ClosedWorldInventory) -> dict[str, str]:
 
 @lru_cache(maxsize=1)
 def baseline_accepted_exclusion_ids() -> frozenset[str]:
-    doc = load_evol_x_data_document("exclusion_register.v1.json")
-    return frozenset(
-        str(entry["exclusion_id"]) for entry in doc.get("entries", ()) if entry.get("status") == "ACCEPTED"
-    )
+    path = _REPO / Path(_CW12_BASELINE_REL)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return frozenset(str(exc_id) for exc_id in doc.get("accepted_exclusion_ids", ()))
 
 
 def detect_forbidden_exclusion_expansion(exclusion_register: dict[str, Any]) -> tuple[str, ...]:
@@ -399,6 +396,23 @@ def collect_unclassified_dependencies(inventory: ClosedWorldInventory) -> tuple[
         if (src, uid) not in unknown_edges:
             silent.append(f"{src}->{dotted}")
     return tuple(sorted(silent))
+
+
+def collect_unknown_in_universe_imports(inventory: ClosedWorldInventory) -> tuple[str, ...]:
+    """Tier-scoped modules with explicit DEPENDS_UNKNOWN to in-universe unknown:import targets."""
+    paths_by_id = _module_path_by_id(inventory)
+    violations: list[str] = []
+    for edge in inventory.edges:
+        if edge.rel != "DEPENDS_UNKNOWN" or not edge.target_id.startswith("unknown:import:"):
+            continue
+        dotted = edge.target_id.removeprefix("unknown:import:")
+        if not is_in_universe_dotted(dotted):
+            continue
+        src_path = paths_by_id.get(edge.source_id, "")
+        if not src_path or not any(src_path.replace("\\", "/").startswith(p) for p in _TIER_ENFORCEMENT_PREFIXES):
+            continue
+        violations.append(f"{edge.source_id}->{dotted}")
+    return tuple(sorted(set(violations)))
 
 
 def build_tier_enforcement_report(inventory: ClosedWorldInventory) -> TierEnforcementReport:
@@ -447,6 +461,15 @@ def build_tier_enforcement_report(inventory: ClosedWorldInventory) -> TierEnforc
                 "UNCLASSIFIED_DEPENDENCY",
                 item,
                 "in-universe import lacks explicit unknown:import classification",
+            )
+        )
+
+    for item in collect_unknown_in_universe_imports(inventory):
+        findings.append(
+            TierEnforcementFinding(
+                "UNKNOWN_IN_UNIVERSE_IMPORT",
+                item,
+                "in-universe import is explicit unknown:import (DEPENDS_UNKNOWN)",
             )
         )
 
