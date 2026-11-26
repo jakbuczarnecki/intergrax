@@ -921,7 +921,9 @@ Delivery packages **P1** through **P9** follow the wave map in section J and obl
 
 ## Appendix V6. AD-AF-DEVTRAIN: development as the train
 
-**Status: DRAFT - NOT SIGNED (Operator, OP-A).** Records AF-CLOSE decision D-1, with the parts of D-2 and D-4 that touch this plan (Operator, 2026-11-26; register rows OD-AF-CLOSE-D1..D4 and AD-AF-DEVTRAIN in [`../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)). Ticket: T-IGX-078-A. This appendix does **not** set `SCOPE`, `RW_PLAN_AUDIT`, `G2`, `R`, `FCS`, `M3`, `ENTRY` or `ARCH-FREEZE CLOSED`, and earlier text is not rewritten. Once signed, it governs wherever it names a section below.
+**Status: SIGNED 2026-11-26 (Operator, OP-A item 3), as relayed.** Records AF-CLOSE decision D-1, with the parts of D-2 and D-4 that touch this plan (Operator, 2026-11-26; register rows OD-AF-CLOSE-D1..D4 and AD-AF-DEVTRAIN in [`../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md)). Ticket: T-IGX-078-A. This appendix does **not** set `SCOPE`, `RW_PLAN_AUDIT`, `G2`, `R`, `FCS`, `M3`, `ENTRY` or `ARCH-FREEZE CLOSED`, and earlier text is not rewritten. It governs wherever it names a section below.
+
+**Signature record.** The Operator's words in the AF-CLOSE orchestrator chat, quoted as given: "Accept recommendations". Source: `.tmp/session/arch-freeze/close/OP-A_RECORD.md`, an untracked session artefact written by the orchestrator session, which is also the session that receives the D-3 merge authority. That file says the answer covers OP-A items 3 to 5 and DW0-01..DW0-13, recommended option each, and its item 3 row records AD-AF-DEVTRAIN (D-1, this appendix) and the D-3 orchestrator merge-only override as signed. The writer of ticket T-IGX-078-A received this by relay and did not see the chat. The file was last modified on 2026-11-26 at 16:10:03 +01:00, before this appendix was first committed (`ac0bca160`, 16:18:33 +01:00), so it does not show that the Operator read the committed text; no confirmation against a commit is recorded. This records a decision. It is not a cryptographic signature and not a ticket `Approved:` line.
 
 ### V6.1 Train and history
 
@@ -944,7 +946,7 @@ All four stay **NOT SET** in [`../ARCH_FREEZE_SHA_LADDER.md`](../ARCH_FREEZE_SHA
 
 From `G2`, no change under: `intergrax/`, `agents/`, `applications/`, `pyproject.toml`, `uv.lock`, `scripts/`, `.github/`, and the IIAC paths (the IIAC protocol document, the 5 IIAC scripts and the 6 material governance paths of section K). A CI guard enforces this. The guard is a separate K3 ticket; this appendix does not build it.
 
-**Consequences, to be signed knowingly:**
+**Consequences:**
 
 - Section K allows edits to `scripts/maintenance`, non-IIAC `scripts/governance` gates and `.github/workflows` between `FCS` and `M3`. That allowance ends. PT-S05, PT-S06, the manifest drift gate, the held-path guard and any `scripts/` or `.github/` part of ECAP-EXEC (DP-54, W5, before LOCK) must land **before** `G2`.
 - Docs, `tests/` (within the EBH-7 allowlist ordering) and `governance/tickets/` stay as in section K. After `M3` the section K and section N rules do not change. Neither does the IIAC rule after RB-2.

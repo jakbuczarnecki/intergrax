@@ -1,4 +1,4 @@
-> **RETIRED 2026-11-26 (AD-AF-DEVTRAIN; unsigned draft).** Under decision OD-AF-CLOSE-D1, `development` is the train: no `arch-freeze/rw-train` cherry-pick or merge queue is open. The text below is a historical record, kept so that links stay valid. See [`../MEP-AF2_v2.1.md`](../MEP-AF2_v2.1.md) Appendix V6.
+> **RETIRED 2026-11-26 (AD-AF-DEVTRAIN, signed 2026-11-26 as relayed).** Under decision OD-AF-CLOSE-D1, `development` is the train: no `arch-freeze/rw-train` cherry-pick or merge queue is open. The text below is a historical record, kept so that links stay valid. See [`../MEP-AF2_v2.1.md`](../MEP-AF2_v2.1.md) Appendix V6.
 
 ## Development tor — Runda 1–2 (D2=STOP)
 

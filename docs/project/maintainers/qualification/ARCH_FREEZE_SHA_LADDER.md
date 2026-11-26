@@ -23,10 +23,10 @@
 | ENT TEST_EXECUTION_SHA | 89c76eb7b53a0a3ce6f75ab395cf4a2802638a91 | reusable evidence |
 | EXECUTION_WAVE1_SHA (legacy label) | 18a0f68fc6c8107e6344fdb4641ecec1945dae5e | superseded by B1/B2–B4 rungs above |
 | AUDIT_BASELINE_2 | 7960ae7f6c82da60ca9acdc0ceebf63810002a42 | **PINNED 2026-11-16** — `origin/development` at PR #604 merge; start pin of MEP-AF2 v2.1 (T-AF2-BASELINE-PIN). Does not replace `AUDIT_BASELINE_SHA` above. |
-| G2 | NOT SET | **NOT SET** - the `development` commit after the last product change; wave-audited SHA; the held-path freeze starts here (MEP-AF2 Appendix V6, pending AD signature) |
-| R | NOT SET | **NOT SET** - RB-2 phase-2 docs commit; `git diff G2 R` must be docs only (Appendix V6, pending AD signature) |
-| FCS | NOT SET | **NOT SET** - "product freeze confirmation" docs commit; held paths equal to G2 (Appendix V6, pending AD signature) |
-| M3 | NOT SET | **NOT SET** - EBH-7 final pin; product tree equal to G2; planned to equal FREEZE_CERTIFICATION_SHA and TEST_EXECUTION_SHA (Appendix V6, pending AD signature) |
+| G2 | NOT SET | **NOT SET** - the `development` commit after the last product change; wave-audited SHA; the held-path freeze starts here (MEP-AF2 Appendix V6) |
+| R | NOT SET | **NOT SET** - RB-2 phase-2 docs commit; `git diff G2 R` must be docs only (Appendix V6) |
+| FCS | NOT SET | **NOT SET** - "product freeze confirmation" docs commit; held paths equal to G2 (Appendix V6) |
+| M3 | NOT SET | **NOT SET** - EBH-7 final pin; product tree equal to G2; planned to equal FREEZE_CERTIFICATION_SHA and TEST_EXECUTION_SHA (Appendix V6) |
 | AUDIT_EXECUTION_SHA | NOT SET | **NOT SET** - rung named by MEP-AF2 v2.1 section J and N1 |
 | CERTIFICATION_PUBLICATION_SHA | NOT SET | **NOT SET** - rung named by MEP-AF2 v2.1 section J and N1 |
 
@@ -39,8 +39,8 @@
 **Update 2026-11-26** (ticket `T-IGX-078-A`; not a ladder rung promotion):
 
 - `AUDIT_EXECUTION_SHA` and `CERTIFICATION_PUBLICATION_SHA` rows added, both NOT SET.
-- `G2`, `R`, `FCS` and `M3` now carry the definitions of [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md) Appendix V6 (AD-AF-DEVTRAIN). The appendix is **DRAFT - not signed**; all four stay NOT SET.
-- PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **SUPERSEDED**: no `arch-freeze/rw-train` tip is a `G2` candidate (Appendix V6, pending signature). `11787a7e196cbfea32a982bfa260f02a34fe05fc` is the historical train absorption, not `G2` and not `FCS`.
+- `G2`, `R`, `FCS` and `M3` now carry the definitions of [`arch_freeze_program/MEP-AF2_v2.1.md`](./arch_freeze_program/MEP-AF2_v2.1.md) Appendix V6 (AD-AF-DEVTRAIN). The appendix is **signed** (2026-11-26, as relayed; see its signature record). The signature sets no rung: all four stay NOT SET.
+- PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **SUPERSEDED**: no `arch-freeze/rw-train` tip is a `G2` candidate (Appendix V6). `11787a7e196cbfea32a982bfa260f02a34fe05fc` is the historical train absorption, not `G2` and not `FCS`.
 - The status column header was refreshed. The last sentence of the 2026-11-16 note above is historical, as are the train statements in the V4 and V5 notes.
 
 **Rules:** Do not overwrite G6 / B1 / B2–B4 rungs. **FREEZE_CERTIFICATION_SHA** is the single consumer SHA for L3 FREEZE, ECAP §2.C, VBN independent accept, and authorized FRZ promotions.
