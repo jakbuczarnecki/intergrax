@@ -264,6 +264,8 @@ def validate_plan_structure(
             "RED_AT_PREFIX",
             "GREEN_AT_PREFIX",
             "RED_FIRST_UNREPRODUCIBLE",
+            "RED_FIRST_OUT",
+            "RED_FIRST_LATER_WAVE",
         ):
             errors.append(f"{frz}: invalid red_first_status {status!r}")
 
@@ -302,12 +304,35 @@ def validate_plan_structure(
     return errors
 
 
+_OPERATOR_CITATION = "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb"
+_OPERATOR_PACKET = (
+    "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
+)
+_AUTHORIZED_RED_FIRST_OUT = frozenset({"FRZ-PLG-02", "FRZ-PLG-07", "FRZ-RPL-04", "FRZ-REL-07", "FRZ-PRD-08"})
+_AUTHORIZED_LATER_WAVE = {
+    "FRZ-FRZ-10": {
+        "owner_node": "T-B7-PFP-ACTIVATE",
+        "owner_wave": "W5",
+        "verification_node": "T-B7-PFP-VERIFY",
+        "verification_wave": "W8",
+    }
+}
+
+
+def _cited_operator_disposition(row: dict[str, object]) -> bool:
+    return (
+        row.get("operator_citation") == _OPERATOR_CITATION
+        and row.get("operator_packet_ref") == _OPERATOR_PACKET
+        and row.get("red_first_historical_status") == "RED_FIRST_UNREPRODUCIBLE"
+    )
+
+
 def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
     errors: list[str] = []
     for row in data.get("code_fix_inventory") or []:
         if not isinstance(row, dict):
             continue
-        frz = row.get("frz_id")
+        frz = str(row.get("frz_id"))
         status = row.get("red_first_status")
         sha = row.get("red_first_prefix_sha")
         ref = row.get("red_first_evidence_ref")
@@ -331,6 +356,26 @@ def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
                 errors.append(f"{frz}: RED_AT_PREFIX without valid historical prefix SHA")
             if not ref:
                 errors.append(f"{frz}: RED_AT_PREFIX without evidence reference")
+        if status in ("RED_FIRST_OUT", "RED_FIRST_LATER_WAVE"):
+            if not sha or not isinstance(sha, str) or len(sha) != 40:
+                errors.append(f"{frz}: {status} without valid historical prefix SHA")
+            if not ref:
+                errors.append(f"{frz}: {status} without evidence reference")
+            reason = row.get("red_first_reason")
+            if not reason or not str(reason).strip():
+                errors.append(f"{frz}: {status} without historical red_first_reason")
+            if not _cited_operator_disposition(row):
+                errors.append(f"{frz}: {status} without the operator T-AF2-RED-CLASSES citation")
+            if status == "RED_FIRST_OUT" and frz not in _AUTHORIZED_RED_FIRST_OUT:
+                errors.append(f"{frz}: RED_FIRST_OUT is not an authorized T-AF2-RED-CLASSES row")
+            if status == "RED_FIRST_LATER_WAVE":
+                expected = _AUTHORIZED_LATER_WAVE.get(frz)
+                if expected is None:
+                    errors.append(f"{frz}: RED_FIRST_LATER_WAVE is not an authorized T-AF2-RED-CLASSES row")
+                else:
+                    for key, value in expected.items():
+                        if row.get(key) != value:
+                            errors.append(f"{frz}: RED_FIRST_LATER_WAVE {key} must stay {value}")
     return errors
 
 

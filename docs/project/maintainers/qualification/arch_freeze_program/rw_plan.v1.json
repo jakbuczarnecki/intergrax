@@ -191,7 +191,7 @@
       "owner_ticket": null,
       "negative_test_id": "NT-FRZ-10",
       "red_first_prefix_sha": "332c5217c390202a911ad5592e88a8f366845587",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_LATER_WAVE",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-FRZ-10",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
@@ -204,7 +204,10 @@
       "owner_source": "MEP-AF2 v2.1 / W5 and W8",
       "verification_node": "T-B7-PFP-VERIFY",
       "verification_wave": "W8",
-      "owner_ticket_family": "T-IGX-052-*"
+      "owner_ticket_family": "T-IGX-052-*",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-OWN-02",
@@ -267,13 +270,16 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-PLG-02",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_OUT",
       "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
       "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: register_plugins/load_plugin_types already accept an explicit external class without editing core."
+      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: register_plugins/load_plugin_types already accept an explicit external class without editing core.",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-PLG-05",
@@ -309,13 +315,16 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-PLG-07",
       "red_first_prefix_sha": "22993254b13af1ebae3dfd304c902523b4236129",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_OUT",
       "red_first_evidence_ref": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
       "regression_scope": "ENT-A / stage pytest; tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: capability_payload_to_tool_ids plus ToolAccessPolicy already refuse tool ids outside the declared registry contract."
+      "red_first_reason": "pytest exit 0 at prefix 22993254b13a: capability_payload_to_tool_ids plus ToolAccessPolicy already refuse tool ids outside the declared registry contract.",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-PRD-03",
@@ -351,13 +360,16 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-PRD-08",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_OUT",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_REST_RESULT.json#FRZ-PRD-08",
       "regression_scope": "ENT-A-PRD-01..03",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "pytest exit 0 at prefix for test_ee_a1_p0_inventory_reports_zero_production_bypass (production-only bypass already 0 in P0 inventory at prefix)"
+      "red_first_reason": "pytest exit 0 at prefix for test_ee_a1_p0_inventory_reports_zero_production_bypass (production-only bypass already 0 in P0 inventory at prefix)",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-REG-09",
@@ -379,13 +391,16 @@
       "owner_ticket": "T-IGX-043-B",
       "negative_test_id": "NT-REL-07",
       "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_OUT",
       "red_first_evidence_ref": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
       "regression_scope": "ENT-A / stage pytest; tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "pytest exit 0 at prefix 66664e2bffa1: RetryEngine.decide already returns should_retry=False once attempt reaches declared max_retries."
+      "red_first_reason": "pytest exit 0 at prefix 66664e2bffa1: RetryEngine.decide already returns should_retry=False once attempt reaches declared max_retries.",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -421,7 +436,7 @@
       "owner_ticket": "T-IGX-051-G",
       "negative_test_id": "NEG-P",
       "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
+      "red_first_status": "RED_FIRST_OUT",
       "red_first_evidence_ref": "tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
       "regression_scope": "ENT-A-VBN-01..03; tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
       "regression_scope_source": "matrix_tests_column",
@@ -431,7 +446,10 @@
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",
-      "owner_source": "MEP-AF2 v2.1 / section G / DP-36"
+      "owner_source": "MEP-AF2 v2.1 / section G / DP-36",
+      "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+      "operator_citation": "eba9bb47a3bb282c1e001c9a20ad8ed6b596ddbb",
+      "operator_packet_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RED_CLASSES_PACKET.md"
     },
     {
       "frz_id": "FRZ-SEC-04",

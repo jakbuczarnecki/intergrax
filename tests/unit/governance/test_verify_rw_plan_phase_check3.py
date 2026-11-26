@@ -177,6 +177,86 @@ def test_red_first_unreproducible_accepted_by_structure():
     assert not errors
 
 
+def test_authorized_out_is_not_red_at_prefix():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "frz_id": "FRZ-PLG-02",
+            "red_first_status": "RED_FIRST_OUT",
+            "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+            "red_first_prefix_sha": "b" * 40,
+            "red_first_evidence_ref": "docs/packet#FRZ-PLG-02",
+            "red_first_reason": "pytest exit 0 at prefix",
+            "operator_citation": mod._OPERATOR_CITATION,
+            "operator_packet_ref": mod._OPERATOR_PACKET,
+        }
+    )
+    errors = mod.validate_red_first_evidence(plan)
+    assert errors == []
+    assert plan["code_fix_inventory"][0]["red_first_status"] != "RED_AT_PREFIX"
+
+
+def test_out_without_operator_citation_stays_incomplete():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "frz_id": "FRZ-PLG-02",
+            "red_first_status": "RED_FIRST_OUT",
+            "red_first_prefix_sha": "b" * 40,
+            "red_first_evidence_ref": "docs/x.md",
+            "red_first_reason": "historical",
+        }
+    )
+    errors = mod.validate_red_first_evidence(plan)
+    assert any("without the operator T-AF2-RED-CLASSES citation" in e for e in errors)
+
+
+def test_out_on_unauthorized_row_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "frz_id": "FRZ-BND-04",
+            "red_first_status": "RED_FIRST_OUT",
+            "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+            "red_first_prefix_sha": "b" * 40,
+            "red_first_evidence_ref": "docs/x.md",
+            "red_first_reason": "historical",
+            "operator_citation": mod._OPERATOR_CITATION,
+            "operator_packet_ref": mod._OPERATOR_PACKET,
+        }
+    )
+    errors = mod.validate_red_first_evidence(plan)
+    assert any("not an authorized T-AF2-RED-CLASSES row" in e for e in errors)
+
+
+def test_later_wave_requires_w5_w8_owners():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0].update(
+        {
+            "frz_id": "FRZ-FRZ-10",
+            "red_first_status": "RED_FIRST_LATER_WAVE",
+            "red_first_historical_status": "RED_FIRST_UNREPRODUCIBLE",
+            "red_first_prefix_sha": "c" * 40,
+            "red_first_evidence_ref": "docs/x.md#FRZ-FRZ-10",
+            "red_first_reason": "AttributeError",
+            "operator_citation": mod._OPERATOR_CITATION,
+            "operator_packet_ref": mod._OPERATOR_PACKET,
+            "owner_node": "T-B7-PFP-ACTIVATE",
+            "owner_wave": "W5",
+            "verification_node": "T-B7-PFP-VERIFY",
+            "verification_wave": "W8",
+        }
+    )
+    assert mod.validate_red_first_evidence(plan) == []
+    plan["code_fix_inventory"][0]["owner_wave"] = "W3"
+    errors = mod.validate_red_first_evidence(plan)
+    assert any("owner_wave must stay W5" in e for e in errors)
+
+
 def test_red_first_unreproducible_incomplete_evidence():
     mod = _load_verify()
     plan = _minimal_plan()
@@ -257,7 +337,7 @@ def test_phase_check3_cli_emits_separate_dimensions():
         check=False,
     )
     assert "PLAN_STRUCTURE=" in proc.stdout
-    assert "RED_FIRST_EVIDENCE=INCOMPLETE" in proc.stdout
+    assert "RED_FIRST_EVIDENCE=COMPLETE" in proc.stdout
     assert "RW_PLAN_AUDIT=NOT_PERFORMED" in proc.stdout
 
 
