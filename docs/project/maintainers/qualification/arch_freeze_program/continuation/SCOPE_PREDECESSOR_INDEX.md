@@ -1,5 +1,7 @@
 # SCOPE hard predecessor index (WP-12)
 
+> **Supersession (2026-11-26):** The train pin `689b277e` and the phase-b2 process waiver below are **historical records only**; they are **not** an authorized SCOPE close. **`SCOPE_MILESTONE: READY_TO_RECORD` does not apply** at `development` `2a8f15489ce522e7628678e12b92f9baae24d0ce`. **`RED_FIRST_EVIDENCE` remains `INCOMPLETE`**. This index makes **no** G2, FCS, M3, or **ARCH-FREEZE CLOSED** claim.
+
 **Train:** `arch-freeze/fc-train` @ `689b277e62db18613a415e6b2e404864412112b8`  
 **DAG SSOT:** [`WP12_DAG.md`](../WP12_DAG.md) SCOPE row (hard predecessors).  
 **Ancestry rule:** `git merge-base --is-ancestor <evidence_sha> 689b277e6` → **ON_TRAIN**; else **EVIDENCE_NOT_ON_TRAIN**.
