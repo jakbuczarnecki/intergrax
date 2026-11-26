@@ -20,6 +20,9 @@ class UnsupportedQueueBackendReason(StrEnum):
 
     BROKER_WIRING_NOT_BUILT = "BROKER_WIRING_NOT_BUILT"
     EAGER_WORKER_FORBIDDEN_IN_PRODUCTION = "EAGER_WORKER_FORBIDDEN_IN_PRODUCTION"
+    CELERY_BROKER_URL_REQUIRED = "CELERY_BROKER_URL_REQUIRED"
+    REFUSED_IN_PROCESS_BROKER = "REFUSED_IN_PROCESS_BROKER"
+    TASK_STORE_NOT_DURABLE = "TASK_STORE_NOT_DURABLE"
 
 
 class UnsupportedQueueBackendError(ValueError):
@@ -47,3 +50,25 @@ def resolve_production_queue_backend(
 
 def production_queue_requires_worker(backend: ProductionQueueBackend) -> bool:
     return backend is not ProductionQueueBackend.INLINE
+
+
+_REFUSED_BROKER_PREFIXES = ("memory://", "cache+memory://")
+
+
+def broker_url_refused_in_strict_posture(broker_url: str) -> bool:
+    normalized = broker_url.strip().lower()
+    return not normalized or any(normalized.startswith(prefix) for prefix in _REFUSED_BROKER_PREFIXES)
+
+
+def require_celery_broker_url_for_strict(*, broker_url: str) -> None:
+    """Fail closed when strict/production queue wiring needs an explicit broker URL."""
+    if not broker_url.strip():
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.CELERY_BROKER_URL_REQUIRED,
+            "INTERGRAX_CELERY_BROKER_URL must be set for out-of-process queue execution",
+        )
+    if broker_url_refused_in_strict_posture(broker_url):
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.REFUSED_IN_PROCESS_BROKER,
+            f"broker URL {broker_url!r} is refused in strict posture",
+        )

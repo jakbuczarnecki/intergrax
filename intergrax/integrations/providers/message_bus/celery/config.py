@@ -25,18 +25,13 @@ class CeleryIntegrationConfig(BaseIntegrationConfig):
 
     @classmethod
     def from_env(cls, **overrides: object) -> CeleryIntegrationConfig:
-        broker = (
-            os.environ.get(ENV_CELERY_BROKER_URL, DEFAULT_BROKER_URL).strip()
-            or DEFAULT_BROKER_URL
-        )
-        backend = (
-            os.environ.get(ENV_CELERY_BACKEND_URL, DEFAULT_BACKEND_URL).strip()
-            or DEFAULT_BACKEND_URL
-        )
-        app_name = (
-            os.environ.get(ENV_CELERY_APP_NAME, DEFAULT_APP_NAME).strip()
-            or DEFAULT_APP_NAME
-        )
+        broker_raw = os.environ.get(ENV_CELERY_BROKER_URL)
+        if broker_raw is None:
+            broker = ""
+        else:
+            broker = broker_raw.strip()
+        backend = os.environ.get(ENV_CELERY_BACKEND_URL, DEFAULT_BACKEND_URL).strip() or DEFAULT_BACKEND_URL
+        app_name = os.environ.get(ENV_CELERY_APP_NAME, DEFAULT_APP_NAME).strip() or DEFAULT_APP_NAME
         payload: dict[str, object] = {
             "broker_url": broker,
             "backend_url": backend,

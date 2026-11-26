@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from intergrax.integrations._shared.document_store_query_support import query_documents_with_data_filters
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import (
     DocumentDataEquality,
     DocumentDataSort,
@@ -28,7 +29,6 @@ from intergrax.integrations.contracts.partition_atomic_document_store import (
     PartitionReplaceIfMatchOnCreated,
     validate_partition_atomic_batch,
 )
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 
 
 def _record_to_row(document: DocumentRecord) -> str:
@@ -62,6 +62,10 @@ class SqliteFileDocumentStore:
     @property
     def last_query_rows_examined(self) -> int:
         return self._last_query_rows_examined
+
+    @property
+    def survives_process_restart(self) -> bool:
+        return True
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -101,10 +105,7 @@ class SqliteFileDocumentStore:
                 INSERT INTO diagnostic_documents (partition_key, row_key, payload)
                 VALUES (?, ?, ?)
                 """,
-                [
-                    (pk, rk, _record_to_row(document))
-                    for (pk, rk), document in rows.items()
-                ],
+                [(pk, rk, _record_to_row(document)) for (pk, rk), document in rows.items()],
             )
 
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
