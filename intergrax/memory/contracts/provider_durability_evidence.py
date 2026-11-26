@@ -19,6 +19,7 @@ __all__ = [
     "MemoryProviderDurabilityProofKind",
     "TrustedMemoryProviderDurabilityEvidence",
     "durability_evidence_from_reopen_proof",
+    "trusted_memory_provider_restart_reopen_admitted",
 ]
 
 
@@ -93,9 +94,7 @@ class TrustedMemoryProviderDurabilityEvidence:
         backing_provider_id: str | None = None,
         backing_provider_version: str | None = None,
         evidence_source: str = "user_profile_reopen_qualification",
-        proof_kind: MemoryProviderDurabilityProofKind = (
-            MemoryProviderDurabilityProofKind.RESTART_REOPEN
-        ),
+        proof_kind: MemoryProviderDurabilityProofKind = (MemoryProviderDurabilityProofKind.RESTART_REOPEN),
     ) -> MemoryProviderDurabilityEvidence:
         if reopen_passed and delete_reopen_passed is True:
             status = MemoryProviderTrustedDurabilityStatus.DURABLE
@@ -115,6 +114,20 @@ class TrustedMemoryProviderDurabilityEvidence:
             backing_provider_id=backing_provider_id,
             backing_provider_version=backing_provider_version,
         )
+
+
+def trusted_memory_provider_restart_reopen_admitted(
+    lookup: MemoryProviderDurabilityEvidenceLookup,
+) -> bool:
+    """True when trusted evidence proves restart-reopen durability (fail-closed otherwise)."""
+    if lookup.resolve_status is not MemoryProviderDurabilityEvidenceResolveStatus.FOUND:
+        return False
+    evidence = lookup.evidence
+    if evidence is None:
+        return False
+    if evidence.proof_kind is not MemoryProviderDurabilityProofKind.RESTART_REOPEN:
+        return False
+    return evidence.durability_status is MemoryProviderTrustedDurabilityStatus.DURABLE
 
 
 def durability_evidence_from_reopen_proof(

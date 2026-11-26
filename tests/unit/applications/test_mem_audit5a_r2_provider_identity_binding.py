@@ -63,6 +63,7 @@ from tests.unit.applications.test_mem_audit5a_production_provider_admission impo
     _persistent_memory_profile,
     _resolve_wiring,
     _SelfCertifiedDurableUserProfileStore,
+    _sqlite_persistent_memory_durability_registry,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -154,6 +155,12 @@ def test_legitimate_external_plugin_passes_with_plugin_id_evidence() -> None:
     env.memory_profile = with_durable_session_plugin(env.memory_profile)
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
     durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
+    session_durability = _durability_for_provider(
+        "test.durable_declared_session_storage",
+        capability=MemoryProviderCapabilityKind.SESSION_STORAGE,
+    )
+    for record in session_durability._records:  # noqa: SLF001
+        durability_registry.register(record)
     wiring = _resolve_wiring(
         env,
         discover_entry_points=False,
@@ -336,7 +343,7 @@ def test_sqlite_wiring_identity_matches_runner_descriptor(tmp_path: Path) -> Non
         "sqlite": {"data_dir": str(tmp_path)},
     }
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
-    durability_registry = _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
+    durability_registry = _sqlite_persistent_memory_durability_registry()
     wiring = _resolve_wiring(
         env,
         qualification_evidence_registry=registry,

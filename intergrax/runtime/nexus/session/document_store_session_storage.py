@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import json
 import uuid
-from dataclasses import replace
-from typing import List, Optional
 
 from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
 from intergrax.llm.messages import ChatMessage
@@ -29,6 +27,11 @@ class DocumentStoreSessionStorage(SessionStorage):
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = document_store
+
+    @property
+    def backing_document_store(self) -> DocumentStore:
+        """Read-only backing store for composition admission (topology and durability evidence)."""
+        return self._store
 
     def _session_key(self, session_id: str) -> str:
         return f"{self._SESSION_PREFIX}{session_id}"
@@ -93,7 +96,7 @@ class DocumentStoreSessionStorage(SessionStorage):
         *,
         tenant_id: str,
         session_id: str,
-    ) -> Optional[ChatSession]:
+    ) -> ChatSession | None:
         record = self._store.get(tenant_id, self._session_key(session_id))
         if record is None:
             return None
@@ -107,10 +110,10 @@ class DocumentStoreSessionStorage(SessionStorage):
         self,
         *,
         tenant_id: str,
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        workspace_id: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        session_id: str | None = None,
+        user_id: str | None = None,
+        workspace_id: str | None = None,
+        metadata: dict | None = None,
     ) -> ChatSession:
         sid = session_id or str(uuid.uuid4())
         now = SystemTimeProvider.utc_now().isoformat()
@@ -150,10 +153,10 @@ class DocumentStoreSessionStorage(SessionStorage):
         *,
         tenant_id: str,
         user_id: str,
-        limit: Optional[int] = None,
-    ) -> List[ChatSession]:
+        limit: int | None = None,
+    ) -> list[ChatSession]:
         result = self._store.query(tenant_id, row_key_prefix=self._SESSION_PREFIX, limit=limit or 100)
-        sessions: List[ChatSession] = []
+        sessions: list[ChatSession] = []
         for record in result.documents:
             if record.row_key.endswith(":history"):
                 continue
@@ -200,7 +203,7 @@ class DocumentStoreSessionStorage(SessionStorage):
         tenant_id: str,
         session_id: str,
         native_tools: bool = False,
-    ) -> List[ChatMessage]:
+    ) -> list[ChatMessage]:
         _ = native_tools
         record = self._store.get(tenant_id, self._history_key(session_id))
         if record is None:
