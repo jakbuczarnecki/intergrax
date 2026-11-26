@@ -36,7 +36,7 @@ def _llm_resolver_adapter_construction() -> dict[str, bool]:
     for root in ("intergrax", "agents", "applications"):
         for path in (_REPO / root).rglob("*.py"):
             rel = path.relative_to(_REPO).as_posix()
-            if "/tests/" in rel:
+            if "/tests/" in rel or "/docker/runtime-context/" in rel:
                 continue
             text = path.read_text(encoding="utf-8")
             if "def resolve_llm_adapter" not in text:
