@@ -50,6 +50,7 @@ from intergrax.queueing.contracts.task_queue import (
     is_terminal_task_status,
 )
 from intergrax.queueing.providers.document_store.task_row_lease import (
+    invocation_claim_for_new_attempt,
     invocation_claim_from_row,
     read_claim_from_row,
     row_claim_is_live,
@@ -149,9 +150,10 @@ def _require_live_row_claim(
     parsed = read_claim_from_row(row)
     if parsed is None:
         raise StaleClaimError("task row has no active claim fence")
-    ownership, ledger_key = parsed
-    if presented is not None and not row_claim_matches(row, presented):
+    if presented is None or not row_claim_matches(row, presented):
         raise StaleClaimError("task row claim fence does not match presented ownership")
+    if not row_claim_is_live(row):
+        raise StaleClaimError("task row claim lease expired")
     tenant_id = str(row.get("tenant_id") or "").strip()
     claim = invocation_claim_from_row(row, tenant_id=tenant_id)
     if claim is None:
@@ -413,34 +415,36 @@ class DocumentStoreTaskQueue(TaskQueue):
                             owner_id=claim_context.owner_id,
                             lease_seconds=claim_context.lease_seconds,
                         )
-                        if claim_result.outcome in (
-                            ClaimOutcome.BLOCKED_ACTIVE,
-                            ClaimOutcome.UNCERTAIN,
-                        ):
+                        if claim_result.outcome is ClaimOutcome.BLOCKED_ACTIVE:
                             continue
-                        if claim_result.outcome == ClaimOutcome.REPLAY_COMPLETED:
+                        if claim_result.outcome is ClaimOutcome.UNCERTAIN:
+                            ledger_claim = None
+                        elif claim_result.outcome is ClaimOutcome.REPLAY_COMPLETED:
                             self._store.delete(_PENDING_INDEX_PARTITION, _index_row(tid, task_id))
                             continue
-                        ledger_claim = claim_result.claim
-                        if ledger_claim is None:
-                            continue
+                        else:
+                            ledger_claim = claim_result.claim
+                            if ledger_claim is None:
+                                continue
 
                     def _claim(row: dict[str, object]) -> dict[str, object] | None:
                         updated = DocumentStoreTaskQueue._claim_mutation(row)
                         if updated is None:
                             return None
-                        if ledger_claim is not None:
-                            write_claim_to_row(
-                                updated,
-                                claim=ledger_claim,
-                                ledger_key=task_row_ledger_key(
-                                    logical_task_name=str(row["task_name"]),
-                                    idempotency_key=(
-                                        str(row["idempotency_key"]) if row.get("idempotency_key") else None
-                                    ),
-                                    task_id=task_id,
-                                ),
+                        if claim_context is not None:
+                            ledger_key = task_row_ledger_key(
+                                logical_task_name=str(row["task_name"]),
+                                idempotency_key=(str(row["idempotency_key"]) if row.get("idempotency_key") else None),
+                                task_id=task_id,
                             )
+                            claim_to_write = ledger_claim or invocation_claim_for_new_attempt(
+                                updated,
+                                tenant_id=tid,
+                                owner_id=claim_context.owner_id,
+                                lease_seconds=claim_context.lease_seconds,
+                                ledger_key=ledger_key,
+                            )
+                            write_claim_to_row(updated, claim=claim_to_write, ledger_key=ledger_key)
                         return updated
 
                     result = self._cas_update(tid, task_id, _claim)
@@ -534,6 +538,8 @@ class DocumentStoreTaskQueue(TaskQueue):
         def _succeed(row: dict[str, object]) -> dict[str, object] | None:
             if self._standing_terminal(handle, row, "mark_succeeded"):
                 return None
+            if TaskStatus(str(row["status"])) is not TaskStatus.RUNNING:
+                return None
             if read_claim_from_row(row) is not None:
                 _require_live_row_claim(row, presented=presented_claim)
             row["status"] = TaskStatus.SUCCEEDED.value
@@ -556,6 +562,8 @@ class DocumentStoreTaskQueue(TaskQueue):
     ) -> None:
         def _fail(row: dict[str, object]) -> dict[str, object] | None:
             if self._standing_terminal(handle, row, "mark_failed"):
+                return None
+            if TaskStatus(str(row["status"])) is not TaskStatus.RUNNING:
                 return None
             if read_claim_from_row(row) is not None:
                 _require_live_row_claim(row, presented=presented_claim)
@@ -594,6 +602,7 @@ class DocumentStoreTaskQueue(TaskQueue):
         *,
         error_message: str,
         retry_policy: RetryPolicy,
+        presented_claim: LeaseOwnership | None = None,
     ) -> TaskStatus:
         """Settle a failed delivery against the retry budget.
 
@@ -606,6 +615,10 @@ class DocumentStoreTaskQueue(TaskQueue):
         def _settle(row: dict[str, object]) -> dict[str, object] | None:
             if self._standing_terminal(handle, row, "retry_or_dead_letter"):
                 return None
+            if TaskStatus(str(row["status"])) is not TaskStatus.RUNNING:
+                return None
+            if read_claim_from_row(row) is not None:
+                _require_live_row_claim(row, presented=presented_claim)
             return self._settled_fields(
                 row,
                 error_message=error_message,

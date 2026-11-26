@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from intergrax.applications._shared.production_queue_resolver import (
+    ProductionQueueBackend,
     UnsupportedQueueBackendError,
     UnsupportedQueueBackendReason,
     require_celery_broker_url_for_strict,
@@ -29,6 +30,7 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 from intergrax.queueing.providers.document_store.durable_wake_task_queue import DurableWakeTaskQueue
 from intergrax.queueing.providers.document_store.task_row_lease import read_claim_from_row
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
 
 pytestmark = [pytest.mark.unit]
@@ -73,7 +75,12 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
 store = SqliteFileDocumentStore(Path({store_path!r}), cursor_secret=b"x" * 32)
 queue = DocumentStoreTaskQueue(store)
-identity = TaskExecutionIdentity(task_id="t-1", run_id="run-1", attempt_id="a-1", execution_id="e-1")
+identity = TaskExecutionIdentity(
+    task_id="task_" + "ab" * 16,
+    run_id="run_" + "cd" * 16,
+    attempt_id="attempt_" + "ef" * 16,
+    execution_id="exec_" + "01" * 16,
+)
 queue.enqueue(TaskRequest(
     tenant_id="tenant-a",
     run_id="transport-r1",
@@ -93,7 +100,7 @@ queue.enqueue(TaskRequest(
         rows[0].task_id,
     )
     assert row is not None
-    assert row.data.get("identity", {}).get("task_id") == "t-1"
+    assert row.data.get("identity", {}).get("task_id") == "task_" + "ab" * 16
 
 
 def test_concurrent_claim_runs_handler_once(tmp_path: Path) -> None:
@@ -196,10 +203,11 @@ def test_empty_celery_url_in_strict_wiring_fails(tmp_path: Path) -> None:
                 host_execution=MagicMock(),
                 registry=MagicMock(),
                 run_service=MagicMock(),
-                queue_backend=None,
+                queue_backend=ProductionQueueBackend.CELERY,
                 kv_store=MagicMock(),
                 causal_evidence_persistence=MagicMock(),
                 document_store=store,
+                idempotency_store=SQLiteIdempotencyStore(str(tmp_path / "idem.sqlite")),
                 production_mode=True,
             )
         assert refusal.value.reason is UnsupportedQueueBackendReason.CELERY_BROKER_URL_REQUIRED
@@ -221,3 +229,66 @@ def test_tenant_mismatch_does_not_settle(tmp_path: Path) -> None:
             identity=None,
         )
     assert queue.get_status(handle) is TaskStatus.RUNNING
+
+
+def test_other_process_cannot_settle_fenced_row_without_claim(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    queue = DocumentStoreTaskQueue(
+        store,
+        idempotency_store=SQLiteIdempotencyStore(str(tmp_path / "idem.sqlite")),
+    )
+    handle = queue.enqueue(
+        TaskRequest(
+            tenant_id="tenant-a",
+            run_id="r1",
+            task_name="demo.echo",
+            payload=b"{}",
+            idempotency_key="fence-1",
+        )
+    )
+    claimed = queue.claim_pending(
+        limit=1,
+        claim_context=TaskRowClaimContext(owner_id="owner-a", lease_seconds=30),
+    )
+    assert claimed
+    proc = subprocess.run(
+        [sys.executable, str(_WORKER), "--mode", "complete-without-claim"],
+        cwd=str(_REPO),
+        env={
+            **os.environ,
+            "ARCH_FREEZE_B_DB": str(tmp_path / "tasks.db"),
+            "ARCH_FREEZE_B_TASK_ID": handle.task_id,
+            "ARCH_FREEZE_B_TENANT": handle.tenant_id,
+        },
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "STALE"
+    assert queue.get_status(handle) is TaskStatus.RUNNING
+
+
+def test_in_memory_ledger_refused_for_out_of_process_worker(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    env = dict(os.environ)
+    env["INTERGRAX_CELERY_BROKER_URL"] = "redis://broker.example/0"
+    old = os.environ
+    try:
+        os.environ = env  # type: ignore[assignment]
+        with pytest.raises(UnsupportedQueueBackendError) as refusal:
+            wire_optional_queue_execution(
+                enabled=True,
+                host_execution=MagicMock(),
+                registry=MagicMock(),
+                run_service=MagicMock(),
+                queue_backend=ProductionQueueBackend.CELERY,
+                kv_store=MagicMock(),
+                causal_evidence_persistence=MagicMock(),
+                document_store=store,
+                idempotency_store=InMemoryIdempotencyStore(),
+                production_mode=True,
+            )
+        assert refusal.value.reason is UnsupportedQueueBackendReason.TASK_STORE_NOT_DURABLE
+    finally:
+        os.environ = old

@@ -177,12 +177,23 @@ class DocumentStoreTaskWorker:
             for handle, request in claimed:
                 try:
                     try:
+                        presented: LeaseOwnership | None = None
                         transport_ref = BackgroundTransportExecutionRef(
                             tenant_id=request.tenant_id,
                             provider=handle.provider,
                             transport_task_id=handle.task_id,
                         )
                         self._seed_carried_identity(transport_ref, request)
+                        row = self._queue._load(handle)
+                        row_claim = (
+                            invocation_claim_from_row(row, tenant_id=request.tenant_id) if row is not None else None
+                        )
+                        if row_claim is not None:
+                            presented = LeaseOwnership(
+                                owner_id=row_claim.owner_id,
+                                lease_expires_at=row_claim.lease_expires_at,
+                                fence=row_claim.fence,
+                            )
                         reentry = admit_background_execution_reentry(
                             transport_ref=transport_ref,
                             identity_persistence=self._identity_persistence,
@@ -190,20 +201,13 @@ class DocumentStoreTaskWorker:
                             execution_terminal=self._execution_terminal,
                         )
                         if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
-                            self._queue.mark_succeeded(handle, output=None)
+                            self._queue.mark_succeeded(
+                                handle,
+                                output=None,
+                                presented_claim=presented,
+                            )
                             continue
                         execution_identity = reentry.identity
-                        row = self._queue._load(handle)
-                        row_claim = (
-                            invocation_claim_from_row(row, tenant_id=request.tenant_id) if row is not None else None
-                        )
-                        presented: LeaseOwnership | None = None
-                        if row_claim is not None:
-                            presented = LeaseOwnership(
-                                owner_id=row_claim.owner_id,
-                                lease_expires_at=row_claim.lease_expires_at,
-                                fence=row_claim.fence,
-                            )
                         try:
                             self._queue.assert_delivery_matches(
                                 handle,
@@ -253,7 +257,7 @@ class DocumentStoreTaskWorker:
                             handle.task_id,
                             request.task_name,
                         )
-                        self._settle_exception(handle, exc)
+                        self._settle_exception(handle, exc, presented_claim=presented)
                 finally:
                     remaining -= 1
                     self._settle_in_flight(1)
@@ -303,7 +307,13 @@ class DocumentStoreTaskWorker:
             ),
         )
 
-    def _settle_exception(self, handle: TaskHandle, exc: Exception) -> None:
+    def _settle_exception(
+        self,
+        handle: TaskHandle,
+        exc: Exception,
+        *,
+        presented_claim: LeaseOwnership | None = None,
+    ) -> None:
         """Retryable errors consume the retry budget; exhaustion dead-letters."""
         policy = self._retry_policy
         if policy is not None and _is_retryable(policy, exc):
@@ -311,9 +321,10 @@ class DocumentStoreTaskWorker:
                 handle,
                 error_message=str(exc),
                 retry_policy=policy,
+                presented_claim=presented_claim,
             )
             return
-        self._queue.mark_failed(handle, error_message=str(exc))
+        self._queue.mark_failed(handle, error_message=str(exc), presented_claim=presented_claim)
 
     def _run_loop(self, stop_event: threading.Event) -> None:
         delay_raw = (os.environ.get("INTERGRAX_DOCUMENT_STORE_TASK_WORKER_START_DELAY_SECONDS") or "").strip()

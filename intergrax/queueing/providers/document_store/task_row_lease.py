@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from intergrax.contracts.idempotency_store import InvocationClaim
 from intergrax.contracts.lease_claim import LeaseOwnership
@@ -19,6 +19,26 @@ def task_row_ledger_key(*, logical_task_name: str, idempotency_key: str | None, 
     if idempotency_key:
         return f"{logical_task_name}:{idempotency_key}"
     return f"document_store_task:{task_id}"
+
+
+def invocation_claim_for_new_attempt(
+    row: dict[str, object],
+    *,
+    tenant_id: str,
+    owner_id: str,
+    lease_seconds: int,
+    ledger_key: str,
+) -> InvocationClaim:
+    """Row-local fence when the ledger cannot grant a new owner after expiry."""
+    previous = row.get(_ROW_FENCE)
+    fence = previous + 1 if isinstance(previous, int) else 1
+    return InvocationClaim(
+        owner_id=owner_id,
+        lease_expires_at=datetime.now(UTC) + timedelta(seconds=lease_seconds),
+        fence=fence,
+        tenant_id=tenant_id,
+        key=ledger_key,
+    )
 
 
 def write_claim_to_row(row: dict[str, object], *, claim: InvocationClaim, ledger_key: str) -> None:
@@ -99,5 +119,6 @@ __all__ = [
     "row_claim_is_live",
     "row_claim_matches",
     "task_row_ledger_key",
+    "invocation_claim_for_new_attempt",
     "write_claim_to_row",
 ]

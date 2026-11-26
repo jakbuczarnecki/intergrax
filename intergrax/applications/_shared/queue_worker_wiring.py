@@ -101,6 +101,13 @@ def wire_optional_queue_execution(
         _assert_durable_task_store(document_store)
         celery_config = CeleryIntegrationConfig.from_env(app_name=app_name)
         require_celery_broker_url_for_strict(broker_url=celery_config.broker_url)
+        from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+
+        if idempotency_store is None or isinstance(idempotency_store, InMemoryIdempotencyStore):
+            raise UnsupportedQueueBackendError(
+                UnsupportedQueueBackendReason.TASK_STORE_NOT_DURABLE,
+                "out-of-process queue execution requires a durable idempotency ledger for the task fence",
+            )
         if kv_store is None:
             raise ValueError(
                 "wire_optional_queue_execution requires kv_store for Celery worker identity persistence",
