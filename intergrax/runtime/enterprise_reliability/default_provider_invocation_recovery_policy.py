@@ -11,6 +11,15 @@ from intergrax.contracts.enterprise_reliability.provider_invocation_recovery imp
     ProviderInvocationRecoveryPolicyDecision,
     ProviderInvocationRecoveryPolicyRequest,
 )
+from intergrax.contracts.provider_invocation import ProviderInvocationStatus
+
+_MUTATING_RECOVERY_ACTIONS = frozenset(
+    {
+        ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT,
+        ProviderInvocationRecoveryAction.TERMINAL_SUCCESS,
+        ProviderInvocationRecoveryAction.TERMINAL_FAILURE,
+    }
+)
 
 __all__ = [
     "DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID",
@@ -18,9 +27,7 @@ __all__ = [
     "default_fail_closed_provider_invocation_recovery_policy",
 ]
 
-DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID = (
-    "default_fail_closed_provider_invocation_recovery"
-)
+DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID = "default_fail_closed_provider_invocation_recovery"
 
 
 class DefaultFailClosedProviderInvocationRecoveryPolicy:
@@ -43,6 +50,20 @@ class DefaultFailClosedProviderInvocationRecoveryPolicy:
             return ProviderInvocationRecoveryPolicyDecision(
                 selected_action=ProviderInvocationRecoveryAction.ESCALATE_HITL,
             )
+        if ProviderInvocationRecoveryAction.NO_ACTION in allowed:
+            return ProviderInvocationRecoveryPolicyDecision(
+                selected_action=ProviderInvocationRecoveryAction.NO_ACTION,
+            )
+        outcome = request.outcome
+        if outcome is not None and outcome.status is ProviderInvocationStatus.UNKNOWN:
+            for action in allowed:
+                if action not in _MUTATING_RECOVERY_ACTIONS:
+                    return ProviderInvocationRecoveryPolicyDecision(
+                        selected_action=action,
+                    )
+            return ProviderInvocationRecoveryPolicyDecision(
+                selected_action=ProviderInvocationRecoveryAction.ESCALATE_HITL,
+            )
         return ProviderInvocationRecoveryPolicyDecision(
             selected_action=allowed[0],
         )
@@ -51,7 +72,5 @@ class DefaultFailClosedProviderInvocationRecoveryPolicy:
 _DEFAULT = DefaultFailClosedProviderInvocationRecoveryPolicy()
 
 
-def default_fail_closed_provider_invocation_recovery_policy() -> (
-    ProviderInvocationRecoveryPolicy
-):
+def default_fail_closed_provider_invocation_recovery_policy() -> ProviderInvocationRecoveryPolicy:
     return _DEFAULT

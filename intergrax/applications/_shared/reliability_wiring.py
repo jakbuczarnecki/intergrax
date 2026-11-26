@@ -7,23 +7,33 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.applications._shared.application_security_wiring import _attach_middleware
+from intergrax.applications._shared.autonomy_middleware import AutonomyGovernanceMiddleware
 from intergrax.applications._shared.compensation_wiring import resolve_compensation_flow
 from intergrax.applications._shared.partial_results_wiring import apply_partial_results_task_defaults
+from intergrax.applications._shared.production_queue_resolver import (
+    UnsupportedQueueBackendError,
+    UnsupportedQueueBackendReason,
+)
 from intergrax.applications._shared.reasoning_wiring import resolve_reasoning_task_metadata
 from intergrax.applications._shared.reliability_runtime_bridge import (
     ReliabilityWiringOptions,
     resolve_reliability_wiring_options,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
-from intergrax.runtime.tools.reference_idempotency_store import resolve_reference_idempotency_store
-from intergrax.applications._shared.autonomy_middleware import AutonomyGovernanceMiddleware
-from intergrax.applications._shared.application_security_wiring import _attach_middleware
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.persistence_topology import (
+    PersistenceTopology,
+    format_topology_mismatch_error,
+    resolve_idempotency_store_topology,
+    topology_satisfies,
+)
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.tools.reference_idempotency_store import resolve_reference_idempotency_store
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +43,32 @@ class ApplicationReliabilityWiring:
     options: ReliabilityWiringOptions
     idempotency_store: IdempotencyStore | None
     circuit_breaker_config: IntegrationCircuitBreakerConfig
+
+
+def assert_idempotency_store_satisfies_host_topology(
+    *,
+    idempotency_store: IdempotencyStore | None,
+    required_topology: PersistenceTopology,
+) -> None:
+    """Fail closed when the task-fence ledger cannot satisfy the host persistence requirement."""
+    if idempotency_store is None:
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.TASK_STORE_NOT_DURABLE,
+            "out-of-process queue execution requires a durable idempotency ledger for the task fence",
+        )
+    provided_topology = resolve_idempotency_store_topology(idempotency_store)
+    if provided_topology is None or not topology_satisfies(
+        required_topology,
+        provided_topology,
+    ):
+        raise UnsupportedQueueBackendError(
+            UnsupportedQueueBackendReason.TASK_STORE_NOT_DURABLE,
+            format_topology_mismatch_error(
+                mechanism="idempotency",
+                required=required_topology,
+                provided=provided_topology,
+            ),
+        )
 
 
 def wire_application_reliability(

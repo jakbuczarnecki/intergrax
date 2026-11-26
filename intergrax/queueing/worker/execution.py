@@ -17,6 +17,7 @@ from intergrax.contracts.idempotency_store import (
 from intergrax.queueing.worker.registry import (
     BackgroundTaskHandler,
     TaskExecutionRegistry,
+    assert_background_task_external_effects_use_runtime_tool_invoker,
 )
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_admission import (
@@ -46,6 +47,7 @@ def _invoke_logical_task_handler(
     idempotency_key: str | None,
     execution_identity: BackgroundExecutionIdentity,
 ) -> ToolExecutionResult[BaseModel]:
+    assert_background_task_external_effects_use_runtime_tool_invoker(handler)
     return handler(
         tenant_id=tenant_id,
         run_id=run_id,
