@@ -33,7 +33,7 @@ from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempote
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO = Path(__file__).resolve().parents[3]
 _WORKER = Path(__file__).with_name("_arch_freeze_b_queue_worker.py")

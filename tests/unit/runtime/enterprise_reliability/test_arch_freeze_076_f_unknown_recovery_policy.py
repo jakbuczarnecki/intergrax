@@ -62,7 +62,7 @@ from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
     admit_external_effect_unknown,
 )
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _invocation() -> ProviderInvocation:

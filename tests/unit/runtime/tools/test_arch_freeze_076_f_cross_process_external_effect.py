@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO = Path(__file__).resolve().parents[3]
 _CHILD = Path(__file__).with_name("_arch_freeze_f_idempotency_child.py")

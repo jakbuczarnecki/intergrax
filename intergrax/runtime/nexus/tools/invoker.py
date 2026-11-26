@@ -1147,7 +1147,6 @@ class RuntimeToolInvoker:
                 ) from exc
 
     @staticmethod
-    @staticmethod
     def assert_side_effect_tool_requires_pre_effect_coordinator(
         *,
         contract: ToolContract,
@@ -1160,6 +1159,7 @@ class RuntimeToolInvoker:
                     "Side-effect tool with idempotency key requires a pre-effect coordinator.",
                 )
 
+    @staticmethod
     def _requires_idempotency_coordination(
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],

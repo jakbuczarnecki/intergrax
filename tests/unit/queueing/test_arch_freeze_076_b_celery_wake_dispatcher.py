@@ -32,7 +32,7 @@ from tests.unit.queueing.worker.dispatcher_test_kv import (
     dispatcher_test_causal_persistence,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 class _DummyOutput(BaseModel):

@@ -22,7 +22,7 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _LOCAL = McpIdentityMode.LOCAL_DEV_EXPLICIT
 
