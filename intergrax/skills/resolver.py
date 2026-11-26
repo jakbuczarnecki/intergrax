@@ -64,8 +64,7 @@ def _validate_resolved_skill_composition(
             )
         if manifest.version != ref.version:
             raise SkillResolutionError(
-                f"manifest version mismatch for {ref.qualified_id}: "
-                f"observed {manifest.skill_id}@{manifest.version}",
+                f"manifest version mismatch for {ref.qualified_id}: observed {manifest.skill_id}@{manifest.version}",
             )
 
 
@@ -196,9 +195,7 @@ class SkillResolver:
             visiting.remove(skill_id)
             seen.add(skill_id)
             order.append(skill_id)
-            roles[skill_id] = (
-                ResolvedSkillRole.ROOT if skill_id in root_id_set else ResolvedSkillRole.TRANSITIVE
-            )
+            roles[skill_id] = ResolvedSkillRole.ROOT if skill_id in root_id_set else ResolvedSkillRole.TRANSITIVE
 
         for skill_id in root_ids:
             sid = skill_id.strip()
@@ -311,11 +308,7 @@ class SkillResolver:
     def validate_tool_contracts(self, tools: Sequence[ToolContract]) -> None:
         if self._tool_registry is None:
             return
-        missing = [
-            tool.tool_id
-            for tool in tools
-            if tool.tool_id.strip() and not self._tool_registry.has(tool.tool_id)
-        ]
+        missing = [tool.tool_id for tool in tools if tool.tool_id.strip() and not self._tool_registry.has(tool.tool_id)]
         if missing:
             raise SkillResolutionError(
                 f"extra_tools reference tool_id(s) not in ToolRegistry: {', '.join(sorted(missing))}"
@@ -325,6 +318,4 @@ class SkillResolver:
         assert self._tool_registry is not None
         missing = [tid for tid in sorted(tool_ids) if not self._tool_registry.has(tid)]
         if missing:
-            raise SkillResolutionError(
-                f"Skill references tool_id(s) not in ToolRegistry: {', '.join(missing)}"
-            )
+            raise SkillResolutionError(f"Skill references tool_id(s) not in ToolRegistry: {', '.join(missing)}")

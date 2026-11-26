@@ -41,12 +41,8 @@ from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
 SKILL_EXECUTION_BINDING_HANDLE = "skill_execution_binding"
 SKILL_EXECUTION_PINNING_STORE_HANDLE = "skill_execution_pinning_store"
 
-BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1 = (
-    "skill_execution_binding_integrity.manifest_observation.v1"
-)
-BINDING_INTEGRITY_RUNTIME_CONTENT_V2 = (
-    "skill_execution_binding_integrity.runtime_content.v2"
-)
+BINDING_INTEGRITY_MANIFEST_OBSERVATION_V1 = "skill_execution_binding_integrity.manifest_observation.v1"
+BINDING_INTEGRITY_RUNTIME_CONTENT_V2 = "skill_execution_binding_integrity.runtime_content.v2"
 
 
 class SkillExecutionPinningConflictError(SkillResolutionError):
@@ -232,8 +228,7 @@ def _verify_registry_content_witness_against_catalog(
             )
         if catalog_metadata.content_digest != witnessed_digest:
             raise SkillResolutionError(
-                "registry content digest mismatch with pinned catalog witness for "
-                f"{ref.qualified_id}",
+                f"registry content digest mismatch with pinned catalog witness for {ref.qualified_id}",
             )
 
 
@@ -284,9 +279,7 @@ def verify_skill_execution_binding_integrity(
             "nonempty resolved pack requires observed manifests for recovery",
         )
 
-    manifest_by_skill_id = {
-        manifest.skill_id: manifest for manifest in binding.observed_manifests
-    }
+    manifest_by_skill_id = {manifest.skill_id: manifest for manifest in binding.observed_manifests}
     if len(manifest_by_skill_id) != len(binding.observed_manifests):
         raise SkillResolutionError("duplicate observed manifest skill_id in binding")
 
@@ -336,9 +329,7 @@ def verify_skill_execution_binding_integrity(
     if binding.content_bound_skill_ids != bound_from_digests:
         raise SkillResolutionError("content_bound_skill_ids mismatch runtime content digests")
 
-    metadata_by_skill_id = {
-        item.logical_skill_id: item for item in binding.observed_runtime_binding_metadata
-    }
+    metadata_by_skill_id = {item.logical_skill_id: item for item in binding.observed_runtime_binding_metadata}
     if len(metadata_by_skill_id) != len(binding.observed_runtime_binding_metadata):
         raise SkillResolutionError("duplicate runtime binding metadata skill_id in binding")
 

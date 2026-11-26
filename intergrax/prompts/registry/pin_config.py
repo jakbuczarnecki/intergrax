@@ -12,6 +12,7 @@ class PromptPinConfig:
     """
     Mapping prompt_id -> pinned version and optional content digests for resume checks.
     """
+
     pins: dict[str, int]
     content_digests: dict[str, str] = field(default_factory=dict)
 

@@ -22,7 +22,7 @@ class YamlPromptRegistry:
     Production registry backed by YAML catalog.
     """
 
-    _default_instance : dict[Path, YamlPromptRegistry] = {}
+    _default_instance: dict[Path, YamlPromptRegistry] = {}
     _default_lock = threading.Lock()
 
     def __init__(
@@ -68,8 +68,7 @@ class YamlPromptRegistry:
                     validation = validate_prompt_document_governance(loaded.document)
                     if not validation.valid:
                         raise PromptValidationError(
-                            f"Governance validation failed for {prompt_id}: "
-                            + "; ".join(validation.reasons)
+                            f"Governance validation failed for {prompt_id}: " + "; ".join(validation.reasons)
                         )
                 self._cache[prompt_id][loaded.document.version] = loaded
 
@@ -147,10 +146,7 @@ class YamlPromptRegistry:
         if "en" in locales:
             return locales["en"]
 
-        raise PromptNotFound(
-            f"No locale '{lang}' and no 'en' fallback for prompt '{prompt_id}'"
-        )
-
+        raise PromptNotFound(f"No locale '{lang}' and no 'en' fallback for prompt '{prompt_id}'")
 
     # ---------------------------------------------------------------------
 
@@ -169,7 +165,6 @@ class YamlPromptRegistry:
             raise PromptNotFound(f"Invalid stable.yaml for '{prompt_id}'")
 
         return version
-    
 
     def list_prompt_ids(self) -> tuple[str, ...]:
         return tuple(sorted(self._cache.keys()))
@@ -186,13 +181,8 @@ class YamlPromptRegistry:
 
         raise PromptNotFound(prompt_id)
 
-
     @classmethod
-    def create_default(
-        cls, 
-        path: str | None = None, 
-        load:bool = True
-    )-> YamlPromptRegistry:
+    def create_default(cls, path: str | None = None, load: bool = True) -> YamlPromptRegistry:
 
         target_path = Path(path or "prompts/")
 
@@ -208,7 +198,6 @@ class YamlPromptRegistry:
             cls._default_instance[target_path] = instance
 
             return instance
-        
 
     @classmethod
     def reset_defaults(cls, path: str | None = None) -> None:
