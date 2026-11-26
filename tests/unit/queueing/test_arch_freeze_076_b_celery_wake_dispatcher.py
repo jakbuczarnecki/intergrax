@@ -12,7 +12,9 @@ from celery import Celery
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.providers.document_store.document_store_task_queue import (
     DocumentStoreTaskQueue,
+    TaskRowClaimContext,
 )
+from intergrax.queueing.providers.document_store.task_row_lease import read_claim_from_row
 from intergrax.queueing.worker.dispatcher import register_dispatcher_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.admission_wiring import (
@@ -86,7 +88,16 @@ def test_terminal_row_wake_acknowledged_without_handler(tmp_path: Path) -> None:
             payload=b"{}",
         )
     )
-    queue.mark_succeeded(handle)
+    claimed = queue.claim_pending(
+        limit=1,
+        claim_context=TaskRowClaimContext(owner_id="owner-setup", lease_seconds=30),
+    )
+    assert claimed
+    record = store.get(f"intergrax.task_queue.v1:{handle.tenant_id}", handle.task_id)
+    assert record is not None
+    ownership, _ledger_key = read_claim_from_row(record.data)
+    assert ownership is not None
+    queue.mark_succeeded(handle, presented_claim=ownership)
     calls = {"n": 0}
 
     class _Registry(TaskExecutionRegistry):
