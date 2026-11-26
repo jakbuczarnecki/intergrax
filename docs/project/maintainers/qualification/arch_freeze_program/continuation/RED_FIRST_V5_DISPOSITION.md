@@ -4,7 +4,8 @@
 **Evidence integration head:** `5935fa4f0cd3596852b3a6500f9d4e1d613a53df`  
 **ENT-iso remeasurement (2026-11-26, `af-v5/ent-iso` @ `2a6e197ca`):** prefix `754ee000675d71c1734656702beb0aef8ba58fd8`; probes in `tests/unit/architecture/test_nt_ent_iso_red_first_probes.py`.  
 **PLG-marker remeasurement (2026-11-26, `af-v5/plg-marker`):** probes in `tests/unit/applications/test_nt_plg_red_first_probes.py`, `tests/unit/architecture/test_nt_prd_red_first_probes.py`, `tests/unit/architecture/test_nt_rpl_red_first_probes.py`.
-**Canonical counts (rw_plan.v1.json after PLG-marker pass):** **28** `RED_AT_PREFIX` · **11** `RED_FIRST_UNREPRODUCIBLE`  
+**Prefix-API remeasurement (2026-11-26, `af-v5/prefix-api`):** probes in `tests/unit/architecture/test_nt_rel_red_first_probes.py`, `tests/unit/applications/test_nt_ten_red_first_probes.py`.
+**Canonical counts (rw_plan.v1.json after prefix-api pass):** **31** `RED_AT_PREFIX` · **8** `RED_FIRST_UNREPRODUCIBLE`  
 **Machine result:** [`RED_FIRST_V5_RESULT.json`](RED_FIRST_V5_RESULT.json)
 
 ## Phase-check 3 status
@@ -42,7 +43,15 @@
 | `FRZ-PLG-06` | `optional_dep_probe_green` | `test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab` | `_gate_wiring_environment` downgrades PRODUCT hosts at `2b12af1dc502` | **RED_AT_PREFIX** |
 | `FRZ-PRD-03` | `pytest_marker_config` | `test_nt_prd_03_unsupported_queue_backend_must_not_fall_back_to_eager_celery` | `fall back to eager Celery` present at `754ee000` | **RED_AT_PREFIX** |
 
-## Row dispositions (11 × RED_FIRST_UNREPRODUCIBLE)
+## Prefix-API promotions (prefixes `ec7f1e27c4a0…`, `a01b7e415797…`, `0cee41a88274…`)
+
+| `frz_id` | Prior cause | Probe | Prefix assertion (mechanism) | Status |
+| --- | --- | --- | --- | --- |
+| `FRZ-REL-09` | `import_not_mechanism` | `test_nt_rel_09_kafka_rabbitmq_must_not_be_silently_rewritten_to_eager_celery` | `NT-REL-09 … Kafka/RabbitMQ … must not be silently rewritten to in-process eager Celery` | **RED_AT_PREFIX** |
+| `FRZ-REL-10` | `import_not_mechanism` | `test_nt_rel_10_in_memory_kubernetes_scaler_must_not_substitute_when_cluster_url_unset` | `NT-REL-10 … in-memory Kubernetes scaler must not substitute when INTERGRAX_KUBERNETES_URL is unset` | **RED_AT_PREFIX** |
+| `FRZ-TEN-07` | `import_not_mechanism` | `test_nt_ten_07_mcp_client_asserted_tenant_identity_must_fail_closed` | `NT-TEN-07 MCP client-asserted tenant identity must fail closed` | **RED_AT_PREFIX** |
+
+## Row dispositions (8 × RED_FIRST_UNREPRODUCIBLE)
 
 | `frz_id` | Logged cause (summary) | Cause class | Why this is not positive red-first evidence | T-AF2-RED-CLASSES (recommendation) | Operator decision |
 | --- | --- | --- | --- | --- | --- |
@@ -52,15 +61,12 @@
 | `FRZ-FRZ-10` | `AttributeError`: `verify_arch_freeze_plan_traceability` has no `_self_test_cases` | `historical_self_test` | Post-freeze policy activation is a later W5/W8 node; the logged break is a missing historical self-test hook, not matrix mechanism proof. | **FIX** (re-home policy probe when W5/W8 owns FRZ-10) | not DECIDED |
 | `FRZ-PRD-08` | P0 inventory test exit 0 at prefix (bypass count already 0) | `prefix_already_green` | Prefix tree already satisfied the bypass-count invariant; no red mechanism to replay. | **OUT** (recommendation: stays **OPEN** as historical non-evidence; no OUT operator citation) | not DECIDED |
 | `FRZ-REL-07` | `ModuleNotFoundError: wiring_posture` (pytest exit 3) | `missing_wiring_module` | Broken import path on prefix, not “hidden infinite retry/fallback” behavior. | **FIX** (wire negative test to an existing REL mechanism probe) | not DECIDED |
-| `FRZ-REL-09` | `ImportError: UnsupportedQueueBackendError` from `production_queue_resolver` | `import_not_mechanism` | Matrix concern is kafka/rabbitmq silently rewritten to eager Celery; prefix lacks the typed refusal API, so collection fails before any “broker refused / not rewritten” assertion. Integrated head passes `test_kafka_never_rewritten_to_celery` with `UnsupportedQueueBackendError` — **not** replayed as red-first at prefix in this campaign. | **FIX** (prefix-capable behavioral probe naming silent Celery rewrite) | not DECIDED |
-| `FRZ-REL-10` | `ImportError: CapacityQualification` from `production_capacity_wiring` | `import_not_mechanism` | Concern is in-memory K8s scaler when cluster URL unset; prefix lacks `CapacityQualification` / fail-closed wiring surface used by integrated `test_fc2_capacity_fail_closed.py`. Import ≠ saturation fail-closed assertion at prefix. | **FIX** | not DECIDED |
 | `FRZ-TEN-01` | `subprocess.TimeoutExpired` after 300s | `subprocess_timeout` | Timeout in nested pytest launcher, not a tenant-identity assertion failure. | **ENV** (harness duration / runner) unless a shorter single-node probe is bound | not DECIDED |
-| `FRZ-TEN-07` | `ImportError: McpIdentityCompositionError` from `mcp_harness_principal` | `import_not_mechanism` | Matrix concern is MCP client-asserted tenant identity fail-closed; prefix tree has no `McpIdentityCompositionError` / `assert_mcp_identity_composition` — collection fails before behavioral identity-composition assertion. | **FIX** | not DECIDED |
 | `FRZ-TEN-10` | `subprocess.TimeoutExpired` after 300s (same nested path as TEN-01) | `subprocess_timeout` | Same timeout class as TEN-01; not missing-tenant silent-global assertion proof. | **ENV** (harness duration / runner) | not DECIDED |
 
-## Candidates not promoted (REL-09 / REL-10 / TEN-07)
+## Candidates not promoted
 
-Grok binding: these three may become **RED_AT_PREFIX** only with a **one-node** probe that **fails at the recorded prefix** with an assertion **naming the FRZ mechanism** (not import/marker/timeout/nested ENT exit 4) and **passes** on integration head `5935fa4f`. Current V5 logs show **import-only** failures at prefix; `test_fc2_queue_worker_fail_closed.py` and integrated tenant MCP tests were **not** present or not overlayable without the later typed APIs. **No conversion** for REL/TEN rows in the ENT-iso pass. PLG-02, PLG-07 and RPL-04 stay unpromoted after review. Residual UNREPRODUCIBLE count **11**.
+REL-09, REL-10 and TEN-07 promoted in the prefix-api pass (`af-v5/prefix-api`). PLG-02, PLG-07 and RPL-04 stay unpromoted. Residual UNREPRODUCIBLE count **8**.
 
 ## Explicit non-effects
 
@@ -70,4 +76,4 @@ This document does **not**:
 - weaken `scripts/governance/verify_rw_plan_phase_check3.py`;
 - mark any **T-AF2-RED-CLASSES** row as operator-**DECIDED**.
 
-**Recorded:** 2026-11-26 · red-first V5 disposition pass on `af-v5/p1-red-first`.
+**Recorded:** 2026-11-26 · red-first V5 disposition pass on `af-v5/p1-red-first` and prefix-api remeasurement on `af-v5/prefix-api`.
