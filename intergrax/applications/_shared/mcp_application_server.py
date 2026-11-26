@@ -117,6 +117,7 @@ def compose_application_mcp_server(
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         custom_host_tools=custom_host_tools,
         identity_mode=coerced_mode,
+        fails_closed=fails_closed,
         max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)

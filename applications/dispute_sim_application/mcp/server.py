@@ -17,6 +17,7 @@ def build_dispute_sim_mcp_server(
     route_prefix: str,
     tool_registry: object | None = None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """MCP tools mirror the dispute simulation HTTP API (canonical host task execution)."""
     _ = route_prefix
@@ -30,4 +31,5 @@ def build_dispute_sim_mcp_server(
         default_capability="dispute_intake.basic",
         tool_registry=tool_reg,
         identity_mode=identity_mode,
+        fails_closed=fails_closed,
     )

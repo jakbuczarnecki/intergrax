@@ -18,6 +18,7 @@ def build_lab_mcp_server(
     default_capability: str = "echo.basic",
     tool_registry=None,
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND,
+    fails_closed: bool = False,
 ) -> FastMCP:
     """MCP tools mirror ``GET {route_prefix}/agents`` and ``POST {route_prefix}/run``."""
     _ = route_prefix
@@ -33,4 +34,5 @@ def build_lab_mcp_server(
         default_user_id="lab-user",
         tool_registry=tool_reg,
         identity_mode=identity_mode,
+        fails_closed=fails_closed,
     )

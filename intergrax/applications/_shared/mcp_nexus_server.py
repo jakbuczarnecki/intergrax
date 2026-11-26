@@ -316,6 +316,7 @@ def build_nexus_mcp_server(
         catalog_root_child_work_ingress=catalog_root_child_work_ingress,
         enable_cross_loop_catalog_child=enable_cross_loop_catalog_child,
         identity_mode=coerced_mode,
+        fails_closed=fails_closed,
         max_call_seconds=max_call_seconds,
     )
     return compose_mcp_server_from_definition(definition, deps)

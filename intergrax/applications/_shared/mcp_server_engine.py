@@ -24,7 +24,10 @@ from intergrax.applications._shared.mcp_engine_concurrency import (
     McpEngineConcurrentCallAdmission,
     optional_mcp_call_admission,
 )
-from intergrax.applications._shared.mcp_harness_principal import require_mcp_caller_principal
+from intergrax.applications._shared.mcp_harness_principal import (
+    assert_mcp_identity_composition,
+    require_mcp_caller_principal,
+)
 from intergrax.applications._shared.mcp_identity_mode import McpIdentityMode, coerce_mcp_identity_mode
 from intergrax.applications._shared.mcp_wire_errors import bound_mcp_result_or_raise, sanitized_tool_errors
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
@@ -78,6 +81,8 @@ class McpServerCompositionDeps:
     custom_host_tools: Mapping[str, Callable[..., Awaitable[dict[str, object]]]] | None = None
     max_concurrent_tool_calls: int | None = DEFAULT_MCP_MAX_CONCURRENT_TOOL_CALLS
     identity_mode: McpIdentityMode = McpIdentityMode.HARNESS_BOUND
+    fails_closed: bool = False
+    """Host wiring posture (``wiring_fails_closed``); governs composition and run-time identity resolution."""
     max_call_seconds: float | None = None
     public_custom_tool_names: frozenset[str] = frozenset()
     """Custom host tool names exempt from the principal gate (explicit opt-out; default: every custom tool is gated)."""
@@ -225,13 +230,19 @@ def compose_mcp_server_from_definition(
         known_catalog = frozenset(item.contract.tool_id for item in deps.tool_registry.list())
     validate_mcp_server_definition(definition, known_catalog_tool_ids=known_catalog)
 
+    identity_mode = coerce_mcp_identity_mode(deps.identity_mode)
+    assert_mcp_identity_composition(
+        identity_mode=identity_mode,
+        harness_auth=None,
+        fails_closed=deps.fails_closed,
+    )
+
     exposed = resolve_effective_bindings(definition)
     host_builtins = [b for b in exposed if isinstance(b, McpHostBuiltinBinding)]
     catalog_bindings = [b for b in exposed if isinstance(b, McpCatalogToolBinding)]
     custom_bindings = [b for b in exposed if isinstance(b, McpHostCustomBinding)]
     builtin_ids = _host_builtin_ids(host_builtins)
 
-    identity_mode = coerce_mcp_identity_mode(deps.identity_mode)
     if identity_mode is McpIdentityMode.LOCAL_DEV_EXPLICIT:
         _LOG.warning(
             "MCP server %r composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are "
@@ -293,6 +304,7 @@ def compose_mcp_server_from_definition(
                     default_tenant_id=default_tenant_id,
                     default_user_id=default_user_id,
                     identity_mode=identity_mode,
+                    fails_closed=deps.fails_closed,
                     session_id=session_id,
                     intent=intent,
                     task_control_mutation_boundary=task_control_mutation_boundary,
@@ -331,6 +343,7 @@ def compose_mcp_server_from_definition(
                 default_tenant_id=definition.default_tenant_id,
                 default_user_id=definition.default_user_id,
                 identity_mode=identity_mode,
+                fails_closed=deps.fails_closed,
                 invoke_timeout_s=deps.max_call_seconds,
             )
         mount_catalog_tools_on_mcp(
@@ -339,6 +352,7 @@ def compose_mcp_server_from_definition(
             catalog_invocation=catalog_invocation,
             identity_mode=identity_mode,
             call_admission=call_admission,
+            fails_closed=deps.fails_closed,
         )
 
     if custom_bindings:

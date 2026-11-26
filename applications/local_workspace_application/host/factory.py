@@ -390,6 +390,7 @@ def create_local_workspace_backend_app(
 
         load_mcp_coupling()
         from intergrax.applications._shared.fastapi_mcp import couple_harness_host_fastapi_with_mcp
+        from intergrax.applications._shared.wiring_posture import wiring_fails_closed
 
         from local_workspace_application.mcp.server import (
             build_local_workspace_mcp_server,
@@ -400,6 +401,7 @@ def create_local_workspace_backend_app(
             registry=runtime.registry,
             route_prefix=resolved_settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
+            fails_closed=wiring_fails_closed(env),
         )
         extra_lifespans = build_factory_lifespans(
             runtime,
