@@ -380,12 +380,12 @@
       "negative_test_id": "NT-REL-07",
       "red_first_prefix_sha": "66664e2bffa1de7ee5405b4d16d771302d676080",
       "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-REL-07",
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-REL-07",
       "regression_scope": "ENT-A / stage pytest",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-B",
-      "red_first_reason": "INTERNALERROR> ModuleNotFoundError: No module named 'intergrax.applications._shared.wiring_posture' (pytest exit 3; not REL mechanism)"
+      "red_first_reason": "Rejected probe repeated the REL-09 eager-Celery fallback comment. It does not show a hidden infinite retry."
     },
     {
       "frz_id": "FRZ-REL-09",
@@ -427,7 +427,7 @@
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX (stale WP-4 track DECISION; DP-36): Appendix C2",
-      "red_first_reason": "Rejected probe repeated the CFG-02 embedding default on the same prefix. It does not show a vendor or backend switch modifying consumers."
+      "red_first_reason": "Rejected probe repeated the CFG-02 embedding default on the same prefix. It does not show a vendor or backend switch modifying consumers.",
       "owner_provenance": "explicit_mep_wp12",
       "owner_node": "T-AF2-RW-TYP",
       "owner_wave": "W3",
@@ -467,13 +467,13 @@
       "owner_ticket": "T-IGX-043-J",
       "negative_test_id": "NT-TEN-01",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-TEN-01",
-      "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_01_canonical_tenant_identity_where_tenant_scope_applies",
+      "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02; tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_01_canonical_tenant_identity_where_tenant_scope_applies",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-043-J",
-      "red_first_reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
+      "red_first_reason": "AssertionError: NT-TEN-01 canonical tenant identity where tenant scope applies: wire_application_evaluation must accept tenant_id when tenant scope applies"
     },
     {
       "frz_id": "FRZ-TEN-02",
@@ -517,13 +517,13 @@
       "owner_ticket": "T-IGX-051-A",
       "negative_test_id": "NT-TEN-10",
       "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
-      "red_first_status": "RED_FIRST_UNREPRODUCIBLE",
-      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-TEN-10",
-      "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02",
+      "red_first_status": "RED_AT_PREFIX",
+      "red_first_evidence_ref": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_10_missing_or_invalid_tenant_must_not_silently_become_global_scope",
+      "regression_scope": "ENT-A-TEN-01; ENT-A-TEN-02; tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_10_missing_or_invalid_tenant_must_not_silently_become_global_scope",
       "regression_scope_source": "matrix_tests_column",
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-051-A",
-      "red_first_reason": "E   subprocess.TimeoutExpired: Command '['...pytest', 'tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context', ...]' timed out after 300 seconds"
+      "red_first_reason": "AssertionError: NT-TEN-10 missing/invalid tenant must not silently become global: OnlineEvaluationObservation must declare tenant_id for canonical stamping"
     },
     {
       "frz_id": "FRZ-TYP-01",

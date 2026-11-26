@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -14,6 +16,62 @@ from intergrax.applications._shared.mcp_harness_principal import resolve_mcp_run
 from starlette.requests import Request
 
 pytestmark = pytest.mark.unit
+
+
+def test_nt_ten_01_canonical_tenant_identity_where_tenant_scope_applies(tmp_path: Path) -> None:
+    """NT-TEN-01 / FRZ-TEN-01: canonical tenant identity where tenant scope applies."""
+    from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+    sig = inspect.signature(wire_application_evaluation)
+    assert "tenant_id" in sig.parameters, (
+        "NT-TEN-01 canonical tenant identity where tenant scope applies: "
+        "wire_application_evaluation must accept tenant_id when tenant scope applies"
+    )
+
+    from intergrax.runtime.architecture.online_evaluation_registry import TenantScopedOnlineEvaluationRegistry
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="nt.ten.01")
+    env = env.model_copy(
+        update={
+            "evaluation_profile": env.evaluation_profile.model_copy(
+                update={"online_registry_enabled": True, "registry_path": tmp_path / "ten01.json"}
+            )
+        }
+    )
+    wiring = wire_application_evaluation(env, tenant_id="tenant-canonical")
+    assert isinstance(wiring.registry, TenantScopedOnlineEvaluationRegistry), (
+        "NT-TEN-01 canonical tenant identity where tenant scope applies: "
+        "tenant-bound evaluation wiring must expose TenantScopedOnlineEvaluationRegistry"
+    )
+    assert wiring.tenant_id == "tenant-canonical", (
+        "NT-TEN-01 canonical tenant identity where tenant scope applies: "
+        "ApplicationEvaluationWiring must carry the canonical tenant_id"
+    )
+
+
+def test_nt_ten_10_missing_or_invalid_tenant_must_not_silently_become_global_scope() -> None:
+    """NT-TEN-10 / FRZ-TEN-10: missing/invalid tenant must not silently become global scope."""
+    from intergrax.runtime.architecture.online_evaluation_models import (
+        OnlineEvaluationMode,
+        OnlineEvaluationObservation,
+    )
+
+    assert "tenant_id" in OnlineEvaluationObservation.model_fields, (
+        "NT-TEN-10 missing/invalid tenant must not silently become global: "
+        "OnlineEvaluationObservation must declare tenant_id for canonical stamping"
+    )
+    with pytest.raises(ValueError, match="tenant_id must be a non-blank string"):
+        OnlineEvaluationObservation(
+            observation_id="obs-1",
+            run_id="run-1",
+            agent_id="agent-1",
+            mode=OnlineEvaluationMode.ONLINE,
+            scenario_id="scenario-1",
+            passed=True,
+            score=1.0,
+            tenant_id="   ",
+        )
 
 
 @contextmanager

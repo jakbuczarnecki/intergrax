@@ -5,7 +5,7 @@
 **ENT-iso remeasurement (2026-11-26, `af-v5/ent-iso` @ `2a6e197ca`):** prefix `754ee000675d71c1734656702beb0aef8ba58fd8`; probes in `tests/unit/architecture/test_nt_ent_iso_red_first_probes.py`.  
 **PLG-marker remeasurement (2026-11-26, `af-v5/plg-marker`):** probes in `tests/unit/applications/test_nt_plg_red_first_probes.py`, `tests/unit/architecture/test_nt_prd_red_first_probes.py`, `tests/unit/architecture/test_nt_rpl_red_first_probes.py`.
 **Prefix-API remeasurement (2026-11-26, `af-v5/prefix-api`):** probes in `tests/unit/architecture/test_nt_rel_red_first_probes.py`, `tests/unit/applications/test_nt_ten_red_first_probes.py`.
-**Canonical counts (rw_plan.v1.json after prefix-api pass):** **31** `RED_AT_PREFIX` · **8** `RED_FIRST_UNREPRODUCIBLE`  
+**Canonical counts (rw_plan.v1.json after prefix-api pass):** **33** `RED_AT_PREFIX` · **6** `RED_FIRST_UNREPRODUCIBLE`  
 **Machine result:** [`RED_FIRST_V5_RESULT.json`](RED_FIRST_V5_RESULT.json)
 
 ## Phase-check 3 status
@@ -51,7 +51,7 @@
 | `FRZ-REL-10` | `import_not_mechanism` | `test_nt_rel_10_in_memory_kubernetes_scaler_must_not_substitute_when_cluster_url_unset` | `NT-REL-10 … in-memory Kubernetes scaler must not substitute when INTERGRAX_KUBERNETES_URL is unset` | **RED_AT_PREFIX** |
 | `FRZ-TEN-07` | `import_not_mechanism` | `test_nt_ten_07_mcp_client_asserted_tenant_identity_must_fail_closed` | `NT-TEN-07 MCP client-asserted tenant identity must fail closed` | **RED_AT_PREFIX** |
 
-## Row dispositions (8 × RED_FIRST_UNREPRODUCIBLE)
+## Row dispositions (6 × RED_FIRST_UNREPRODUCIBLE)
 
 | `frz_id` | Logged cause (summary) | Cause class | Why this is not positive red-first evidence | T-AF2-RED-CLASSES (recommendation) | Operator decision |
 | --- | --- | --- | --- | --- | --- |
@@ -60,13 +60,11 @@
 | `FRZ-RPL-04` | embedding resolver `default_embedding_provider_slug()` | `prefix_already_green` | Probe repeated CFG-02 on the same prefix. It does not show a vendor switch modifying consumers. | **FIX** | not DECIDED |
 | `FRZ-FRZ-10` | `AttributeError`: `verify_arch_freeze_plan_traceability` has no `_self_test_cases` | `historical_self_test` | Post-freeze policy activation is a later W5/W8 node; the logged break is a missing historical self-test hook, not matrix mechanism proof. | **FIX** (re-home policy probe when W5/W8 owns FRZ-10) | not DECIDED |
 | `FRZ-PRD-08` | P0 inventory test exit 0 at prefix (bypass count already 0) | `prefix_already_green` | Prefix tree already satisfied the bypass-count invariant; no red mechanism to replay. | **OUT** (recommendation: stays **OPEN** as historical non-evidence; no OUT operator citation) | not DECIDED |
-| `FRZ-REL-07` | `ModuleNotFoundError: wiring_posture` (pytest exit 3) | `missing_wiring_module` | Broken import path on prefix, not “hidden infinite retry/fallback” behavior. | **FIX** (wire negative test to an existing REL mechanism probe) | not DECIDED |
-| `FRZ-TEN-01` | `subprocess.TimeoutExpired` after 300s | `subprocess_timeout` | Timeout in nested pytest launcher, not a tenant-identity assertion failure. | **ENV** (harness duration / runner) unless a shorter single-node probe is bound | not DECIDED |
-| `FRZ-TEN-10` | `subprocess.TimeoutExpired` after 300s (same nested path as TEN-01) | `subprocess_timeout` | Same timeout class as TEN-01; not missing-tenant silent-global assertion proof. | **ENV** (harness duration / runner) | not DECIDED |
+| `FRZ-REL-07` | eager-Celery comment reused from REL-09 | `import_not_mechanism` | The probe repeated the REL-09 fallback string. It does not show a hidden infinite retry. | **FIX** | not DECIDED |
 
 ## Candidates not promoted
 
-REL-09, REL-10 and TEN-07 promoted in the prefix-api pass (`af-v5/prefix-api`). PLG-02, PLG-07 and RPL-04 stay unpromoted. Residual UNREPRODUCIBLE count **8**.
+TEN-01 and TEN-10 promoted in the `af-v5/short-rel` review. REL-07 stays unpromoted because the probe repeated the REL-09 eager-Celery comment. PLG-02, PLG-07, RPL-04, PRD-08 and FRZ-10 stay unpromoted. Residual UNREPRODUCIBLE count **6**.
 
 ## Explicit non-effects
 
