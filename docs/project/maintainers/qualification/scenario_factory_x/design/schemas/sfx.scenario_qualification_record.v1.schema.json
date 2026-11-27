@@ -152,7 +152,7 @@
         }
       },
       "minItems": 1,
-      "description": "Sorted by check_id."
+      "description": "Set semantics; sorted by check_id, rejects duplicates."
     },
     "verdict": {
       "enum": [
@@ -189,7 +189,8 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 2000
-      }
+      },
+      "description": "Set semantics; sorted lexicographically, rejects duplicates."
     },
     "certifies_production": {
       "const": false

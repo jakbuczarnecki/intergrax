@@ -164,7 +164,8 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 2000
-      }
+      },
+      "description": "Ordered as recorded (ordered array)."
     },
     "completeness_bp": {
       "type": "integer",

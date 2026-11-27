@@ -61,7 +61,7 @@ Adopt **Variant A** under the following binding rules.
 2. **Backend.** The host factory follows the verified Tier-3 pattern: `ApiConfig` → `create_app` → `mount_*_routes`, with optional MCP coupling (ADR-SFX-004). The only new backend modules are host-local: `serving/api_v1.py`, `serving/openapi_export.py` (SFX-P10-01) and `host/spa_mount.py` (SFX-P10-07).
 3. **Authentication (S-2).**
    - Studio v1 authenticates with **JWT bearer** through the existing `JwtAuthProvider`, passed as `ApiConfig.auth_provider` (`app_factory.py:119-121`). This needs no `fastapi_core` change.
-   - The host **must** inject a real `JwtVerifier`. It adapts the existing `IdentityProviderBackend.verify_token` contract and introduces no new vendor integration. The host **fails closed at startup** when no verifier is configured. `NoOpJwtVerifier` is forbidden in every Studio profile, and a host test asserts this.
+   - The host **must** inject a real `JwtVerifier`. It adapts the existing `IdentityProviderBackend.verify_token` contract and introduces no new vendor integration. The host **fails closed at startup** when no verifier is configured. `NoOpJwtVerifier` is forbidden in every Studio profile, and a host test asserts this. Every authenticated request MUST carry a non-empty verified `subject` and `tenant_id`, with `tenant_required=True` (returning HTTP 401/403 on missing or empty identity/tenant — never synthesizing `"default"`), and MUST enforce `reject_identity_assertion_conflicts`.
    - There is **no cookie session** and no server-side session store. The token is held in memory by the SPA and sent as `Authorization: Bearer`.
 4. **CORS (S-2).**
    - Origins come from an explicit list in typed host settings (environment variables), through `ApiConfig.cors_allow_origins`. `*` is rejected at settings validation.
@@ -110,7 +110,7 @@ Adopt **Variant A** under the following binding rules.
 - A second toolchain (Node, npm, Playwright) with its own supply-chain surface: `npm audit` and an allowlist (SFX-P9-03, OD-SFX-14).
 - New governed CI surface and a rollout caveat for new workflows.
 - A real JWT verifier must be composed per environment; until then Studio cannot run outside LAB.
-- Tension with §39.7 ("Do not build a polished SaaS frontend at this stage"). It is resolved only if DX-MAINT-04's Tier-3 carve-out covers Studio (ME-3).
+- Tension with §39.7 ("Do not build a polished SaaS frontend at this stage"). Traced in `SFX_GAP_ANALYSIS.md §2.3` (`ME-3`): the Tier-3 host branch of DX-MAINT-04 applies directly to Studio; Phase K is not needed.
 
 ### Missing evidence
 
@@ -118,7 +118,7 @@ Adopt **Variant A** under the following binding rules.
 |----|----------|-------|--------------|
 | ME-1 | Is a new `applications/<x>` after ARCH-FREEZE Class A ("new domain module attached via contracts")? | Architect (ADR-SFX-001 review); operator at OD-SFX-06 | ADR-SFX-001 review, before GATE-SFX-ENTRY |
 | ME-2 | Does adopting a JS toolchain need its own ADR? | Operator | OD-SFX-06. Default: this ADR covers it. If the operator rejects that, a dedicated toolchain ADR is created before SFX-P10-04. |
-| ME-3 | The Phase K definition referenced by DX-MAINT-04 (§39.7) | Architect | SFX-P2 gap consolidation (`SFX_GAP_ANALYSIS.md`); confirmed in the OD-SFX-06 review |
+| ME-3 | The Phase K definition referenced by DX-MAINT-04 (§39.7) | Architect | Traced in `SFX_GAP_ANALYSIS.md §2.3` (Tier-3 branch of DX-MAINT-04 applies directly; Phase K not needed); confirmed in the OD-SFX-06 review |
 | ME-4 | Do shipped-product manifest checks require a catalog entry for the new app? | Implementer | SFX-P5-06 (host build plus `check_application_package` run) |
 | ME-5 | Do the Node toolchain and Playwright work on the original Windows environment (C10/C15 restriction)? | Tester | SFX-P10-04 (local Windows run recorded under `.tmp/proof/`), decided with OD-SFX-05 |
 

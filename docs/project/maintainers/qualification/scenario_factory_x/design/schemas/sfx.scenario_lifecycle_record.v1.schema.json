@@ -147,7 +147,8 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/id"
-      }
+      },
+      "description": "Set semantics; sorted lexicographically, rejects duplicates."
     },
     "decision_binding_ref": {
       "anyOf": [

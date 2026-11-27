@@ -108,11 +108,13 @@
             "type": "array",
             "items": {
               "$ref": "#/$defs/id"
-            }
+            },
+            "description": "Set semantics; sorted lexicographically, rejects duplicates."
           }
         }
       },
-      "minItems": 1
+      "minItems": 1,
+      "description": "Set semantics; sorted by test_id, rejects duplicates."
     },
     "eval_suites": {
       "type": "array",
@@ -136,7 +138,8 @@
             "pattern": "^OD-SFX-07(:[A-Za-z0-9._-]+)?$"
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by suite_id, rejects duplicates."
     },
     "authority_level": {
       "enum": [

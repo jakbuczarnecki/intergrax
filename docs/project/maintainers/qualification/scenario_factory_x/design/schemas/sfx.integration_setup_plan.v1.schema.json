@@ -124,7 +124,8 @@
                   "$ref": "#/$defs/secret_ref"
                 }
               }
-            }
+            },
+            "description": "Set semantics; sorted by name, rejects duplicates."
           },
           "network_egress": {
             "type": "object",
@@ -146,7 +147,8 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 253
-                }
+                },
+                "description": "Set semantics; sorted lexicographically, rejects duplicates."
               }
             },
             "description": "L2 requires DENY_ALL with an empty allowlist (master plan R1 §13)."
@@ -155,7 +157,8 @@
             "type": "boolean"
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by integration_id, rejects duplicates."
     }
   },
   "$defs": {

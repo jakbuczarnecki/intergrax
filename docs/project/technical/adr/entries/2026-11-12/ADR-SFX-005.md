@@ -40,7 +40,7 @@ Adopt **Variant F**.
    - `checksum` defaults to an empty string (`:52`). An entry whose package has an empty checksum is **rejected (fail closed)**; SFX never writes a checksum into the package.
    - Whether an SFX-computed canonical package digest may substitute for an empty checksum is an open item for ADR-SFX-002. Until then, the answer is no.
 3. **Persistence (existing owner only).**
-   - Each catalog entry is one `WorkArtifact` (`intergrax/contracts/collaborative_work.py:1238`). Each change is a new immutable `WorkArtifactVersion` (`:1283`), published through `WorkArtifactVersionRepository.publish_version` (`intergrax/collaborative_work/repository.py:1351`) with CAS on the current pointer.
+   - Each catalog entry is one `WorkArtifact` (`intergrax/contracts/collaborative_work.py:1238`). Each change is a new immutable `WorkArtifactVersion` (`:1283`), published through `ArtifactPublicationRepository.publish_version` (`intergrax/collaborative_work/repository.py:1338`, `:1351`) with CAS on the current pointer.
    - Content is stored in `ArtifactContentStore` (`intergrax/collaborative_work/content_storage.py:105`). It is identified by an SFX media type in `ArtifactContentRef.media_type` and digest-bound by `integrity_digest` (`intergrax/contracts/collaborative_work.py:1220-1221`).
    - Scope is the version's `tenant_id` / `workspace_id` (`:1291-1292`).
    - `WorkArtifact` has no kind or lifecycle field. The proposed layout is therefore one workspace-scoped "SFX catalog" `WorkItem`, listed through `WorkArtifactRepository.list_for_work_item` (`repository.py:1300`), with history through `list_for_artifact` (`:1327`). Each entry also records its scenario `WorkItem` id. ADR-SFX-002 (persistence mapping, R1 §7.5) confirms or replaces this layout; it introduces no new store.
@@ -69,7 +69,7 @@ A manifest/package field may be proposed only if a later requirement proves that
 
 ### Negative
 
-- Catalog queries are limited to what CW listing provides (by work item, by artifact). Rich search such as facets or full text needs an SFX read model, which must stay a derived, rebuildable projection and never an authority.
+- Catalog queries are limited to what CW listing provides (by work item, by artifact). Rich search such as facets or full text needs an SFX read model, which must stay a derived, rebuildable projection, never an authority, and MUST strictly preserve `tenant_id` + `workspace_id` isolation on every index entry and query.
 - Collaborative Work qualification is REQUALIFICATION_REQUIRED (SFX-P1-03); catalog durability claims cannot exceed it.
 - Packages with an empty `distribution.checksum` cannot be listed until ADR-SFX-002 decides the digest rule.
 

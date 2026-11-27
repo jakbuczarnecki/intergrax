@@ -96,7 +96,8 @@
         "type": "string",
         "pattern": "^[a-z][a-z0-9-]*$"
       },
-      "uniqueItems": true
+      "uniqueItems": true,
+      "description": "Set semantics; sorted lexicographically, rejects duplicates."
     },
     "blueprint_ref": {
       "$ref": "#/$defs/artifact_version_ref"

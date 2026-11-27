@@ -45,7 +45,7 @@ Code anchors are `path:line` at `eadb1c2116fe`.
 
 | SFX need | Existing owner (reuse) | Forbidden duplicate | Principles |
 |----------|------------------------|---------------------|------------|
-| Scenario execution | `execute_scenario_task` (`intergrax/applications/_shared/scenario_runtime_baseline.py:569`) → `NexusLoop` (`intergrax/runtime/nexus/nexus_loop.py:215`) → `PolicyEngine` (`intergrax/runtime/policy/policy_engine.py:46`) → `ToolRuntime` (`intergrax/runtime/nexus/tools/tool_runtime.py:134`) | SFX engine, loop, planner runtime or tool invoker | PLATFORM-INV-003, PLATFORM-INV-010, PLATFORM-INV-011 |
+| Scenario execution | `execute_scenario_task` (`intergrax/applications/_shared/scenario_runtime_baseline.py:569` at `eadb1c2116fe`; `:592` at `646e63953`) → `HostTaskExecutionPort` (`intergrax/runtime/execution/host_task.py:344`) → `NexusLoop` (`intergrax/runtime/nexus/nexus_loop.py:215`) → `PolicyEngine` (`intergrax/runtime/policy/policy_engine.py:46`) → `ToolRuntime` (`intergrax/runtime/nexus/tools/tool_runtime.py:134`) | SFX engine, loop, planner runtime or tool invoker | PLATFORM-INV-003, PLATFORM-INV-010, PLATFORM-INV-011 |
 | Tool availability | Runtime `ToolRegistry` (`intergrax/tools/registry/runtime.py:28`) read through `ToolRegistryRead` (`intergrax/tools/registry/read.py:14`) | SFX tool registry; any use of the deprecated `intergrax/tools/tools_base.py:110` registry | PLATFORM-INV-003, PLATFORM-INV-010; "global registry with mutable ownership" is forbidden (`INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md:317`) |
 | Capability resolution and gap acquisition | `FederatedCapabilityCatalog` (`intergrax/capability_catalog/federation.py:74`); UCA Governed Capability Fulfillment | SFX capability index or acquisition flow | PLATFORM-INV-001, PLATFORM-INV-010 |
 | Agent binding | `AgentRegistry` (`intergrax/runtime/registry/agent_registry.py:39`) | SFX agent registry | PLATFORM-INV-003 |
@@ -62,6 +62,7 @@ Code anchors are `path:line` at `eadb1c2116fe`.
 | HTTP host and MCP | `create_app` (`intergrax/fastapi_core/app_factory.py:29`); `compose_application_mcp_server` (`intergrax/applications/_shared/mcp_application_server.py:45`) | SFX web framework or MCP server stack | PLATFORM-INV-008, PLATFORM-INV-004 |
 | IDE rules and skills | `agent-env/` + `scripts/governance/sync_agent_env.py` | Second rule SSOT under `.claude/` or `.cursor/` | PLATFORM-INV-003 |
 | Hooks | Existing hook points only | Private engines inside hooks | PLATFORM-INV-015 |
+| Tenant isolation | `verify_tenant_security` / `TenantIsolationCheck` (`intergrax/runtime/architecture/tenant_security.py:35`, `SFX-CAP-17`); `RequestIdentity` spine | SFX tenant store or cross-tenant child widening | PLATFORM-INV-003, FRZ-TEN |
 
 Other principles: PLATFORM-INV-002 Architecture Before Adoption (these ADRs precede any SFX code, which waits for ARCH-FREEZE CLOSED); PLATFORM-INV-005 Proof Follows Implementation (no performance or quality value without a run artifact); PLATFORM-INV-006 Deployment Transparency and PLATFORM-INV-012 Applications Remain Semantically Portable (generated scenarios are ordinary Tier-3 packages and carry no SFX runtime dependency).
 
@@ -127,6 +128,7 @@ ECAP-§16 requires a protocol update for, among other triggers, a "new platform 
 ## Compliance
 
 - Tier boundaries preserved: SFX imports downward only, and `intergrax/` gains no SFX code.
+- Tenant isolation: strict tenant child-scope containment (`tenant_child_scope <= tenant_parent_scope`, fail-closed on mismatch, `SFX-CAP-17`) across all SFX artifacts, sessions, jobs, and doors.
 - Policy and security: all SFX side effects go through PolicyEngine/ToolRuntime. SFX holds no L3 authority (ADR-SFX-006).
 - This ADR stays **Proposed** until OD-SFX-06. It authorizes no code: implementation requires ARCH-FREEZE CLOSED and GATE-SFX-ENTRY.
 

@@ -103,14 +103,15 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/artifact_version_ref"
-      }
+      },
+      "description": "Set semantics; sorted by (schema_id, artifact_id), rejects duplicates."
     },
     "pending_question_ids": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/id"
       },
-      "description": "Every open Q-<nn> (user question) and IQ-<nn> (inventory or platform gap) id listed in open_questions.md, whatever its blocking_for (draft, build or none). Sorted ascending."
+      "description": "Every open Q-<nn> (user question) and IQ-<nn> (inventory or platform gap) id listed in open_questions.md, whatever its blocking_for (draft, build or none). Set semantics; sorted ascending, rejects duplicates."
     },
     "resume_cursor": {
       "anyOf": [

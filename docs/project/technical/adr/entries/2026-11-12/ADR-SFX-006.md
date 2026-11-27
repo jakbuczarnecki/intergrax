@@ -121,7 +121,7 @@ Mechanisms that gate production on real execution paths today, re-verified at `e
 | Revision-bound contract authority | `intergrax/applications/_shared/roster_agent_contract_authority.py:55-100` (`from_revision_roster`, `contract_for_binding`) | Roster package digests must be installed in the runtime revision (`:70`). Conflicting digests per contract fail (`:79`). Contracts resolve by digest only | Agent-level, not scenario-level |
 | Plugin production admission | `intergrax/runtime/decision_plugin_policy.py:44-66` (`production_admission_rejection_for_spec`) | When `require_production_admission` is set (`:48`), a non-admitted entry point is rejected `PRODUCTION_ADMISSION_DENIED` (`:63`), fail-closed (`:65`) | Applies to plugin entry points, not scenarios. The flag defaults to `False` (`:30`) |
 | Production-attached runtime build | `intergrax/applications/_shared/scenario_runtime_profiles.py:114-159` (`build_scenario_production_runtime`) | Fails closed without an explicit manifest, a valid tenant, and a runtime-events path; sets `PRODUCTION_ATTACHED` (`:158`) | **Posture, not authorization:** it does not check STRICT or PRODUCT (seam S3) |
-| STRICT-gated MSE authorization | Named in R1 §14.2; **citation not re-traced in this ADR** | Meaningful-side-effect authorization on STRICT hosts | Must be re-traced before acceptance (open item) |
+| STRICT-gated MSE authorization | `intergrax/applications/_shared/harness_meaningful_side_effect_authorization_wiring.py:137-157` (`explicit` override at `:151`, `strict` enforcement at `:155`, returns `None` on non-STRICT `:156-157`) | Meaningful-side-effect authorization wired on STRICT hosts; non-STRICT hosts return `None` unless overridden | Host-level STRICT gate; explicit overrides are forbidden in SFX/generated code (SFX-P9-02) and non-STRICT hosts do not enforce MSE authorization |
 | PROD-Q live slice | Per integration | Live vendor qualification | NOT QUALIFIED today (DIM6/DIM17 OPEN) |
 
 **Assessment:**
@@ -144,7 +144,7 @@ Mechanisms that gate production on real execution paths today, re-verified at `e
 - **Ownership:** these seams are **platform-owned** (Agent Runtime Governance / PDC-X D1, D6). SFX does **not** fix them. SFX records them and hands them to the platform owner.
 - **What they block:** production admission. They do not block SFX closure.
 - **SFX compensations, inside its own scope (R1 §13):**
-  - The no-self-escalation conformance rule (SFX-P9-02) forbids generated code from constructing or mutating `ApplicationEnvironmentProfile.execution_mode`/`profile`, `policy_enforcement_mode`, `AgentGovernanceProfile`, certification records (`apply_roster_agent_governance`), `AgentContract.lifecycle_state = PRODUCTION`, exposure policies, or registries.
+  - The no-self-escalation conformance rule (SFX-P9-02) forbids generated code from constructing or mutating `ApplicationEnvironmentProfile.execution_mode`/`profile`, `policy_enforcement_mode`, `AgentGovernanceProfile`, certification records (`apply_roster_agent_governance`), `AgentContract.lifecycle_state = PRODUCTION`, explicit MSE authorization port overrides (`harness_meaningful_side_effect_authorization_wiring.py:151`), exposure policies, or registries.
   - SFX holds no L3 credentials.
   - SFX lifecycle authority is the CW record, not the frontmatter.
 
@@ -168,7 +168,7 @@ Mechanisms that gate production on real execution paths today, re-verified at `e
   - an admission decision by the OD-SFX-13 owner;
   - PROD-Q live qualification for each integration;
   - a STRICT+PRODUCT host with revision-bound authority.
-- The catalog sidecar may reference the dossier and an external admission reference, but it never asserts admission ([`ADR-SFX-005`](ADR-SFX-005.md)).
+- The catalog sidecar may reference the dossier and an external admission reference, but it never asserts admission ([`ADR-SFX-005`](ADR-SFX-005.md)). Human-attributable approval/HO-2 principal attribution (`OD-SFX-17`, `SFX-GAP-25`) and self-approval ban / distinct human dossier export gate (`OD-SFX-18`, `UX-Q-02/03`) remain pending operator decision and bind the W3 contract shape when signed.
 
 ### 9. Conflicts with SEF-X (reported, not resolved)
 
@@ -195,13 +195,13 @@ Mechanisms that gate production on real execution paths today, re-verified at `e
 
 ## Compliance
 
-- Tier boundaries: SFX adds nothing to `intergrax/`. The seams are reported, not patched.
+- Tier boundaries: SFX adds nothing to `intergrax/`. The seams are reported, not patched. Cross-record tenant containment (`tenant_child_scope <= tenant_parent_scope`, fail-closed on mismatch) applies across all SFX doors, jobs, and handoffs.
 - Governance: no new authority. Approvals use CW decision bindings, and execution uses PolicyEngine/ToolRuntime.
-- Stays **Proposed** until OD-SFX-06. OD-SFX-13 and C-SEF-01..04 stay open.
+- Stays **Proposed** until OD-SFX-06. OD-SFX-13, OD-SFX-17, OD-SFX-18, and C-SEF-01..04 stay open.
 
 ## Implementation notes
 
 - **Not in scope at Proposed:** the `EngineeringHandoffPort` code, the conformance rules (SFX-P9-02), the dossier exporter, and any platform seam fix.
-- **Open before acceptance:** re-trace the STRICT-gated MSE authorization citation.
+- **Pre-acceptance GAP-23 status:** resolved pre-acceptance (`harness_meaningful_side_effect_authorization_wiring.py:137-157` traced in §6 and explicit override added to SFX-P9-02 forbidden list in §7).
 - **Revision triggers:** any SFX write of an admission record; any L3 path in SFX; any SEF contract change to CON-N-01..05 or CON-E-01/02/04/05; an OD-SFX-13 decision.
 - **Verification (when implemented):** the level × door permission matrix; a no-self-escalation conformance test; path-escape tests; HO-1..HO-7 checks on recorded SEF bundles; a test that the FSM has no transition past `ADMISSION_DOSSIER_READY`.
