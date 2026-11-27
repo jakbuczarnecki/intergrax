@@ -14,7 +14,7 @@ Execution register and implementation work breakdown remain in this document.
 |---|---|
 | Closed waves | 1 |
 | Formally closed packages | 3 |
-| W1 executable authorization | NOT_AUTHORIZED |
+| W1 executable authorization | W1-B01-P only: effective after canonical authorization and successful preflight; all other W1 execution not authorized |
 
 **Cross-program coordination:** Explicit. AHE roadmap dependencies do not themselves authorize changes to other programs.
 
@@ -27,6 +27,10 @@ Execution register and implementation work breakdown remain in this document.
 | OD-AHE-02 ownership boundaries | 2026-11-27 | RECORDED | See architecture §5.18 and **OD-AHE-02 ownership boundary table** below. Acceptance authority: Operator within declared ownership authority only. |
 
 
+
+## OD-AHE-03 implementation approval
+
+**APPROVED** by the Operator; repository recording time 2026-11-27T15:44:43+01:00. Exact ticket: T-IGX-093-A. Approved plan digest: b4231abab9cf00ae44e72319d22a2d8f7ba0e3b5f1e62ceb86dfb3c07048f980. Paired-publication exception limited to this ticket and its seven product and four documentation paths. Architect acceptance of AHE-G1 is scoped to W1-B01-P and effective only when the required canonical publication record exists and publisher preflight passes. W1-B01-D requires a later authorization after product integration. W1-B02 and later execution remain unauthorized. No production promotion or bypass.
 
 ## OD-AHE-02 ownership boundary table
 
@@ -92,7 +96,7 @@ No history rewrite authorized. Future commits, PR text, AI attribution, mandator
 |---|---|
 | Missing AHE reference from the AHI hub | Deferred — outside authorized write set for AHE-W0-SETTLEMENT-01 |
 | Reuse baseline versus current documentation SHA | Exact-SHA evidence discipline required |
-| Canonical ADAS publication reconciliation | Pending authorization (**F-AHE-05**) |
+| Canonical ADAS publication reconciliation | W1-B01 exception approved under OD-AHE-03; other phases pending (**F-AHE-05**) |
 
 ## ADAS traceability matrix
 
@@ -151,7 +155,7 @@ Constraints:
 | Gate | Requirement | Status |
 |---|---|---|
 | AHE-G0 | Architecture and roadmap acceptance; operator settlement; independent documentation qualification; historical publication waiver | ACCEPTED_WITH_HISTORICAL_WAIVER |
-| AHE-G1 | Exact W1 implementation contract, approved ticket and scope authorization | PENDING |
+| AHE-G1 | Exact W1 implementation contract, approved ticket and scope authorization | ACCEPTED_SCOPED / EFFECTIVE_AFTER_AUTHORIZATION_AND_PREFLIGHT (W1-B01-P only) |
 | AHE-G2 | Executable bounded LAB adaptive loop | PLANNED |
 | AHE-G3 | Propose–Probe–Compose and selection qualification | PLANNED |
 | AHE-G4 | Trusted experience and resource optimization qualification | PLANNED |
@@ -194,10 +198,10 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | AHE-W0-01 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (historical publication compliance FAIL; not retroactively relabeled). |
 | AHE-W0-02 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01; Cross-program boundaries: OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02 | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772` (historical publication compliance FAIL; not retroactively relabeled). |
 | AHE-W0-03 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Corrective compatibility status: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. Corrective operation **AHE-W0-03-C01** (not a new roadmap package): corrective publication SHA `1d0181051fa034b5f45101755002e48f5dc35715`; corrective commit metadata PASS. |
-| AHE-W1-01 (W1-B01) | PREPARATION / PENDING_TICKET_APPROVAL | Canonical ticket: `governance/tickets/T-IGX-093-A.md`; canonical plan: `governance/tickets/plans/PLAN_T-IGX-093-A.md`; lifecycle: `plan_pending` | Roadmap package **AHE-W1-01**; executable authorization **NOT_AUTHORIZED** until ticket approval and external implementation authorization. |
+| AHE-W1-01 (W1-B01) | PLAN_APPROVED / PENDING_PUBLICATION_RECORD_AND_PREFLIGHT | Canonical ticket: `governance/tickets/T-IGX-093-A.md`; canonical plan: `governance/tickets/plans/PLAN_T-IGX-093-A.md`; lifecycle: `plan_approved` | Roadmap package **AHE-W1-01**; W1-B01-P executable scope effective only after canonical authorization and preflight. |
 | W1–W8 (other) | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
 | AHE-G0 | ACCEPTED_WITH_HISTORICAL_WAIVER | W0 closed under OD-AHE-02 | — |
-| AHE-G1 | PENDING | Approved ticket and scope authorization required | — |
+| AHE-G1 | ACCEPTED_SCOPED / EFFECTIVE_AFTER_AUTHORIZATION_AND_PREFLIGHT | OD-AHE-03; W1-B01-P only; no later scope authorized | — |
 
 **Closed waves:** 1 (W0). **Formally closed packages:** 3 (AHE-W0-01, AHE-W0-02, AHE-W0-03). **W0:** CLOSED.
 
@@ -209,10 +213,10 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | F-AHE-02 | W0-03 execution register reconciliation. | RESOLVED |
 | F-AHE-03 | Canonical ADAS contract compatibility. | RESOLVED_ARCHITECTURE_ONLY |
 | F-AHE-04 | Candidate lifecycle vocabulary compatibility. | RESOLVED |
-| F-AHE-05 | Canonical delivery and acceptance reconciliation. | PENDING_AUTHORIZATION |
+| F-AHE-05 | Canonical delivery and acceptance reconciliation. | W1-B01_EXCEPTION_APPROVED; OTHER_PHASES_PENDING |
 | F-AHE-06 | Configuration-only versus scaffold materialization boundary. | RESOLVED_ARCHITECTURE_ONLY |
 | F-AHE-07 | Restore historical W0-01 process finding. | RESOLVED |
-| F-AHE-08 | Mixed product and documentation candidate write set incompatible with existing single-kind candidate publisher (`scripts/cursor/igx_publish_candidate.py`, `scripts/cursor/igx_integrator.py`; reviewed base `e2b7a67a89bc9726c5bb1fa446cbc255a32ff74a`). | PAIRED_PUBLICATION_RECONCILIATION_PROPOSED / PENDING_OPERATOR_APPROVAL |
+| F-AHE-08 | Mixed product and documentation candidate write set incompatible with existing single-kind candidate publisher (`scripts/cursor/igx_publish_candidate.py`, `scripts/cursor/igx_integrator.py`; reviewed base `e2b7a67a89bc9726c5bb1fa446cbc255a32ff74a`). | PAIRED_PUBLICATION_EXCEPTION_APPROVED / EXECUTION_AUTHORIZATION_PENDING |
 
 
 ---
@@ -245,24 +249,24 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 ## W1 implementation contract
 
-These batches define **PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED** for W1. They are not present execution authority until AHE-G0, AHE-G1 and applicable governance requirements are satisfied.
+These batches define planned scope. W1-B01-P has Operator-approved scope under OD-AHE-03, effective only after canonical publication authorization and successful preflight. All other execution remains unauthorized until applicable gates and scope-specific authorizations are satisfied.
 
 ### W1-B01 — Candidate contracts and archive
 
-**Implementation status:** PREPARATION / PENDING_TICKET_APPROVAL
+**Implementation status:** PLAN_APPROVED / PENDING_PUBLICATION_RECORD_AND_PREFLIGHT
 
 **Canonical DevOS ticket:** [`T-IGX-093-A`](../../../../../governance/tickets/T-IGX-093-A.md)
 
-**Canonical implementation plan:** [`PLAN_T-IGX-093-A`](../../../../../governance/tickets/plans/PLAN_T-IGX-093-A.md) (`plan_pending`; operator approval pending)
+**Canonical implementation plan:** [`PLAN_T-IGX-093-A`](../../../../../governance/tickets/plans/PLAN_T-IGX-093-A.md) (`plan_approved`; OD-AHE-03)
 
 **Publication units (within roadmap package AHE-W1-01; not additional roadmap packages):**
 
 | Unit | Wave ID | Kind | Branch (proposed) | Status |
 |---|---|---|---|---|
-| W1-B01-P | AHE-W1-B01-P | product | `feat/ahe-w1-b01-p` | PLANNED / NOT_AUTHORIZED |
-| W1-B01-D | AHE-W1-B01-D | docs | `feat/ahe-w1-b01-d` | PLANNED / NOT_AUTHORIZED |
+| W1-B01-P | AHE-W1-B01-P | product | `feat/ahe-w1-b01-p` | APPROVED_SCOPE / PENDING_PUBLICATION_RECORD_AND_PREFLIGHT |
+| W1-B01-D | AHE-W1-B01-D | docs | `feat/ahe-w1-b01-d` | APPROVED_SCOPE / NOT_AUTHORIZED_FOR_EXECUTION |
 
-**Paired publication procedure:** Proposed under **F-AHE-08**; requires explicit Operator approval. Until approval, the canonical ADAS delivery rule (relevant plan update in each implementation PR) remains unchanged. **W1-B02** remains unauthorized until applicable **W1-B01** acceptance requirements are satisfied. Product integration does not by itself close **W1-B01**.
+**Paired publication procedure:** Approved under **OD-AHE-03** as a ticket-specific exception under **F-AHE-08**; the canonical ADAS rule remains unchanged for other tickets. **W1-B02** remains unauthorized until applicable **W1-B01** acceptance requirements are satisfied. Product integration does not by itself close **W1-B01**.
 
 **Roadmap package:** AHE-W1-01
 
@@ -414,7 +418,7 @@ W1 exit requires independently accepted behavioral evidence.
 
 The existing canonical ADAS plan prescribes one phase or narrowly scoped sub-phase per PR and corresponding canonical plan updates.
 
-**F-AHE-08:** `MIXED_PRODUCT_DOCUMENTATION_WRITE_SET_INCOMPATIBLE_WITH_EXISTING_CANDIDATE_PUBLISHER` — disposition **PAIRED_PUBLICATION_RECONCILIATION_PROPOSED / PENDING_OPERATOR_APPROVAL** (see `governance/tickets/plans/PLAN_T-IGX-093-A.md`).
+**F-AHE-08:** `MIXED_PRODUCT_DOCUMENTATION_WRITE_SET_INCOMPATIBLE_WITH_EXISTING_CANDIDATE_PUBLISHER` — disposition **PAIRED_PUBLICATION_EXCEPTION_APPROVED / EXECUTION_AUTHORIZATION_PENDING** (see `governance/tickets/plans/PLAN_T-IGX-093-A.md`).
 
 AHE implementation batches represent engineering coordination units. They do not automatically override canonical ADAS publication units.
 
@@ -430,7 +434,7 @@ The exact executable write set must identify any authorized canonical ADAS regis
 
 Protected cross-program documents must not be modified without explicit authorization.
 
-`ADAS_DELIVERY_RECONCILIATION: PENDING_AUTHORIZATION`
+`ADAS_DELIVERY_RECONCILIATION: W1_B01_EXCEPTION_APPROVED / OTHER_BATCHES_PENDING_AUTHORIZATION`
 
 
 

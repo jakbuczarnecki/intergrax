@@ -2,7 +2,7 @@
 
 ## Scope
 
-Implement roadmap package **AHE-W1-01**: canonical ADAS typed contracts (§13.0–§13.7 identities) and append-only candidate archive foundation for the configuration-only LAB profile. Obligations **AHI-ADAS-10.1** through **AHI-ADAS-10.14**. Total engineering scope: **eleven files** published as proposed paired candidates **W1-B01-P** (product, seven files) and **W1-B01-D** (docs, four files) under finding **F-AHE-08** — proposed and **not Operator-approved** in this preparation batch.
+Implement roadmap package **AHE-W1-01**: canonical ADAS typed contracts (§13.0–§13.7 identities) and append-only candidate archive foundation for the configuration-only LAB profile. Obligations **AHI-ADAS-10.1** through **AHI-ADAS-10.14**. Total engineering scope: **eleven files** published as proposed paired candidates **W1-B01-P** (product, seven files) and **W1-B01-D** (docs, four files) under finding **F-AHE-08** — approved under **OD-AHE-03** for this ticket only.
 
 Canonical plan: [`plans/PLAN_T-IGX-093-A.md`](plans/PLAN_T-IGX-093-A.md).
 
@@ -14,7 +14,9 @@ Plan digest: b4231abab9cf00ae44e72319d22a2d8f7ba0e3b5f1e62ceb86dfb3c07048f980
 
 ## Approved
 
-Operator approval pending.
+Approved: operator @ 2026-11-27T15:44:43+01:00
+
+**OD-AHE-03 - APPROVED:** Operator approves the complete presented scope and the exact plan digest b4231abab9cf00ae44e72319d22a2d8f7ba0e3b5f1e62ceb86dfb3c07048f980, including the limited paired-publication exception. This timestamp records the decision in the repository; it is not asserted to be the original chat submission time. No production promotion, W1-B02 implementation or governance bypass is authorized. The product candidate is limited to the seven approved paths; the four documentation paths require a separate later publication record after product integration. The architect's scoped AHE-G1 acceptance becomes effective for W1-B01-P only after canonical publication authorization and successful publisher preflight. All independent review and integration requirements remain mandatory.
 
 Neither OD-AHE-01 nor OD-AHE-02 constitutes approval of this exact implementation plan.
 
@@ -43,4 +45,4 @@ Historical `igx_gov ticket` **FileNotFoundError** from prior preparation executi
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
