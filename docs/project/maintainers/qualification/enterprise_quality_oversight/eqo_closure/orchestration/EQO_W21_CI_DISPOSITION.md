@@ -3,7 +3,7 @@
 Published copy of local evidence; not an IIAC certification.
 
 - Recorded: 2026-11-27, Claude Code master orchestrator. This is **not** an IIAC certification.
-- Subject: development 7d2cc3d28, the Wave 2 integration merge on top of base 32005c212.
+- Subject: development 7d2cc3d28. This is the first CI-tested head after the Wave 2 merges 79f52a89f, a3c6a9d43, f52eb70e8 and b7002e24f on top of base 32005c212; 7d2cc3d28 itself is a ticket-formatting follow-up.
 - Evidence: job logs re-downloaded as UTF-8 into `.tmp/session/ec-w21/ci/job_<id>.log`. Node lists are in `nodes_<job>.txt`.
 - The Antigravity originals in `.tmp/session/ec-campaign-master/w21-ci/` are UTF-16. They are kept as they are.
 

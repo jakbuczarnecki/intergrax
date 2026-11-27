@@ -358,8 +358,7 @@
         "a3c6a9d43 (W2-B2 docs, EDER E-01..E-04, EQO re-baseline)",
         "f52eb70e8 (OD-037-GUARD + EDER-F-0091/0236 guard tests)",
         "b7002e24f (SFX pre-freeze ADR / WT-12 + T-IGX-RDY-A scaffold)",
-        "7d2cc3d28 (ticket Lifecycle formatting)",
-        "3190a4487 (INTELLIGENCE-X R2 docs; PROPOSED, not ratified)"
+        "plus follow-up commits 7d2cc3d28 (ticket Lifecycle formatting) and 3190a4487 (INTELLIGENCE-X R2 docs, PROPOSED, not Wave 2 scope)"
       ],
       "commit_counts_origin_development_all_vs_first_parent": {
         "since_646e63953": "20 / 11",
@@ -389,27 +388,27 @@
         "current_fact": "current development pin is 3190a4487"
       },
       {
-        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 33",
+        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 33 (pre-banner line numbering)",
         "recorded_value": "merge 8e146e21 into development forbidden",
         "current_fact": "8e146e21c (PR #715 af-dev-train-sync) is an ancestor of development; merging it is not a violation (AD-AF-DEVTRAIN D-1, MEP-AF2_v2.1 Appendix V6, signed 2026-11-26: development is the train). Historical."
       },
       {
-        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 3",
+        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 3 (pre-banner line numbering)",
         "recorded_value": "development pin dbaa771ac",
         "current_fact": "historical; current pin is 3190a4487"
       },
       {
-        "path_or_line": "EQO_CURRENT_STATE_INVENTORY.md lines 3-12",
+        "path_or_line": "EQO_CURRENT_STATE_INVENTORY.md lines 3-12 (pre-banner line numbering)",
         "recorded_value": "2026-11-20 snapshot: 164 commits ahead; train only; open PR #680 draft",
         "current_fact": "superseded by AD-AF-DEVTRAIN D-1 (no separate train); MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged."
       },
       {
-        "path_or_line": "EQO_MASTER_CLOSURE_MATRIX.md C16/C21 (lines ~20, 25 and later copies)",
+        "path_or_line": "EQO_MASTER_CLOSURE_MATRIX.md C16/C21 (lines ~20, 25 and later copies) (pre-banner line numbering)",
         "recorded_value": "#680 on rw-train, not on development @ a0598ba3",
         "current_fact": "MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged."
       }
     ],
-    "non_claims": [
+    "reconciliation_non_claims": [
       "no G2/R/FCS/M3",
       "not closed",
       "CI red"
