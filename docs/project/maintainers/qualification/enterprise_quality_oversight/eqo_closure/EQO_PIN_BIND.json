@@ -1,71 +1,169 @@
 {
-  "generated_utc": "2026-11-23T09:25:47Z",
-  "fetch_verified": true,
-  "fetch_provenance": "git fetch origin --prune; T-IGX-069-A isolated worktree t-igx-069-a-w0pub",
-  "historical_bind_2026_11_21": {
-    "generated_utc": "2026-11-21T05:40:00Z",
-    "DOC_PIN": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
-    "TRAIN_PIN": "28c27cb896d02e0185b9fa02047411fa152f6469",
-    "match_at_generation": true,
-    "historical_pins_are_ancestors_of_live_refs": true
+  "schema": "eqo.pin_bind.v6",
+  "generated_utc": "2026-11-26T17:26:01Z",
+  "ticket": "governance/tickets/T-IGX-090-B.md",
+  "authority": "OP-EC-01 (2026-11-26T17:26:01+01:00; OD-W2-DOCS=A; OD-EQO-09=A)",
+  "status": "PUBLISHED_REBASELINE_ON_SINGLE_DEVELOPMENT_TRAIN",
+  "train_model": "SINGLE_DEVELOPMENT_TRAIN_AD_AF_DEVTRAIN_D1",
+  "ad_af_devtrain_status": "MERGED_K0_3_AABD3925C_PENDING_G2_FCS_M3",
+  "governance_disclaimers": {
+    "rebaseline_bookkeeping_only": true,
+    "not_g2": true,
+    "not_r": true,
+    "not_fcs": true,
+    "not_m3": true,
+    "no_frz_promotion": true,
+    "no_g6_or_iiac_pass_claimed": true,
+    "eqo_closed_claimed": false
+  },
+  "ACTIVE_TRAIN_PIN": {
+    "ref": "development",
+    "remote_ref": "origin/development",
+    "analysis_baseline_sha": "646e63953ae1a7eb28a229322590c9cdcbb96625",
+    "branch_head_sha": "32005c212ed4debca91f607ee30b3abfab79ce6c",
+    "analysis_baseline_is_ancestor_of_branch_head": true,
+    "role": "Single canonical product and qualification train per AD-AF-DEVTRAIN (D-1)"
   },
   "DOC_PIN": {
-    "expected": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
-    "actual": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
-    "match": false,
-    "actual_ref": "origin/development"
+    "ref": "development",
+    "sha": "646e63953ae1a7eb28a229322590c9cdcbb96625",
+    "branch_head_sha": "32005c212ed4debca91f607ee30b3abfab79ce6c",
+    "unified_with_active_train": true,
+    "supersedes_v5_doc_pin": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88"
   },
-  "TRAIN_PIN": {
-    "expected": "28c27cb896d02e0185b9fa02047411fa152f6469",
-    "actual": "68db9c0ef6207b023388eecc460644698a92b895",
-    "match": false,
-    "actual_ref": "origin/arch-freeze/rw-train"
+  "TRAIN_PIN_RETIRED": {
+    "status": "RETIRED_BY_AD_AF_DEVTRAIN_D1",
+    "retired_ref": "origin/arch-freeze/rw-train",
+    "retired_local_sha": "e304598b3145ffb734dfcae61f7e61d55c45fbd1",
+    "retired_origin_sha": "e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a",
+    "historical_absorption_commit": "11787a7e196cbfea32a982bfa260f02a34fe05fc",
+    "historical_absorption_is_ancestor_of_head": true,
+    "origin_rw_train_commits_not_in_head": 0,
+    "note": "11787a7e1 is historical rw-train product absorption into development (not G2, not FCS). origin/arch-freeze/rw-train (e9bebe0ac) is fully an ancestor of development HEAD (0 unique commits remaining)."
   },
-  "sha_ladder": {
-    "source_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
-    "execution_sha": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
-    "evidence_sha": "9f40f851f11dc90c2a1c0261e5874d4410ffc133",
-    "publication_sha": "7b175958f795db557b01551a1d8c0d5c0ba398c6"
+  "sha_ladder_v6": {
+    "source_sha": "646e63953ae1a7eb28a229322590c9cdcbb96625",
+    "execution_sha": "646e63953ae1a7eb28a229322590c9cdcbb96625",
+    "branch_base_head_sha": "32005c212ed4debca91f607ee30b3abfab79ce6c",
+    "G2": null,
+    "R": null,
+    "FCS": null,
+    "M3": null,
+    "AUDIT_EXECUTION_SHA": null,
+    "CERTIFICATION_PUBLICATION_SHA": null,
+    "evidence_sha": null,
+    "publication_sha": null
   },
   "FCS": null,
   "M3": null,
   "A_BASELINE": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
-  "PR680_TIP": "a6999e97bb46561e1ba578c9364c13ed310f1d54",
-  "PR680_MERGE": {
-    "sha": "65ef1f196d38d673436667230bb59b92158714a2",
-    "ancestor_of_origin_development": true,
-    "ancestor_of_origin_arch_freeze_rw_train": true,
-    "not_fcs": true,
-    "not_c16_pass": true
+  "historical_lineage": {
+    "A_BASELINE": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
+    "PR680_TIP": "a6999e97bb46561e1ba578c9364c13ed310f1d54",
+    "PR680_MERGE": {
+      "sha": "65ef1f196d38d673436667230bb59b92158714a2",
+      "ancestor_of_head": true,
+      "not_fcs": true,
+      "not_c16_pass": true
+    },
+    "historical_bind_2026_11_21": {
+      "generated_utc": "2026-11-21T05:40:00Z",
+      "DOC_PIN": "8cee3c5a913f234e8fb65053b6ab4f34ed78249b",
+      "TRAIN_PIN": "28c27cb896d02e0185b9fa02047411fa152f6469",
+      "both_ancestors_of_v6_head": true
+    },
+    "superseded_v5_bind_2026_11_23": {
+      "generated_utc": "2026-11-23T09:25:47Z",
+      "ticket": "T-IGX-069-A",
+      "DOC_PIN_actual": "3334b34eacfb99b4644d7b03b8fef9ffe02c6d88",
+      "TRAIN_PIN_actual": "68db9c0ef6207b023388eecc460644698a92b895",
+      "publication_sha": "7b175958f795db557b01551a1d8c0d5c0ba398c6",
+      "evidence_sha": "9f40f851f11dc90c2a1c0261e5874d4410ffc133",
+      "evidence_sha_ancestor_of_v6_head": false,
+      "evidence_sha_anomaly": "Retired: 9f40f851f11dc90c2a1c0261e5874d4410ffc133 is an unmerged orphan commit (contained in no branch and not an ancestor of development HEAD)."
+    }
+  },
+  "milestone_ancestry_verified": {
+    "rw_train_absorption": {
+      "sha": "11787a7e196cbfea32a982bfa260f02a34fe05fc",
+      "ancestor_of_head": true
+    },
+    "ec_v5_integration": {
+      "sha": "530d9fa48c6727d9a46b4383e79cb14dba3ddc25",
+      "ancestor_of_head": true
+    },
+    "ec_v7a_a05_part_d": {
+      "sha": "7ff094a24b7e7d59957eda7c1a01716a6dcf2f40",
+      "ancestor_of_head": true
+    },
+    "ec_f_preflight": {
+      "sha": "70e3de8eb5a9636418a9001352ebf75012cc652d",
+      "ancestor_of_head": true
+    },
+    "t_igx_077_a": {
+      "sha": "8692e77790e710c398653e59ae578c8519da5e95",
+      "ancestor_of_head": true
+    },
+    "t_igx_077_b": {
+      "sha": "e419b4d5b033c3227671bf360167091957a79c5d",
+      "ancestor_of_head": true
+    },
+    "t_igx_077_c": {
+      "sha": "1c0b120355dc3b1cc3dabd783bd40067826ca96f",
+      "ancestor_of_head": true
+    },
+    "k0_3_ad_af_devtrain_merge": {
+      "sha": "aabd3925c",
+      "ancestor_of_branch_head": true
+    },
+    "t_igx_076_a_packages_a_to_f": {
+      "pkg_a": {
+        "sha": "84dbebc0822e340d16f9bb5ee5cff1ae1d1fee70",
+        "ancestor_of_head": true
+      },
+      "pkg_b": {
+        "sha": "461a9badb862e82669c0982e8f55e2d470a8628b",
+        "ancestor_of_head": true
+      },
+      "pkg_c": {
+        "sha": "985347aad47273044c697bfa456e9fa5d44e5819",
+        "ancestor_of_head": true
+      },
+      "pkg_d": {
+        "sha": "556b2164990c9e064e30d35b807b2ab1cc9130d2",
+        "ancestor_of_head": true
+      },
+      "pkg_e": {
+        "sha": "d00399794f41aec4e1d77c2b5b71a4acec5f4da9",
+        "ancestor_of_head": true
+      },
+      "pkg_f": {
+        "sha": "e99cfbd8884940b2f140741b94585c0cb3fc473c",
+        "ancestor_of_head": true
+      },
+      "celery_wake": {
+        "sha": "5a5889d0f0ec83d6b0165bc6b2a9e8c404680994",
+        "ancestor_of_head": true
+      },
+      "queue_events": {
+        "sha": "bc1178dce2c33e9f5e3161cc7c5e61284d2f2f4f",
+        "ancestor_of_head": true
+      },
+      "unit_gate_collection_fixes": {
+        "sha": "bea81c4921d395540ad68041df1643997a8e8d17",
+        "ancestor_of_head": true
+      }
+    }
   },
   "rv01": {
-    "artifact": ".tmp/session/eqo-f00/git/EQO_SHA_REVALIDATION.jsonl",
-    "disposition": "TARGETED",
-    "blocker_id": "MISSING_IMPACT_MAP",
+    "disposition": "FULL_REBASE_REQUIRED_ON_DEVELOPMENT_HEAD",
+    "commits_since_a_baseline": 1919,
+    "commits_since_v5_doc_pin": 755,
+    "commits_since_dev_replay": 887,
+    "commits_since_rw_train_absorption": 144,
+    "previous_blocker_id": "MISSING_IMPACT_MAP",
+    "impact_map_status_on_head": "FIXED_IN_CODE (PRODUCT_ESCALATION_PREFIXES + 8 evol_x support files in intergrax/platform/enterprise_audit/impact_map.py @ 73d1a77d3); certifying replay pending after G2",
     "replay_scheduled": false
   },
-  "ancestry_checks": [
-    {
-      "check": "historical DOC_PIN \u2192 origin/development",
-      "result": true
-    },
-    {
-      "check": "historical TRAIN_PIN \u2192 origin/arch-freeze/rw-train",
-      "result": true
-    },
-    {
-      "check": "PR680_MERGE \u2192 origin/development",
-      "result": true
-    },
-    {
-      "check": "PR680_MERGE \u2192 origin/arch-freeze/rw-train",
-      "result": true
-    },
-    {
-      "check": "origin/arch-freeze/rw-train \u2192 LOCAL_HEAD (dev only)",
-      "result": false,
-      "note": "164+ train-only commits not on LOCAL_HEAD ancestry to train tip"
-    }
-  ],
-  "note": "Authorized T-IGX-069-A publication. Inventory W0-05 @ 8ad8aa73 unchanged. publication_sha binds bind refresh commit."
+  "note": "Published under T-IGX-090-B (OP-EC-01 / OD-W2-DOCS=A). Unifies ACTIVE_TRAIN_PIN and DOC_PIN on single development train per AD-AF-DEVTRAIN (D-1), retires origin/arch-freeze/rw-train and orphaned 9f40f851f, preserves all historical pins, and makes no G2/FCS/M3/PASS/EQO_CLOSED claim."
 }

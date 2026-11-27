@@ -1,102 +1,52 @@
-# EQO-W2 — Train ticket read-only verification @ TRAIN_PIN
+# EQO-W2 — Train Ticket Read-Only Verification on `development` (`646e63953`)
 
-**Pin:** `28c27cb896d02e0185b9fa02047411fa152f6469` (`origin/arch-freeze/rw-train`, tip merge #679)  
-**Method:** `git merge-base --is-ancestor`, `git log --grep`, ticket file presence on pin (no product edits).  
-**Executed:** 2026-11-21 UTC.
+- **Published under:** `governance/tickets/T-IGX-090-B.md` (Operator authority `OP-EC-01`, `2026-11-26T17:26:01+01:00`, `OD-W2-DOCS=A`)
+- **Active Train / Analysis Baseline (`AD-AF-DEVTRAIN` / `D-1`):** `development` @ `646e63953ae1a7eb28a229322590c9cdcbb96625` (ancestor of branch base `32005c212ed4debca91f607ee30b3abfab79ce6c`; single consolidated train; `arch-freeze/rw-train` retired with `0` unmerged commits ahead of HEAD; historical absorption `11787a7e1` is an ancestor of HEAD)
+- **Supersedes (historical lineage preserved below):** `TRAIN_PIN` `28c27cb896d02e0185b9fa02047411fa152f6469` (2026-11-21) and `origin/development` `fc2ccb73dea161156d067019548f88e08f033fd9` (2026-11-22)
+- **Strict Governance Posture:** Read-only git & source/ticket inspection only — **ZERO pytest runs**. Per independent review `0c881507-f68c-432b-8af3-4d78a8a32636` (`F01_STATE_CORRECTION.md`), **no row is promoted to `PRESENT_AND_VERIFIED`, `PASS`, C16, G2, FCS, M3, FRZ closure, `EQO_CLOSED`, or G6/IIAC certification**.
 
-## Summary
+---
 
-| Task | Ticket / PR | Merge on TRAIN_PIN? | EQO verification status | Notes |
-|------|-------------|---------------------|-------------------------|-------|
-| W2-01 | T-IGX-043-A / #680 | **No** | `PR_OPEN` | Not ancestor of `28c27cb`; draft `af2/pt-fc1`; governance-fast FAIL (W0-03). |
-| W2-02 | T-IGX-043-G / #642 | **Yes** `05699b633cdb` | `MERGED_GATE_PENDING` | Tier-boundary work merged; EQO-W3-WB05/pytest must replay import gates. |
-| W2-02 | T-IGX-043-H / #654 | **Yes** `6b94d202fb79` | `MERGED_GATE_PENDING` | Paired with 043-G; same gate replay obligation. |
-| W2-03 | T-IGX-043-H scope | n/a | `SCOPE_OK` | Merge #654 on pin; Part G / A4-040 not asserted in this diff pass (held W2-13). |
-| W2-04 | T-IGX-043-D / #668 | **Yes** `33a91bfdd` | `MERGED_UNREPLAYED` | Skill pin durability; live/Redis gap = `LIVE_QUALIFICATION_ONLY`. |
-| W2-05 | T-IGX-043-I / #669 | **Yes** `c2a88c344` | `MERGED_PARTIAL` | Parts A–D on pin; Part E ticket `T-IGX-043-M` **ABSENT** (W0-02). |
-| W2-06 | T-IGX-051-D / #670 | **Yes** `cc5d2d0bd` | `MERGED_UNREPLAYED` | SDK parity limits documented in ticket; closure needs WB09 EXE. |
-| W2-07 | T-IGX-043-B / #672 | **Yes** `f262edce6` | `MERGED_UNREPLAYED` | Part 1 fail-closed; part 2 sandbox = B4 / `NOT_STARTED`. |
-| W2-07 | T-IGX-043-E / #677 | **Yes** `475e34cde` | `MERGED_PARTIAL` | Part 1 on pin; part 2 out of #677. |
-| W2-08 | T-IGX-044-F / #673 | **Yes** `9b7eca0e9` | `MERGED_UNREPLAYED` | Material-governance path validator present; not IIAC IN_FORCE. |
-| W2-09 | T-IGX-051-E / #674 | **Yes** `e7dd2f0bc` | `MERGED_PARTIAL` | Drain/CAS merge; F-1 residual (`NOT_STARTED`, W2-12). |
-| W2-10 | T-IGX-051-I / #675 | **Yes** `4c49cf877e65` | `MERGED_PARTIAL` | A4-007 caller-refusal tests in merge; residual EDER-N-0003 (W0-04). |
-| W2-11 | T-IGX-051-B / #676 | **Yes** `37fd3e984` | `MERGED_PARTIAL` | Parts C–I; A/B and F-5 (R-1..R-8) not on pin. |
-| W2-12 | Record-2 F-1,B3,B4,F-4,F-5 | **No** | `NOT_MERGED` | Ticket files for F-4 (`T-IGX-043-N`), F-5, B3, B4 absent on pin (W0-02). |
-| W2-13 | F-3, 052-E, Part G, A4-040 | **No** | `WAIT_FOR_OPERATOR` | OD-EQO-04; `T-IGX-052-E` absent on pin. |
+## 1. Complete 13/13 `EQO-W2-01..13` Verification Table on `development` @ `646e63953`
 
-## Evidence commands (reproducible)
+| Task | Ticket(s) / PR(s) | Ticket & Approval State on `646e63953` | Commit Ancestry (`git merge-base --is-ancestor`) | Code & Test Presence on `646e63953` | HEAD Status (No Pytest Claim) | AF-CLOSE Lane & Remaining Obligation |
+|---|---|---|---|---|---|---|
+| **`EQO-W2-01`** | `T-IGX-043-A` / PR #680 (`PT-FC1`) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T15:17:24+01:00` (`Delegation:` yes; digest `f9c0b109…`; lifecycle `plan_approved`) | **YES** · `#680` `65ef1f196` + follow-ups `9f6c737a8`, `96504af9d`, `5324d12cf` | **PRESENT** · `agent_router.py`, `nexus_loop.py`, `nexus_host_execution.py`, `test_fc1_host_task_routing_posture.py`, `test_fc1_harness_strict_persistence_wiring.py` | **`MERGED_ON_HEAD_UNREPLAYED`** *(was `PR_OPEN`)* | Replay: `WL-K1-E-01` (`K1-A`). Open pre-G2 residuals: `OD-031=A` (`uaep_executor.py:369/386`, `K1-A`) & `OD-037-GUARD=A` (4 negative tests). `governance-fast` ACT-N11 (`KR-08`) closes post-G2 via RB-2. |
+| **`EQO-W2-02`** | `T-IGX-043-G` / PR #642 (`PT-WA`, Tier-0 import gate) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T09:59:28+01:00` (`Delegation:` yes; digest `5b7d2827…`; lifecycle `plan_approved`) | **YES** · `#642` `05699b633cdb` + follow-ups `2bc18ac1a`, `f829a94f5`, `b1fdd59d7` | **PRESENT** · `scripts/maintenance/check_intergrax_no_applications_imports.py` (`rc=0`), `test_faudit_remediation.py`, `test_wa_boundary_inversion_gate.py`, `test_wa_agent_import_rule.py` | **`MERGED_ON_HEAD_CI_AND_REPLAY_PENDING`** *(was `MERGED_GATE_PENDING`)* | Replay: `WL-K1-E-07`, `WL-K1-B-01`. Pytest `gate` mark + AST `importlib` + negative test: `WL-K1-B-04`. Pre-G2 CI wiring into `unit-tests.yml` / `run_regression_gate_ci.py` handed to `AF-CLOSE K3` (`WL-K3-05`/`10`, `OD-A4-003-CI=A`). |
+| **`EQO-W2-03`** | `T-IGX-043-H` / PR #654 (`PT-WB` scope & Part G / `A4-040`) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T09:37:59+01:00` (`Delegation:` yes; digest `f5f0d630…`; lifecycle `plan_approved`) | **YES** · `#654` `6b94d202fb79` + `460fbafed` + **Part G `87fcaf321`** (2026-11-24, 11 files) | **PRESENT** · `package_b_strict_production_serving_command.py`, `hosting/{boundary,profile,runtime}.py`, `test_wb_gca_hosted_strict_serving.py`, `test_wb_llm_resolver_delegation.py`, `test_wb_profile_projection.py`, `test_rw_bnd05_provider_switch_gate.py`, `test_rw_own05_duplicate_mechanisms.py` | **`MERGED_ON_HEAD_PART_G_RATIFIED_AND_2_GATE_REDS`** *(was `SCOPE_OK` / `WAIT_OPERATOR`)* | Replay: `WL-K1-E-08` (`K1-B`). 2 RW negative tests red in gate log: `NT-BND-05-2` & `NT-OWN-05-1` (`WL-K1-B-09`). `A4-040` (`043-H Part G` GCA) ratified under `OP-EC-01` (`OD-EQO-04B=A`) with Tier-3 scope in `WL-K1-C-03`. |
+| **`EQO-W2-04`** | `T-IGX-043-D` / PR #668 (`PT-FC4` skill pin durability) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T13:28:10+01:00` (`Delegation:` yes; digest `2dfe0ad9…`; lifecycle `plan_approved`) | **YES** · `#668` `33a91bfdd` + `T-IGX-076-A` Pkg D `556b21649` | **PRESENT** · `intergrax/skills/execution_pinning_persistence.py`, `tests/unit/skills/test_skill_execution_pinning_durability_guard.py`, `test_skill_execution_pinning_wiring_store_precedence.py`, `test_arch_freeze_skill_bridge_package_d.py` | **`MERGED_ON_HEAD_UNREPLAYED`** *(was `MERGED_UNREPLAYED`)* | Replay: `WL-K1-E-04` (`K1-D`). Live/Redis durability proof remains `LIVE_QUALIFICATION_ONLY` (post-G2 / PROD-Q). |
+| **`EQO-W2-05`** | `T-IGX-043-I` / PR #669 + **`T-IGX-043-M`** Part E (`PT-WD` ENT-AUDIT-X) | **BOTH PRESENT** · `043-I`: `Approved: operator-delegate @ 2026-11-18T09:48:29+01:00` (`Delegation:` yes, `plan_approved`). `043-M`: `Approved: operator @ 2026-11-23T07:30:00+01:00` (digest `d372ef70…`, `in_progress — not closed`) | **YES** · `043-I` `#669` `c2a88c344` + `1eeb79164`, `8371c57cc`, `b843b3aec`; `043-M` `eabf601f2`, `a59aa9075`, `387b11820` | **PRESENT** · `impact_map.py`, `changed_since.py`, `runner.py`, `digests.py`, `manifest.py:61` (**91 checks**, resolving F01 85-vs-91 mismatch), plus all 4 WD test files incl. `test_wd_fast_promotion_disclosure.py` (`D01..D06` for `EQOA-A6-008`) | **`MERGED_ON_HEAD_PART_E_LANDED_UNREPLAYED`** *(was `MERGED_PARTIAL`, `043-M ABSENT`)* | Replay: `WL-K1-E-09` (`043-I`, exec `K3`) & `WL-K1-E-12` (`043-M` + ticket closure, exec `K3`). Baseline promotion (`ENTERPRISE_AUDIT_BASELINE.json`) deferred post-G2 to `T-AF2-ENT-BASELINE-PREFREEZE` (`K2` W5). |
+| **`EQO-W2-06`** | `T-IGX-051-D` / PR #670 (`RW-RUNTIME`) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T15:17:24+01:00` (`Delegation:` yes; digest `5297254e…`; lifecycle `plan_approved`) | **YES** · `#670` `cc5d2d0bd` | **PRESENT** · `tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py`, `tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py` | **`MERGED_ON_HEAD_UNREPLAYED`** *(was `MERGED_UNREPLAYED`)* | Verification replay: `WL-K1-A-08` (`K1-A`) & `WL-K1-B-01` (`K1-B`). |
+| **`EQO-W2-07`** | `T-IGX-043-B` / PR #672 + `T-IGX-043-E` / PR #677 (`PT-FC2` / `PT-FC2-E`) | **BOTH PRESENT** · Both `Approved: operator-delegate @ 2026-11-18T09:48:29+01:00` (`Delegation:` yes; lifecycle `quality_gate`) | **YES** · `#672` `f262edce6`, `#677` `475e34cde`, plus **B3/B4 recovery** `1de7e69ea`, `ecf45eb76`, `ea1e7407d`, `2aa74528a` | **PRESENT** · `queue_worker_wiring.py`, `memory_wiring.py`, `production_adapters.py`, `check_production_capacity_adapters.py`, **plus recovered B3/B4:** `runtime_event_delivery_wiring.py`, `sandbox_wiring.py`, `check_sandbox_policy_wiring.py`, `test_fc2_otlp_composition_fail_closed.py`, `test_fc2_sandbox_composition_fail_closed.py` | **`MERGED_ON_HEAD_B3_B4_RECOVERED_UNREPLAYED`** *(was `MERGED_PARTIAL`, B4 `NOT_STARTED`)* | Qualification replay: `WL-K1-E-02` (`043-B`, exec `K1-A`) & `WL-K1-E-05` (`043-E`, exec `K3`). Note: Celery adapter remains documented `CELERY_BACKEND_KIND='intent_only'` (live scaler = Path B / PROD-Q). |
+| **`EQO-W2-08`** | `T-IGX-044-F` / PR #673 (`PT-E05` IIAC validators) | **PRESENT** · `Approved: operator-delegate @ 2026-11-18T09:48:29+01:00` (`Delegation:` yes; digest `3b5e5d4f…`; lifecycle `plan_approved`) | **YES** · `#673` `9b7eca0e9` + `00c5da6b8`, `70ccf6bc9`, `cf6460e45` | **PRESENT** · `scripts/governance/iiac_common.py`, `scripts/governance/verify_iiac_role_separation.py`, `test_iiac_new_verifiers.py`, `test_iiac_negative_guards.py`, `test_iiac_activation_gate.py` | **`MERGED_ON_HEAD_UNREPLAYED_PENDING_RB2`** *(was `MERGED_UNREPLAYED`)* | Excluded from pre-G2 product work (`WORKLIST.md §4`). RB-2 tooling readiness: `WL-K3-04`; stale `NODE_LEDGER` status: `K4`; IIAC rebind only post-G2 (`PT-Q03` / `RB-2`). |
+| **`EQO-W2-09`** | `T-IGX-051-E` / PR #674 (`RW-RECOVERY`) | **PRESENT** · `Approved: operator-delegate @ 2026-11-17T15:17:24+01:00` (`Delegation:` yes; digest `40040bf5…`; lifecycle `plan_approved`) | **YES** · `#674` `e7dd2f0bc` + **Part D (`EX-D1-07`)** `7ff094a24` / `ec89a1df8` | **PRESENT** · `uncertain_reconciler.py`, `store.py`, `test_rw_recovery_durable_cas_projection.py`, `test_rw_recovery_drain_wait_for_idle.py`, `test_rw_recovery_no_double_execution.py`, `test_rw_recovery_uncertain_reconciler.py` | **`MERGED_PARTIAL_PART_D_LANDED_F1_OPEN`** *(was `MERGED_PARTIAL`)* | Landed replay: `WL-K1-A-08`. Open F-1 residuals (`Q-RC-01` schedule-store ports, `Q-RC-04` 3 deferred enqueue sites, `Q-RC-03` background drain controller): **`WL-K1-A-05`, `WL-K1-A-06`, `WL-K1-A-07`** (`DW0-01=A`). |
+| **`EQO-W2-10`** | `T-IGX-051-I` / PR #675 (`A4-007` caller allowlist) | **PRESENT** · `Approved: operator-delegate @ 2026-11-18T08:24:46+01:00` (`Delegation:` yes; digest `646fdfb5…`; lifecycle `plan_approved`) | **YES** · `#675` `4c49cf877e65` (`a766d2a7d`) | **PRESENT** · `intergrax/applications/_shared/import_policy.py`, `test_a4007_caller_import_refusal.py`, `test_a4007_import_policy_derivation.py`, `test_a4007_migration_gate_allowlist.py` | **`MERGED_PARTIAL_2_CALLERS_OPEN_IN_K1C`** *(was `MERGED_PARTIAL`)* | Main allowlist landed; 2 outside-census callers (`wiring.py`, `agent_certification_wiring.py` — `EC7-A03` / `EDER-N-0003`) tracked in **`WL-K1-C-09`** (`Q-A7C-08` deferral retained per `OP-EC-01` `OD-TKT-META=A`). |
+| **`EQO-W2-11`** | `T-IGX-051-B` / PR #676 + **`T-IGX-051-N`** (`RW-SUPPLY`) | **BOTH PRESENT** · `051-B`: `Approved: operator-delegate @ 2026-11-18T08:24:46+01:00` (`plan_approved`). `051-N`: **PRESENT** *(dual-copy metadata repair authorized under `OD-TKT-META=A`)* | **YES** · `051-B` `#676` `37fd3e984` + `24ea9525b`; `051-N` PR `#684` + `fb5b472e6`, `48d8c3117`, `b43911b06` | **PRESENT** · `trust.py`, `admin_service.py`, `deploy_activate_pipeline.py`, `installed_digest.py`, `test_rw_supply_attestation_and_revocation.py` | **`MERGED_PARTIAL_051N_LANDED_STRICT_ROOT_OPEN`** *(was `MERGED_PARTIAL`, Parts A/B absent)* | Open strict-root composition & residuals (`EX-D1-02`, `FRZ-SEC-06`, `EX-D6-02/03`, `D6-09/11`, `EX-D6-01`, `D1-R017`, `EX-D1-03`, `EX-D8-01`): **`WL-K1-C-03` & `WL-K1-C-04`** (`K1-C B3/B4`). |
+| **`EQO-W2-12`** | Record-2 residua: `F-1`, `B3`, `B4`, `F-4` (`T-IGX-043-N`), `F-5` (`T-IGX-051-N` / supply residuals) | **TICKETS PRESENT** · `043-N`: `Approved: operator @ 2026-11-23T13:30:00+01:00` (`quality_gate`); `051-N`: present; `043-B`/`051-E`: present. *(In recovery registry, `043-J/M/N`, `051-A/C/F/G`, `052-E` are now all PRESENT; only unused `043-L`/`051-M` remain ABSENT.)* | **PARTIAL YES** · `F-4` (`043-N`): `3e7bb5773`, `6b2273c10`, `08efdc7d6` **YES**; `B3`/`B4`: `1de7e69ea`, `ecf45eb76`, `ea1e7407d` **YES**; `F-5` (`051-N` A/B): `fb5b472e6`, `48d8c3117` **YES**; `F-1` Part D: `7ff094a24` **YES** | **PRESENT FOR LANDED SLICES** · `tool_wiring.py`, `test_fc1_harness_strict_persistence_wiring.py` (F-4); `runtime_event_delivery_wiring.py`, `sandbox_wiring.py`, `test_fc2_{otlp,sandbox}_composition_fail_closed.py` (B3/B4); `trust.py`/`admin_service.py` (F-5 A/B) | **`PARTIALLY_LANDED_F4_B3_B4_051N_ON_HEAD_F1_F5_OPEN`** *(was `NOT_MERGED` / `ABSENT_TICKET`)* | Landed replays: `WL-K1-E-13` (F-4), `WL-K1-E-02` (B3/B4). Remaining OPEN code: `F-1` (`WL-K1-A-05..07`), `F-5` strict-root residuals (`WL-K1-C-03..04`). |
+| **`EQO-W2-13`** | `F-3`, `T-IGX-052-E` (`DP-54`), `Part G`, `A4-040` / `G-9` (`OD-EQO-04`) | **SPLIT** · `T-IGX-052-E`: **PRESENT** (`draft`, `Plan digest: pending`; DP-54 mandate issued via `OP-EC-01` `OD-DP54=A`, 0 impl commits yet). `043-H` & `043-J`: **PRESENT & APPROVED**. | **SPLIT** · `Part G` (`043-H`): **`87fcaf321` YES**; `G-09` (`043-J`): **`aac4b083b` YES**; `052-E` (`DP-54`): **NO (0 commits)**; `F-3`: **NO** | `Part G` (`package_b_strict_production_serving_command.py`, `hosting/*`, `test_wb_gca_hosted_strict_serving.py`) & `G-09` (`evaluation_assembly_resolver.py:51-52`) **PRESENT**; `052-E` scaffold only | **`SPLIT_PART_G_AND_G09_LANDED_052E_MANDATED_F3_HELD`** *(was `WAIT_FOR_OPERATOR`)* | `052-E` (`DP-54`): `WL-K3-02` (pre-`G2` under `OD-DP54=A`). `Part G`/`A4-040`: GCA ratified (`OD-EQO-04B=A`), replay `WL-K1-E-08`, direct-serving gate `WL-K3-06`. `G-09`: replay `WL-K1-E-11`. `F-3`: held per EC-F Group D. |
+
+---
+
+## 2. Aggregate Shift Summary (`2026-11-21 TRAIN_PIN` -> `2026-11-26 development @ 646e63953`)
+
+- **13/13 `EQO-W2` tasks re-verified** under single-train consolidation (`AD-AF-DEVTRAIN` / `D-1`).
+- **PR merges absorbed:** **100% of original W2-01..W2-11 PRs (#642, #654, #668–#670, #672–#677, #680)** plus follow-on tickets **`T-IGX-043-M` (Part E, 91 checks)**, **`T-IGX-043-N` (F-4)**, **`T-IGX-051-N` (Parts A/B)**, **FC-2 `B3`/`B4` (OTLP & sandbox guards)**, **`043-H` Part G (`87fcaf321`)**, **`043-J` `G-09` (`aac4b083b`)**, and **`051-E` Part D (`7ff094a24`)** are **ancestors of `development` @ `646e63953`** (and of branch base `32005c212`).
+- **What still prevents closing W2 / advancing to `G2`:**
+  1. **Zero fresh-SHA pytest replays** recorded at `HEAD` across W2-01..12 (owned by `AF-CLOSE` `LANDED_UNQUALIFIED` replay rows `WL-K1-E-01..13`, `WL-K1-A-08`, `WL-K1-B-01`).
+  2. **Open product/gate code batches** for W2-02 (`WL-K1-B-04` + `WL-K3-05`/`10` CI wiring), W2-03 (`WL-K1-B-09` 2 red RW negative tests), W2-09/12 (`WL-K1-A-05..07` F-1 recovery residuals), W2-10 (`WL-K1-C-09`), W2-11/12 (`WL-K1-C-03..04` F-5 strict-root supply residuals), W2-13 (`WL-K3-02` `052-E`).
+  3. **Ticket metadata repairs** (`OD-TKT-META=A`) and post-`G2` independent verification (`PT-Q02..Q13`).
+
+## 3. Reproducible Read-Only Evidence Commands
 
 ```text
-git merge-base --is-ancestor 05699b633cdb 28c27cb896d02e0185b9fa02047411fa152f6469
-git log -1 --format=%H 28c27cb896d02e0185b9fa02047411fa152f6469
-git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:governance/tickets/T-IGX-043-G.md
+git rev-parse 646e63953ae1a7eb28a229322590c9cdcbb96625
+git merge-base --is-ancestor 646e63953ae1a7eb28a229322590c9cdcbb96625 HEAD
+git merge-base --is-ancestor <sha> 646e63953ae1a7eb28a229322590c9cdcbb96625  # exit 0 for all 23 SHAs verified above
+git show --stat 87fcaf321  # confirms 043-H Part G landed 2026-11-24 (11 files)
 ```
 
-## Wave-4 read pass (W2-02..W2-11, docs-only)
+## 4. Historical Lineage Note (2026-11-21 / 2026-11-22)
 
-**Executed:** 2026-11-21 (lane `eqo/wave-4/w2`) · re-read ticket paths on `TRAIN_PIN` only; no pytest, no train write set.
+Prior passes at `TRAIN_PIN = 28c27cb896d02e0185b9fa02047411fa152f6469` (Wave 4 / Wave 8 / Wave 12, `Ref: governance/tickets/T-IGX-046-F.md`) and revalidation at `origin/development = fc2ccb73dea161156d067019548f88e08f033fd9` (independent review `0c881507-f68c-432b-8af3-4d78a8a32636`, which rejected 5 premature `PRESENT_AND_VERIFIED` labels when pytest had not been run) are superseded by Section 1 above while preserving the strict no-pytest-claim rule.
 
-| Task | Read focus | Wave-4 disposition |
-|------|------------|-------------------|
-| W2-02 | T-IGX-043-G/H merge SHAs on pin; tier-boundary scope | Unchanged `MERGED_GATE_PENDING`; ties `EQO-X-01` replay queue (AUD session E) |
-| W2-03 | #654 scope note; Part G held | `SCOPE_OK`; W2-13 still `WAIT_FOR_OPERATOR` |
-| W2-04 | T-IGX-043-D / #668 | `MERGED_UNREPLAYED`; skill durability → WB09/W4-04 REQUALIFY links |
-| W2-05 | T-IGX-043-I / #669 Parts A–D | `MERGED_PARTIAL`; Part E absent (W0-02) |
-| W2-06 | T-IGX-051-D / #670 | `MERGED_UNREPLAYED`; WB09 SDK slice |
-| W2-07 | T-IGX-043-B/E #672/#677 | `MERGED_PARTIAL`; B4 part 2 `NOT_STARTED` |
-| W2-08 | T-IGX-044-F / #673 | `MERGED_UNREPLAYED`; WB01 governance slice |
-| W2-09 | T-IGX-051-E / #674 | `MERGED_PARTIAL`; F-1 residual W2-12 |
-| W2-10 | T-IGX-051-I / #675 | `MERGED_PARTIAL` @ `4c49cf877e65`; A4-007 tests on pin; EDER-N-0003 residual (W0-04) |
-| W2-11 | T-IGX-051-B / #676 | `MERGED_PARTIAL` @ `37fd3e984`; Parts C–I on pin; A/B + F-5 R-1..R-8 absent |
-
-Repro (wave-4): `git merge-base --is-ancestor <merge_sha> 28c27cb896d02e0185b9fa02047411fa152f6469` for rows above.
-
-## #680 gap track (no new ticket)
-
-| Item | Status (wave-4) | Status (wave-8) | Status (wave-12) |
-|------|-----------------|-----------------|------------------|
-| PR #680 / T-IGX-043-A | Still **not** ancestor of `TRAIN_PIN` `28c27cb`; draft branch `af2/pt-fc1` | **Unchanged** @ pin `28c27cb` | Merge `65ef1f196` **is** ancestor of rw-train @ `8e146e21` via `dbaebfa8`; **not** on `development` @ `a0598ba3` |
-| `governance-fast` class | KR-08 / W0-03 | Track-only memo | **Track-only** — `pr680_governance_fast.md`; no merge / waiver |
-| C16 matrix | `#680 open` — no waiver, no merge claim | **Unchanged** — no merge claim | **Unchanged** |
-| New ticket | **None** (operator band D out of EQO write set) | **None** | **None** |
-
-## Wave-8 read pass (W2-02 replay doc, docs-only)
-
-**Executed:** 2026-11-21 · lane `eqo/wave-8/w2` · **Land:** `569254840` (`origin/development`, PR #698). Pins unchanged (`TRAIN_PIN` `28c27cb`, `DOC_PIN` `8cee3c5`).
-
-| Task | Read focus | Wave-8 disposition |
-|------|------------|-------------------|
-| W2-02 | `T-IGX-043-G.md` / `T-IGX-043-H.md` present on `TRAIN_PIN`; merge SHAs `05699b633cdb`, `6b94d202fb79` | **`MERGED_GATE_PENDING`** — tier-boundary import gates not replayed on pin |
-| W2-02 replay queue | `runs/wb05/AUD_SESSION_E.md` (AUD-1 **BLOCKED**); `x/A4-003/A4_GATE_COUNTER_READ.md` | Gate replay still **queued**; ties `EQO-X-01` + session E WB05 — not closed |
-| W2-02 evidence | No pytest EXE this wave; read-only ticket paths on pin | No status promotion; blocker class unchanged |
-
-Repro (wave-8 W2-02): `git cat-file -e 28c27cb896d02e0185b9fa02047411fa152f6469:governance/tickets/T-IGX-043-G.md` and ancestor check for merge SHAs above.
-
-**Recorded:** lane `eqo/wave-8/w2` · `Ref: governance/tickets/T-IGX-046-F.md`
-
-## Wave-12 read pass (#680 track + W2-02, docs-only)
-
-**Executed:** 2026-11-21 · lane `eqo/wave-12/w2` · **Land:** `292ca3348` (`origin/development`, PR #704). Pins unchanged (`TRAIN_PIN` `28c27cb`, `DOC_PIN` `8cee3c5`).
-
-| Task | Read focus | Wave-12 disposition |
-|------|------------|---------------------|
-| #680 | `git merge-base --is-ancestor 65ef1f196 8e146e21cd8c63a47d621edc05d5f0036ba0c9ee` (neg vs `development` @ `a0598ba3`) | On rw-train @ `8e146e21`; not on `development`; C16 `NOT_VERIFIED` — green replay missing |
-| W2-02 | Post wave-6: `EQO_WAVE6_MANIFEST.md` WB09 EXE exit `0` @ pin | **WB09 SDK slice replayed**; W2-02 tier-boundary import gates (`043-G`/`043-H`) remain **`MERGED_GATE_PENDING`** |
-| W2-02 queue | `runs/wb05/AUD_SESSION_E.md` **BLOCKED**; `x/A4-003/A4_GATE_COUNTER_READ.md` | No promotion; gate replay not closed |
-| W2-02 evidence | Docs-only; no pytest in this lane | No PASS / closure claim |
-
-Repro (wave-12 #680): `git merge-base --is-ancestor $(git rev-parse af2/pt-fc1) 28c27cb896d02e0185b9fa02047411fa152f6469` → exit 1.
-
-**Recorded:** lane `eqo/wave-12/w2` · `Ref: governance/tickets/T-IGX-046-F.md`
-
-## EQO disposition
-
-- **Train integration @ rw-train `8e146e21`:** #642–#680 (incl. merge `65ef1f196` via `dbaebfa8`) are ancestors; **#680 is not** on `development` @ `a0598ba3`.
-- **Closure:** W2 does not certify findings; it establishes merge presence vs `EQO-W3` replay and `EQO-X` blockers (A4-003/A4-004 gate replay per W2-02).
-- **Exact blockers carried forward:** #680 open; record-2 items not merged; Operator band G items W2-13.
-
-## Revalidation 2026-11-22
-
-Pin: `origin/development` `fc2ccb73dea161156d067019548f88e08f033fd9`. Train tip `68db9c0ef6207b023388eecc460644698a92b895` is an ancestor of that pin. Merge `65ef1f196d38d673436667230bb59b92158714a2` is an ancestor of both. The disposition line above that says `#680` is not on `development` at `a0598ba3` is historical.
-
-Independent review `0c881507-f68c-432b-8af3-4d78a8a32636` accepted 8 of 13 W2 rows and rejected 5 labels that said `PRESENT_AND_VERIFIED` while pytest was not run. The corrected states are in `.tmp/session/eqo-f01/F01_STATE_CORRECTION.md`. No row is a test pass, a C16 promotion, or a finding closure.
+**Recorded:** 2026-11-26 · `Ref: governance/tickets/T-IGX-090-B.md`

@@ -1,6 +1,6 @@
 {
- "status": "INGESTED data; owner vocabulary confirmed (DP-47 option a, 2026-11-17); no row is triaged, closed, accepted or independently verified",
- "generated_at_head": "2ab57e36d94eae98c962b3d7b09e5a540d8c70d2",
+ "status": "INGESTED data with E-01..E-04 DP-02-safe apply under OP-EC-01 / OD-EQO-09=A (2026-11-26, T-IGX-090-B); 941 rows owner_status=CONFIRMED (821 SINGLE_PROPOSED + 120 gap mappings), 132 OPERATOR_ONLY preserved, 174 needs_independent_audit=yes rows bound via independent_audit_ref; no row is closed, no new exception is accepted, no accountable_person fabricated, and no row is independently verified",
+ "generated_at_head": "646e63953ae1a7eb28a229322590c9cdcbb96625",
  "baseline": "258bbf6abb6fdbb92ef0185d058527fbb1e47f04",
  "dossier_path": "docs/project/maintainers/qualification/enterprise_quality_oversight/campaign_a",
  "inputs": {
@@ -32,7 +32,7 @@
   "open_unknown_split": "605 real OPEN/UNKNOWN entries + 155 NOT_AN_ENTRY rows with currency OPEN/UNKNOWN = 760 (605 + 155 = 760)",
   "a7_entries_total": "1480 = 605 ingested OPEN/UNKNOWN + 26 ingested DEFERRED + 456 accepted (155 A2/register rows + 301 IIAC limitations covered by 39 pointer rows) + 211 resolved/closed/superseded not ingested + 182 not-an-entry rows (155 excluded as OPEN/UNKNOWN, 27 other)",
   "register_rows": "1069 rows = 239 findings + 605 OPEN/UNKNOWN entries + 26 DEFERRED entries + 155 accepted A2/register EXCEPTION rows + 39 IIAC pointer rows + 5 category rows (4 skip, 1 N/A)",
-  "eder_total_with_post_ingest": "1073 = 1069 (initial ingest per rows_by_basis below) + 4 POST_INGEST rows EDER-N-0001..EDER-N-0004 in register.jsonl (ingest_basis=POST_INGEST_REGISTER_ITEM); EQO-E-01"
+  "eder_total_with_post_ingest": "1069 initial ingest + 4 POST_INGEST_EDER_N rows (EDER-N-0001..EDER-N-0004, ingest_basis=POST_INGEST_REGISTER_ITEM) = 1073 total, matching rows_by_basis below; EQO-E-01"
  },
  "rows_total": 1073,
  "rows_by_basis": {
@@ -52,21 +52,22 @@
  },
  "rows_by_register_class": {
   "EVIDENCE_GAP": 157,
-  "GOVERNANCE_DEBT": 79,
+  "GOVERNANCE_DEBT": 80,
   "ARCH_RISK": 22,
   "CERT_DRIFT": 32,
   "UNVERIFIED": 19,
   "EXCEPTION_CANDIDATE": 332,
   "DEFECT": 9,
-  "DEBT": 354,
-  "DECISION_PENDING": 60,
+  "DEBT": 356,
+  "DECISION_PENDING": 61,
   "SKIP_CATEGORY": 4,
   "NA_DECISION": 1
  },
  "rows_by_id_prefix": {
   "EDER-F": 239,
   "EDER-D": 786,
-  "EDER-X": 44
+  "EDER-X": 44,
+  "EDER-N": 4
  },
  "exclusions": {
   "not_an_entry_open_unknown": 155,
@@ -191,22 +192,19 @@
   "vocabulary_ids": 55,
   "vocabulary_file": "owner_vocabulary.proposed.json",
   "vocabulary_status": "CONFIRMED (DP-47 option a; addendum 4 of eqo_a_remediation/OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md, 2026-11-17)",
-  "vocabulary_confirmation_scope": "vocabulary only; owner_status of every row is unchanged and no row is triaged; accountable_person stays empty (no Operator assignment of a person is published)",
-  "rows_by_owner_vocabulary_status": {"CONFIRMED": 1069},
-  "rows_owner_status_confirmed": 0,
+  "vocabulary_confirmation_scope": "DP-47 vocabulary CONFIRMED (2026-11-17) + OP-EC-01 / OD-EQO-09=A (2026-11-26, T-IGX-090-B): 821 SINGLE_PROPOSED + 120 gap rows set to owner_status=CONFIRMED (941 total); 132 OPERATOR_ONLY preserved; accountable_person remains null on all 1073 rows",
+  "rows_by_owner_vocabulary_status": {
+   "CONFIRMED": 1073
+  },
+  "rows_owner_status_confirmed": 941,
   "rows_by_owner_status": {
    "OPERATOR_ONLY": 132,
-   "SINGLE_PROPOSED": 817,
-   "SHARED_UNRESOLVED": 75,
-   "UNMAPPED": 14,
-   "GENERIC_NOT_AN_OWNER": 4,
-   "MISSING": 15,
-   "ROLE_NOT_OWNER": 12
+   "CONFIRMED": 941
   },
-  "rows_with_owner_ref": 1024,
-  "rows_without_owner_ref": 45,
+  "rows_with_owner_ref": 1073,
+  "rows_without_owner_ref": 0,
   "rows_with_accountable_person": 0,
-  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY are its 'proposed' values and every row also carries owner_vocabulary_status (PROPOSED_UNCONFIRMED until 2026-11-17, CONFIRMED after the DP-47 confirmation; the row-level owner_status values are unchanged)",
+  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY were the initial proposed values alongside owner_vocabulary_status=CONFIRMED (DP-47, 2026-11-17). Under OP-EC-01 / OD-EQO-09=A (2026-11-26, T-IGX-090-B, EQO-E-03), 941 rows (821 SINGLE_PROPOSED + 120 gap mappings) were updated to owner_status=CONFIRMED while 132 OPERATOR_ONLY rows remain preserved and accountable_person stays null on all 1073 rows.",
   "unmapped_owner_raw": [
    "Docs governance / feature owners",
    "Feature doc owners",
@@ -219,28 +217,28 @@
  },
  "triage": {
   "rows_by_severity": {
-   "MEDIUM": 151,
-   "LOW": 93,
+   "MEDIUM": 156,
+   "LOW": 94,
    "HIGH": 14,
    "INFO": 121,
    "BLOCKER": 6,
-   "UNRATED": 684
+   "UNRATED": 682
   },
   "rows_by_impact": {
    "NONE": 147,
    "CONDITIONS": 325,
-   "UNKNOWN": 485,
+   "UNKNOWN": 489,
    "BLOCKS": 112
   },
   "rows_by_priority": {
    "P2": 377,
    "P4": 104,
    "P1": 124,
-   "P3": 464
+   "P3": 468
   },
   "rows_by_disposition": {
    "DOC_PATCH_PENDING": 178,
-   "DECISION_PENDING": 74,
+   "DECISION_PENDING": 76,
    "REQUALIFY_PENDING": 20,
    "ACCEPTED_AS_STATED_RECORD_REQUIRED": 199,
    "VERIFICATION_PENDING": 40,
@@ -249,29 +247,29 @@
    "STALE_SNAPSHOT_REVERIFY": 33,
    "DEFERRED_AS_STATED_IMPACT_CLASS_REQUIRED": 2,
    "DEFERRED_AS_STATED": 23,
-   "TRIAGE_PENDING": 310
+   "TRIAGE_PENDING": 312
   },
   "rows_by_next_track": {
    "DOC_PATCH": 222,
-   "DECISION": 130,
+   "DECISION": 133,
    "REQUALIFY": 20,
    "ACCEPTED_LIMITATION": 199,
-   "VERIFY_TEST": 41,
-   "CODE_FIX": 29,
-   "UNCLASSIFIED": 428
+   "VERIFY_TEST": 45,
+   "CODE_FIX": 31,
+   "UNCLASSIFIED": 423
   },
   "rows_by_audit_need": {
    "no": 417,
    "yes": 174,
-   "tbd": 478
+   "tbd": 482
   },
   "rows_by_lifecycle": {
-   "INGESTED": 1069
+   "INGESTED": 1073
   },
   "rows_by_current_head_status": {
-   "UNKNOWN": 218,
-   "CHANGED": 491,
-   "UNCHANGED": 360
+   "UNKNOWN": 215,
+   "CHANGED": 595,
+   "UNCHANGED": 263
   }
  },
  "iiac_pointer_rows": [
@@ -582,9 +580,60 @@
   "master_rows_path": "ws:WP-12/master_rows.jsonl (not tracked; cited by id)"
  },
  "post_ingest_rows": {
-  "note": "Rows raised after the initial ingest (id prefix EDER-N) by ticket T-IGX-050-M; the ingest totals above (rows_total and the rows_by_* counts) describe the initial load and are unchanged.",
-  "rows": ["EDER-N-0001", "EDER-N-0002", "EDER-N-0003", "EDER-N-0004"],
+  "note": "Rows raised after the initial ingest (id prefix EDER-N) by ticket T-IGX-050-M; as of T-IGX-090-B (EQO-E-01), all top-level and downstream breakdowns above are reconciled to rows_total=1073.",
+  "rows": [
+   "EDER-N-0001",
+   "EDER-N-0002",
+   "EDER-N-0003",
+   "EDER-N-0004"
+  ],
   "rows_total_after": 1073
  },
- "not_stated": "At the ingest this field read: DP-54 (standalone ECAP executable) is open; no row or file here states a position. Since 2026-11-17 DP-54 is decided (option a, executable required) and row EDER-N-0004 records it; the executable does not exist."
+ "not_stated": "At the ingest this field read: DP-54 (standalone ECAP executable) is open; no row or file here states a position. Since 2026-11-17 DP-54 is decided (option a, executable required) and row EDER-N-0004 records it; the executable does not exist.",
+ "e01_to_e04_reconciliation": {
+  "ticket": "governance/tickets/T-IGX-090-B.md",
+  "authority": "OP-EC-01 / OD-EQO-09=A @ 2026-11-26T17:26:01+01:00",
+  "head_sha": "646e63953ae1a7eb28a229322590c9cdcbb96625",
+  "mode": "DP-02-safe",
+  "e02_r1_substantive_severity_copies": 6,
+  "e02_r1_dp02_meta_links_held": 325,
+  "e02_r2_substantive_track_mappings": 5,
+  "e02_r2_dp02_meta_links_held": 305,
+  "e02_r2_w4_05_holds": 5,
+  "e02_r3_head_status_at_646e63953": {
+   "UNKNOWN": 215,
+   "CHANGED": 595,
+   "UNCHANGED": 263
+  },
+  "e02_r4_duplicate_flags": {
+   "DUPLICATE_UNRESOLVED": 17,
+   "DUPLICATE_PAIR_SURVIVOR_CANDIDATE": 11,
+   "KEY_COLLISION_DISTINCT_ITEM": 6,
+   "mechanical_superseded": 0
+  },
+  "e03_owner_confirmation": {
+   "single_proposed_confirmed": 821,
+   "gap_rows_confirmed": 120,
+   "total_confirmed": 941,
+   "operator_only_preserved": 132,
+   "accountable_person_populated": 0
+  },
+  "e04_audit_bindings": {
+   "needs_independent_audit_yes_bound": 174,
+   "unbound_yes_rows": 0,
+   "one_off_audits_required": 0,
+   "re_audit_required_on_freeze_sha": true,
+   "bound_by_campaign": {
+    "ARCH-FREEZE": 127,
+    "CAMPAIGN_B1": 45,
+    "CAMPAIGN_C": 2
+   }
+  },
+  "non_claims": {
+   "rows_set_to_closed": 0,
+   "new_exception_accepted": 0,
+   "frz_promoted": false,
+   "iiac_or_g6_pass_claimed": false
+  }
+ }
 }
