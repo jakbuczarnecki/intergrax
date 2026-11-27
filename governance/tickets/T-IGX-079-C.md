@@ -38,7 +38,7 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-quality_gate
+ready_for_audit
 
 ## Checkpoint
 
@@ -63,3 +63,16 @@ quality_gate
 
 **Operator statement (chat):** “Zatwierdzam OD-INTELLIGENCE-01 — formalną ratyfikację architektury Integrax Intelligence v1.1 R3.1 oraz Master Roadmap v1.0 R3 w dokładnych wersjach opublikowanych w commicie 4637c7fa6295a37ad155fbff9d4a9718646c9cf8. Akceptuję jawne nieblokujące ograniczenie Mermaid NOT_EXECUTED. Autoryzuję zapis tej decyzji w repozytorium, przejście T-IGX-079-C do ready_for_audit po właściwym handoffie, zakresowy formalny niezależny G6 oraz przygotowanie kompletnego planu adopcji W0-01–06. Nie autoryzuję jeszcze implementacji produktowej, otwarcia bram ani nieuzgodnionych zmian innych programów.”
 
+## Formal G6 handoff — II-W0-R31-G6-HANDOFF-01
+
+**Operator-authorized transition:** Under OD-INTELLIGENCE-01, move from `quality_gate` to `ready_for_audit` after inspecting the supplied handoff. This records the Operator's already authorized transition and availability of the required checkpoint stdout and test-contract list; it is not an independent G6 verdict or an assertion of complete qualification evidence.
+
+**Evidence reviewed (2026-11-27):** Operator-supplied archive `II-W0-R31-G6-HANDOFF-01-evidence.zip`, independently calculated SHA-256 `993defbba1da572a1a73e4022fd8421803c20a18bcb0f17cb1936d466503e7b0`; ZIP CRC verification passed. `evidence_manifest.txt` SHA-256 `96151d3102f52c89824f288831320a749b11910f39fd023d230841714faf18e1` matches the recorded candidate manifest. Original evidence remains in Operator custody; no raw logs added to Git.
+
+**Final integrated checkpoint:** `integrated-qual-remerge-final/governance-smoke.txt`, SHA-256 `3377d868dd9a9603c42445e7da7999668a61441341e534e18983b3e2a867dcee`. Actual log read: `ticket-ref: OK (c74d42f11c1806de418363ad31572ee9b8005364..HEAD)`; 1894 passed, 45 deselected, 1 warning in 463.49s; environment conformance PASS, both tier-boundary checks OK; `PASS ci-smoke exit=0 487.6s`; `igx_gov ticket: OK`. Command reported and visible in captured PowerShell invocation: `uv run python -m scripts.governance.igx_gov ticket --profile smoke`. Final approval and lifecycle verifier outputs also inspected. The plan Test contract is linked above; supplied execution list and available logs are handed to the auditor with separate provenance.
+
+**SHA attribution:** HANDOFF_README and publication report attribute the final execution to `4637c7fa6295a37ad155fbff9d4a9718646c9cf8`. GitHub independently confirms its two parents `f64c382de905f5318bbcbeabcf9a1d367b1ce3d1` and `c74d42f11c1806de418363ad31572ee9b8005364`, consistent with the final log and pre-remerge pin. No separate final contemporaneous HEAD record is included. This is corroborated indirect attribution, not an independently proven exact execution SHA. Do not manufacture a historical sha.txt.
+
+**Evidence limitations for independent G6:** Contrary to the packaging description, the ZIP does not contain the complete original candidate validation directory. The candidate manifest lists 17 files; 5 expected byte hashes occur in the supplied archive (including identical verifier outputs in integrated-stage folders), 12 are absent. The candidate-named ZIP entry is a 140-byte lifecycle-verifier log, not a nested archive or full directory. Manifest digest integrity is verified; complete manifest-to-candidate-file provenance is NOT verified. Both integrated smoke logs are present. Do not treat same-content logs from different stages as proof of the candidate run. Auditor must assess whether the missing original logs or indirect final SHA attribution require focused evidence recovery before a PASS; do not silently waive or re-run the whole campaign by default. Mermaid parser remains NOT_EXECUTED with the explicit Operator-approved non-blocking disposition. C11 / II-FIND-11/12 remain external W0-06 obligations.
+
+**Audit scope:** T-IGX-079-C only, approved plan revision 2 digest unchanged; ratified D1/D2, D3 snapshot and historical governance preserved. Formal G6 is pending a new Operator-authorized independent session. No W0 closure, product authority, external adoption, FRZ/IIAC promotion or gate opening.
