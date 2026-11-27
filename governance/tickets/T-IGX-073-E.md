@@ -51,6 +51,13 @@ Evidence logs: `.tmp/session/w2-recovery-03/` (W2-RECOVERY-03); `.tmp/session/w2
 
 - AF-W2-CLOSURE-01 batch (docs, bindings, generator).
 
+## AF-W2-CLOSURE-02 (2026-11-27)
+
+- OP-B progressive evidence validation (
+erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
+- Campaign B diagnostic matrix 28/28; targeted R04/R24/S03 @ baseline B; HEAD diagnostic R01a/R02/R05/R20.
+- Indices: RW_PLAN_AUDIT_EVIDENCE_INDEX.md, SCOPE_PREDECESSOR_INDEX.md, CAMPAIGN_B_MISSING_CASE_MAP.md.
+
 ## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
 
 - Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.

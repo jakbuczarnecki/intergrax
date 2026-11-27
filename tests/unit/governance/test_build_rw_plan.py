@@ -860,3 +860,23 @@ def test_live_frz_frz_10_pre_g2_schedule():
     ticket = next(t for t in payload["tickets"] if t["ticket"] == "T-IGX-052-I")
     assert ticket["wave"] == "pre-G2"
     assert ticket["post_freeze_policy"]["functional_owner_node"] == "T-B7-PFP-ACTIVATE"
+
+
+# Append to test_build_rw_plan.py
+
+
+def test_op_b_metadata_applied_when_red_at_prefix_in_prior_plan():
+    """Bindings must stamp OP-B fields even after a row records RED_AT_PREFIX."""
+    mod = _import_build()
+    bindings = mod.load_bindings()
+    prior_frz = next(iter(bindings["evidence_missing_obligations"]["rows"]))
+    # build() reads prior from rw_plan.v1.json; verify helper applies OP-B metadata at RED_AT_PREFIX.
+    entry: dict = {
+        "red_first_status": "RED_AT_PREFIX",
+        "red_first_prefix_sha": "a" * 40,
+        "owner_ticket": bindings["evidence_missing_obligations"]["rows"][prior_frz]["owner_ticket"],
+        "negative_tests": [{"node": "tests/unit/x.py::test_a", "mechanism": "m"}],
+    }
+    mod._apply_evidence_missing_obligation(prior_frz, entry, bindings.get("evidence_missing_obligations"))
+    assert entry.get("operator_decision_id") == "OD-AF-CLOSE-B2"
+    assert entry.get("evidence_negative_test")

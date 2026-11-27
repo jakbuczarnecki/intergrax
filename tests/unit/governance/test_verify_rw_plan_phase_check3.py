@@ -813,3 +813,100 @@ def test_live_plan_passes_op_b_and_pfp_schedule():
     }
     errors = mod.validate_plan_structure(data, canonical, open_outside_inventory=open_rows - canonical)
     assert not errors
+
+
+# --- AF-W2-CLOSURE-02 OP-B progressive evidence ---
+
+_SYNTH_OP_B_SHA = "0" * 40
+
+
+def _live_rw_plan() -> dict:
+    return json.loads(_RW_JSON.read_text(encoding="utf-8"))
+
+
+def _op_b_obligation_errors(inventory: list[object]) -> list[str]:
+    mod = _load_verify()
+    return mod._validate_evidence_missing_obligations(inventory)
+
+
+def _mark_test_only_red_at_prefix(row: dict) -> None:
+    row["red_first_status"] = "RED_AT_PREFIX"
+    row["red_first_prefix_sha"] = _SYNTH_OP_B_SHA
+    row["red_first_evidence_ref"] = (
+        "docs/project/maintainers/qualification/arch_freeze_program/continuation/"
+        f"RED_FIRST_GA2R_RESULT.json#synthetic-test-only-{row['frz_id']}"
+    )
+    row.setdefault("red_first_reason", "synthetic progressive-closure test (not canonical evidence)")
+
+
+def test_op_b_twelve_evidence_missing_structurally_valid():
+    plan = _live_rw_plan()
+    assert not _op_b_obligation_errors(plan["code_fix_inventory"])
+
+
+def test_op_b_one_resolved_row_structure_accepted():
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == "FRZ-BND-05")
+    _mark_test_only_red_at_prefix(row)
+    assert not _op_b_obligation_errors(plan["code_fix_inventory"])
+
+
+def test_op_b_all_twelve_resolved_structure_accepted():
+    mod = _load_verify()
+    plan = _live_rw_plan()
+    for row in plan["code_fix_inventory"]:
+        if row["frz_id"] in mod._EVIDENCE_MISSING_OP_B:
+            _mark_test_only_red_at_prefix(row)
+    assert not _op_b_obligation_errors(plan["code_fix_inventory"])
+
+
+def test_op_b_missing_inventory_row_rejected():
+    plan = _live_rw_plan()
+    trimmed = [r for r in plan["code_fix_inventory"] if r["frz_id"] != "FRZ-BND-05"]
+    errors = _op_b_obligation_errors(trimmed)
+    assert any("FRZ-BND-05" in e and "missing from inventory" in e for e in errors)
+
+
+def test_op_b_unauthorized_owner_change_rejected():
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == "FRZ-BND-05")
+    row["owner_ticket"] = "T-IGX-999-Z"
+    errors = _op_b_obligation_errors(plan["code_fix_inventory"])
+    assert any("FRZ-BND-05" in e and "OP-B owner" in e for e in errors)
+
+
+def test_op_b_red_at_prefix_without_operator_metadata_rejected():
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == "FRZ-BND-05")
+    _mark_test_only_red_at_prefix(row)
+    row.pop("operator_decision_id", None)
+    errors = _op_b_obligation_errors(plan["code_fix_inventory"])
+    assert any("operator_decision_id" in e for e in errors)
+
+
+@pytest.mark.parametrize("bad_status", ["RED_FIRST_OUT", "RED_FIRST_LATER_WAVE", "PASS"])
+def test_op_b_forbidden_status_rejected(bad_status: str):
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == "FRZ-BND-05")
+    row["red_first_status"] = bad_status
+    errors = _op_b_obligation_errors(plan["code_fix_inventory"])
+    assert any("FRZ-BND-05" in e for e in errors)
+
+
+def test_op_b_seeded_red_debt_rows_required():
+    plan = _live_rw_plan()
+    for frz in ("FRZ-DEBT-02", "FRZ-DEBT-03"):
+        row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == frz)
+        row.pop("evidence_seeded_red_required", None)
+    errors = _op_b_obligation_errors(plan["code_fix_inventory"])
+    assert any("seeded-red" in e for e in errors)
+
+
+def test_op_b_metadata_preserved_when_resolved():
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == "FRZ-PLG-05")
+    mechanism = row["evidence_mechanism"]
+    _mark_test_only_red_at_prefix(row)
+    assert not _op_b_obligation_errors(plan["code_fix_inventory"])
+    assert row["operator_decision_id"] == "OD-AF-CLOSE-B2"
+    assert row["evidence_mechanism"] == mechanism

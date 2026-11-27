@@ -896,13 +896,13 @@ def _apply_record(frz: str, current: dict[str, object], record: dict[str, object
 def _apply_evidence_missing_obligation(
     frz: str, entry: dict[str, object], obligations: dict[str, object] | None
 ) -> None:
-    if entry.get("red_first_status") != "EVIDENCE_MISSING":
-        return
     if not obligations:
         return
     rows = obligations.get("rows") or {}
     row = rows.get(frz)
     if not isinstance(row, dict):
+        return
+    if entry.get("red_first_status") not in ("EVIDENCE_MISSING", "RED_AT_PREFIX"):
         return
     owner = row.get("owner_ticket")
     if owner and entry.get("owner_ticket") != owner:

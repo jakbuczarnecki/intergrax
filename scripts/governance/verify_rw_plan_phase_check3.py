@@ -270,42 +270,47 @@ _FRZ_FRZ_10_SCHEDULE = {
     "verification_wave": "W8",
 }
 _SEEDED_RED_REQUIRED = frozenset({"FRZ-DEBT-02", "FRZ-DEBT-03"})
+_OP_B_ALLOWED_STATUSES = frozenset({"EVIDENCE_MISSING", "RED_AT_PREFIX"})
+_OP_B_FORBIDDEN_STATUSES = frozenset({"RED_FIRST_OUT", "RED_FIRST_LATER_WAVE", "PASS"})
+
+
+def _validate_op_b_row_metadata(frz: str, row: dict[str, object], errors: list[str]) -> None:
+    expected_owner = _EVIDENCE_MISSING_OP_B[frz]
+    if row.get("owner_ticket") != expected_owner:
+        errors.append(f"{frz}: OP-B owner must be {expected_owner}")
+    if row.get("operator_decision_id") != _OD_AF_CLOSE_B2:
+        errors.append(f"{frz}: missing operator_decision_id {_OD_AF_CLOSE_B2}")
+    if not str(row.get("operator_decision_ref") or "").strip():
+        errors.append(f"{frz}: missing operator_decision_ref")
+    if not str(row.get("evidence_negative_test") or "").strip():
+        errors.append(f"{frz}: missing planned negative test reference")
+    if not str(row.get("evidence_mechanism") or "").strip():
+        errors.append(f"{frz}: missing evidence mechanism")
+    if not str(row.get("evidence_certification_obligation") or "").strip():
+        errors.append(f"{frz}: missing certification obligation before row close")
+    if frz in _SEEDED_RED_REQUIRED and not row.get("evidence_seeded_red_required"):
+        errors.append(f"{frz}: must keep seeded-red requirement (FRZ-DEBT-02/03)")
 
 
 def _validate_evidence_missing_obligations(inventory: list[object]) -> list[str]:
+    """OP-B (OD-AF-CLOSE-B2): twelve rows stay identifiable; EVIDENCE_MISSING or RED_AT_PREFIX."""
     errors: list[str] = []
-    missing_rows: list[str] = []
+    by_frz: dict[str, dict[str, object]] = {}
     for row in inventory:
-        if not isinstance(row, dict):
+        if isinstance(row, dict) and row.get("frz_id"):
+            by_frz[str(row["frz_id"])] = row
+    for frz in _EVIDENCE_MISSING_OP_B:
+        row = by_frz.get(frz)
+        if row is None:
+            errors.append(f"{frz}: OP-B obligation row missing from inventory")
             continue
-        frz = str(row.get("frz_id"))
         status = row.get("red_first_status")
-        if status == "PASS":
-            errors.append(f"{frz}: EVIDENCE_MISSING must not be promoted to PASS")
-        if status != "EVIDENCE_MISSING":
-            continue
-        if frz in _EVIDENCE_MISSING_OP_B:
-            missing_rows.append(frz)
-            expected_owner = _EVIDENCE_MISSING_OP_B[frz]
-            if row.get("owner_ticket") != expected_owner:
-                errors.append(f"{frz}: EVIDENCE_MISSING owner must be {expected_owner}")
-            if row.get("operator_decision_id") != _OD_AF_CLOSE_B2:
-                errors.append(f"{frz}: missing operator_decision_id {_OD_AF_CLOSE_B2}")
-            if not str(row.get("operator_decision_ref") or "").strip():
-                errors.append(f"{frz}: missing operator_decision_ref")
-            if not str(row.get("evidence_negative_test") or "").strip():
-                errors.append(f"{frz}: missing planned negative test reference")
-            if not str(row.get("evidence_mechanism") or "").strip():
-                errors.append(f"{frz}: missing evidence mechanism")
-            if not str(row.get("evidence_certification_obligation") or "").strip():
-                errors.append(f"{frz}: missing certification obligation before row close")
-            if frz in _SEEDED_RED_REQUIRED and not row.get("evidence_seeded_red_required"):
-                errors.append(f"{frz}: must keep seeded-red requirement (FRZ-DEBT-02/03)")
-    if sorted(missing_rows) != sorted(_EVIDENCE_MISSING_OP_B):
-        errors.append(
-            "EVIDENCE_MISSING OP-B row set mismatch: "
-            f"expected {sorted(_EVIDENCE_MISSING_OP_B)}, got {sorted(missing_rows)}"
-        )
+        if status in _OP_B_FORBIDDEN_STATUSES:
+            errors.append(f"{frz}: OP-B row must not use status {status}")
+        elif status not in _OP_B_ALLOWED_STATUSES:
+            errors.append(f"{frz}: OP-B row status must be EVIDENCE_MISSING or RED_AT_PREFIX, got {status!r}")
+        else:
+            _validate_op_b_row_metadata(frz, row, errors)
     return errors
 
 

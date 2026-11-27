@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T08:44:20.740910+00:00",
-  "execution_sha": "16752778ce3f01cd71ee6d849e071c350f134bc9",
+  "generated_at": "2026-11-27T09:14:40.019678+00:00",
+  "execution_sha": "58ccf54e7e7c9a1a4bba2e3ef9f8a0b3dbdad66c",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
   "bindings_sha256": "4a5a798dc49af838613e2b4237c1783e97e936a1baedb4caecf6d9a74f99ff8c",
   "node": "T-AF2-RW-PLAN",
