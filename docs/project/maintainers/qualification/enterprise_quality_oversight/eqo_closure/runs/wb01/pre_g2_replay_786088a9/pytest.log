@@ -1,0 +1,7 @@
+.F...............s.......                                                [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\unit\governance\test_iiac_activation_gate.py:256: AssertionError: IIAC policy activation: FAIL
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\governance\test_iiac_activation_gate.py:439: symlink creation is unavailable
+FAILED tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies
+1 failed, 23 passed, 1 skipped in 119.13s (0:01:59)

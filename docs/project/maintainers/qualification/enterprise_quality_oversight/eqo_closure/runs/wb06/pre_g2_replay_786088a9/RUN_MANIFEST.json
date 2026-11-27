@@ -1,0 +1,40 @@
+{
+  "schema": "eqo.pre_g2_run_manifest.v1",
+  "workstream": "WB06",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_execution_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "pytest_command": "uv run pytest tests/qualification/config_x/test_config_x_qualification_gates.py tests/qualification/config_x/test_config_x_adversarial_cx_gates.py tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed -q --tb=line",
+  "pytest_command_sha256": "51d8f0b813cc4721650d73a3eab662433b00b9cf7d96ac1ab7607c34376ca38e",
+  "preregistration_sha256": "2af5a7917a58b2dcbf131cf62b01f44efa82de8ba0f78f214813c8f5d421f852",
+  "execution_start_utc": "2026-11-27T08:07:01Z",
+  "execution_finish_utc": "2026-11-27T08:07:04Z",
+  "exit_code": 4,
+  "pytest_summary": "1 error in 0.36s",
+  "passed_count": null,
+  "failed_count": null,
+  "skipped_count": null,
+  "xfailed_count": null,
+  "xpassed_count": null,
+  "collection_errors": [
+    "____ ERROR collecting tests/unit/llm_adapters/test_ollama_tool_calling.py _____",
+    "ImportError while importing test module 'D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\tests\\unit\\llm_adapters\\test_ollama_tool_calling.py'."
+  ],
+  "failed_test_node_ids": [],
+  "environment_blockers": [
+    "ModuleNotFoundError: langchain_core during collection of tests/unit/llm_adapters/test_ollama_tool_calling.py; diagnostic venv lacks --all-extras"
+  ],
+  "log_path": "runs/wb06/pre_g2_replay_786088a9/pytest.log",
+  "log_sha256": "5850d9482169c7d641f73859b2db6177ececb33fc49ab112a4178c29cd57d4b5",
+  "source_tree_integrity": "PASS",
+  "qualification_limitations": [
+    "PRE_G2_DIAGNOSTIC_REPLAY",
+    "NOT_INDEPENDENT_CERTIFICATION"
+  ],
+  "replay_classification": "EXECUTION_BLOCKED",
+  "historical_comparison": {
+    "historical_failures": {},
+    "current_failures": {}
+  },
+  "historical_pytest_summary": "32 passed in 188.25s (0:03:08)",
+  "historical_exit_code": 0
+}

@@ -1,0 +1,4 @@
+..................................................................       [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:8: requires the 'dev-ci-rag' extra (qdrant-client); executed by the rag-guard CI profile
+66 passed, 1 skipped in 24.17s

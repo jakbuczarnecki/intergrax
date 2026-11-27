@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB11",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb11/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "05fa5533cd19578df9437bbc28e9106dee5a41110301a2f12d7cf9bc46fcc3e0",
+  "pytest_command": "uv run pytest tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py tests/qualification/ent_audit_x/integration/test_ent_audit_cannot_exit_clean_with_skipped_mandatory.py tests/qualification/compat_x/test_compat_x_inventory_gates.py tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py tests/qualification/prod_q/test_prod_q_r1_durable_seal_store.py tests/qualification/ebh_7/test_ebh_7_w4_gov_dup_gates.py -q --tb=line",
+  "pytest_command_sha256": "088a4be905ca5dfbd81a39aa1b86c853d37d346cc4698e37b9342318bcffb9ef",
+  "preregistered_utc": "2026-11-27T08:10:28Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

@@ -1,0 +1,6 @@
+.............F......                                                     [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\unit\architecture\test_rw_bnd05_provider_switch_gate.py:163: AssertionError: provider package imports outside the closed list of composition roots: intergrax/applications/_shared/queue_worker_wiring.py
+=========================== short test summary info ===========================
+FAILED tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list
+1 failed, 19 passed in 24.88s

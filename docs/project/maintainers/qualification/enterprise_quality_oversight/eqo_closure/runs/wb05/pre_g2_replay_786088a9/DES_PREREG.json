@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB05",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb05/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "fe2de419e34e17e4c4d59ab981ca4f63652ec0e26bdcd7b206bc7d0fb7a4abe3",
+  "pytest_command": "uv run pytest tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py tests/unit/context/test_context_tier0_import_boundary.py tests/qualification/ebh_5/test_ebh_5_rpl_g_regression_gates.py -q --tb=line",
+  "pytest_command_sha256": "174b9735479f350cfe673c63c26d640287cbbf987f0b3f5c06796a7806df24ca",
+  "preregistered_utc": "2026-11-27T08:06:32Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

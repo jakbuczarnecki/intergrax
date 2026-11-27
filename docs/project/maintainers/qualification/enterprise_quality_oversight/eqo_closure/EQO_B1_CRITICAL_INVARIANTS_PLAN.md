@@ -45,7 +45,7 @@
 
 | Finding ID | WB | Severity (dossier) | Primary probe row |
 |------------|----|--------------------|-------------------|
-| EQOA-A1-021 | WB11 | MEDIUM | `EQO_B1_ADVERSARIAL_TEST_MATRIX.jsonl` |
+| EQOA-A1-021 | WB01 | MEDIUM | `EQO_B1_ADVERSARIAL_TEST_MATRIX.jsonl` |
 | EQOA-A4-015 | WB01 | MEDIUM | same |
 | EQOA-A4-044 | WB01 | MEDIUM | same |
 | EQOA-A5-003 | WB01 | LOW | same |

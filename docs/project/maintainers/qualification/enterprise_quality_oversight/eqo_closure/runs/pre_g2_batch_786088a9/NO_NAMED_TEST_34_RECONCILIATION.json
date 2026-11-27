@@ -1,0 +1,695 @@
+{
+  "schema": "eqo.no_named_test_reconciliation.v1",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "row_count": 34,
+  "rows": [
+    {
+      "obligation_id": "EDER-F-0016",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0020",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0023",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0059",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0076",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0080",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0084",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0091",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "PARTIAL_GUARD_COVERAGE",
+      "mapping_source": "EC-W21-W3 contract + T-IGX-090-C",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [
+        "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py"
+      ],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": {
+        "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py": true
+      },
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "Ratchet guards four classified direct hasattr() sites; does not prove complete FRZ-TYP-04 resolution.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0107",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0116",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0124",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0154",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0158",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0171",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0182",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0186",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0188",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0192",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0200",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0207",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0209",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0210",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0222",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-F-0236",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "PARTIAL_CONTRACT_COVERAGE",
+      "mapping_source": "EC-W21-W3 contract + T-IGX-090-C",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [
+        "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py"
+      ],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": {
+        "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py": true
+      },
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "Legacy RAG tenant binding exercised; storage isolation and retrieval authorization not established.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0001",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0002",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0003",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0004",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0005",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0006",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0007",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0008",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0085",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    },
+    {
+      "obligation_id": "EDER-D-0086",
+      "historical_status": "NO_NAMED_TEST",
+      "mapping_status": "MAPPING_NOT_VERIFIED",
+      "mapping_source": "EQO_REPLAY_REST.json; ORIGINAL_MAPPING_UNAVAILABLE",
+      "source_digest": null,
+      "mapping_artifact_provenance": {
+        "availability": "ORIGINAL_MAPPING_UNAVAILABLE",
+        "path": "D:\\Projekty\\_wt\\intergrax\\ec-w21-w3-det\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+        "sha256": null
+      },
+      "test_paths": [],
+      "test_nodes": [],
+      "test_exists_at_execution_sha": null,
+      "execution_evidence_refs": null,
+      "execution_status": "NOT_EXECUTED",
+      "coverage_limitations": "No explicit tests/*.py path in register; recovered mapping artifact unavailable.",
+      "semantic_review_required": true,
+      "formal_closure_claim": false
+    }
+  ]
+}

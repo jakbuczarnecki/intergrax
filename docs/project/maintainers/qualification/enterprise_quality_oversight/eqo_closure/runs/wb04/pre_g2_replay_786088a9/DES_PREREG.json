@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB04",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb04/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "8f41576466702a6f28975c25434d144aa6a713948bb59b0f7d400983c6d64566",
+  "pytest_command": "uv run pytest tests/qualification/control_planes/ctrl_x/test_ctrl_x_qualification_batch.py tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py -q --tb=line",
+  "pytest_command_sha256": "8b732ccd149bc1b02f63f7ebde4c5ec64add50a2c975f1a732c6c1935781d00a",
+  "preregistered_utc": "2026-11-27T08:06:09Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

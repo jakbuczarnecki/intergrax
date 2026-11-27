@@ -1,0 +1,6 @@
+..F..................................................................    [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: AssertionError: 3 PDC-touched product modules map to no check, e.g. ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py']
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+1 failed, 68 passed in 106.95s (0:01:46)

@@ -1,0 +1,39 @@
+{
+  "schema": "eqo.pre_g2_run_manifest.v1",
+  "workstream": "WB04",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_execution_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "pytest_command": "uv run pytest tests/qualification/control_planes/ctrl_x/test_ctrl_x_qualification_batch.py tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py -q --tb=line",
+  "pytest_command_sha256": "8b732ccd149bc1b02f63f7ebde4c5ec64add50a2c975f1a732c6c1935781d00a",
+  "preregistration_sha256": "424958637c517318a4c7b545210b223ec83a8515c0f3bb66e060486bfc10494a",
+  "execution_start_utc": "2026-11-27T08:06:09Z",
+  "execution_finish_utc": "2026-11-27T08:06:32Z",
+  "exit_code": 1,
+  "pytest_summary": "1 failed, 12 passed, 1 warning in 19.38s",
+  "passed_count": 12,
+  "failed_count": 1,
+  "skipped_count": null,
+  "xfailed_count": null,
+  "xpassed_count": null,
+  "collection_errors": null,
+  "failed_test_node_ids": [
+    "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes"
+  ],
+  "environment_blockers": null,
+  "log_path": "runs/wb04/pre_g2_replay_786088a9/pytest.log",
+  "log_sha256": "4c2935584191e77c61ca54643f0ca440bfb1ef6761ce2614a8cd15d201297d12",
+  "source_tree_integrity": "PASS",
+  "qualification_limitations": [
+    "PRE_G2_DIAGNOSTIC_REPLAY",
+    "NOT_INDEPENDENT_CERTIFICATION"
+  ],
+  "replay_classification": "REPLAY_RED",
+  "historical_comparison": {
+    "historical_failures": {},
+    "current_failures": {
+      "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+    }
+  },
+  "historical_pytest_summary": "13 passed in 79.41s",
+  "historical_exit_code": 0
+}

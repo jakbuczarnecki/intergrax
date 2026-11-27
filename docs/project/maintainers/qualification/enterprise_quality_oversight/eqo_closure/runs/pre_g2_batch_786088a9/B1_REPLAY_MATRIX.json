@@ -1,0 +1,377 @@
+{
+  "schema": "eqo.b1_replay_matrix.v1",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "workstream_count": 12,
+  "rows": [
+    {
+      "workstream": "WB01",
+      "historical": {
+        "summary": "1 failed, 23 passed, 1 skipped in 314.65s (0:05:14)",
+        "exit_code": 1
+      },
+      "current": {
+        "summary": "1 failed, 23 passed, 1 skipped in 119.13s (0:01:59)",
+        "exit_code": 1,
+        "passed": 23,
+        "failed": 1,
+        "skipped": 1
+      },
+      "manifest_path": "runs/wb01/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "5fc53b5c8d2205afb2f65230124190d2a04fe0dc4b4a4bdb6d20cbe877e990ee",
+      "log_path": "runs/wb01/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "d2a6b9cf9a829e62628a1583b02eefcae675c60e4146586fce1db8fc65220e95",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/unit/governance/test_iiac_activation_gate.py::test_canonical_policy_is_in_force_and_verifies": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB02",
+      "historical": {
+        "summary": "2 failed, 72 passed, 1 skipped in 17.77s",
+        "exit_code": 1
+      },
+      "current": {
+        "summary": "66 passed, 1 skipped in 24.17s",
+        "exit_code": 0,
+        "passed": 66,
+        "failed": 0,
+        "skipped": 1
+      },
+      "manifest_path": "runs/wb02/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "200dc690c273f43239c00164604a7ac129472d4876a9b1644669a8d1301aec8b",
+      "log_path": "runs/wb02/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "ebf2b7372e544006e1a2eac8700c50edced410ad79c4d7267c7be215107b34a4",
+      "replay_classification": "REPLAY_GREEN_WITH_LIMITS",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {
+          "tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[lancedb]": "OUTCOME_NOT_PROVEN",
+          "tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[typesense]": "OUTCOME_NOT_PROVEN"
+        },
+        "current_failures": {}
+      }
+    },
+    {
+      "workstream": "WB03",
+      "historical": {
+        "summary": "39 passed in 99.47s (0:01:39)",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "39 passed, 1 warning in 66.58s (0:01:06)",
+        "exit_code": 0,
+        "passed": 39,
+        "failed": 0,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb03/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "83006fd174d3f9c5430088d1dc5237b269cce8e6b1162f2db5a664a01a8539dd",
+      "log_path": "runs/wb03/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "fea380928b45fd6d93c21b9463d5dec589695ec9139653bdc1035c131de59607",
+      "replay_classification": "REPLAY_GREEN",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {}
+      }
+    },
+    {
+      "workstream": "WB04",
+      "historical": {
+        "summary": "13 passed in 79.41s",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "1 failed, 12 passed, 1 warning in 19.38s",
+        "exit_code": 1,
+        "passed": 12,
+        "failed": 1,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb04/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "ea8defb8ca558a7e4f25af3798b03ac481427abb75274c3616715298e6af7977",
+      "log_path": "runs/wb04/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "4c2935584191e77c61ca54643f0ca440bfb1ef6761ce2614a8cd15d201297d12",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB05",
+      "historical": {
+        "summary": "14 passed in 32.86s",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "1 failed, 19 passed in 24.88s",
+        "exit_code": 1,
+        "passed": 19,
+        "failed": 1,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb05/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "5ff3c40f36f943c3d04363ce3a7d78fafb74adb593ed0747a57379fb695e3b36",
+      "log_path": "runs/wb05/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "61ac86af3c39a8d3da6168abddb03c82a8a4570a3c0a4b118139850e95a80680",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB06",
+      "historical": {
+        "summary": "32 passed in 188.25s (0:03:08)",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "1 error in 0.36s",
+        "exit_code": 4,
+        "passed": null,
+        "failed": null,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb06/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "15a0855e825817d3a3f55ea18275d9ee683c21f82389ba76e81e209ef6b49267",
+      "log_path": "runs/wb06/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "5850d9482169c7d641f73859b2db6177ececb33fc49ab112a4178c29cd57d4b5",
+      "replay_classification": "EXECUTION_BLOCKED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {}
+      }
+    },
+    {
+      "workstream": "WB07",
+      "historical": {
+        "summary": "1 failed, 56 passed, 1 skipped in 107.04s (0:01:47)",
+        "exit_code": 1
+      },
+      "current": {
+        "summary": "2 failed, 55 passed, 1 skipped in 53.04s",
+        "exit_code": 1,
+        "passed": 55,
+        "failed": 2,
+        "skipped": 1
+      },
+      "manifest_path": "runs/wb07/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "f88e56d6a53494e4d5fee741fe73d9d8e277fb18dc2d4d6e86208b5e07f82b5a",
+      "log_path": "runs/wb07/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "6ac0f2057c8fd22ccd6d1df9f60e4e3d4f466a32a170507f3b1dea2176c011ef",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_runtime_tool_invoker_reference_files_are_classified": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE",
+          "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB08",
+      "historical": {
+        "summary": "44 passed in 7.33s",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "44 passed in 5.66s",
+        "exit_code": 0,
+        "passed": 44,
+        "failed": 0,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb08/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "7cf78e89cb8388914a064ce481d602c558c15f1e5a90abdda962619b984fab7c",
+      "log_path": "runs/wb08/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "73a1456f758701d1f71993d15c84c4cf698acd052613da3cad82c3a3c48fa742",
+      "replay_classification": "REPLAY_GREEN",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {}
+      }
+    },
+    {
+      "workstream": "WB09",
+      "historical": {
+        "summary": "66 passed in 66.86s",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "2 failed, 64 passed, 2 warnings in 9.04s",
+        "exit_code": 1,
+        "passed": 64,
+        "failed": 2,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb09/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "30dde796671974abce2249eac39b994db2e9717625ef00826ecc125d592c9edc",
+      "log_path": "runs/wb09/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "235cf7af2abdde3e54d3bda6d3a76fd816939d52c8253ac3fb72d1b3e72f9a38",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE",
+          "tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py::test_pb_s13_uvicorn_normal_return_surfaces_close_failure": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB10",
+      "historical": {
+        "summary": "6 failed, 66 passed, 1 skipped in 98.73s (0:01:38)",
+        "exit_code": 1
+      },
+      "current": {
+        "summary": "3 failed, 69 passed, 1 skipped in 47.11s",
+        "exit_code": 1,
+        "passed": 69,
+        "failed": 3,
+        "skipped": 1
+      },
+      "manifest_path": "runs/wb10/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "68cbb18859f6440098b409be0bbdd9bc1e22e737eca14a73cb1198c01763bb28",
+      "log_path": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "189df394405d30b8caa69d7b9c1dfd36f995710dc22e39e1cb675b228bdd6456",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE",
+          "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE",
+          "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB11",
+      "historical": {
+        "summary": "1 failed, 68 passed in 140.29s (0:02:20)",
+        "exit_code": 1
+      },
+      "current": {
+        "summary": "1 failed, 68 passed in 106.95s (0:01:46)",
+        "exit_code": 1,
+        "passed": 68,
+        "failed": 1,
+        "skipped": null
+      },
+      "manifest_path": "runs/wb11/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "f5ac2569604b71019be38d43a32d35969766377b6f1b9d84cd2ff17ed50d3977",
+      "log_path": "runs/wb11/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "46535ce1516f07804662b99ed139fe36630d4cb7725872a9867b9e90f885c97d",
+      "replay_classification": "REPLAY_RED",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {
+          "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "workstream": "WB12",
+      "historical": {
+        "summary": "33 passed, 1 skipped in 48.97s",
+        "exit_code": 0
+      },
+      "current": {
+        "summary": "33 passed, 1 skipped in 43.91s",
+        "exit_code": 0,
+        "passed": 33,
+        "failed": 0,
+        "skipped": 1
+      },
+      "manifest_path": "runs/wb12/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "manifest_sha256": "5fcb98e920e7d2d63e29c48bc3c2533136a78117f3c0dca949d758c4f2728032",
+      "log_path": "runs/wb12/pre_g2_replay_786088a9/pytest.log",
+      "log_sha256": "b61c2ebfa757770a40182ee415f3e5e5ceb5ffa61dc180ad2f2eb929aa35f08b",
+      "replay_classification": "REPLAY_GREEN_WITH_LIMITS",
+      "historical_independent_audit_status": "PRESERVED_SESSION_E",
+      "qualification_limitations": [
+        "PRE_G2_DIAGNOSTIC_REPLAY",
+        "NOT_INDEPENDENT_CERTIFICATION"
+      ],
+      "formal_closure_claim": false,
+      "node_comparison": {
+        "historical_failures": {},
+        "current_failures": {}
+      }
+    }
+  ]
+}

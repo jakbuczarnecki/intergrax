@@ -1,0 +1,25 @@
+{
+  "schema": "eqo.wave2_guards_manifest.v1",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "pytest_command": "uv run pytest tests/unit/runtime/nexus/test_od_037_guard_human_decision_persistence.py tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py -q --tb=line",
+  "pytest_command_sha256": "6187bca44bc97215aaf94388c8af0e50433c422270c4dab1e06d7ee1a0b5a49d",
+  "execution_start_utc": "2026-11-27T08:13:15Z",
+  "execution_finish_utc": "2026-11-27T08:13:21Z",
+  "exit_code": 0,
+  "pytest_summary": "13 passed in 2.78s",
+  "passed_count": 13,
+  "failed_count": 0,
+  "skipped_count": null,
+  "failed_test_node_ids": [],
+  "log_path": "runs/pre_g2_batch_786088a9/wave2_guards_pytest.log",
+  "log_sha256": "2118eb58948c46584b438b721581b02511d82f0c3c98810f0326aa1e9d3a80a7",
+  "e01_od037_notes": "Guard verifies production-mode human-decision persistence contract; not OD-037-PERSIST implementation.",
+  "e02_frz_typ04_residual_sites": [
+    "VectorStore.list_collections \u2014 cfg",
+    "LexicalHybridSupport._lexical_hits \u2014 _payloads",
+    "LexicalHybridSupport.query_hybrid \u2014 _payloads",
+    "run_beta_adapter_soak \u2014 add_records"
+  ],
+  "e03_compression_receipt_notes": "Receipt ID content-addressed without tenant in _derive_receipt_id; equal auto-derived IDs do not establish storage vulnerability; tenant-partitioned persistence unresolved.",
+  "certification_claim": false
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "eqo.pre_g2_run_manifest.v1",
+  "workstream": "WB09",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_execution_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "pytest_command": "uv run pytest tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py tests/unit/skills/test_skill_host_lifecycle_batch_a.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py -q --tb=line",
+  "pytest_command_sha256": "a9361ab1914706309bc7081f553d335b021854a2a2f808233efc1ba7f0461030",
+  "preregistration_sha256": "d6f9d68890884939ddc02f4c7ee37698f4a433f660e10a9b0fc64720801c7b11",
+  "execution_start_utc": "2026-11-27T08:08:45Z",
+  "execution_finish_utc": "2026-11-27T08:08:58Z",
+  "exit_code": 1,
+  "pytest_summary": "2 failed, 64 passed, 2 warnings in 9.04s",
+  "passed_count": 64,
+  "failed_count": 2,
+  "skipped_count": null,
+  "xfailed_count": null,
+  "xpassed_count": null,
+  "collection_errors": null,
+  "failed_test_node_ids": [
+    "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py::test_pb_s13_uvicorn_normal_return_surfaces_close_failure"
+  ],
+  "environment_blockers": null,
+  "log_path": "runs/wb09/pre_g2_replay_786088a9/pytest.log",
+  "log_sha256": "235cf7af2abdde3e54d3bda6d3a76fd816939d52c8253ac3fb72d1b3e72f9a38",
+  "source_tree_integrity": "PASS",
+  "qualification_limitations": [
+    "PRE_G2_DIAGNOSTIC_REPLAY",
+    "NOT_INDEPENDENT_CERTIFICATION"
+  ],
+  "replay_classification": "REPLAY_RED",
+  "historical_comparison": {
+    "historical_failures": {},
+    "current_failures": {
+      "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE",
+      "tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py::test_pb_s13_uvicorn_normal_return_surfaces_close_failure": "HISTORICAL_NODE_COMPARISON_UNAVAILABLE"
+    }
+  },
+  "historical_pytest_summary": "66 passed in 66.86s",
+  "historical_exit_code": 0
+}

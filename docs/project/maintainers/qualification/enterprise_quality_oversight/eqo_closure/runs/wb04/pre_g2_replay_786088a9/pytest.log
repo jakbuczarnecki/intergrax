@@ -1,0 +1,14 @@
+............F                                                            [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\qualification\mcp_server_x\test_mcp_server_x_p5_qualification_batch.py:28: AssertionError: P5 target failed: tests/unit/applications/test_mcp_trust_a_principal_binding.py (exit=2)
+============================== warnings summary ===============================
+tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes
+  D:\Projekty\_wt\intergrax\ec-w21-w3-det\.venv\Lib\site-packages\pytest_asyncio\plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+  The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+  
+    warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes
+1 failed, 12 passed, 1 warning in 19.38s

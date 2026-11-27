@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB12",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb12/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "fc37494f5955e0c4a72103b3ef64e42e1ac3f9b744d4d1c60ad975517b9441bf",
+  "pytest_command": "uv run pytest tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_dup_01.py tests/qualification/dup_x/test_dup_x_closed_world_integrity.py tests/qualification/dup_x/test_dup_x_wave_b_authority_gates.py tests/unit/proofs/receipts/test_proof_receipts_contract.py tests/qualification/pdc_x/p6_repair/test_p6r_trace_alias_callers.py -q --tb=line",
+  "pytest_command_sha256": "cee7f64c024da3331c708a8f6482e8317f79709c9af49bae9a32ae81b3c400ea",
+  "preregistered_utc": "2026-11-27T08:12:19Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

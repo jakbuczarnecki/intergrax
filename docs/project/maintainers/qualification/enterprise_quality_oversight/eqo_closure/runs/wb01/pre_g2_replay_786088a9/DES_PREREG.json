@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB01",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb01/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "322fc10a7446875e016a50e9aaff4040772899c8fb077a0901b50a6428606c9c",
+  "pytest_command": "uv run pytest tests/unit/governance/test_iiac_activation_gate.py -q --tb=line",
+  "pytest_command_sha256": "b95cf0cc75c3fd56a677ea9bbeb8de5aa36b817d84cfa04a666208399b1083fa",
+  "preregistered_utc": "2026-11-27T08:01:28Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

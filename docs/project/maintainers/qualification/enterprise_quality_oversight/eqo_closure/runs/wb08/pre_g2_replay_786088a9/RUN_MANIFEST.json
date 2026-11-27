@@ -1,0 +1,35 @@
+{
+  "schema": "eqo.pre_g2_run_manifest.v1",
+  "workstream": "WB08",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_execution_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "pytest_command": "uv run pytest tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py tests/qualification/pdc_x/d2/test_d2_context_fidelity.py tests/qualification/pdc_x/d2/test_d2_compaction_roundtrip.py tests/qualification/pdc_x/xd/test_xd_02_agent_context.py -q --tb=line",
+  "pytest_command_sha256": "536729a678d94f95c543e4f187b143695af01c159480c9b9c048da91d3711999",
+  "preregistration_sha256": "2c7a677a79d14c8898666ef4e34688dce3c19ba0888de4082f8b35d455c3ef5c",
+  "execution_start_utc": "2026-11-27T08:08:35Z",
+  "execution_finish_utc": "2026-11-27T08:08:45Z",
+  "exit_code": 0,
+  "pytest_summary": "44 passed in 5.66s",
+  "passed_count": 44,
+  "failed_count": 0,
+  "skipped_count": null,
+  "xfailed_count": null,
+  "xpassed_count": null,
+  "collection_errors": null,
+  "failed_test_node_ids": [],
+  "environment_blockers": null,
+  "log_path": "runs/wb08/pre_g2_replay_786088a9/pytest.log",
+  "log_sha256": "73a1456f758701d1f71993d15c84c4cf698acd052613da3cad82c3a3c48fa742",
+  "source_tree_integrity": "PASS",
+  "qualification_limitations": [
+    "PRE_G2_DIAGNOSTIC_REPLAY",
+    "NOT_INDEPENDENT_CERTIFICATION"
+  ],
+  "replay_classification": "REPLAY_GREEN",
+  "historical_comparison": {
+    "historical_failures": {},
+    "current_failures": {}
+  },
+  "historical_pytest_summary": "44 passed in 7.33s",
+  "historical_exit_code": 0
+}

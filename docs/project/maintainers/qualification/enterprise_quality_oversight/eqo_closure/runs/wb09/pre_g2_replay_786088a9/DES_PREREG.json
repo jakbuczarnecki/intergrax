@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.des_prereg.v1",
+  "workstream": "WB09",
+  "execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "historical_evidence_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "historical_manifest_path": "runs/wb09/RUN_MANIFEST.json",
+  "historical_manifest_sha256": "1a681c532ea494331386b8c9c023ae7311f5dc35682a23c09c1bcbf01149d2da",
+  "pytest_command": "uv run pytest tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py tests/unit/skills/test_skill_host_lifecycle_batch_a.py tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py -q --tb=line",
+  "pytest_command_sha256": "a9361ab1914706309bc7081f553d335b021854a2a2f808233efc1ba7f0461030",
+  "preregistered_utc": "2026-11-27T08:08:45Z",
+  "execution_scope": "PRE_G2_DIAGNOSTIC_REPLAY",
+  "certification_claim": false
+}

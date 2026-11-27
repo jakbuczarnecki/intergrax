@@ -1,0 +1,14 @@
+
+=================================== ERRORS ====================================
+____ ERROR collecting tests/unit/llm_adapters/test_ollama_tool_calling.py _____
+ImportError while importing test module 'D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\unit\llm_adapters\test_ollama_tool_calling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\unit\llm_adapters\test_ollama_tool_calling.py:22: in <module>
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+E   ModuleNotFoundError: No module named 'langchain_core'
+=========================== short test summary info ===========================
+ERROR tests/unit/llm_adapters/test_ollama_tool_calling.py
+1 error in 0.36s
+ERROR: found no collectors for D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\unit\llm_adapters\test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed
+

@@ -1,0 +1,9 @@
+................s......F........................F.........               [100%]
+================================== FAILURES ===================================
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\qualification\harness_01\test_harness_01_gates.py:216: AssertionError: Production files referencing RuntimeToolInvoker must be explicitly classified:
+D:\Projekty\_wt\intergrax\ec-w21-w3-det\tests\qualification\harness_01\test_harness_01_gates.py:502: AssertionError: Higher-layer Nexus importers must be explicitly classified:
+=========================== short test summary info ===========================
+SKIPPED [1] tests\qualification\trace_x\test_trace_x_p6_adversarial_bundle.py:69: adversarial bundle session manifest missing; rerun qualification batch with TRACE_X_P6_PASS1=1 including all P6-A..H tests
+FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_runtime_tool_invoker_reference_files_are_classified
+FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified
+2 failed, 55 passed, 1 skipped in 53.04s

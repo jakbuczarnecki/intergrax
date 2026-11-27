@@ -1,4 +1,4 @@
-# W2.1-A CI disposition — per test node
+﻿# W2.1-A CI disposition — per test node
 
 Published copy of local evidence; not an IIAC certification.
 
@@ -140,3 +140,12 @@ The closing paragraph of that section (*"The disposition is HIST: an EVOL-X evid
 8. **Preflight documentation test** — `test_w402_04_commit_graph_and_alternates_are_documented_as_residuals`: required `alternates` residual documentation is missing from the preflight module docstring.
 
 This clarification does not decide whether implementation or test expectations must change. Unresolved semantic corrections remain with AF-CLOSE / EVOL-X authority. All negative security and qualification requirements stand; no skips, xfails, exceptions, or waivers are introduced here.
+
+## Fixture classification clarification
+
+- `test_w402_02_real_clone_is_clean_and_every_imported_gate_module_is_byte_bound` uses the real-clone fixture.
+- `test_w402_02_untracked_unrelated_files_outside_evidence_and_modules_stay_clean` uses the synthetic `closed` fixture.
+- The latter must not be classified as a real-clone test.
+- Its exact failure root cause remains unresolved.
+- All ten historical EVOL-X failures retain their HIST classification.
+- No semantic correction is authorized by this clarification.
