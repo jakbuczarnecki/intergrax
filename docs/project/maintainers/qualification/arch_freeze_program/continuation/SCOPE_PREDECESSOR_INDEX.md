@@ -1,12 +1,10 @@
 # SCOPE hard predecessor index (WP-12)
 
-> **Status update 2026-11-26 (T-IGX-078-A, checked at `development` `646e63953`):** `RED_FIRST_EVIDENCE` is now **COMPLETE** (`CODE_FIX_OWNERSHIP=39/39`; the checker still reports `RW_PLAN_AUDIT=NOT_PERFORMED`). **SCOPE is not recorded** and T-AF2-RW-PLAN-AUDIT stays **PARTIAL**; a fresh independent audit is open. Statements below that `RED_FIRST` is `INCOMPLETE` are historical.
+> **Obowiązujący stan (AF-W2-CLOSURE-01, Appendix V6):** gałąź wykonawcza **`development`** @ `f4e8444551994d9033c00fd6884d5e6f822d3ed7`; **`SCOPE=OPEN`**; **`RED_FIRST_EVIDENCE=INCOMPLETE`**; **`RW_PLAN_AUDIT=NOT_PERFORMED`**. Wpis 2026-11-26 z `RED_FIRST_EVIDENCE=COMPLETE` jest historyczny. **`SCOPE_MILESTONE: READY_TO_RECORD` nie obowiązuje.**
 
-> **Supersession (2026-11-26):** The train pin `689b277e` and the phase-b2 process waiver below are **historical records only**; they are **not** an authorized SCOPE close. **`SCOPE_MILESTONE: READY_TO_RECORD` does not apply** at `development` `2a8f15489ce522e7628678e12b92f9baae24d0ce`. **`RED_FIRST_EVIDENCE` remains `INCOMPLETE`**. This index makes **no** G2, FCS, M3, or **ARCH-FREEZE CLOSED** claim.
-
-**Train:** `arch-freeze/fc-train` @ `689b277e62db18613a415e6b2e404864412112b8`  
-**DAG SSOT:** [`WP12_DAG.md`](../WP12_DAG.md) SCOPE row (hard predecessors).  
-**Ancestry rule:** `git merge-base --is-ancestor <evidence_sha> 689b277e6` → **ON_TRAIN**; else **EVIDENCE_NOT_ON_TRAIN**.
+**Tor wykonawczy:** `origin/development` (W3). **Historyczne tory** `arch-freeze/fc-train` / `arch-freeze/rw-train` — cytat only @ `689b277e6` / starsze piny.  
+**DAG SSOT:** [`WP12_DAG.md`](../WP12_DAG.md) — 11 twardych poprzedników.  
+**Ancestry:** dla dowodów na `development`, `merge-base --is-ancestor <sha> f4e8444`; dla cytatów train — ON_TRAIN względem wskazanego train tip.
 
 This index cites in-repo evidence only. It does not set `SCOPE`, `G2`, `FCS`, `M3`, or `ARCH_FREEZE_CLOSED`.
 
@@ -25,7 +23,7 @@ This index cites in-repo evidence only. It does not set `SCOPE`, `G2`, `FCS`, `M
 | **PT-B02** | [`continuation/CAMPAIGN_B_ALPHA_REPLAY.md`](CAMPAIGN_B_ALPHA_REPLAY.md); [`continuation/CAMPAIGN_B_S03_DISPOSITION.md`](CAMPAIGN_B_S03_DISPOSITION.md); [`continuation/CAMPAIGN_B_B02_UV_RERUN.md`](CAMPAIGN_B_B02_UV_RERUN.md); S03 product gate fix | `3991186b1e388efef28e6a1be09aabc32e7fc04d` (alpha replay); S03 remediation `4b7acac4ba32326b32f446e23d624f91393d963e`; S03 scaffold **PASS_WITH_UV_ON_PATH** @ `689b277e62db18613a415e6b2e404864412112b8` | ON_TRAIN | Completed diagnostic at replay SHA (6/7 PASS, S03 **FAIL** at `3991186b1`); pip setup **ERROR** nodes classed **missing_extra** (environment); Nexus importer product fix on train @ `4b7acac4` — **no alpha re-run** after fix in-repo; scoped S03 scaffold remeasure **PASS_WITH_UV_ON_PATH** when `%USERPROFILE%\.local\bin` is on `PATH` (train @ `689b277e6`, no product delta); full phase **b2** `run_campaign_b_w2_alpha.py` campaign has **no exit-0 record** (killed prior run only — not a qualification predecessor; **not** rerun) |
 | **REV-MASTER** | [`REV_MASTER_FORMAL_CLOSEOUT_RECORD.md`](../REV_MASTER_FORMAL_CLOSEOUT_RECORD.md) | `deea67621120403edb2d9bdd33e3eed8903199de` | ON_TRAIN | Formal pass (`REV_MASTER_FORMAL_PASSED=YES`, AF-02F) |
 | **T-AF2-RW-PLAN** | [`RW_PLAN.md`](../RW_PLAN.md); [`rw_plan.v1.json`](../rw_plan.v1.json) | `bd6a5e190ef2dec7227fefb2c9304b60cb7fca9f` (canonical publish); execution cite `deea67621120403edb2d9bdd33e3eed8903199de` in `RW_PLAN.md` | ON_TRAIN | Published canonical machine + human output (W2 DOC node); ledger still **PARTIAL** on RED_FIRST row inventory |
-| **T-AF2-RW-PLAN-AUDIT** | [`continuation/RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md); [`continuation/RW_PLAN_AUDIT_EVIDENCE_INDEX.md`](RW_PLAN_AUDIT_EVIDENCE_INDEX.md) | `ebe45c26930a9291a3df2d6a75028c35c036cee2` (AR-12-07 independent session) | ON_TRAIN | Formal pass (RM-03 structural **PASS**); RED_FIRST evidence class disposition in [`RED_FIRST_G2_DISPOSITION.md`](RED_FIRST_G2_DISPOSITION.md) @ `8c0158ac8152a7ff97734b34faf37c25682a77be` (9× RED_AT_PREFIX, 8× RED_FIRST_UNREPRODUCIBLE — **do not block** SCOPE measurement) |
+| **T-AF2-RW-PLAN-AUDIT** | [`continuation/RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md); GA.2R [`continuation/RED_FIRST_GA2R_RESULT.md`](RED_FIRST_GA2R_RESULT.md) | `f4e8444551994d9033c00fd6884d5e6f822d3ed7` (`development`); historyczny RM-03 @ `ebe45c269` (strukturalny tylko) | ON_TRAIN (historyczny RM-03); plan GA.2R na `development` | **OPEN** — RM-03 **nie jest** końcową akceptacją po GA.2R; `RW_PLAN_AUDIT=NOT_PERFORMED`; round 2 wymaga niezależnej sesji |
 
 ## Supplementary / branch-only cites (not primary train evidence)
 
@@ -45,4 +43,4 @@ S03 scaffold node `test_harness_01_new_agent_scaffold_generates_nexus_free_autho
 
 The killed phase-b2 `run_campaign_b_w2_alpha.py` process (exit `4294967295`, ~56 minutes, no campaign summary) is **not** a product residual and **not** a reason to keep **PT-B02** open as a hard SCOPE predecessor on this train. Node-level in-repo evidence is sufficient for **PT-B02**: six b2 manifest nodes **PASS** @ `87b1a7bec29c603515b058c8337402b1e813cc56` ([`CAMPAIGN_B_B02_RERUN.md`](CAMPAIGN_B_B02_RERUN.md); product tree unchanged by later docs-only commits on this train); S03 scaffold **PASS_WITH_UV_ON_PATH** @ `689b277e62db18613a415e6b2e404864412112b8` ([`CAMPAIGN_B_B02_UV_RERUN.md`](CAMPAIGN_B_B02_UV_RERUN.md)). All other WP-12 SCOPE hard predecessors in the table above remain **ON_TRAIN** with recorded disposition. Local **ci-smoke** and **rag-gate** exit 0 @ train tip are supplementary in [`CI_SMOKE_RAG_GATE_MEASURE.md`](CI_SMOKE_RAG_GATE_MEASURE.md) (not DAG hard predecessors). This paragraph waives only the outer phase-b2 process exit; it does not set G2, FCS, M3, or ARCH-FREEZE CLOSED.
 
-SCOPE_MILESTONE: READY_TO_RECORD
+**SCOPE_MILESTONE:** not set — **SCOPE remains OPEN**.

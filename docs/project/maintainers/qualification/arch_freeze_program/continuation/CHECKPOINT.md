@@ -15,6 +15,17 @@
 
 Historical body sections below retain older pins (`e69e1ff58`, `dbaebfa8`, `c9ce6175f`, `7657745c`) for cite-only audit trails unless superseded by the V5 header table.
 
+
+## AF-W2-CLOSURE-01 (@ `development` `f4e8444`)
+
+| Pole | Wartość |
+| --- | --- |
+| Pakiet | AF-W2-CLOSURE-01 — reconciliacja red-first, OP-B, PFP scheduling, Campaign B SCOPE, generator |
+| `origin/development` | `f4e8444551994d9033c00fd6884d5e6f822d3ed7` |
+| Checker | `PLAN_STRUCTURE=PASS`, `CODE_FIX_OWNERSHIP=39/39`, `RED_FIRST_EVIDENCE=INCOMPLETE`, `RW_PLAN_AUDIT=NOT_PERFORMED` |
+| SCOPE / G2 | **OPEN** / **NOT SET** |
+| Historyczne tory | `arch-freeze/fc-train`, `arch-freeze/rw-train` — cite-only |
+
 ---
 
 **Updated:** 2026-11-21 (docs pin sync `e69e1ff58`; serial `af-dev-merge`)  

@@ -246,6 +246,109 @@ def count_named_negative_tests(data: dict[str, object]) -> tuple[int, int]:
     return named, len(inventory)
 
 
+_OD_AF_CLOSE_B2 = "OD-AF-CLOSE-B2"
+_EVIDENCE_MISSING_OP_B: dict[str, str] = {
+    "FRZ-BND-05": "T-IGX-043-H",
+    "FRZ-BND-06": "T-IGX-043-J",
+    "FRZ-DEBT-02": "T-IGX-051-H",
+    "FRZ-DEBT-03": "T-IGX-051-H",
+    "FRZ-DEBT-04": "T-IGX-051-F",
+    "FRZ-EXE-02": "T-IGX-043-A",
+    "FRZ-PLG-05": "T-IGX-043-A",
+    "FRZ-SEC-06": "T-IGX-051-B",
+    "FRZ-TEN-02": "T-IGX-078-D",
+    "FRZ-TYP-01": "T-IGX-078-C",
+    "FRZ-TYP-03": "T-IGX-078-C",
+    "FRZ-TYP-05": "T-IGX-051-G",
+}
+_FRZ_FRZ_10_SCHEDULE = {
+    "frz_id": "FRZ-FRZ-10",
+    "pre_g2_execution_ticket": "T-IGX-052-I",
+    "functional_owner_node": "T-B7-PFP-ACTIVATE",
+    "functional_owner_wave": "W5",
+    "verification_node": "T-B7-PFP-VERIFY",
+    "verification_wave": "W8",
+}
+_SEEDED_RED_REQUIRED = frozenset({"FRZ-DEBT-02", "FRZ-DEBT-03"})
+
+
+def _validate_evidence_missing_obligations(inventory: list[object]) -> list[str]:
+    errors: list[str] = []
+    missing_rows: list[str] = []
+    for row in inventory:
+        if not isinstance(row, dict):
+            continue
+        frz = str(row.get("frz_id"))
+        status = row.get("red_first_status")
+        if status == "PASS":
+            errors.append(f"{frz}: EVIDENCE_MISSING must not be promoted to PASS")
+        if status != "EVIDENCE_MISSING":
+            continue
+        if frz in _EVIDENCE_MISSING_OP_B:
+            missing_rows.append(frz)
+            expected_owner = _EVIDENCE_MISSING_OP_B[frz]
+            if row.get("owner_ticket") != expected_owner:
+                errors.append(f"{frz}: EVIDENCE_MISSING owner must be {expected_owner}")
+            if row.get("operator_decision_id") != _OD_AF_CLOSE_B2:
+                errors.append(f"{frz}: missing operator_decision_id {_OD_AF_CLOSE_B2}")
+            if not str(row.get("operator_decision_ref") or "").strip():
+                errors.append(f"{frz}: missing operator_decision_ref")
+            if not str(row.get("evidence_negative_test") or "").strip():
+                errors.append(f"{frz}: missing planned negative test reference")
+            if not str(row.get("evidence_mechanism") or "").strip():
+                errors.append(f"{frz}: missing evidence mechanism")
+            if not str(row.get("evidence_certification_obligation") or "").strip():
+                errors.append(f"{frz}: missing certification obligation before row close")
+            if frz in _SEEDED_RED_REQUIRED and not row.get("evidence_seeded_red_required"):
+                errors.append(f"{frz}: must keep seeded-red requirement (FRZ-DEBT-02/03)")
+    if sorted(missing_rows) != sorted(_EVIDENCE_MISSING_OP_B):
+        errors.append(
+            "EVIDENCE_MISSING OP-B row set mismatch: "
+            f"expected {sorted(_EVIDENCE_MISSING_OP_B)}, got {sorted(missing_rows)}"
+        )
+    return errors
+
+
+def _validate_post_freeze_policy_schedule(data: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    schedule = data.get("post_freeze_policy_schedule")
+    if not isinstance(schedule, dict):
+        errors.append("post_freeze_policy_schedule missing")
+        return errors
+    for key, expected in _FRZ_FRZ_10_SCHEDULE.items():
+        if schedule.get(key) != expected:
+            errors.append(f"post_freeze_policy_schedule.{key}: expected {expected!r}, got {schedule.get(key)!r}")
+    tickets = data.get("tickets") or []
+    pfp = next((t for t in tickets if isinstance(t, dict) and t.get("ticket") == "T-IGX-052-I"), None)
+    if pfp is None:
+        errors.append("T-IGX-052-I missing from tickets table")
+    else:
+        if pfp.get("wave") != "pre-G2":
+            errors.append("T-IGX-052-I must use wave pre-G2 (not W3 functional activation)")
+        policy = pfp.get("post_freeze_policy")
+        if not isinstance(policy, dict):
+            errors.append("T-IGX-052-I missing post_freeze_policy block")
+        elif policy.get("functional_owner_wave") != "W5" or policy.get("verification_wave") != "W8":
+            errors.append("T-IGX-052-I post_freeze_policy must name W5 activation and W8 verification")
+    for lane in data.get("lane_order") or []:
+        if isinstance(lane, (list, tuple)) and len(lane) >= 2 and "T-IGX-052-I" in lane[1]:
+            label = lane[2] if len(lane) > 2 else ""
+            if "W3" in str(label) and "pre_g2" not in str(lane[0]).lower():
+                errors.append("T-IGX-052-I must not appear in a W3 execution lane")
+    frz_row = next(
+        (r for r in data.get("code_fix_inventory") or [] if isinstance(r, dict) and r.get("frz_id") == "FRZ-FRZ-10"),
+        None,
+    )
+    if isinstance(frz_row, dict):
+        if frz_row.get("pre_g2_execution_ticket") != "T-IGX-052-I":
+            errors.append("FRZ-FRZ-10 must name pre_g2_execution_ticket T-IGX-052-I")
+        if frz_row.get("owner_wave") != "W5" or frz_row.get("verification_wave") != "W8":
+            errors.append("FRZ-FRZ-10 must keep W5/W8 canonical ownership")
+        if frz_row.get("red_first_status") != "RED_FIRST_LATER_WAVE":
+            errors.append("FRZ-FRZ-10 must stay RED_FIRST_LATER_WAVE")
+    return errors
+
+
 def _train_errors(data: dict[str, object], build) -> list[str]:
     """Re-check overlap matrix, merge order and lanes from the payload's own write sets."""
     tickets = data.get("tickets")
@@ -384,6 +487,9 @@ def validate_plan_structure(
     errors.extend(build.find_af2_errors(data.get("find_af2")))
     if open_outside_inventory is not None:
         errors.extend(_coverage_errors(data, open_outside_inventory))
+    if isinstance(data.get("post_freeze_policy_schedule"), dict):
+        errors.extend(_validate_evidence_missing_obligations(inventory))
+        errors.extend(_validate_post_freeze_policy_schedule(data))
     return errors
 
 

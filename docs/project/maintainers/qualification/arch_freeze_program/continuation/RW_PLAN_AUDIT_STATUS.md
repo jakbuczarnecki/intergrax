@@ -1,8 +1,8 @@
 # T-AF2-RW-PLAN-AUDIT — status raportu (RC-1)
 
-> **Status update 2026-11-26 (T-IGX-078-A, checked at `development` `646e63953`):** `RED_FIRST_EVIDENCE` is now **COMPLETE** (`CODE_FIX_OWNERSHIP=39/39`; the checker still reports `RW_PLAN_AUDIT=NOT_PERFORMED`). **SCOPE is not recorded** and T-AF2-RW-PLAN-AUDIT stays **PARTIAL**; a fresh independent audit is open. Statements below that `RED_FIRST` is `INCOMPLETE` are historical.
+> **Obowiązujący stan (AF-W2-CLOSURE-01, `development` @ `f4e8444551994d9033c00fd6884d5e6f822d3ed7`, GA.2R + OP-B):** inventory **39**; `CODE_FIX_OWNERSHIP=39/39`; `NAMED_NEGATIVE_TESTS=39/39`; `RED_AT_PREFIX=21`; `EVIDENCE_MISSING=12` (OD-AF-CLOSE-B2); `RED_FIRST_OUT=5`; `RED_FIRST_LATER_WAVE=1`; **`RED_FIRST_EVIDENCE=INCOMPLETE`**; **`RW_PLAN_AUDIT=NOT_PERFORMED`**; **SCOPE=OPEN**. Wpis **2026-11-26** z `RED_FIRST_EVIDENCE=COMPLETE` jest **historyczny** (zastąpiony przez GA.2R / OP-B).
 
-**Werdykt tej sesji (AR-12-07, niezależny audytor @ `ebe45c26930a9291a3df2d6a75028c35c036cee2`):** `PASS` (RM-03 strukturalny).
+**Historyczny werdykt strukturalny (AR-12-07 @ `ebe45c269`, RM-03 PASS):** nie zastępuje niezależnej akceptacji planu po GA.2R.
 
 **Cytat audytora (bez redakcji):**
 

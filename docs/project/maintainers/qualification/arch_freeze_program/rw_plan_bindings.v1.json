@@ -1934,11 +1934,20 @@
         ]
       },
       "quality": "CANDIDATE",
-      "note": "Ownership ticket (OP-B orchestrator allocation, 2026-11-27) for FRZ-FRZ-10: the T-B7-PFP-ACTIVATE held-path guard. No approved plan.",
+      "note": "Pre-G2 execution ticket (App V6.3) for FRZ-FRZ-10 held-path guard technical prep. Functional activation T-B7-PFP-ACTIVATE (W5); verification T-B7-PFP-VERIFY (W8). No approved plan.",
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan."
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan.",
+      "wave": "pre-G2",
+      "post_freeze_policy": {
+        "frz_id": "FRZ-FRZ-10",
+        "pre_g2_execution_ticket": "T-IGX-052-I",
+        "functional_owner_node": "T-B7-PFP-ACTIVATE",
+        "functional_owner_wave": "W5",
+        "verification_node": "T-B7-PFP-VERIFY",
+        "verification_wave": "W8"
+      }
     },
     "T-IGX-078-C": {
       "lifecycle": "plan_pending",
@@ -2213,7 +2222,7 @@
     [
       "T-IGX-043-H",
       "T-IGX-052-I",
-      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+      "Pre-G2 guard prep follows PT-WB; W5 activation is T-B7-PFP-ACTIVATE, not W3 wave ownership"
     ],
     [
       "T-IGX-043-J",
@@ -2395,15 +2404,21 @@
       "label": "W3 depth 3, part 1"
     },
     {
+      "lane": "pre_g2",
+      "tickets": [
+        "T-IGX-052-I"
+      ],
+      "label": "Pre-G2 (App V6.3): FRZ-FRZ-10 held-path guard technical prep; W5/W8 ownership unchanged"
+    },
+    {
       "lane": "lane_5",
       "tickets": [
         "T-IGX-051-B",
         "T-IGX-051-G",
         "T-IGX-051-H",
-        "T-IGX-051-I",
-        "T-IGX-052-I"
+        "T-IGX-051-I"
       ],
-      "label": "W3 depth 3, part 2"
+      "label": "W3 depth 3, part 2 (FRZ-FRZ-10 execution moved to pre_g2 lane)"
     },
     {
       "lane": "lane_6",
@@ -2482,7 +2497,7 @@
   ],
   "pre_g2_order": [
     "PT-WA (T-IGX-043-G), then PT-WB (T-IGX-043-H), then the other W3 tickets along the serialization edges.",
-    "Before G2 (App V6.3): PT-S05, PT-S06, the manifest drift gate, the held-path guard, and every scripts/ or .github/ part of ECAP-EXEC (DP-54).",
+    "Before G2 (App V6.3): T-IGX-052-I held-path guard technical prep (FRZ-FRZ-10); then PT-S05, PT-S06, the manifest drift gate, and every scripts/ or .github/ part of ECAP-EXEC (DP-54).",
     "EC campaign F group B keeps its SCOPE and product-path-go gates; only its branch target is `development` (App V6.5)."
   ],
   "dependencies": {
@@ -2504,5 +2519,85 @@
     "open_train_tickets": "Every other ticket of section 7.",
     "qualified_at_head": "Not claimed. This plan holds planning and diagnostic evidence only."
   },
-  "versioned_plan_record": "Historical binding authority, as cited by tickets and plans: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_binding_record/INDEX.md` (verbatim cited versions). Appendix V6 supersedes their train rules; the live plan is this file."
+  "versioned_plan_record": "Historical binding authority, as cited by tickets and plans: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_binding_record/INDEX.md` (verbatim cited versions). Appendix V6 supersedes their train rules; the live plan is this file.",
+  "evidence_missing_obligations": {
+    "operator_decision_id": "OD-AF-CLOSE-B2",
+    "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+    "rows": {
+      "FRZ-BND-05": {
+        "owner_ticket": "T-IGX-043-H",
+        "negative_test_node": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent",
+        "mechanism": "A Tier-2 agent that constructs RuntimeContext is reported by the construction scan (seeded rogue agent)."
+      },
+      "FRZ-BND-06": {
+        "owner_ticket": "T-IGX-043-J",
+        "negative_test_node": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+        "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it."
+      },
+      "FRZ-DEBT-02": {
+        "owner_ticket": "T-IGX-051-H",
+        "seeded_red_required": true,
+        "negative_test_node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+        "mechanism": "Seeded negative case (NT-RW-DEP-01c): a temporary copy of pyproject.toml gets one extra undeclared core requirement and the dependency-ownership gate has to report it. The node passes at the test-only prefix, so it is not red-first evidence for the row. The requirement itself is held by test_rw_dep_01a_core_requirement_has_declared_owner: every core requirement has a declared owner."
+      },
+      "FRZ-DEBT-03": {
+        "owner_ticket": "T-IGX-051-H",
+        "seeded_red_required": true,
+        "negative_test_node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner",
+        "mechanism": "Dependency-ownership gate. No seeded negative node specific to DEBT-03 exists at the read pin, so this node is not red-first evidence for the row. A seeded case for DEBT-03 has to add a temporary compatibility seam and see a gate report it; no node inventories such seams (Operator items packet, item 2)."
+      },
+      "FRZ-DEBT-04": {
+        "owner_ticket": "T-IGX-051-F",
+        "negative_test_node": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
+        "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it."
+      },
+      "FRZ-EXE-02": {
+        "owner_ticket": "T-IGX-043-A",
+        "negative_test_node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
+        "mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate."
+      },
+      "FRZ-PLG-05": {
+        "owner_ticket": "T-IGX-043-A",
+        "negative_test_node": "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py::test_sup_06a_altered_installed_file_refused",
+        "mechanism": "A plugin whose installed file no longer matches the attested digest is refused. Product composition does not bind the admission policy at the read pin."
+      },
+      "FRZ-SEC-06": {
+        "owner_ticket": "T-IGX-051-B",
+        "negative_test_node": "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py::test_sec_06_1_strict_root_refuses_unattested_defense_plugins",
+        "mechanism": "A strict composition root refuses defense plugins without provenance attestation."
+      },
+      "FRZ-TEN-02": {
+        "owner_ticket": "T-IGX-078-D",
+        "negative_test_node": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py::test_nt_t01_a4_006_seeded_emitter_without_tenant_is_reported",
+        "mechanism": "Every emitter path listed by check_runtime_event_tenant_propagation.py exists, and a seeded emitter that publishes a RuntimeEvent without a tenant is reported. (planned node name declared by this plan; not authored at the read pin)"
+      },
+      "FRZ-TYP-01": {
+        "owner_ticket": "T-IGX-078-C",
+        "negative_test_node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+        "mechanism": "NT-WF-B01..B06: the Nexus exposure path carries a bounded typed payload; no object-typed exposure, accepted or flow-result annotation remains. The EBH-6 Q2-D2 gate files are inverted only by the Operator (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)"
+      },
+      "FRZ-TYP-03": {
+        "owner_ticket": "T-IGX-078-C",
+        "negative_test_node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+        "mechanism": "NT-WF-B01..B06: same typed seam as FRZ-TYP-01, with the same Operator condition (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)"
+      },
+      "FRZ-TYP-05": {
+        "owner_ticket": "T-IGX-051-G",
+        "negative_test_node": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
+        "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it."
+      }
+    }
+  },
+  "post_freeze_policy_schedule": {
+    "frz_id": "FRZ-FRZ-10",
+    "pre_g2_execution_ticket": "T-IGX-052-I",
+    "functional_owner_node": "T-B7-PFP-ACTIVATE",
+    "functional_owner_wave": "W5",
+    "verification_node": "T-B7-PFP-VERIFY",
+    "verification_wave": "W8",
+    "notes": [
+      "Pre-G2: T-IGX-052-I prepares the held-path guard (scripts/, .github/, …) per MEP App V6.3.",
+      "W5: T-B7-PFP-ACTIVATE activates policy; W8: T-B7-PFP-VERIFY independently re-checks FRZ-FRZ-10."
+    ]
+  }
 }

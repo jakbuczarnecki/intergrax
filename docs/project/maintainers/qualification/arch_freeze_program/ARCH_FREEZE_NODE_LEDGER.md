@@ -18,7 +18,7 @@ The SCOPE, T-AF2-RW-PLAN-AUDIT and T-AF2-RED-CLASSES rows were refreshed at `646
 
 | Node | P0 disposition | Evidence @ pin |
 | --- | --- | --- |
-| SCOPE | **PARTIAL** | Not recorded. Checker at `646e63953`: `RED_FIRST_EVIDENCE=COMPLETE`, `CODE_FIX_OWNERSHIP=39/39`. Recording belongs to AF-CLOSE step GA.3 |
+| SCOPE | **PARTIAL** | **OPEN.** Checker @ `development` `f4e8444`: `RED_FIRST_EVIDENCE=INCOMPLETE` (12× EVIDENCE_MISSING), `RW_PLAN_AUDIT=NOT_PERFORMED`, `CODE_FIX_OWNERSHIP=39/39`. Wpis `646e63953` z COMPLETE jest historyczny (GA.2R/OP-B). |
 | PT-WA | **PUBLISHED** (slice) / **PARTIAL** | PR **#680** @ train; W3 gate remnants local only |
 | PT-WB | **PARTIAL** | Plan §1.4; no closure record |
 | PT-WD | **PARTIAL** | RC0 / WD tickets open |
@@ -148,7 +148,7 @@ Row count: 149
 | PT-WF | PARTIAL | T-IGX-043-J | db69a9e44 | G-09 product e6b1d97f7 via PR #718; E2-E4 absent @ train (PLAN_T-IGX-043-J, DEF_CB_B2_S03_PT_WF_DISPOSITION.md); dev dc083f6ea not on train; T-IGX-043-J=in_progress | N | SEC |
 | REV-MASTER | VALIDATED | - | deea67621120403edb2d9bdd33e3eed8903199de | REV_MASTER_FORMAL_CLOSEOUT_RECORD.md FORMAL_PASSED=YES; corrective record L22; ancestor of `7657745c` (V4). Not SCOPE, not G2. | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| SCOPE | PARTIAL | T-IGX-050-N | ebe45c269 | Not recorded. Checker at `646e63953`: RED_FIRST_EVIDENCE=COMPLETE, CODE_FIX_OWNERSHIP=39/39, RW_PLAN_AUDIT=NOT_PERFORMED; recording is AF-CLOSE GA.3. G2, R, FCS, M3 NOT SET | N | - |
+| SCOPE | PARTIAL | T-IGX-050-N | f4e8444 | OPEN @ `development` pin `f4e8444`: RED_FIRST_EVIDENCE=INCOMPLETE, RW_PLAN_AUDIT=NOT_PERFORMED, CODE_FIX_OWNERSHIP=39/39 (AF-W2-CLOSURE-01). G2, R, FCS, M3 NOT SET | N | - |
 | T-AF2-BASELINE-PIN | DONE-FORMAL | - | 7960ae7f6 | LAD L25 (AUDIT_BASELINE_2 PINNED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | T-AF2-BND-CLOSURE | UNK | - | NONE | RC0 L59-73; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | BND |
 | T-AF2-CI-HEAD-RUN | PARTIAL | - | 43858457516 | GAP L52; KNOWN_RED_REGISTER.md L12; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | REG |

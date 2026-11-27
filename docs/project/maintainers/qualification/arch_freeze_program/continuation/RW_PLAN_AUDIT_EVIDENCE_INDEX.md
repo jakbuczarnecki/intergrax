@@ -1,6 +1,6 @@
 # T-AF2-RW-PLAN-AUDIT — evidence index (AR-12-07)
 
-> **Status update 2026-11-26 (T-IGX-078-A, checked at `development` `646e63953`):** `RED_FIRST_EVIDENCE` is now **COMPLETE** (`CODE_FIX_OWNERSHIP=39/39`; the checker still reports `RW_PLAN_AUDIT=NOT_PERFORMED`). **SCOPE is not recorded** and T-AF2-RW-PLAN-AUDIT stays **PARTIAL**; a fresh independent audit is open. Statements below that `RED_FIRST` is `INCOMPLETE` are historical.
+> **Obowiązujący stan (AF-W2-CLOSURE-01):** `RED_FIRST_EVIDENCE=INCOMPLETE` (12× EVIDENCE_MISSING, OP-B); `RW_PLAN_AUDIT=NOT_PERFORMED`; SCOPE OPEN. Historyczny wpis COMPLETE (T-IGX-078-A @ `646e63953`) superseded.
 
 | Artifact | Role |
 | --- | --- |

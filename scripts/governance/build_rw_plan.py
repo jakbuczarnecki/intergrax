@@ -117,15 +117,23 @@ EXPLICIT_CODE_FIX_OWNERSHIP: dict[str, dict[str, object]] = {
     "FRZ-TEN-07": _ga2r_contract("T-IGX-078-D", "PT-T01", _TEN_SOURCE),
     "FRZ-FRZ-10": {
         "owner_ticket": None,
+        "pre_g2_execution_ticket": "T-IGX-052-I",
         "owner_node": "T-B7-PFP-ACTIVATE",
         "owner_wave": "W5",
         "verification_node": "T-B7-PFP-VERIFY",
         "verification_wave": "W8",
         "owner_source": "MEP-AF2 v2.1 / W5 and W8",
-        "owner_ticket_family": "T-IGX-052-*",
+        "owner_ticket_family": "T-IGX-052-I",
         "owner_provenance": "explicit_mep_wp12",
     },
 }
+
+_OD_AF_CLOSE_B2 = "OD-AF-CLOSE-B2"
+_OD_AF_CLOSE_B2_REF = "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2"
+_EVIDENCE_CERTIFICATION_OBLIGATION = (
+    "The owner ticket must record the negative node red at its pre-fix SHA "
+    "and green after the fix before certification."
+)
 
 
 @dataclass
@@ -763,6 +771,7 @@ def _ticket_section(bindings: dict, tree: frozenset[str], inventory: list[dict[s
             "lifecycle": spec["lifecycle"],
             "landed": bool(spec.get("landed", False)),
             "wave": spec.get("wave", "W3"),
+            "post_freeze_policy": spec.get("post_freeze_policy"),
             "plan": plan,
             "plan_state": "PLAN" if plan else "NO_PLAN",
             "write_set_quality": spec["quality"],
@@ -789,7 +798,13 @@ def _ticket_section(bindings: dict, tree: frozenset[str], inventory: list[dict[s
     overlap = overlap_matrix(write_sets)
     order = check_merge_order(set(entries), landed, list(edges), overlap)
     lanes = bindings.get("lanes", [])
-    check_lanes(lanes, write_sets, list(edges), open_tickets, {t for t in open_tickets if entries[t]["wave"] == "W3"})
+    check_lanes(
+        lanes,
+        write_sets,
+        list(edges),
+        open_tickets,
+        {t for t in open_tickets if entries[t].get("wave", "W3") == "W3"},
+    )
     lane_of = {t: lane["lane"] for lane in lanes for t in lane["tickets"]}
     for ticket, entry in entries.items():
         entry["lane"] = lane_of.get(ticket)
@@ -876,6 +891,34 @@ def _apply_record(frz: str, current: dict[str, object], record: dict[str, object
     if record.get("due_ticket"):
         out["red_first_due_ticket"] = record["due_ticket"]
     return out
+
+
+def _apply_evidence_missing_obligation(
+    frz: str, entry: dict[str, object], obligations: dict[str, object] | None
+) -> None:
+    if entry.get("red_first_status") != "EVIDENCE_MISSING":
+        return
+    if not obligations:
+        return
+    rows = obligations.get("rows") or {}
+    row = rows.get(frz)
+    if not isinstance(row, dict):
+        return
+    owner = row.get("owner_ticket")
+    if owner and entry.get("owner_ticket") != owner:
+        raise SystemExit(f"{frz}: EVIDENCE_MISSING owner {entry.get('owner_ticket')!r} != OP-B binding {owner!r}")
+    entry["operator_decision_id"] = obligations.get("operator_decision_id", _OD_AF_CLOSE_B2)
+    entry["operator_decision_ref"] = obligations.get("operator_decision_ref", _OD_AF_CLOSE_B2_REF)
+    if row.get("negative_test_node"):
+        entry["evidence_negative_test"] = row["negative_test_node"]
+    elif entry.get("negative_tests"):
+        entry["evidence_negative_test"] = entry["negative_tests"][0].get("node")
+    entry["evidence_mechanism"] = row.get("mechanism") or (
+        entry["negative_tests"][0].get("mechanism") if entry.get("negative_tests") else None
+    )
+    entry["evidence_certification_obligation"] = row.get("certification_obligation", _EVIDENCE_CERTIFICATION_OBLIGATION)
+    if row.get("seeded_red_required"):
+        entry["evidence_seeded_red_required"] = True
 
 
 def _apply_correction(current: dict[str, object], correction: dict[str, object]) -> dict[str, object]:
@@ -1003,6 +1046,7 @@ def _inventory(
             entry["traceability"] = _traceability(str(entry["owner_ticket"]), frz)
         if binding.get("note"):
             entry["note"] = binding["note"]
+        _apply_evidence_missing_obligation(frz, entry, bindings.get("evidence_missing_obligations"))
         inventory.append(entry)
     return inventory, record_ref
 
@@ -1079,6 +1123,7 @@ def build() -> dict[str, object]:
         "g2_entry_conditions": bindings["g2_entry_conditions"],
         "held_paths": bindings.get("held_paths", []),
         "pre_g2_order": bindings.get("pre_g2_order", []),
+        "post_freeze_policy_schedule": bindings.get("post_freeze_policy_schedule"),
         "dependencies": {**bindings["dependencies"], "SCOPE": list(SCOPE_HARD_PREDECESSORS)},
         "implementation_disposition": bindings["implementation_disposition"],
         "versioned_plan_record": bindings.get("versioned_plan_record"),
@@ -1110,6 +1155,8 @@ def owner_display(row: dict) -> str:
         parts.append(f"verify {row['verification_node']} ({row.get('verification_wave')})")
     if row.get("owner_ticket_family"):
         parts.append(f"ticket family {row['owner_ticket_family']}")
+    if row.get("pre_g2_execution_ticket"):
+        parts.append(f"pre-G2 execution {row['pre_g2_execution_ticket']}")
     return "; ".join(parts) or "UNASSIGNED"
 
 
@@ -1371,6 +1418,22 @@ def _render_md(payload: dict) -> str:
     lines.extend(["", "## 15. G2 entry conditions", "", *_bullets(payload["g2_entry_conditions"])])
     lines.extend(["", "## 16. Held paths from G2", "", *_bullets(payload["held_paths"])])
     lines.extend(["", "## 17. Order before G2", "", *_bullets(payload["pre_g2_order"])])
+    schedule = payload.get("post_freeze_policy_schedule")
+    if schedule:
+        lines.extend(["", "## 17a. Post-freeze policy (FRZ-FRZ-10)", ""])
+        if schedule.get("frz_id"):
+            lines.append(f"- FRZ row: `{schedule['frz_id']}` (`RED_FIRST_LATER_WAVE`)")
+        for key in (
+            "pre_g2_execution_ticket",
+            "functional_owner_node",
+            "functional_owner_wave",
+            "verification_node",
+            "verification_wave",
+        ):
+            if schedule.get(key):
+                lines.append(f"- {key}: `{schedule[key]}`")
+        if schedule.get("notes"):
+            lines.extend(_bullets(schedule["notes"]))
     lines.extend(["", "## 18. Dependencies", ""])
     lines.extend(f"- {key}: {', '.join(value)}" for key, value in payload["dependencies"].items())
     lines.extend(["", "## 19. Implementation disposition", ""])

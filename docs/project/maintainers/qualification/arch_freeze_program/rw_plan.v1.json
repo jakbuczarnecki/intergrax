@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T07:55:41.236799+00:00",
-  "execution_sha": "cde0b0d833a5413cdfdf657ccc05c4bd6536fdda",
+  "generated_at": "2026-11-27T08:44:20.740910+00:00",
+  "execution_sha": "16752778ce3f01cd71ee6d849e071c350f134bc9",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "79edc22f1024512cdf58762ccd8e0e7c4fa6eaf49c67911db0e41a6786ee373c",
+  "bindings_sha256": "4a5a798dc49af838613e2b4237c1783e97e936a1baedb4caecf6d9a74f99ff8c",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -141,7 +141,12 @@
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-043-H.md",
         "plan_names_row": true
       },
-      "note": "Static reading at the read pin: RuntimeContext.build in agents/boundary_demo/boundary_demo_agent.py:96, the external contractor adapter (:112) and the organization worker (:118); a string provider switch at intergrax/integrations/_shared/p6/factories.py:43. test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list is red at the read pin (queue_worker_wiring.py imports the Celery provider config), so the regression command is not green at the pin."
+      "note": "Static reading at the read pin: RuntimeContext.build in agents/boundary_demo/boundary_demo_agent.py:96, the external contractor adapter (:112) and the organization worker (:118); a string provider switch at intergrax/integrations/_shared/p6/factories.py:43. test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list is red at the read pin (queue_worker_wiring.py imports the Celery provider config), so the regression command is not green at the pin.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent",
+      "evidence_mechanism": "A Tier-2 agent that constructs RuntimeContext is reported by the construction scan (seeded rogue agent).",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-BND-06",
@@ -290,7 +295,12 @@
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-043-J.md",
         "plan_names_row": false
       },
-      "note": "Adapter unit tests enumerated by this plan as matrix Appendix C requires. Selection at the read pin: every test_*.py under tests/unit/hosting/, tests/unit/queueing/ and tests/unit/integrations/providers/message_bus/, and every test_*.py under tests/unit/applications/ whose file name contains mcp, http or queue."
+      "note": "Adapter unit tests enumerated by this plan as matrix Appendix C requires. Selection at the read pin: every test_*.py under tests/unit/hosting/, tests/unit/queueing/ and tests/unit/integrations/providers/message_bus/, and every test_*.py under tests/unit/applications/ whose file name contains mcp, http or queue.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+      "evidence_mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-CFG-02",
@@ -642,7 +652,13 @@
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-H.md",
         "plan_names_row": true
       },
-      "note": "Static reading at the read pin: the dependency step is at .github/workflows/unit-tests.yml:106."
+      "note": "Static reading at the read pin: the dependency step is at .github/workflows/unit-tests.yml:106.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+      "evidence_mechanism": "Seeded negative case (NT-RW-DEP-01c): a temporary copy of pyproject.toml gets one extra undeclared core requirement and the dependency-ownership gate has to report it. The node passes at the test-only prefix, so it is not red-first evidence for the row. The requirement itself is held by test_rw_dep_01a_core_requirement_has_declared_owner: every core requirement has a declared owner.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification.",
+      "evidence_seeded_red_required": true
     },
     {
       "frz_id": "FRZ-DEBT-03",
@@ -687,7 +703,13 @@
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-H.md",
         "plan_names_row": true
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner",
+      "evidence_mechanism": "Dependency-ownership gate. No seeded negative node specific to DEBT-03 exists at the read pin, so this node is not red-first evidence for the row. A seeded case for DEBT-03 has to add a temporary compatibility seam and see a gate report it; no node inventories such seams (Operator items packet, item 2).",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification.",
+      "evidence_seeded_red_required": true
     },
     {
       "frz_id": "FRZ-DEBT-04",
@@ -738,7 +760,12 @@
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-F.md",
         "plan_names_row": false
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
+      "evidence_mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-EXE-02",
@@ -791,7 +818,12 @@
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-043-A.md",
         "plan_names_row": true
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
+      "evidence_mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-FRZ-10",
@@ -828,12 +860,13 @@
       ],
       "delta_findings": [],
       "remediation_track": "CODE_FIX: Appendix C, T-IGX-052-*",
+      "pre_g2_execution_ticket": "T-IGX-052-I",
       "owner_node": "T-B7-PFP-ACTIVATE",
       "owner_wave": "W5",
       "verification_node": "T-B7-PFP-VERIFY",
       "verification_wave": "W8",
       "owner_source": "MEP-AF2 v2.1 / W5 and W8",
-      "owner_ticket_family": "T-IGX-052-*",
+      "owner_ticket_family": "T-IGX-052-I",
       "owner_provenance": "explicit_mep_wp12"
     },
     {
@@ -1130,7 +1163,12 @@
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-043-A.md",
         "plan_names_row": true
       },
-      "note": "Static reading at the read pin: no product composition passes PluginProvenanceAdmission or installed_digest_resolver=."
+      "note": "Static reading at the read pin: no product composition passes PluginProvenanceAdmission or installed_digest_resolver=.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py::test_sup_06a_altered_installed_file_refused",
+      "evidence_mechanism": "A plugin whose installed file no longer matches the attested digest is refused. Product composition does not bind the admission policy at the read pin.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-PLG-06",
@@ -1745,7 +1783,12 @@
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-B.md",
         "plan_names_row": true
       },
-      "note": "Static reading at the read pin: environment_wiring.py:202 passes no admission policy."
+      "note": "Static reading at the read pin: environment_wiring.py:202 passes no admission policy.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py::test_sec_06_1_strict_root_refuses_unattested_defense_plugins",
+      "evidence_mechanism": "A strict composition root refuses defense plugins without provenance attestation.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-TEN-01",
@@ -1856,7 +1899,12 @@
         "ticket_file_names_row": true,
         "plan_file": null,
         "plan_names_row": false
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py::test_nt_t01_a4_006_seeded_emitter_without_tenant_is_reported",
+      "evidence_mechanism": "Every emitter path listed by check_runtime_event_tenant_propagation.py exists, and a seeded emitter that publishes a RuntimeEvent without a tenant is reported. (planned node name declared by this plan; not authored at the read pin)",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-TEN-07",
@@ -2017,7 +2065,12 @@
         "plan_file": null,
         "plan_names_row": false
       },
-      "note": "Static reading at the read pin: governance/qualification/typ_ratchet_baseline.v1.json holds any=138 and object=358."
+      "note": "Static reading at the read pin: governance/qualification/typ_ratchet_baseline.v1.json holds any=138 and object=358.",
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+      "evidence_mechanism": "NT-WF-B01..B06: the Nexus exposure path carries a bounded typed payload; no object-typed exposure, accepted or flow-result annotation remains. The EBH-6 Q2-D2 gate files are inverted only by the Operator (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-TYP-03",
@@ -2067,7 +2120,12 @@
         "ticket_file_names_row": true,
         "plan_file": null,
         "plan_names_row": false
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+      "evidence_mechanism": "NT-WF-B01..B06: same typed seam as FRZ-TYP-01, with the same Operator condition (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {
       "frz_id": "FRZ-TYP-05",
@@ -2117,7 +2175,12 @@
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-G.md",
         "plan_names_row": true
-      }
+      },
+      "operator_decision_id": "OD-AF-CLOSE-B2",
+      "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+      "evidence_negative_test": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
+      "evidence_mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it.",
+      "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     }
   ],
   "coverage": [
@@ -3892,6 +3955,7 @@
       "lifecycle": "plan_approved",
       "landed": true,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-D.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -3999,6 +4063,7 @@
       "lifecycle": "plan_approved",
       "landed": true,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-E.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -4104,6 +4169,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-G.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -4421,6 +4487,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-H.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -4708,6 +4775,7 @@
       "lifecycle": "quality_gate",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-B.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -5146,6 +5214,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-A.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -5985,6 +6054,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-C.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6412,6 +6482,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-D.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6502,6 +6573,7 @@
       "lifecycle": "quality_gate",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-E.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6549,6 +6621,7 @@
       "lifecycle": "draft",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-F.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6591,6 +6664,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-I.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6681,6 +6755,7 @@
       "lifecycle": "in_progress",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-M.md",
       "plan_state": "PLAN",
       "write_set_quality": "INDICATIVE",
@@ -6789,6 +6864,7 @@
       "lifecycle": "quality_gate",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-N.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -6840,6 +6916,7 @@
       "lifecycle": "in_progress",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-043-J.md",
       "plan_state": "PLAN",
       "write_set_quality": "INDICATIVE",
@@ -7055,6 +7132,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-044-F.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7127,6 +7205,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-046-D.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7172,6 +7251,7 @@
       "lifecycle": "draft",
       "landed": false,
       "wave": "W2",
+      "post_freeze_policy": null,
       "plan": null,
       "plan_state": "NO_PLAN",
       "write_set_quality": "NO_PLAN",
@@ -7228,6 +7308,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-B.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7449,6 +7530,7 @@
       "lifecycle": "in_progress",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-C.md",
       "plan_state": "PLAN",
       "write_set_quality": "INDICATIVE",
@@ -7639,6 +7721,7 @@
       "lifecycle": "in_progress",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-G.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7702,6 +7785,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-H.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7753,6 +7837,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-I.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7829,6 +7914,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-N.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7903,6 +7989,7 @@
       "lifecycle": "in_progress",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-F.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -7996,7 +8083,15 @@
       "ticket": "T-IGX-052-I",
       "lifecycle": "plan_pending",
       "landed": false,
-      "wave": "W3",
+      "wave": "pre-G2",
+      "post_freeze_policy": {
+        "frz_id": "FRZ-FRZ-10",
+        "pre_g2_execution_ticket": "T-IGX-052-I",
+        "functional_owner_node": "T-B7-PFP-ACTIVATE",
+        "functional_owner_wave": "W5",
+        "verification_node": "T-B7-PFP-VERIFY",
+        "verification_wave": "W8"
+      },
       "plan": null,
       "plan_state": "NO_PLAN",
       "write_set_quality": "CANDIDATE",
@@ -8018,13 +8113,13 @@
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "note": "Ownership ticket (OP-B orchestrator allocation, 2026-11-27) for FRZ-FRZ-10: the T-B7-PFP-ACTIVATE held-path guard. No approved plan.",
+      "note": "Pre-G2 execution ticket (App V6.3) for FRZ-FRZ-10 held-path guard technical prep. Functional activation T-B7-PFP-ACTIVATE (W5); verification T-B7-PFP-VERIFY (W8). No approved plan.",
       "code_fix_rows": [],
       "regression_tests": [],
       "regression_commands": [],
       "regression_source": null,
       "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan.",
-      "lane": "lane_5",
+      "lane": "pre_g2",
       "merge_position": 25,
       "hard_predecessors": [
         "T-IGX-043-H"
@@ -8035,6 +8130,7 @@
       "lifecycle": "plan_pending",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": null,
       "plan_state": "NO_PLAN",
       "write_set_quality": "CANDIDATE",
@@ -8231,6 +8327,7 @@
       "lifecycle": "plan_approved",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": "governance/tickets/plans/PLAN_T-IGX-051-A.md",
       "plan_state": "PLAN",
       "write_set_quality": "EXPLICIT",
@@ -8616,6 +8713,7 @@
       "lifecycle": "plan_pending",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": null,
       "plan_state": "NO_PLAN",
       "write_set_quality": "CANDIDATE",
@@ -8705,6 +8803,7 @@
       "lifecycle": "plan_pending",
       "landed": false,
       "wave": "W3",
+      "post_freeze_policy": null,
       "plan": null,
       "plan_state": "NO_PLAN",
       "write_set_quality": "CANDIDATE",
@@ -9330,7 +9429,7 @@
     {
       "first": "T-IGX-043-H",
       "second": "T-IGX-052-I",
-      "reason": "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+      "reason": "Pre-G2 guard prep follows PT-WB; W5 activation is T-B7-PFP-ACTIVATE, not W3 wave ownership"
     },
     {
       "first": "T-IGX-043-H",
@@ -9457,15 +9556,21 @@
       "W3 depth 3, part 1"
     ],
     [
+      "pre_g2",
+      [
+        "T-IGX-052-I"
+      ],
+      "Pre-G2 (App V6.3): FRZ-FRZ-10 held-path guard technical prep; W5/W8 ownership unchanged"
+    ],
+    [
       "lane_5",
       [
         "T-IGX-051-B",
         "T-IGX-051-G",
         "T-IGX-051-H",
-        "T-IGX-051-I",
-        "T-IGX-052-I"
+        "T-IGX-051-I"
       ],
-      "W3 depth 3, part 2"
+      "W3 depth 3, part 2 (FRZ-FRZ-10 execution moved to pre_g2 lane)"
     ],
     [
       "lane_6",
@@ -9575,9 +9680,21 @@
   ],
   "pre_g2_order": [
     "PT-WA (T-IGX-043-G), then PT-WB (T-IGX-043-H), then the other W3 tickets along the serialization edges.",
-    "Before G2 (App V6.3): PT-S05, PT-S06, the manifest drift gate, the held-path guard, and every scripts/ or .github/ part of ECAP-EXEC (DP-54).",
+    "Before G2 (App V6.3): T-IGX-052-I held-path guard technical prep (FRZ-FRZ-10); then PT-S05, PT-S06, the manifest drift gate, and every scripts/ or .github/ part of ECAP-EXEC (DP-54).",
     "EC campaign F group B keeps its SCOPE and product-path-go gates; only its branch target is `development` (App V6.5)."
   ],
+  "post_freeze_policy_schedule": {
+    "frz_id": "FRZ-FRZ-10",
+    "pre_g2_execution_ticket": "T-IGX-052-I",
+    "functional_owner_node": "T-B7-PFP-ACTIVATE",
+    "functional_owner_wave": "W5",
+    "verification_node": "T-B7-PFP-VERIFY",
+    "verification_wave": "W8",
+    "notes": [
+      "Pre-G2: T-IGX-052-I prepares the held-path guard (scripts/, .github/, …) per MEP App V6.3.",
+      "W5: T-B7-PFP-ACTIVATE activates policy; W8: T-B7-PFP-VERIFY independently re-checks FRZ-FRZ-10."
+    ]
+  },
   "dependencies": {
     "W2": [
       "T-AF2-FRZ-MATRIX",

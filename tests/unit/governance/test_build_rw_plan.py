@@ -726,6 +726,7 @@ def test_frz_frz_10_canonical_node_ownership():
     assert applied["owner_node"] == "T-B7-PFP-ACTIVATE"
     assert applied["verification_node"] == "T-B7-PFP-VERIFY"
     assert applied["owner_provenance"] == "explicit_mep_wp12"
+    assert applied.get("pre_g2_execution_ticket") == "T-IGX-052-I"
 
 
 def test_unrelated_frz_without_explicit_has_no_provenance():
@@ -823,3 +824,39 @@ def test_live_debt_02_negative_case_is_the_seeded_gate_node():
     first = mod.load_bindings()["code_fix_rows"]["FRZ-DEBT-02"]["negative_tests"][0]
     assert first["node"].endswith("::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement")
     assert "seeded" in first["mechanism"].lower()
+
+
+def test_live_code_fix_inventory_is_39_rows():
+    mod = _import_build()
+    payload = mod.build()
+    assert len(payload["code_fix_inventory"]) == 39
+
+
+def test_live_evidence_missing_rows_carry_od_af_close_b2():
+    mod = _import_build()
+    inv = {r["frz_id"]: r for r in mod.build()["code_fix_inventory"]}
+    missing = [frz for frz, row in inv.items() if row["red_first_status"] == "EVIDENCE_MISSING"]
+    assert len(missing) == 12
+    for frz in missing:
+        row = inv[frz]
+        assert row.get("operator_decision_id") == "OD-AF-CLOSE-B2"
+        assert row.get("operator_decision_ref")
+        assert row.get("evidence_negative_test")
+        assert row.get("evidence_mechanism")
+        assert row.get("evidence_certification_obligation")
+    for frz in ("FRZ-DEBT-02", "FRZ-DEBT-03"):
+        assert inv[frz].get("evidence_seeded_red_required") is True
+
+
+def test_live_frz_frz_10_pre_g2_schedule():
+    mod = _import_build()
+    payload = mod.build()
+    schedule = payload["post_freeze_policy_schedule"]
+    assert schedule["pre_g2_execution_ticket"] == "T-IGX-052-I"
+    assert schedule["functional_owner_wave"] == "W5"
+    assert schedule["verification_wave"] == "W8"
+    frz = next(r for r in payload["code_fix_inventory"] if r["frz_id"] == "FRZ-FRZ-10")
+    assert frz["pre_g2_execution_ticket"] == "T-IGX-052-I"
+    ticket = next(t for t in payload["tickets"] if t["ticket"] == "T-IGX-052-I")
+    assert ticket["wave"] == "pre-G2"
+    assert ticket["post_freeze_policy"]["functional_owner_node"] == "T-B7-PFP-ACTIVATE"

@@ -6,7 +6,7 @@ AF-CLOSE orchestrator allocation (OP-B, 2026-11-27); not an Operator decision. O
 
 ## Scope
 
-FRZ-FRZ-10 is `RED_FIRST_LATER_WAVE` (RED-CLASSES decision 2026-11-26, confirmed 2026-11-27 as OD-AF-CLOSE-B1). Its carrying work is the held-path guard of node T-B7-PFP-ACTIVATE (W5, before LOCK), verified by T-B7-PFP-VERIFY (W8).
+FRZ-FRZ-10 is `RED_FIRST_LATER_WAVE` (RED-CLASSES decision 2026-11-26, confirmed 2026-11-27 as OD-AF-CLOSE-B1). Pre-G2 (App V6.3): held-path guard prep before G2. Functional: T-B7-PFP-ACTIVATE (W5). Verification: T-B7-PFP-VERIFY (W8).
 
 The ticket owns:
 

@@ -260,7 +260,7 @@ def test_partial_coverage_cannot_claim_alpha_complete():
     summary = mod._coverage_summary("b1", manifest["b1_cases"], rows)
     assert summary["defined_cases_pass"] is True
     assert summary["campaign_alpha_complete"] is False
-    assert summary["coverage_complete"] is False
+    assert summary["coverage_classification"] == "PARTIAL_DIAGNOSTIC"
 
 
 def test_evidence_paths_separate_by_execution_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

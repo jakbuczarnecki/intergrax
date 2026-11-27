@@ -315,7 +315,8 @@ def test_frz_frz_10_node_ownership_accepted():
         "verification_node": "T-B7-PFP-VERIFY",
         "verification_wave": "W8",
         "owner_source": "MEP-AF2 v2.1 / W5 and W8",
-        "owner_ticket_family": "T-IGX-052-*",
+        "owner_ticket_family": "T-IGX-052-I",
+        "pre_g2_execution_ticket": "T-IGX-052-I",
         "owner_provenance": "explicit_mep_wp12",
         "negative_test_id": "NT-FRZ-10",
         "negative_tests": _negative_tests(),
@@ -797,3 +798,18 @@ def test_non_dict_dependencies_rejected(deps):
     plan["dependencies"] = deps
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
     assert any("dependencies" in e.lower() for e in errors)
+
+
+def test_live_plan_passes_op_b_and_pfp_schedule():
+    mod = _load_verify()
+    data = json.loads(
+        (_REPO / "docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    canonical = mod._canonical_code_fix_ids()
+    open_rows = {
+        str(r["frz_id"]) for r in mod._load_build_rw_plan().parse_appendix_a_all_rows() if r["matrix_status"] == "OPEN"
+    }
+    errors = mod.validate_plan_structure(data, canonical, open_outside_inventory=open_rows - canonical)
+    assert not errors

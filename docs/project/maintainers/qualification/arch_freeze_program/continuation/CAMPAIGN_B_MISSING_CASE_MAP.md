@@ -35,3 +35,12 @@ These manifest rows point at paths that do not exist in the product tree at **B*
 | R02 | `tests/unit/governance/test_arch_freeze_plan_traceability.py` | Same |
 | R05 | `scripts/governance/lint_iiac_closure_regex.py` | Same |
 | R20 | `scripts/governance/verify_rw_plan_phase_check3.py` | Same |
+
+## SCOPE diagnostic ledger (AF-W2-CLOSURE-01)
+
+**Contexts:** HISTORICAL_ALPHA @ 7960ae7f; HEAD_DIAGNOSTIC on development (does not replace alpha). PT-B01 / PT-B02 remain PARTIAL.
+
+**B-1:** 19/19 — CAMPAIGN_B_V5_ALPHA.md; R01a/R02/R05 NOT_EXECUTABLE_AT_BASELINE @ B; R10 HEAD evidence CAMPAIGN_B_V5_R10_REMAINDER.md (three modules).
+
+**B-2:** 9/9 — S03 node 127 passed, runner kill not qualification PASS.
+
