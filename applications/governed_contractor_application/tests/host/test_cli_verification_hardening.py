@@ -20,14 +20,18 @@ from pathlib import Path
 
 import pytest
 from intergrax.cli.main import main as cli_main
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.execution_evidence.boundary_event import ExecutionBoundaryEventV2
+from intergrax.contracts.execution_evidence.receipt import (
+    ProofReceiptV2,
+    parse_execution_evidence_proof_receipt_json,
+)
 from intergrax.runtime.execution_evidence.attestor import build_deterministic_test_attestor
 from intergrax.runtime.execution_evidence.key_store import (
     DEMO_OFFLINE_KEY_ID,
     FilesystemHostKeyResolver,
     write_verification_key_artifact,
 )
-from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+from intergrax.runtime.execution_evidence.verify import verify_execution_evidence_proof_receipt
 
 from governed_contractor_application.host.offline_demo import (
     run_offline_governed_contractor_demo,
@@ -296,7 +300,9 @@ def test_verify_key_sources_and_negatives(demo_store: tuple[Path, object]) -> No
     assert wrong.returncode != 0
     assert json.loads(wrong.stdout)["valid"] is False
 
-    receipt_obj = ProofReceipt.model_validate_json(Path(receipt).read_text(encoding="utf-8"))
+    receipt_obj = parse_execution_evidence_proof_receipt_json(Path(receipt).read_text(encoding="utf-8"))
+    assert isinstance(receipt_obj, ProofReceiptV2)
+    assert isinstance(receipt_obj.execution_boundary_event, ExecutionBoundaryEventV2)
     event = receipt_obj.execution_boundary_event.model_copy(update={"actor": "mutated"})
     mutated = receipt_obj.model_copy(update={"execution_boundary_event": event})
     mut_path = store / "export" / "accept_receipt_mutated.json"
@@ -323,10 +329,16 @@ def test_offline_demo_exports_verification_key(demo_store: tuple[Path, object]) 
     assert key_path.is_file()
     assert "--store" in report.verification_command  # type: ignore[attr-defined]
     resolver = FilesystemHostKeyResolver(store)
-    receipt = ProofReceipt.model_validate_json(
+    receipt = parse_execution_evidence_proof_receipt_json(
         Path(report.receipt_absolute_path).read_text(encoding="utf-8")  # type: ignore[attr-defined]
     )
-    assert verify_proof_receipt(receipt, key_resolver=resolver, require_policy_bundle_artifact=True).valid
+    assert isinstance(receipt, ProofReceiptV2)
+    assert isinstance(receipt.execution_boundary_event, ExecutionBoundaryEventV2)
+    assert verify_execution_evidence_proof_receipt(
+        receipt,
+        key_resolver=resolver,
+        require_policy_bundle_artifact=True,
+    ).valid
 
 
 def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:

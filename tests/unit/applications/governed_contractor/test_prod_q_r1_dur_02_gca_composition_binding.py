@@ -9,12 +9,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-from governed_contractor_application.host.factory import create_governed_contractor_backend_app
-from governed_contractor_application.host.main import create_governed_contractor_process_app
-from governed_contractor_application.tests.governed_contractor_ac3_projection import (
-    build_governed_contractor_test_registry_projection,
-)
 from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
     HarnessHostOrchestrationTopologyReliabilityCompositionError,
 )
@@ -36,7 +30,22 @@ from testing_support.orchestration.orchestration_consequential_effect_reliabilit
     DurableTestProviderInvocationStore,
 )
 
+from governed_contractor_application.host.factory import create_governed_contractor_backend_app
+from governed_contractor_application.host.main import create_governed_contractor_process_app
+from governed_contractor_application.tests.governed_contractor_ac3_projection import (
+    build_governed_contractor_test_registry_projection,
+)
+
 pytestmark = [pytest.mark.unit]
+
+
+@pytest.fixture(autouse=True)
+def _isolate_integration_catalogs():
+    from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
+
+    reset_integration_tool_skill_catalogs()
+    yield
+    reset_integration_tool_skill_catalogs()
 
 
 class _HarnessStartupCaptured(RuntimeError):

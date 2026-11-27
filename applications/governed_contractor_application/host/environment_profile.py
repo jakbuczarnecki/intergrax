@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.applications._shared.reference_capability_bundle import harness_platform_tool_profile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.fastapi_core.config import ApiEnvironment
@@ -17,7 +16,6 @@ from governed_contractor_application.host.settings import GovernedContractorBack
 def build_governed_contractor_environment_profile(
     settings: GovernedContractorBackendSettings,
 ) -> ApplicationEnvironmentProfile:
-    bootstrap_application_integration_catalog(integration_preset="full")
     profile = ApplicationEnvironmentProfile.product_defaults(
         skill_bundles=["harness"],
         profile_id="governed_contractor.product",

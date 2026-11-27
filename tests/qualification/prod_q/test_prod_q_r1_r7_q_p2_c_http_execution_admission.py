@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Final
 from unittest.mock import AsyncMock, patch
 
@@ -113,6 +114,15 @@ class _StrictHttpAdmissionFixture:
 
 
 @pytest.fixture(autouse=True)
+def _isolate_integration_catalogs():
+    from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
+
+    reset_integration_tool_skill_catalogs()
+    yield
+    reset_integration_tool_skill_catalogs()
+
+
+@pytest.fixture(autouse=True)
 def _isolate_production_process_lifecycle_slot() -> None:
     from intergrax.applications._shared import production_process_lifecycle as ppl
 
@@ -136,18 +146,18 @@ def test_p2c_g00_qualification_baseline_ancestor() -> None:
 
 def _strict_http_environment_profile(
     _settings: GovernedContractorBackendSettings,
+    *,
+    sandbox_root: Path,
 ) -> ApplicationEnvironmentProfile:
-    from intergrax.applications._shared.integration_wiring import (
-        bootstrap_application_integration_catalog,
-    )
     from intergrax.applications._shared.package_wiring import (
         PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT,
     )
     from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
         build_dependency_concurrency_admission_for_tool_ids,
     )
+    from intergrax.contracts.sandbox_profile import SandboxProfile
 
-    bootstrap_application_integration_catalog(integration_preset="full")
+    sandbox_root.mkdir(parents=True, exist_ok=True)
     from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
 
     profile = host_wiring_test_environment(
@@ -156,6 +166,7 @@ def _strict_http_environment_profile(
     log_binding = IntegrationBinding.from_manifest(LOG)
     integration = profile.integration_profile
     integration_options = {**integration.options, LOG.slug: {}}
+    sandbox = profile.sandbox or SandboxProfile()
     return profile.model_copy(
         update={
             "observability_profile": profile.observability_profile.model_copy(
@@ -179,6 +190,7 @@ def _strict_http_environment_profile(
                     "options": integration_options,
                 },
             ),
+            "sandbox": sandbox.model_copy(update={"root": sandbox_root}),
         },
     )
 
@@ -203,7 +215,12 @@ def _gr6_production_policy_bundle() -> ImmutableRuntimePolicyBundle:
     return bundle
 
 
-def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
+def _patch_gca_strict_http_wiring(
+    monkeypatch: pytest.MonkeyPatch,
+    d4,
+    *,
+    environment_profile_builder,
+) -> None:
     """AC3-aligned manifest (D4) + wiring-safe env; canonical package closure unfiltered."""
     d4._patch_gca_manifest_for_ac3_serving(monkeypatch)
     for module in (
@@ -216,7 +233,7 @@ def _patch_gca_strict_http_wiring(monkeypatch: pytest.MonkeyPatch, d4) -> None:
         )
         monkeypatch.setattr(
             f"{module}.build_governed_contractor_environment_profile",
-            _strict_http_environment_profile,
+            environment_profile_builder,
         )
 
 
@@ -260,7 +277,17 @@ def _build_strict_http_fixture(
     install_diagnostic_cursor_secret(monkeypatch)
     install_host_llm_stub(monkeypatch)
 
-    _patch_gca_strict_http_wiring(monkeypatch, d4)
+    sandbox_root = tmp_path / "p2c-guarded-sandbox"
+    sandbox_root.mkdir(parents=True, exist_ok=True)
+
+    def _environment_profile_builder(settings: GovernedContractorBackendSettings):
+        return _strict_http_environment_profile(settings, sandbox_root=sandbox_root)
+
+    _patch_gca_strict_http_wiring(
+        monkeypatch,
+        d4,
+        environment_profile_builder=_environment_profile_builder,
+    )
     session = d4._open_with_activation(
         tmp_path,
         environment=d4._ac3_environment(),

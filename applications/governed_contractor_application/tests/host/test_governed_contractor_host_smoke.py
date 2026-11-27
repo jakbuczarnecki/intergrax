@@ -40,17 +40,25 @@ def _diagnostic_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _gca_smoke_otlp_qualification_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+def _gca_smoke_otlp_qualification_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     from intergrax.applications._shared.package_wiring import (
         PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT,
     )
+    from intergrax.contracts.sandbox_profile import SandboxProfile
 
     from governed_contractor_application.host.environment_profile import (
         build_governed_contractor_environment_profile,
     )
 
+    sandbox_root = tmp_path / "gca-smoke-sandbox"
+    sandbox_root.mkdir(parents=True, exist_ok=True)
+
     def _profile_with_qualification_otlp(settings):
         profile = build_governed_contractor_environment_profile(settings)
+        sandbox = profile.sandbox or SandboxProfile()
         return profile.model_copy(
             update={
                 "observability_profile": profile.observability_profile.model_copy(
@@ -58,6 +66,7 @@ def _gca_smoke_otlp_qualification_endpoint(monkeypatch: pytest.MonkeyPatch) -> N
                         "otlp_export_endpoint": PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT,
                     },
                 ),
+                "sandbox": sandbox.model_copy(update={"root": sandbox_root}),
             },
         )
 
@@ -65,6 +74,15 @@ def _gca_smoke_otlp_qualification_endpoint(monkeypatch: pytest.MonkeyPatch) -> N
         "governed_contractor_application.host.factory.build_governed_contractor_environment_profile",
         _profile_with_qualification_otlp,
     )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_integration_catalogs():
+    from tests.support.integration_catalog_isolation import reset_integration_tool_skill_catalogs
+
+    reset_integration_tool_skill_catalogs()
+    yield
+    reset_integration_tool_skill_catalogs()
 
 
 @pytest.fixture

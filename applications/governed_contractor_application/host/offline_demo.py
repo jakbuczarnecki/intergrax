@@ -43,7 +43,7 @@ from intergrax.runtime.execution_evidence.key_store import (
     write_demo_mode_marker,
     write_verification_key_artifact,
 )
-from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+from intergrax.runtime.execution_evidence.verify import verify_execution_evidence_proof_receipt
 from intergrax.runtime.governance.active_execution_governance_identity import (
     ActiveExecutionGovernanceIdentity,
     bind_active_execution_governance_identity,
@@ -292,9 +292,9 @@ def run_offline_governed_contractor_demo(
     fake = DeterministicExternalWorkFake()
     authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
         policy,
-        tenant_id="offline-demo-tenant",
-        workspace_id="workspace-a",
-        principal_id="offline-demo-user",
+        tenant_id=_OFFLINE_ACTIVE_GOVERNANCE.tenant_id,
+        workspace_id=_OFFLINE_ACTIVE_GOVERNANCE.workspace_id,
+        principal_id=_OFFLINE_ACTIVE_GOVERNANCE.principal_id,
         decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         task_scope=_FixedActiveTaskScope(task_id=task_id),
     )
@@ -483,7 +483,7 @@ def run_offline_governed_contractor_demo(
     export_path.parent.mkdir(parents=True, exist_ok=True)
     export_path.write_text(accepted.receipt.model_dump_json(indent=2), encoding="utf-8")
     resolver = FilesystemHostKeyResolver(store_root)
-    vr = verify_proof_receipt(
+    vr = verify_execution_evidence_proof_receipt(
         accepted.receipt,
         key_resolver=resolver,
         require_policy_bundle_artifact=True,

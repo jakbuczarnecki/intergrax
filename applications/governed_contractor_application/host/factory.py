@@ -25,6 +25,7 @@ from intergrax.applications._shared.harness_host_orchestration_topology_wiring i
     HarnessHostOrchestrationTopologyReliabilityCompositionError,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.notification_wiring import resolve_host_notification_adapter
 from intergrax.applications._shared.package_wiring import (
@@ -138,6 +139,10 @@ def create_governed_contractor_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
+    bootstrap_application_integration_catalog(
+        integration_preset="full",
+        discover_entry_points=False,
+    )
     if (
         registry_projection is not None
         and process_composition is not None
