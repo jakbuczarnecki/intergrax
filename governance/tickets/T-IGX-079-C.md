@@ -38,7 +38,7 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-closed
+ready_for_audit
 
 ## Checkpoint
 
@@ -102,4 +102,4 @@ closed
 | II-FIND-12 | OPEN — transferred to W0-06 |
 | C11 | Accepted as a defined future adoption obligation, not external reconciliation completion |
 
-**Ticket closure:** lifecycle `ready_for_audit` → `closed` after accepted scoped formal G6. Separate Operator chat closure sign-off for this transition was not independently supplied beyond the accepted audit verdict record above. W0 formal package closures remain open (0/6).
+**Ticket closure:** Formal scoped G6 `II-W0-R31-FORMAL-G6-01` is recorded above with preserved limitations. Transition `ready_for_audit` → `closed` requires a separate Operator closure sign-off; none was independently supplied beyond the accepted audit verdict record, so lifecycle remains `ready_for_audit`. W0 formal package closures remain open (0/6).
