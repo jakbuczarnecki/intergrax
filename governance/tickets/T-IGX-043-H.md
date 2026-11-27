@@ -101,3 +101,26 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | T-IGX-043-H`. Authorization: AR-
 **PT-WA handoff preserved:** NT-WA-23 roster isolation; harness.policy_smoke ×2 → T-IGX-043-A; OTLP ×2 → T-IGX-043-B; Pyright PT-WA not claimed full PASS; dynamic-import census not published as evidence.
 
 **Lifecycle:** remains `plan_approved`; semantic close `IMPLEMENTED_FIRM_SCOPE_WITH_EXACT_RESIDUALS`; G2 OPEN; RB2 NOT_PERFORMED; independent PT-Q02 audit still required.
+
+## AF-W3-PT-WB-02 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | AF-W3-PT-WB-02`. Authorization: AR-40 / OD-AF-PKT1 / OD-AF-W3-BND05-01 variant A.
+Baseline: `c74d42f11c1806de418363ad31572ee9b8005364`; SCOPE closure ancestor `0a4755281f46653a8b741a26c8e26b0af4555775` confirmed at preflight.
+
+**Implementation verdict:** `BND05_DETECTOR_AND_OWN05_MIRROR_DELIVERED`; FRZ-BND-05 OP-B remains `EVIDENCE_MISSING` (no mechanism-aligned `test_scan_flags_a_rogue_agent` prefix FAIL → pin PASS at identical `test_blob_sha`).
+
+| Deliverable | Result |
+|---|---|
+| OD-AF-W3-BND05-01 | `DECIDED` variant A in operator register |
+| Write-set amendment | `tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py` on T-IGX-043-H; preserved on T-IGX-043-A |
+| FRZ-BND-05 detector | `scan_runtime_context_construction` + seeded `test_scan_flags_a_rogue_agent`; posture scan preserved |
+| FRZ-BND-05 red-first | `EVIDENCE_MISSING` — self-test PASS at prefix overlay and at HEAD |
+| FRZ-OWN-05 mirror fix | `applications/*/docker/runtime-context/**` excluded from resolver census; NT-OWN-05-1 green |
+| V6 census | @ execution SHA: 2 canonical resolver definitions; 4 Tier-2 `RuntimeContext.build` unauthorized residuals (T-IGX-043-A) |
+| V7 `igx_gov ticket` | PASS with `uv` on PATH |
+| Cross-ticket | `queue_worker_wiring.py` closed-root violation preserved for PT-FC2 |
+| OP-B settlement | `OP_B_PENDING=12`; `RED_AT_PREFIX=21`; `EVIDENCE_MISSING=12` |
+
+**Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; FRZ promotion none; PT-Q02 PENDING.
+
+**Evidence SHA reconciliation (WB-01 vs WB-02):** WB-01 cited `245d47177c7814234a8d98fc062ed1afce3b735d` (EC-W3-07 merge) while published package commit was `c74d42f11` (parent `1d0181051fa034b5f45101755002e48f5dc35715`).

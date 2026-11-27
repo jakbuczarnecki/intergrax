@@ -1,7 +1,7 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T10:50:37.576064+00:00",
-  "execution_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+  "generated_at": "2026-11-27T13:11:33.724607+00:00",
+  "execution_sha": "550b258bf8d524d907b7720da41ecac64a6bb1a5",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
   "bindings_sha256": "274b823b19e8229f33e8824bd5c60855da3e2ccf74d89ff5e7e9b120cdc5f3a1",
   "node": "T-AF2-RW-PLAN",
@@ -113,7 +113,7 @@
       "red_first_prefix_sha": null,
       "red_first_status": "EVIDENCE_MISSING",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json#FRZ-BND-05",
-      "red_first_reason": "The Tier-2 node fails on the production_mode posture literal, not on direct RuntimeContext construction (NT-BND-05-1). The provider-switch node (NT-BND-05-2) passes at the prefix and fails at the pin.",
+      "red_first_reason": "Canonical node test_scan_flags_a_rogue_agent now implements the RuntimeContext construction scan, but no mechanism-aligned prefix FAILED to pin PASSED record exists for that node at identical test_blob_sha (self-test passes at prefix and pin; historical overlay measured posture on a different node).",
       "red_first_superseded_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-BND-05",
       "red_first_due_ticket": "T-IGX-043-H",
       "regression_scope": "ENT-A-BND-01..03",
@@ -4701,6 +4701,10 @@
           "state": "exists"
         },
         {
+          "path": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+          "state": "exists"
+        },
+        {
           "path": "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py",
           "state": "exists"
         },
@@ -8911,6 +8915,13 @@
         "intergrax/runtime/task_memory/store.py",
         "tests/unit/applications/_shared/test_obs_diag_x3_universal_spine_adoption.py",
         "tests/unit/applications/architecture/test_diag_platform_adoption_gate.py"
+      ]
+    },
+    {
+      "a": "T-IGX-043-A",
+      "b": "T-IGX-043-H",
+      "paths": [
+        "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py"
       ]
     },
     {

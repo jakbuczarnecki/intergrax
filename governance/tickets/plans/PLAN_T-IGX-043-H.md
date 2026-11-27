@@ -246,6 +246,7 @@ tests/unit/architecture/test_ebh_2e_r6_r1_r5_tier1_failover_chain_ordering_conve
 
 ```
 tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py
+tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py
 tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py
 ```
 
