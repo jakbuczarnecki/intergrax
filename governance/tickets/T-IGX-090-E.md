@@ -10,9 +10,11 @@ Linked plan: [`governance/tickets/plans/PLAN_T-IGX-090-E.md`](plans/PLAN_T-IGX-0
 
 Plan digest: 639e1194b59310913a5b8744f112f5801b484702466d22968eddcce6ed66788a
 
-## Approval routing
+## Approved
 
-Approval is not recorded in this ticket. It is a missing authority: the Operator, or the AF-CLOSE signing delegate under OP-A 4 after an independent REVIEW_PASS, must add the approval line. The implementer writes no approval line.
+Approved: operator @ 2026-11-27T08:32:29+01:00
+
+Decision basis: Operator approval in chat of decision D-1 in the EC Wave 2.1 blocker packet (2026-11-27), after independent igx-reviewer REVIEW_PASS. Approval covers this ticket only; merge to `development` and push remain separate Operator / AF-CLOSE steps.
 
 ## Test contract
 
@@ -34,4 +36,4 @@ uv run ruff format --check scripts/qualification/pdc_x_inventory.py tests/unit/g
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
