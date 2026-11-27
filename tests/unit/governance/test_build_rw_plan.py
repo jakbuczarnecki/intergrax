@@ -754,3 +754,72 @@ def test_live_wave_dependencies_have_no_wave_self_dependency():
     mod = _import_build()
     bindings = mod.load_bindings()
     assert "PT-WA" not in bindings["dependencies"]["W3"]
+
+
+def test_live_audit_blocker_rows_name_a_pytest_node():
+    mod = _import_build()
+    rows = mod.load_bindings()["code_fix_rows"]
+    for frz in ("FRZ-SEC-06", "FRZ-TEN-02", "FRZ-TEN-07", "FRZ-TYP-01", "FRZ-TYP-03", "FRZ-RPL-04"):
+        first = rows[frz]["negative_tests"][0]
+        path, separator, name = first["node"].partition("::")
+        assert separator and path.endswith(".py") and name.startswith("test_"), (frz, first["node"])
+
+
+_REGRESSION_TREE = frozenset(
+    {"tests/unit/a/test_row.py", "tests/unit/a/test_ws.py", "tests/unit/a/helper.py", "tests/unit/g/test_glob.py"}
+)
+
+
+def test_ticket_regression_command_unions_row_write_set_and_bound_tests():
+    mod = _import_build()
+    write_set = ["tests/unit/a/test_ws.py", "tests/unit/a/helper.py", "tests/unit/a/test_new.py", "tests/unit/g/*"]
+    out = mod.ticket_regression(
+        "T-A",
+        {"regression_tests": ["tests/unit/a/test_row.py::test_x"], "regression_extra_commands": ["uv run python s.py"]},
+        [{"owner_ticket": "T-A", "regression_tests": ["tests/unit/a/test_row.py"]}],
+        write_set,
+        _REGRESSION_TREE,
+    )
+    assert out["regression_tests"] == [
+        "tests/unit/a/test_row.py",
+        "tests/unit/a/test_ws.py",
+        "tests/unit/g/test_glob.py",
+    ]
+    assert out["regression_commands"] == [
+        "uv run pytest tests/unit/a/test_row.py tests/unit/a/test_ws.py tests/unit/g/test_glob.py -q",
+        "uv run python s.py",
+    ]
+
+
+def test_ticket_without_regression_scope_fails_closed():
+    mod = _import_build()
+    with pytest.raises(SystemExit):
+        mod.ticket_regression("T-A", {}, [], ["docs/x.md"], _REGRESSION_TREE)
+    out = mod.ticket_regression("T-A", {"regression_absent_reason": "r"}, [], [], _REGRESSION_TREE)
+    assert out["regression_commands"] == [] and out["regression_absent_reason"] == "r"
+
+
+def test_ticket_bound_regression_test_must_exist_at_pin():
+    mod = _import_build()
+    with pytest.raises(SystemExit):
+        mod.ticket_regression("T-A", {"regression_tests": ["tests/unit/a/test_gone.py"]}, [], [], _REGRESSION_TREE)
+
+
+def test_live_bnd_06_regression_enumerates_adapter_tests():
+    mod = _import_build()
+    tests = mod.load_bindings()["code_fix_rows"]["FRZ-BND-06"]["regression_tests"]
+    for prefix in (
+        "tests/unit/hosting/",
+        "tests/unit/queueing/",
+        "tests/unit/applications/test_mcp_",
+        "tests/unit/applications/test_http_",
+    ):
+        assert any(t.startswith(prefix) and t.endswith(".py") for t in tests), prefix
+    assert "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py" in tests
+
+
+def test_live_debt_02_negative_case_is_the_seeded_gate_node():
+    mod = _import_build()
+    first = mod.load_bindings()["code_fix_rows"]["FRZ-DEBT-02"]["negative_tests"][0]
+    assert first["node"].endswith("::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement")
+    assert "seeded" in first["mechanism"].lower()

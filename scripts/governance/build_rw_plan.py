@@ -694,6 +694,46 @@ def check_lanes(
         raise SystemExit("; ".join(problems))
 
 
+def _is_test_file(path: str) -> bool:
+    name = path.rsplit("/", 1)[-1]
+    return path.startswith("tests/") and name.startswith("test_") and name.endswith(".py")
+
+
+def ticket_regression(
+    ticket: str, spec: dict, inventory: list[dict[str, object]], write_set: list[str], tree: frozenset[str]
+) -> dict[str, object]:
+    """Regression commands of one ticket: owned rows, write-set test files and bound tests, all present at the pin."""
+    bound = list(spec.get("regression_tests", []))
+    absent = [t for t in bound if t.partition("::")[0] not in tree]
+    if absent:
+        raise SystemExit(f"{ticket}: regression tests absent at the read pin: {absent}")
+    selected = set(bound)
+    for row in inventory:
+        if row["owner_ticket"] == ticket:
+            selected.update(row.get("regression_tests", []))
+    for pattern in write_set:
+        kind, value = _pattern_kind(pattern)
+        if kind == "file":
+            matches = [pattern] if pattern in tree else []
+        elif kind == "dir":
+            matches = [f for f in tree if f.startswith(value)]
+        else:
+            matches = [f for f in tree if fnmatch.fnmatchcase(f, value)]
+        selected.update(f for f in matches if _is_test_file(f))
+    tests = sorted(t for t in selected if "::" not in t or t.partition("::")[0] not in selected)
+    commands = [f"uv run pytest {' '.join(tests)} -q"] if tests else []
+    commands.extend(spec.get("regression_extra_commands", []))
+    reason = spec.get("regression_absent_reason")
+    if not commands and not reason:
+        raise SystemExit(f"{ticket}: no regression command and no regression_absent_reason")
+    return {
+        "regression_tests": tests,
+        "regression_commands": commands,
+        "regression_source": spec.get("regression_source"),
+        "regression_absent_reason": None if commands else reason,
+    }
+
+
 def _ticket_section(bindings: dict, tree: frozenset[str], inventory: list[dict[str, object]]) -> dict[str, object]:
     specs: dict[str, dict] = bindings.get("tickets", {})
     if not specs:
@@ -734,6 +774,7 @@ def _ticket_section(bindings: dict, tree: frozenset[str], inventory: list[dict[s
             "mandatory_tests": spec.get("mandatory_tests", []),
             "note": spec.get("note"),
             "code_fix_rows": [r["frz_id"] for r in inventory if r["owner_ticket"] == ticket],
+            **ticket_regression(ticket, spec, inventory, extracted["paths"], tree),
         }
 
     edges: dict[tuple[str, str], str] = {}
@@ -1235,7 +1276,27 @@ def _render_md(payload: dict) -> str:
             ],
         )
     )
-    lines.extend(["", "## 8. Lanes", ""])
+    lines.extend(
+        [
+            "",
+            "### Per-ticket regression commands",
+            "",
+            "Each command is the union of the regression tests of the rows the ticket owns, the test files of its "
+            "write set that exist at the read pin and the tests bound to the ticket. Planned new test files are not "
+            "listed here (see section 2 and the Tests column). Paths are those of the read pin; a ticket that "
+            "renames or deletes a listed file runs the replacement.",
+            "",
+        ]
+    )
+    for t in payload["tickets"]:
+        lines.append(f"#### {t['ticket']}")
+        if t["regression_source"]:
+            lines.append(f"Bound tests: {t['regression_source']}")
+        if t["regression_absent_reason"]:
+            lines.append(f"No command: {t['regression_absent_reason']}")
+        lines.extend(f"- `{command}`" for command in t["regression_commands"])
+        lines.append("")
+    lines.extend(["## 8. Lanes", ""])
     lines.extend(
         _table(["Lane", "Label", "Tickets"], [[e[0], e[2], ", ".join(e[1]) or "—"] for e in payload["lane_order"]])
     )

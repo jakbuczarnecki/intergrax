@@ -14,6 +14,11 @@ Product fix and tests for three RW CODE_FIX rows that no open ticket owned:
 | FRZ-TYP-03 | the same payload, seen as an untyped seam between runtime modules | NT-WF-B01..B06 |
 | FRZ-RPL-04 | the colocated drain adapter does not satisfy the drain protocol | NT-WF-C01..C05 |
 
+Required pytest nodes (names declared by the RW plan; the tests are not written yet):
+
+- `tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains` (FRZ-TYP-01, FRZ-TYP-03)
+- `tests/unit/applications/test_wf_colocated_drain_protocol.py::test_nt_wf_c01_no_isinstance_check_on_colocated_adapter` (FRZ-RPL-04)
+
 The ticket restores the frozen-contract typing ratchet to 357 / 11 / 10 with one baseline under `governance/` (residual of T-IGX-051-G).
 
 The candidate write set is listed under this ticket in `docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json`. It is indicative. This ticket grants no write authority: a plan with an explicit write set and its approval are required first.

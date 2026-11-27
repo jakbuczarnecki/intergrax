@@ -113,8 +113,114 @@
         }
       ],
       "regression_tests": [
-        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py"
-      ]
+        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+        "tests/unit/applications/local_workspace_application/test_lkw_background_worker_queue_dependencies.py",
+        "tests/unit/applications/test_fastapi_mcp.py",
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py",
+        "tests/unit/applications/test_host_queue_execution_wiring.py",
+        "tests/unit/applications/test_http_canonical_execution.py",
+        "tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py",
+        "tests/unit/applications/test_mcp_canonical_execution.py",
+        "tests/unit/applications/test_mcp_catalog_child_execution_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_discovery_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py",
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py",
+        "tests/unit/applications/test_mcp_engine_concurrency.py",
+        "tests/unit/applications/test_mcp_fails_closed_posture_wiring.py",
+        "tests/unit/applications/test_mcp_host_mount.py",
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py",
+        "tests/unit/applications/test_mcp_invocation_id.py",
+        "tests/unit/applications/test_mcp_public_api_surface.py",
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py",
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py",
+        "tests/unit/applications/test_mcp_server_engine.py",
+        "tests/unit/applications/test_mcp_server_engine_architecture_gates.py",
+        "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+        "tests/unit/applications/test_mcp_surface_opt_in.py",
+        "tests/unit/applications/test_mcp_surface_opt_in_runtime.py",
+        "tests/unit/applications/test_mcp_trust_a_principal_binding.py",
+        "tests/unit/applications/test_reference_apps_mcp.py",
+        "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py",
+        "tests/unit/applications/test_strict_production_serving_http_caller_authorization.py",
+        "tests/unit/applications/test_strict_production_serving_http_caller_principal_admission.py",
+        "tests/unit/hosting/architecture/test_one_spine_hosting_diagnostics_gate.py",
+        "tests/unit/hosting/architecture/test_process_bootstrap_import_boundaries.py",
+        "tests/unit/hosting/control/test_control_coordinator.py",
+        "tests/unit/hosting/engine/test_component_coordinator.py",
+        "tests/unit/hosting/engine/test_definition_resolution.py",
+        "tests/unit/hosting/engine/test_diagnostics.py",
+        "tests/unit/hosting/engine/test_engine_before_ready_health_refresh.py",
+        "tests/unit/hosting/engine/test_engine_failures.py",
+        "tests/unit/hosting/engine/test_engine_import_boundaries.py",
+        "tests/unit/hosting/engine/test_engine_shutdown.py",
+        "tests/unit/hosting/engine/test_engine_startup.py",
+        "tests/unit/hosting/engine/test_engine_w2_invariants.py",
+        "tests/unit/hosting/engine/test_event_dispatcher.py",
+        "tests/unit/hosting/engine/test_health_readiness.py",
+        "tests/unit/hosting/engine/test_hook_coordinator.py",
+        "tests/unit/hosting/engine/test_hosting_observability_export.py",
+        "tests/unit/hosting/engine/test_lifecycle_controller.py",
+        "tests/unit/hosting/engine/test_runtime_factory.py",
+        "tests/unit/hosting/engine/test_w3_engine_shutdown_integration.py",
+        "tests/unit/hosting/instance/test_file_guard.py",
+        "tests/unit/hosting/instance/test_w3_file_guard_regression.py",
+        "tests/unit/hosting/shutdown/test_shutdown_executor.py",
+        "tests/unit/hosting/shutdown/test_w3_shutdown_regression.py",
+        "tests/unit/hosting/signals/test_signal_adapter.py",
+        "tests/unit/hosting/supervisor/test_supervisor.py",
+        "tests/unit/hosting/supervisor/test_supervisor_host_diag_3_conformance.py",
+        "tests/unit/hosting/supervisor/test_supervisor_pre_engine_failure.py",
+        "tests/unit/hosting/supervisor/test_w3_supervisor_regression.py",
+        "tests/unit/hosting/test_bootstrap_failure_record.py",
+        "tests/unit/hosting/test_guarded_process_bootstrap.py",
+        "tests/unit/hosting/test_hosted_application_callback_typing.py",
+        "tests/unit/hosting/test_hosted_application_components.py",
+        "tests/unit/hosting/test_hosted_application_context.py",
+        "tests/unit/hosting/test_hosted_application_events.py",
+        "tests/unit/hosting/test_hosted_application_hooks.py",
+        "tests/unit/hosting/test_hosted_application_lifecycle.py",
+        "tests/unit/hosting/test_hosted_application_policies.py",
+        "tests/unit/hosting/test_hosted_application_profile.py",
+        "tests/unit/hosting/test_hosted_application_profile_core.py",
+        "tests/unit/hosting/test_hosted_application_profile_core_schema.py",
+        "tests/unit/hosting/test_hosted_application_profile_schema.py",
+        "tests/unit/hosting/test_hosted_application_services.py",
+        "tests/unit/hosting/test_hosted_default_host_diag_3_qualification.py",
+        "tests/unit/hosting/test_hosting_import_boundaries.py",
+        "tests/unit/hosting/test_runner.py",
+        "tests/unit/hosting/test_rw_recovery_drain_wait_for_idle.py",
+        "tests/unit/hosting/test_w3_import_boundaries.py",
+        "tests/unit/integrations/providers/message_bus/test_celery.py",
+        "tests/unit/integrations/providers/message_bus/test_kafka.py",
+        "tests/unit/integrations/providers/message_bus/test_kafka_task_queue.py",
+        "tests/unit/integrations/providers/message_bus/test_rabbitmq.py",
+        "tests/unit/queueing/providers/test_broker_worker_base.py",
+        "tests/unit/queueing/providers/test_celery_task_queue.py",
+        "tests/unit/queueing/test_arch_freeze_076_b_celery_wake_dispatcher.py",
+        "tests/unit/queueing/test_arch_freeze_076_b_out_of_process_queue.py",
+        "tests/unit/queueing/test_arch_freeze_076_f_worker_idempotency_topology.py",
+        "tests/unit/queueing/test_arch_freeze_076_g_queue_events.py",
+        "tests/unit/queueing/test_celery_task_queue_purge.py",
+        "tests/unit/queueing/test_document_store_task_queue.py",
+        "tests/unit/queueing/test_rw_recovery_no_double_execution.py",
+        "tests/unit/queueing/test_rw_recovery_producer_identity.py",
+        "tests/unit/queueing/test_task_index.py",
+        "tests/unit/queueing/test_task_priority.py",
+        "tests/unit/queueing/test_worker_bootstrap.py",
+        "tests/unit/queueing/worker/test_dispatcher_handler_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_identity_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_rate_limit.py",
+        "tests/unit/queueing/worker/test_dispatcher_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_retry_hook.py",
+        "tests/unit/queueing/worker/test_execution.py",
+        "tests/unit/queueing/worker/test_result_codec.py",
+        "tests/unit/queueing/worker/test_retry_backoff.py"
+      ],
+      "note": "Adapter unit tests enumerated by this plan as matrix Appendix C requires. Selection at the read pin: every test_*.py under tests/unit/hosting/, tests/unit/queueing/ and tests/unit/integrations/providers/message_bus/, and every test_*.py under tests/unit/applications/ whose file name contains mcp, http or queue."
     },
     "FRZ-CFG-02": {
       "negative_tests": [
@@ -231,8 +337,8 @@
       "negative_tests": [
         {
           "nt_id": "NT-DEBT-02-1",
-          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner",
-          "mechanism": "Every core requirement has a declared owner; the dependency-ownership gate is red while one is missing.",
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+          "mechanism": "Seeded negative case (NT-RW-DEP-01c): a temporary copy of pyproject.toml gets one extra undeclared core requirement and the dependency-ownership gate has to report it. The node passes at the test-only prefix, so it is not red-first evidence for the row. The requirement itself is held by test_rw_dep_01a_core_requirement_has_declared_owner: every core requirement has a declared owner.",
           "owner_ticket": "T-IGX-051-H"
         }
       ],
@@ -247,7 +353,7 @@
         {
           "nt_id": "NT-DEBT-03-1",
           "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner",
-          "mechanism": "Dependency-ownership gate. No seeded negative node specific to DEBT-03 exists at the read pin, so this node is not red-first evidence for the row.",
+          "mechanism": "Dependency-ownership gate. No seeded negative node specific to DEBT-03 exists at the read pin, so this node is not red-first evidence for the row. A seeded case for DEBT-03 has to add a temporary compatibility seam and see a gate report it; no node inventories such seams (Operator items packet, item 2).",
           "owner_ticket": "T-IGX-051-H"
         }
       ],
@@ -595,8 +701,8 @@
       "negative_tests": [
         {
           "nt_id": "NT-WF-C01",
-          "node": "tests/unit/applications/test_wf_colocated_drain_protocol.py",
-          "mechanism": "NT-WF-C01..C05: the co-located drain path binds the typed consumer protocol. (planned; not authored at the read pin)",
+          "node": "tests/unit/applications/test_wf_colocated_drain_protocol.py::test_nt_wf_c01_no_isinstance_check_on_colocated_adapter",
+          "mechanism": "NT-WF-C01..C05: the co-located drain path binds the typed consumer protocol. (planned node name declared by this plan; not authored at the read pin)",
           "owner_ticket": "T-IGX-078-C"
         },
         {
@@ -673,8 +779,8 @@
       "negative_tests": [
         {
           "nt_id": "NT-T01-A4-006",
-          "node": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py",
-          "mechanism": "Every emitter path listed by check_runtime_event_tenant_propagation.py exists, and a seeded emitter that publishes a RuntimeEvent without a tenant is reported. (planned; not authored at the read pin)",
+          "node": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py::test_nt_t01_a4_006_seeded_emitter_without_tenant_is_reported",
+          "mechanism": "Every emitter path listed by check_runtime_event_tenant_propagation.py exists, and a seeded emitter that publishes a RuntimeEvent without a tenant is reported. (planned node name declared by this plan; not authored at the read pin)",
           "owner_ticket": "T-IGX-078-D"
         },
         {
@@ -739,8 +845,8 @@
       "negative_tests": [
         {
           "nt_id": "NT-WF-B01",
-          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py",
-          "mechanism": "NT-WF-B01..B06: the Nexus exposure path carries a bounded typed payload; no object-typed exposure, accepted or flow-result annotation remains. The EBH-6 Q2-D2 gate files are inverted only by the Operator (Q-WF-04). (planned; not authored at the read pin)",
+          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+          "mechanism": "NT-WF-B01..B06: the Nexus exposure path carries a bounded typed payload; no object-typed exposure, accepted or flow-result annotation remains. The EBH-6 Q2-D2 gate files are inverted only by the Operator (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
           "owner_ticket": "T-IGX-078-C"
         }
       ],
@@ -755,8 +861,8 @@
       "negative_tests": [
         {
           "nt_id": "NT-WF-B01",
-          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py",
-          "mechanism": "NT-WF-B01..B06: same typed seam as FRZ-TYP-01, with the same Operator condition (Q-WF-04). (planned; not authored at the read pin)",
+          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+          "mechanism": "NT-WF-B01..B06: same typed seam as FRZ-TYP-01, with the same Operator condition (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
           "owner_ticket": "T-IGX-078-C"
         }
       ],
@@ -1403,7 +1509,14 @@
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "note": "Commits with this Ref on development 32005c212: 2 (touching code, tests, CI or project files: 1). Completion is not claimed."
+      "note": "Commits with this Ref on development 32005c212: 2 (touching code, tests, CI or project files: 1). Completion is not claimed.",
+      "regression_tests": [
+        "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity"
+      ],
+      "regression_extra_commands": [
+        "uv run python scripts/maintenance/check_production_capacity_adapters.py"
+      ],
+      "regression_source": "PLAN_T-IGX-043-E section 6, commands 1 and 2."
     },
     "T-IGX-043-F": {
       "lifecycle": "draft",
@@ -1558,7 +1671,17 @@
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "note": "Commits with this Ref on development 32005c212: 19 (touching code, tests, CI or project files: 8). Completion is not claimed."
+      "note": "Commits with this Ref on development 32005c212: 19 (touching code, tests, CI or project files: 8). Completion is not claimed.",
+      "regression_tests": [
+        "tests/integration/runtime/test_nexus_loop_governance.py",
+        "tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py",
+        "tests/unit/runtime/events/test_runtime_event_persistence.py",
+        "tests/unit/runtime/human/test_human_decisions.py",
+        "tests/unit/runtime/nexus/test_nexus_loop_finalization_hook_failure.py",
+        "tests/unit/runtime/nexus/test_nexus_loop_helpers.py",
+        "tests/unit/runtime/task_memory/test_task_memory_store.py"
+      ],
+      "regression_source": "PLAN_T-IGX-043-N section 4: the FC-1 slice R3 of PLAN_T-IGX-043-A (whole files) and the harness persistence file."
     },
     "T-IGX-044-F": {
       "lifecycle": "plan_approved",
@@ -1590,7 +1713,11 @@
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "note": "Commits with this Ref on development 32005c212: 5 (touching code, tests, CI or project files: 3). Completion is not claimed."
+      "note": "Commits with this Ref on development 32005c212: 5 (touching code, tests, CI or project files: 3). Completion is not claimed.",
+      "regression_extra_commands": [
+        "uv run python scripts/docs/check_docs_domain_pairs.py"
+      ],
+      "regression_source": "PLAN_T-IGX-046-D section 7."
     },
     "T-IGX-046-G": {
       "lifecycle": "draft",
@@ -1616,7 +1743,7 @@
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
       ],
-      "note": "Commits with this Ref on development 32005c212: 1 (touching code, tests, CI or project files: 1). Completion is not claimed."
+      "note": "A3-018 (NT-G02-02): the ticket has no plan file. An approved plan is required before implementation. Commits with this Ref on development 32005c212: 1 (touching code, tests, CI or project files: 1). Completion is not claimed."
     },
     "T-IGX-051-A": {
       "lifecycle": "plan_approved",
@@ -1940,7 +2067,8 @@
       "note": "Fact check of FRZ-PLG-08 under DP-37 (DP-30 exception texts stay with PT-D09 and PT-D10). T-IGX-051-F owns NT-RW-GATES-NC-RAISE; this ticket owns the FRZ-PLG-08 verdict and NT-PLG-08-1.",
       "mandatory_tests": [
         "MEP G: negative tests authored by the owner ticket"
-      ]
+      ],
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-PLG-08-1 and names its regression tests in its own plan."
     }
   },
   "serialization_edges": [

@@ -12,6 +12,8 @@ AF-CLOSE, lane K1-C (WORKLIST row WL-K1-C-08). Opened by GA.2R (T-IGX-078-B) as 
 | FRZ-TEN-07 | event identifiers keep their tenant semantics when persisted, and the emitter gate covers the rebound emitters | event-id persistence node and emitter-gate node named in the RW plan |
 | A4-006 | Campaign A finding on the same emitter gate | NT-T01-A4-006 |
 
+Required pytest node (name declared by the RW plan; the test is not written yet): `tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py::test_nt_t01_a4_006_seeded_emitter_without_tenant_is_reported` (FRZ-TEN-02, A4-006).
+
 T-IGX-056-A moved the emitters to `intergrax/runtime/nexus/uaep/uaep_executor.py` and `intergrax/runtime/middleware/trace_middleware.py`. T-IGX-056-A and T-IGX-065-A are evidence inputs, not owners. The work starts after T-IGX-051-A.
 
 The candidate write set is listed under this ticket in `docs/project/maintainers/qualification/arch_freeze_program/rw_plan.v1.json`. It is indicative. This ticket grants no write authority: a plan with an explicit write set and its approval are required first.
