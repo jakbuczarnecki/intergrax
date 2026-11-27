@@ -71,3 +71,20 @@ def test_all_eight_domains_have_anchor_links(inv: ModuleType) -> None:
     assert set(inv.DOMAIN_LINKS) == set(inv.DOMAINS)
     for links in inv.DOMAIN_LINKS.values():
         assert links["semantic_owners"], links
+
+
+def test_intelligence_x_architecture_doc_is_foundation_exact_stem(inv: ModuleType) -> None:
+    assert inv.classify_doc("INTEGRAX_INTELLIGENCE") == inv.FOUNDATION
+
+
+def test_unknown_stems_stay_unmapped_closed_world(inv: ModuleType) -> None:
+    assert inv.classify_doc("INTEGRAX_UNKNOWN_FUTURE_DOC") == inv.UNMAPPED
+    assert inv.classify_doc("TOTALLY_UNKNOWN_DOC") == inv.UNMAPPED
+
+
+def test_intelligence_architecture_doc_is_index_only(inv: ModuleType) -> None:
+    rel = "docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md"
+    items = [i for i in inv.build()["items"] if i["path"] == rel]
+    assert len(items) == 1
+    assert items[0]["category"] == inv.FOUNDATION
+    assert items[0]["status"] == "INDEX_ONLY"
