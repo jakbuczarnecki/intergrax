@@ -11,6 +11,10 @@ from intergrax.agents.authoring.patterns.types import (
     ReasoningResult,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.lab_reference_agent_runtime import build_stub_agent_runtime_context
 
 
 def perceive_run_input(step_ctx: AgentStepContext, agent: object) -> Observation:
@@ -40,6 +44,24 @@ def prefixed_act_output(
     message = (reasoning.thought or "").strip()
     answer = f"{prefix}: {message}"
     return {"summary": answer, "answer": answer, "run_id": step_ctx.run_id}
+
+
+def build_agent_runtime_context(
+    request: RuntimeRequest,
+    llm_adapter: LLMAdapter,
+    *,
+    enable_rag: bool = False,
+    enable_websearch: bool = False,
+    production_mode: bool = False,
+) -> RuntimeContext:
+    """Reference-stub runtime context; delegates Tier-1 materialization (FC-1 Part C1)."""
+    return build_stub_agent_runtime_context(
+        request,
+        llm_adapter,
+        enable_rag=enable_rag,
+        enable_websearch=enable_websearch,
+        production_mode=production_mode,
+    )
 
 
 def summary_act_output(step_ctx: AgentStepContext, reasoning: ReasoningResult) -> dict[str, object]:

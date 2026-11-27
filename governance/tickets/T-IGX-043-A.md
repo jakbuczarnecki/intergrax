@@ -19,7 +19,7 @@ No PASS, closure, FRZ promotion, stage certification or independent verification
 
 ## Plan digest
 
-Plan digest: 4f89b891098e2ed0513f0724f5f5a461468546c19ec387ff837018b0e8edf093
+Plan digest: 0e6541191c74844a6266e1d00f20d0299751bd8255b7968b4e47e6288edd558a
 
 Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-A.md` (drafted at `.tmp/session/arch-freeze/w3-packet-2/043-A/PLAN_T-IGX-043-A.md`). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -93,3 +93,21 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-01`. Authorization
 | FC2 `app_name` / WB RED / batched qualification / full SHA proofs | **Not re-executed in this slice** (FC2 settled per T-IGX-043-B checkpoint; WB pre-fix RED preserved) |
 
 **OP_B_PENDING:** remains **12** until three mechanism-aligned `RED_AT_PREFIX` GA2R records are delivered per OD-AF-CLOSE-B6.
+
+### AF-W3-PT-FC1-02 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-02`. Authorization: OD-AF-W3-FC1-01 A, OD-AF-W3-BND05-01 A, OD-AF-CLOSE-B2/B6.
+
+| Item | Verdict |
+|---|---|
+| TASK-02 FC2 `app_name` precedence | **DONE** (T-IGX-043-B commit in this session) |
+| TASK-03 `build_agent_runtime_context` | **DONE** — forwarder to Tier-1 `build_stub_agent_runtime_context`; **14 fleet agents** + harness test + `acp_uaep_shim` callers censused |
+| TASK-04 composition semantics | **VERIFIED** — LAB/STRICT/production posture and fail-closed host authority residual unchanged (R-2); no LAB defaults for STRICT/PRODUCT |
+| TASK-05 write set | **DONE** — `agents/boundary_demo/boundary_demo_agent.py` and `tests/unit/agents/test_wa_agent_import_rule.py` in regenerated T-IGX-043-A write set; PT-WA→FC1 serialization preserved; **`intergrax/runtime/execution/lab_reference_agent_runtime.py` → `PRODUCT_WRITE_AUTHORITY_FINDING_OPEN`** (not added to approved write set) |
+| TASK-06 FRZ-EXE-02 | **EVIDENCE_MISSING** — DP-14 + construction scan green at HEAD; not promoted |
+| TASK-07 FRZ-PLG-05 | **EVIDENCE_MISSING** — digest unit green; product admission not delivered |
+| TASK-08 FRZ-BND-05 | **PARTIAL** — historical RED log digest verified (`62c53305…`); test blob `06412ff4…` at pin; canonical node **GREEN** at session HEAD; **no** mechanism-aligned `RED_AT_PREFIX` GA2R row for `test_scan_flags_a_rogue_agent` |
+| TASK-09 sources / RW-PLAN | **PARTIAL** — `build_rw_plan.py` + plan digest refreshed; full `SOURCES.sha256` LF validation not completed on Windows host |
+| TASK-10 qualification | **PARTIAL** — batched FC2/ACP/BND-05/FC1 harness/WA import tests green (33+4); full mandated Enterprise slice not run; `igx_gov ticket` blocked (`uv` not on PATH for gate subprocess) |
+
+**FRZ-EXE-02 / FRZ-PLG-05:** `EVIDENCE_MISSING`. **FRZ-BND-05:** `EVIDENCE_MISSING`. Lifecycle remains `plan_approved`; not `DONE`; **G2** open.

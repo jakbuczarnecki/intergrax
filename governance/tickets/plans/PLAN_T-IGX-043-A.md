@@ -103,6 +103,7 @@ intergrax/agents/defaults.py
 agents/organization_worker/organization_worker_agent.py
 agents/external_contractor_adapter/external_contractor_adapter_agent.py
 intergrax/agents/authoring/acp_stub_reflex.py
+agents/boundary_demo/boundary_demo_agent.py
 ```
 
 Firm, product-path documents and notebooks (sweep of the explicit-posture keyword, no logic) (12):
@@ -163,6 +164,7 @@ tests/unit/runtime/execution/test_fc1_host_task_routing_posture.py
 tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py
 tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py
 tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py
+tests/unit/agents/test_wa_agent_import_rule.py
 tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py
 ```
 
