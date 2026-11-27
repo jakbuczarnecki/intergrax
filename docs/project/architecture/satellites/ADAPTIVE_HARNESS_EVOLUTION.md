@@ -1,7 +1,7 @@
 # Adaptive Harness Evolution — Architecture
 
 **Revision:** 1.3
-**Document status:** ARCHITECT-DEFINED / INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED / OPERATOR_ACCEPTED
+**Document status:** ARCHITECT-DEFINED / OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02 / W0_CLOSED
 **Parent architecture:** [ADAPTIVE_HARNESS_INTELLIGENCE.md](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Implementation roadmap:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
@@ -20,7 +20,9 @@ Acceptance metadata update only. Normative architecture sections §5.1–§5.31 
 | Historical publication finding | **F-AHE-01** — `HISTORICAL_NONCOMPLIANCE_ACCEPTED_BY_OPERATOR` under **OD-AHE-01**; historical publication compliance for the three specified commits remains **FAIL**; corrective publication evidence SHA `1d0181051fa034b5f45101755002e48f5dc35715` (corrective commit metadata **PASS**). |
 | External program owner acceptance | **PENDING** |
 | Executable behavioral qualification | **NOT_EXECUTED** |
-| Cross-program boundary status | Unchanged: **ARCHITECT_DEFINED / EXTERNAL_OWNER_ACCEPTANCE_PENDING** (§5.18) |
+| Operator decision (ownership boundaries) | **OD-AHE-02** — `APPROVED` (2026-11-27). As operator and authorized owner of the stated domains, I approve the full presented scope of responsibility boundaries, preparation of exact future canonical ADAS register updates, and formal W0 settlement. Does not approve a product implementation ticket. |
+| W0 program closure | **CLOSED** under architect verdict **AHE-G0 ACCEPTED_WITH_HISTORICAL_WAIVER**; settlement operation **AHE-W0-SETTLEMENT-01** reviewed commit `550b258bf8d524d907b7720da41ecac64a6bb1a5`; verification authority ChatGPT architecture review; publication scope two AHE documentation files; normative architecture unchanged relative to `1d0181051fa034b5f45101755002e48f5dc35715`; publication metadata **PASS**; remote reachability **PASS**. |
+| Cross-program boundary status | **ARCHITECT_DEFINED / OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02** (§5.18) |
 
 **Independent auditor final verdict (preserved):** `CONDITIONAL_ARCHITECTURE_QUALIFIED / PROGRAM_G0_NOT_CLOSABLE`
 
@@ -461,9 +463,24 @@ Executable agent scaffolding may be deferred until specifically authorized and r
 - Parallel development is allowed only within the authorized non-conflicting scope.
 - Product admission and production promotion remain separately governed.
 
-**Cross-program boundary status:** ARCHITECT_DEFINED / EXTERNAL_OWNER_ACCEPTANCE_PENDING
+**Cross-program boundary status:** ARCHITECT_DEFINED / OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02
 
-Do not assert that another program has accepted this mapping.
+**OD-AHE-02 approved ownership boundaries (2026-11-27):**
+
+| Domain | Acceptance |
+|---|---|
+| AHI / ADAS | AHE delivers existing canonical ADAS obligations without competing implementation |
+| Integrax Intelligence | Retains consumer wiring, roadmap and program-level acceptance |
+| Scenario Factory | Consumes accepted capabilities through existing platform interfaces |
+| ARCH-FREEZE | No scope expansion and no additional freeze gates |
+| Execution | Retains canonical execution authority |
+| Evaluation | Retains canonical evaluation authority |
+| Memory | Retains trusted experience authority |
+| Governance | Retains admission, approval and promotion authority |
+
+**Acceptance authority:** Operator acting within the explicitly declared ownership authority. This record does not represent separately issued signatures from other individuals.
+
+Do not assert that another program has accepted this mapping beyond the recorded operator boundary acceptance under **OD-AHE-02**.
 
 ## 5.19 Minimum Adaptive Loop — W1
 

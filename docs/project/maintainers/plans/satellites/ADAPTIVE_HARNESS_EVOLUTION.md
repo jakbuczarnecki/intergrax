@@ -1,7 +1,7 @@
 # Adaptive Harness Evolution — Implementation Roadmap
 
 **Revision:** 1.3
-**Status:** ARCHITECT-DEFINED / INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED / OPERATOR_ACCEPTED
+**Status:** ARCHITECT-DEFINED / OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02 / W0_CLOSED
 **Architecture reference:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../../architecture/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
 Execution register and implementation work breakdown remain in this document.
@@ -12,8 +12,8 @@ Execution register and implementation work breakdown remain in this document.
 
 | Item | Status |
 |---|---|
-| Closed waves | 0 |
-| Formally closed packages | 0 |
+| Closed waves | 1 |
+| Formally closed packages | 3 |
 | W1 executable authorization | NOT_AUTHORIZED |
 
 **Cross-program coordination:** Explicit. AHE roadmap dependencies do not themselves authorize changes to other programs.
@@ -23,6 +23,23 @@ Execution register and implementation work breakdown remain in this document.
 | ID | Date | Status | Record |
 |---|---|---|---|
 | OD-AHE-01 | 2026-11-27 | APPROVED | I approve the full scope of the presented operator decision, including the limited historical waiver **F-AHE-01**. Approved scope: (1) AHE architecture revision **1.3**; (2) AHE roadmap revision **1.3**; (3) independent qualification **AHE-W0-IQ-01** within documentation-only scope; (4) historical waiver of **F-AHE-01** for exactly three specified commits; (5) preservation of Git history without rewrite; (6) ADAS remains the canonical runtime implementation owner; (7) existing repository governance and publication rules remain applicable; (8) authorization to prepare **W1-B01** after settlement of remaining G0 requirements. Does not authorize product-code implementation, production authority, external program-owner acceptance replacement, or G6/IIAC certification. |
+| OD-AHE-02 | 2026-11-27 | APPROVED | As operator and authorized owner of the stated domains, I approve the full presented scope of responsibility boundaries, preparation of exact future canonical ADAS register updates, and formal W0 settlement. Authorizes preparation of exact future ADAS register updates only; does not approve a product implementation ticket. |
+| OD-AHE-02 ownership boundaries | 2026-11-27 | RECORDED | See architecture §5.18 and **OD-AHE-02 ownership boundary table** below. Acceptance authority: Operator within declared ownership authority only. |
+
+
+
+## OD-AHE-02 ownership boundary table
+
+| Domain | Acceptance |
+|---|---|
+| AHI / ADAS | AHE delivers existing canonical ADAS obligations without competing implementation |
+| Integrax Intelligence | Retains consumer wiring, roadmap and program-level acceptance |
+| Scenario Factory | Consumes accepted capabilities through existing platform interfaces |
+| ARCH-FREEZE | No scope expansion and no additional freeze gates |
+| Execution | Retains canonical execution authority |
+| Evaluation | Retains canonical evaluation authority |
+| Memory | Retains trusted experience authority |
+| Governance | Retains admission, approval and promotion authority |
 
 ## Independent documentation qualification — AHE-W0-IQ-01
 
@@ -133,7 +150,7 @@ Constraints:
 
 | Gate | Requirement | Status |
 |---|---|---|
-| AHE-G0 | Architecture and roadmap acceptance; operator settlement; independent documentation qualification; historical publication waiver | PENDING_FINAL_SETTLEMENT |
+| AHE-G0 | Architecture and roadmap acceptance; operator settlement; independent documentation qualification; historical publication waiver | ACCEPTED_WITH_HISTORICAL_WAIVER |
 | AHE-G1 | Exact W1 implementation contract, approved ticket and scope authorization | PENDING |
 | AHE-G2 | Executable bounded LAB adaptive loop | PLANNED |
 | AHE-G3 | Propose–Probe–Compose and selection qualification | PLANNED |
@@ -154,7 +171,7 @@ These are AHE program milestone names, not substitutes for DevOS G0–G6, IIAC, 
 | Operator acceptance | APPROVED |
 | Historical publication finding F-AHE-01 | WAIVED |
 | External owner acceptance | PENDING |
-| Settlement publication | PENDING_INDEPENDENT_VERIFICATION |
+| Settlement publication | VERIFIED (AHE-W0-SETTLEMENT-01 @ `550b258bf8d524d907b7720da41ecac64a6bb1a5`) |
 
 ### AHE-G1 outstanding requirements
 
@@ -174,14 +191,15 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 | Package | Implementation | Review / acceptance | Notes |
 |---|---|---|---|
-| AHE-W0-01 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (historical publication compliance FAIL; not retroactively relabeled). |
-| AHE-W0-02 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01; External owner acceptance: PENDING | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772` (historical publication compliance FAIL; not retroactively relabeled). |
-| AHE-W0-03 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Corrective compatibility status: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. Corrective operation **AHE-W0-03-C01** (not a new roadmap package): corrective publication SHA `1d0181051fa034b5f45101755002e48f5dc35715`; corrective commit metadata PASS. |
-| W1–W8 | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
-| AHE-G0 | PENDING_FINAL_SETTLEMENT | — | — |
-| AHE-G1 | PENDING | — | — |
+| AHE-W0-01 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (historical publication compliance FAIL; not retroactively relabeled). |
+| AHE-W0-02 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01; Cross-program boundaries: OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02 | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772` (historical publication compliance FAIL; not retroactively relabeled). |
+| AHE-W0-03 | CLOSED | Architecture acceptance: ACCEPTED_SCOPED; Corrective compatibility status: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. Corrective operation **AHE-W0-03-C01** (not a new roadmap package): corrective publication SHA `1d0181051fa034b5f45101755002e48f5dc35715`; corrective commit metadata PASS. |
+| AHE-W1-01 (W1-B01) | PREPARATION / PENDING_TICKET_APPROVAL | Canonical ticket: `governance/tickets/T-IGX-093-A.md`; canonical plan: `governance/tickets/plans/PLAN_T-IGX-093-A.md`; lifecycle: `plan_pending` | Roadmap package **AHE-W1-01**; executable authorization **NOT_AUTHORIZED** until ticket approval and external implementation authorization. |
+| W1–W8 (other) | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
+| AHE-G0 | ACCEPTED_WITH_HISTORICAL_WAIVER | W0 closed under OD-AHE-02 | — |
+| AHE-G1 | PENDING | Approved ticket and scope authorization required | — |
 
-**Closed waves:** 0. **Formally closed packages:** 0.
+**Closed waves:** 1 (W0). **Formally closed packages:** 3 (AHE-W0-01, AHE-W0-02, AHE-W0-03). **W0:** CLOSED.
 
 ## Process findings register
 
@@ -206,7 +224,7 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | AHE-W0-02 | Canonical ownership and baseline reconciliation | Exact-SHA reuse mapping and cross-program boundary acceptance |
 | AHE-W0-03 | W1 implementation contract | Concrete authorized write set, dependencies, tests and acceptance criteria |
 
-**W0 settlement (AHE-W0-SETTLEMENT-01):** documentation acceptance metadata recorded; G0 remains **PENDING_FINAL_SETTLEMENT** until settlement publication independent verification.
+**W0 settlement (AHE-W0-SETTLEMENT-01):** independent publication verification recorded; architect verdict **AHE-G0 ACCEPTED_WITH_HISTORICAL_WAIVER**; **W0: CLOSED**; packages **AHE-W0-01**, **AHE-W0-02**, **AHE-W0-03**: **CLOSED**.
 
 **W0 exit:** accepted architecture, roadmap and implementation boundaries (pending final G0 settlement closure).
 
@@ -229,6 +247,12 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 These batches define **PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED** for W1. They are not present execution authority until AHE-G0, AHE-G1 and applicable governance requirements are satisfied.
 
 ### W1-B01 — Candidate contracts and archive
+
+**Implementation status:** PREPARATION / PENDING_TICKET_APPROVAL
+
+**Canonical DevOS ticket:** [`T-IGX-093-A`](../../../../governance/tickets/T-IGX-093-A.md)
+
+**Canonical implementation plan:** [`PLAN_T-IGX-093-A`](../../../../governance/tickets/plans/PLAN_T-IGX-093-A.md) (`plan_pending`; operator approval pending)
 
 **Roadmap package:** AHE-W1-01
 
