@@ -25,14 +25,9 @@ from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_f
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
-from intergrax.runtime.execution.agent_in_memory_session_factory import (
-    build_in_memory_session_manager,
-)
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.execution.lab_reference_agent_runtime import (
-    build_lab_agent_runtime_config,
-)
+from intergrax.runtime.execution.lab_reference_agent_runtime import build_lab_agent_runtime_context
 
 from boundary_demo.capabilities import CAPABILITY
 from boundary_demo.contract import build_agent_contract
@@ -82,20 +77,14 @@ class BoundaryDemoAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="unsupported capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = build_lab_agent_runtime_config(
+        return build_lab_agent_runtime_context(
             request=request,
             llm_adapter=PrefixStubLLMAdapter(prefix="boundary-demo"),
             harness=self._harness,
             enable_rag=False,
             enable_websearch=False,
-        )
-        if self._execution_boundary_export is not None:
-            config.execution_boundary_export = self._execution_boundary_export
-        if self._boundary_event_buffer is not None:
-            config.boundary_event_buffer = self._boundary_event_buffer
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
+            execution_boundary_export=self._execution_boundary_export,
+            boundary_event_buffer=self._boundary_event_buffer,
         )
 
     def get_steps(self, context: RuntimeExecutionContext) -> list[AgentStep]:

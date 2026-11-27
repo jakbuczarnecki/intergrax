@@ -10,18 +10,20 @@ from typing import cast
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.governance.service import GovernanceService
-from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
+from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.governance.service import GovernanceService
+from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,
     default_lab_capability_grants,
 )
+from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 
 
@@ -62,9 +64,8 @@ def build_lab_agent_runtime_context_from_merged(
             GovernanceService,
             create_lab_allow_governance_service(),
         )
-    return RuntimeContext.build(
-        config=config,
-        session_manager=SessionManager(storage=InMemorySessionStorage()),
+    return materialize_agent_runtime_context(
+        config,
         governance_service=governance,
     )
 
@@ -101,6 +102,40 @@ def build_lab_agent_runtime_config(
     return config
 
 
+def materialize_agent_runtime_context(
+    config: RuntimeConfig,
+    *,
+    session_manager: SessionManager | None = None,
+    governance_service: GovernanceService | None = None,
+) -> RuntimeContext:
+    """Nexus-owned ``RuntimeContext`` materialization (Tier-2 agents delegate here)."""
+    manager = session_manager or SessionManager(storage=InMemorySessionStorage())
+    return RuntimeContext.build(
+        config=config,
+        session_manager=manager,
+        governance_service=governance_service,
+    )
+
+
+def build_stub_agent_runtime_context(
+    request: RuntimeRequest,
+    llm_adapter: LLMAdapter,
+    *,
+    enable_rag: bool = False,
+    enable_websearch: bool = False,
+    production_mode: bool = False,
+) -> RuntimeContext:
+    """Reference-stub runtime context; ``production_mode`` is the host posture (default: lab/stub)."""
+    config = RuntimeConfig(
+        llm_adapter=llm_adapter,
+        enable_rag=enable_rag,
+        enable_websearch=enable_websearch,
+        production_mode=production_mode,
+        tenant_id=request.tenant_id,
+    )
+    return materialize_agent_runtime_context(config)
+
+
 def build_lab_agent_runtime_context(
     *,
     request: RuntimeRequest,
@@ -108,6 +143,8 @@ def build_lab_agent_runtime_context(
     harness: LabHarnessContext,
     enable_rag: bool = False,
     enable_websearch: bool = False,
+    execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None,
+    boundary_event_buffer: BoundaryEventBuffer | None = None,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` for reference agents with policy and strict governance."""
     config = build_lab_agent_runtime_config(
@@ -117,15 +154,18 @@ def build_lab_agent_runtime_context(
         enable_rag=enable_rag,
         enable_websearch=enable_websearch,
     )
+    if execution_boundary_export is not None:
+        config.execution_boundary_export = execution_boundary_export
+    if boundary_event_buffer is not None:
+        config.boundary_event_buffer = boundary_event_buffer
     governance: GovernanceService | None = None
     if harness.strict_harness:
         governance = cast(
             GovernanceService,
             create_lab_allow_governance_service(),
         )
-    return RuntimeContext.build(
-        config=config,
-        session_manager=SessionManager(storage=InMemorySessionStorage()),
+    return materialize_agent_runtime_context(
+        config,
         governance_service=governance,
     )
 

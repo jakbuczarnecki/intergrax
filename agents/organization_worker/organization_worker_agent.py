@@ -33,12 +33,9 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.runtime.execution.agent_in_memory_session_factory import (
-    build_in_memory_session_manager,
-)
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.lab_reference_agent_runtime import build_stub_agent_runtime_context
 
 
 class _StubLLMAdapter(BaseLLMAdapter):
@@ -109,15 +106,11 @@ class OrganizationWorkerAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=_StubLLMAdapter(fixed_text="vendor report draft"),
+        return build_stub_agent_runtime_context(
+            request,
+            _StubLLMAdapter(fixed_text="vendor report draft"),
             enable_rag=False,
             production_mode=self._production_mode,
-            tenant_id=request.tenant_id,
-        )
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
         )
 
     async def perceive(self, step_ctx: AgentStepContext):

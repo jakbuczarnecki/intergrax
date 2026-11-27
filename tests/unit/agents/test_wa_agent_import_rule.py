@@ -69,18 +69,30 @@ def _imported_modules(tree: ast.AST) -> list[tuple[int, str]]:
 
 
 def test_wa_13_agents_tree_uses_only_integration_contract_leaves() -> None:
-    violations: list[str] = []
+    from tests.unit.architecture.test_rw_bnd05_runtime_context_construction import (
+        scan_runtime_context_construction,
+    )
+
+    import_violations: list[str] = []
     for path in _production_agent_files():
         rel = path.relative_to(_REPO).as_posix()
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=rel)
         for line, module in _imported_modules(tree):
             if module.startswith(_FORBIDDEN_PREFIXES):
-                violations.append(f"{rel}:{line} -> {module}")
+                import_violations.append(f"{rel}:{line} -> {module}")
             elif module.startswith("intergrax.integrations") and not (
                 module == _CONTRACT_LEAF_PREFIX or module.startswith(_CONTRACT_LEAF_PREFIX + ".")
             ):
-                violations.append(f"{rel}:{line} -> {module}")
-    assert violations == []
+                import_violations.append(f"{rel}:{line} -> {module}")
+    assert import_violations == []
+
+    construction_violations: list[str] = []
+    for path in _production_agent_files():
+        rel = path.relative_to(_REPO).as_posix()
+        source = path.read_text(encoding="utf-8-sig")
+        for violation in scan_runtime_context_construction(rel, source):
+            construction_violations.append(f"{rel}:{violation.line}: {violation.reason}")
+    assert construction_violations == []
 
 
 def test_wa_14_qualifier_agents_read_no_environment() -> None:

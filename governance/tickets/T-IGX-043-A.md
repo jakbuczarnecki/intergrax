@@ -19,7 +19,7 @@ No PASS, closure, FRZ promotion, stage certification or independent verification
 
 ## Plan digest
 
-Plan digest: f9c0b109c357239d80fc9516acdbd20cbcea9872b17c4b43d356e6669f5e1147
+Plan digest: 4f89b891098e2ed0513f0724f5f5a461468546c19ec387ff837018b0e8edf093
 
 Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-A.md` (drafted at `.tmp/session/arch-freeze/w3-packet-2/043-A/PLAN_T-IGX-043-A.md`). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -77,3 +77,19 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-PLG-05 | NT-PLG-05-1 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+### AF-W3-PT-FC1-01 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-01`. Authorization: **OD-AF-W3-FC1-01 variant A**; canonical ticket T-IGX-043-A; DECISION_ID OD-AF-W3-FC1-01.
+
+| Obligation | Verdict |
+|---|---|
+| TASK-04 governance (register, plan §19, digest, `build_rw_plan.py`) | **DELIVERED** (plan digest `4f89b891…edf093`) |
+| TASK-06 four `RuntimeContext.build` sites | **GREEN** — Tier-1 `materialize_agent_runtime_context` / `build_stub_agent_runtime_context` / `build_lab_agent_runtime_context` |
+| TASK-08 `test_wa_13` | **GREEN** — DP-14 import scan + BND-05 construction scan on `agents/**` |
+| FRZ-BND-05 (`test_scan_flags_a_rogue_agent`) | **GREEN at HEAD**; canonical test blob `06412ff4…` unchanged; **RED_AT_PREFIX promotion not claimed** (historical prefix replay not re-run in this session) |
+| FRZ-EXE-02 (NT-EXE-02-1) | **GREEN at HEAD** on amended `test_wa_13`; **RED_AT_PREFIX promotion not claimed** |
+| FRZ-PLG-05 (`test_sup_06a_altered_installed_file_refused`) | **GREEN at HEAD**; **RED_AT_PREFIX promotion not claimed** |
+| FC2 `app_name` / WB RED / batched qualification / full SHA proofs | **Not re-executed in this slice** (FC2 settled per T-IGX-043-B checkpoint; WB pre-fix RED preserved) |
+
+**OP_B_PENDING:** remains **12** until three mechanism-aligned `RED_AT_PREFIX` GA2R records are delivered per OD-AF-CLOSE-B6.

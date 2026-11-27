@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T13:11:33.724607+00:00",
-  "execution_sha": "550b258bf8d524d907b7720da41ecac64a6bb1a5",
+  "generated_at": "2026-11-27T14:40:41.866916+00:00",
+  "execution_sha": "77774cbd5daa66d599e9ab9ef8d98d5ed70f4f86",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "274b823b19e8229f33e8824bd5c60855da3e2ccf74d89ff5e7e9b120cdc5f3a1",
+  "bindings_sha256": "e94a36efcf869dc572d136624aff2fb147efd62125fdce4ee20df98c9e7c7280",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -777,7 +777,7 @@
         {
           "nt_id": "NT-EXE-02-1",
           "node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
-          "mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate.",
+          "mechanism": "DP-14 import-boundary scan plus Tier-2 RuntimeContext construction scan on agents/** (NT-EXE-02-1; OD-AF-W3-FC1-01).",
           "owner_ticket": "T-IGX-043-A",
           "file_state_at_pin": "exists",
           "function_state_at_pin": "exists"
@@ -822,7 +822,7 @@
       "operator_decision_id": "OD-AF-CLOSE-B2",
       "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
       "evidence_negative_test": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
-      "evidence_mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate.",
+      "evidence_mechanism": "DP-14 import-boundary scan plus Tier-2 RuntimeContext construction scan on agents/** (NT-EXE-02-1; OD-AF-W3-FC1-01).",
       "evidence_certification_obligation": "The owner ticket must record the negative node red at its pre-fix SHA and green after the fix before certification."
     },
     {

@@ -476,3 +476,14 @@ Any other fail-closed selector (A4-017/019/026/030/032/035/036, A4-002), seam re
 | 8 | Part C2 | not a path (nexus_loop.py is firm) | cond (probe V6) | firm (RW-PLAN rows D-01 and A4-031: V6 CONFIRMED); NT-FC1-25 firm |
 | 9 | File column of NT rows | NT-ROW-021 names `test_fc1_nexus_loop_persistence_posture.py` for NT-FC1-20..23 and 26; NT-ROW-140 names `test_fc1_host_task_routing_posture.py` for NT-FC1-05, 06, 12 and 24; NT-ROW-143 names `test_fc1_harness_strict_persistence_wiring.py` for NT-FC1-16..19 | NT-FC1-20..22 and 26 and NT-FC1-24 in `test_fc1_harness_strict_persistence_wiring.py`; NT-FC1-05/06 in `test_fc1_agent_router_posture_and_fallback.py`; NT-FC1-12 in the construction gate file; NT-FC1-16..18 in `test_fc1_nexus_loop_persistence_posture.py` | placement of the first version kept: the test ids and the set of six files are the same; only the file column of RW-PLAN section d differs, to be corrected there |
 | 10 | Counts (firm product / firm total / conditional) | 30 / 143 / 14 | 30 firm product, up to 21 conditional product (and 7 conditional tests, 14 in A1's reading) | 35 / 148 / 24 (conditional: 17 product paths and 7 test paths); the lists in section 4 are the parsed source of these numbers |
+
+## 19. Operator amendment OD-AF-W3-FC1-01 variant A (2026-11-27)
+
+Binding decision **OD-AF-W3-FC1-01 variant A** (`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`). Serialization **PT-WA → PT-FC1** unchanged; **T-IGX-043-G** retained co-authority on the shared import-rule test file.
+
+| Item | Effect |
+|---|---|
+| Part C1 product (firm) | add `agents/boundary_demo/boundary_demo_agent.py`; remediate unauthorized `RuntimeContext` construction in all four censused Tier-2 sites via Tier-1 `lab_reference_agent_runtime` materialization (posture ownership on 043-A unchanged) |
+| FRZ-EXE-02 (NT-EXE-02-1) | extend `tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves` with the Tier-2 `RuntimeContext` construction scan from the BND-05 detector; keep all DP-14 import-boundary assertions |
+| Merge order | `test_rw_bnd05_runtime_context_construction.py` remains **H → A** with posture tests on 043-A; construction gate authorship on 043-H |
+| Out of scope | FRZ owner changes; gate weakening; LAB substitution for STRICT/PRODUCT authority |

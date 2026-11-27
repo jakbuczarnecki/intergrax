@@ -386,7 +386,7 @@
         {
           "nt_id": "NT-EXE-02-1",
           "node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
-          "mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate.",
+          "mechanism": "DP-14 import-boundary scan plus Tier-2 RuntimeContext construction scan on agents/** (NT-EXE-02-1; OD-AF-W3-FC1-01).",
           "owner_ticket": "T-IGX-043-A"
         },
         {
@@ -2562,7 +2562,7 @@
       "FRZ-EXE-02": {
         "owner_ticket": "T-IGX-043-A",
         "negative_test_node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
-        "mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate."
+        "mechanism": "DP-14 import-boundary scan plus Tier-2 RuntimeContext construction scan on agents/** (NT-EXE-02-1; OD-AF-W3-FC1-01)."
       },
       "FRZ-PLG-05": {
         "owner_ticket": "T-IGX-043-A",

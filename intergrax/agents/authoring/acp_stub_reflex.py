@@ -11,13 +11,6 @@ from intergrax.agents.authoring.patterns.types import (
     ReasoningResult,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.execution.agent_in_memory_session_factory import (
-    build_in_memory_session_manager,
-)
-from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
-from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def perceive_run_input(step_ctx: AgentStepContext, agent: object) -> Observation:
@@ -47,26 +40,6 @@ def prefixed_act_output(
     message = (reasoning.thought or "").strip()
     answer = f"{prefix}: {message}"
     return {"summary": answer, "answer": answer, "run_id": step_ctx.run_id}
-
-
-def build_agent_runtime_context(
-    request: RuntimeRequest,
-    llm_adapter: LLMAdapter,
-    *,
-    enable_rag: bool = False,
-    enable_websearch: bool = False,
-    production_mode: bool = False,
-) -> RuntimeContext:
-    """Reference-stub runtime context; ``production_mode`` is the host posture (default: lab/stub)."""
-    config = RuntimeConfig(
-        llm_adapter=llm_adapter,
-        enable_rag=enable_rag,
-        enable_websearch=enable_websearch,
-        production_mode=production_mode,
-        tenant_id=request.tenant_id,
-    )
-    session_manager = build_in_memory_session_manager()
-    return RuntimeContext.build(config=config, session_manager=session_manager)
 
 
 def summary_act_output(step_ctx: AgentStepContext, reasoning: ReasoningResult) -> dict[str, object]:

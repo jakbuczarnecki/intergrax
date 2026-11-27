@@ -21,12 +21,9 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.execution.agent_in_memory_session_factory import (
-    build_in_memory_session_manager,
-)
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.lab_reference_agent_runtime import build_stub_agent_runtime_context
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -102,14 +99,12 @@ class ExternalContractorAdapterAgent(ReflexAgent):
         # Posture comes from the host: the STRICT governed-contractor host injects
         # ``require_sanctioned_external_work_mutations=True`` (constructor or
         # ``inject_sanctioned_external_work_host_dependencies``); a bare lab instance stays relaxed.
-        config = RuntimeConfig(
-            llm_adapter=_ExternalContractorAdapterStubLLM(),
+        return build_stub_agent_runtime_context(
+            request,
+            _ExternalContractorAdapterStubLLM(),
             enable_rag=False,
             production_mode=self._require_sanctioned_external_work_mutations,
-            tenant_id=request.tenant_id,
         )
-        session_manager = build_in_memory_session_manager()
-        return RuntimeContext.build(config=config, session_manager=session_manager)
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         has_integration = self._external_work is not None
