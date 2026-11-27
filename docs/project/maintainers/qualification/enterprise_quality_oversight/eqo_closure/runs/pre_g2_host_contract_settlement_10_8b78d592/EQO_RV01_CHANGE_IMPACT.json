@@ -1,0 +1,8 @@
+{
+  "d4_witness": "STILL_VALID",
+  "dur_02_r4": "REPLAYED_PASS",
+  "from_ec_w3_08_09": "REPLAY_REQUIRED",
+  "gca_smoke": "REPLAYED_FAIL_STRICT_AUTHORITY",
+  "p2c": "REPLAYED_FAIL",
+  "q09_cli_host": "REPLAYED_29_OF_30"
+}

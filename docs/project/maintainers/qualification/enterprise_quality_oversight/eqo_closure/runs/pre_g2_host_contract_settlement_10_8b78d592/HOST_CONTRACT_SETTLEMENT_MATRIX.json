@@ -1,0 +1,21 @@
+{
+  "package_a_catalog_composition": {
+    "dur_02_r4": "PASS",
+    "p2c_catalog_isolation": "APPLIED",
+    "status": "IMPLEMENTED"
+  },
+  "package_b_p2c_sandbox": {
+    "module_pass": "1/7",
+    "sandbox_root_per_test": true,
+    "status": "PARTIAL"
+  },
+  "package_c_receipt_v2_consumer": {
+    "offline_demo_verifier": "verify_execution_evidence_proof_receipt",
+    "status": "IMPLEMENTED"
+  },
+  "package_d_strict_smoke": {
+    "positive_smoke_tests_red": 3,
+    "residual": "StrictAgentContractAuthorityError",
+    "status": "OPEN_GCA_STRICT_SMOKE_ACTIVATION_MIGRATION"
+  }
+}

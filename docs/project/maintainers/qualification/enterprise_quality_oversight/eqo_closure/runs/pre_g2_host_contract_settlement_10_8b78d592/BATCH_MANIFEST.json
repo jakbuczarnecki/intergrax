@@ -1,0 +1,40 @@
+{
+  "batches": [
+    {
+      "command": "uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "exit_code": 0,
+      "failed": 0,
+      "id": "pkg_a_composition",
+      "passed": 7
+    },
+    {
+      "command": "uv run pytest (dur_02,r4,smoke,p2c module)",
+      "exit_code": 1,
+      "failed": 9,
+      "id": "pkg_abcd_combined",
+      "passed": 8
+    },
+    {
+      "command": "uv run pytest test_cli_verification_hardening.py test_p3_r1_r1... test_gr7_a2...",
+      "exit_code": 1,
+      "failed": 1,
+      "failure_node": "test_signer_failure_recovery_fresh_process",
+      "id": "pkg_c_q09",
+      "passed": 29
+    },
+    {
+      "command": "uv run pytest test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "exit_code": 0,
+      "failed": 0,
+      "id": "pkg_d4_witness",
+      "passed": 23
+    },
+    {
+      "command": "uv run pytest test_trace_x_p3_r1_governed_boundary_v2.py",
+      "exit_code": 0,
+      "id": "trace_x_p3_r1",
+      "passed": 36,
+      "skipped": 2
+    }
+  ]
+}

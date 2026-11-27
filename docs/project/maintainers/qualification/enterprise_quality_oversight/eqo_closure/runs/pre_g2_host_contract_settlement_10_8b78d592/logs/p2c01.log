@@ -1,0 +1,43 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0
+cachedir: build\pytest\44104-b76dd49a\pytest-cache
+rootdir: D:\Projekty\intergrax
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collected 1 item
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py F
+
+================================== FAILURES ===================================
+_______________ test_p2c_01_positive_http_admission_continuity ________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:358: in test_p2c_01_positive_http_admission_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:346: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:641: in build_harness_host_runtime
+    orchestration = materialize_host_orchestration_backend(
+intergrax\runtime\execution\environment_orchestration_materialization.py:62: in materialize_host_orchestration_backend
+    backend = NexusLoop(
+intergrax\runtime\nexus\nexus_loop.py:365: in __init__
+    raise ProductionContextCompositionError(
+E   intergrax.runtime.nexus.nexus_loop.ProductionContextCompositionError: production_mode requires a context manager with a context engine and an LLM adapter.
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+============================== warnings summary ===============================
+intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166
+  D:\Projekty\intergrax\intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 1 failed, 1 warning in 21.71s ========================

@@ -1,0 +1,7 @@
+{
+  "platform": "win32",
+  "pytest": "8.4.2",
+  "python": "3.12.11",
+  "runner": "uv",
+  "uv_path": "C:\\Users\\XPS\\.local\\bin\\uv.exe"
+}

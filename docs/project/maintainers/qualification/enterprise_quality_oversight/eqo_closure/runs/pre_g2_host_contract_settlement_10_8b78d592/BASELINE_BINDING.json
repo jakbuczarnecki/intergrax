@@ -1,0 +1,9 @@
+{
+  "ancestry_verified": true,
+  "candidate_source_sha": "8b78d592e85c5c53036aeeadc4ee1957797251de",
+  "candidate_tree_sha": "192be7b15e032e587ae41b46c6ce73ba957dbe19",
+  "previous_integrated_parent_sha": "7b7ec4488c504f1c90dba599d5742197dbbf0c1e",
+  "reference_ancestor_sha": "79e978feb280614e35daf2c8f09d83c9634ed348",
+  "reference_tree_sha": "b08c1876519618a43915e29f22808982f115198c",
+  "task_start_remote_sha": "79e978feb280614e35daf2c8f09d83c9634ed348"
+}

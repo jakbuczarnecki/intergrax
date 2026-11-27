@@ -1,0 +1,6 @@
+{
+  "assignment": "OPEN_ARCH_FREEZE_OWNER_HANDOFF deferred \u2014 gate green on witness",
+  "disposition": "PASS_AT_HEAD",
+  "gate": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent",
+  "owner_ticket": "T-IGX-043-H"
+}
