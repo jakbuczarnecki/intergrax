@@ -1,0 +1,81 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\40528-24c99a18\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 32 items
+
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q01_concern_inventory_closed_world PASSED [  3%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q02_concern_inventory_matches_integration_categories PASSED [  6%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q03_composition_roots_discovered_subset_of_production_tree PASSED [  9%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q04_blocker_paths_exist_on_disk PASSED [ 12%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q05_historical_blocker_evidence_parity PASSED [ 15%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q05b_active_blocker_discovery_empty PASSED [ 18%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q06_owner_discovery_integration_provider_selection PASSED [ 21%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q07_owner_discovery_llm_provider_selection PASSED [ 25%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q08_owner_discovery_execution_bound_integration PASSED [ 28%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q09_owner_discovery_existing_capability_realization PASSED [ 31%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q10_owner_discovery_plugin_catalog PASSED [ 34%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q11_owner_matrix_covers_mandatory_concerns PASSED [ 37%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q12_classification_sensitivity_synthetic_unclassified_fails_closed PASSED [ 40%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q13_inventory_reload_stable PASSED [ 43%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q14_historical_blocker_inventory_documented PASSED [ 46%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q15_active_blocker_exit_counts_zero PASSED [ 50%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q16_mechanical_concern_classification_covers_inventory PASSED [ 53%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q17_active_blockers_derived_not_declared_empty PASSED [ 56%]
+tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q18_frz_cfg_05_semantic_selection_gate PASSED [ 59%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_a_missing_required_integration_config_fails_closed PASSED [ 62%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_b_invalid_provider_slug_rejected PASSED [ 65%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_c_unsupported_backend_category_mismatch PASSED [ 68%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_d_registered_llm_provider_unconfigured_not_effective PASSED [ 71%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_e_configured_integration_slug_materializes PASSED [ 75%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_f_configuration_change_does_not_imply_resolver_owner_change PASSED [ 78%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards PASSED [ 81%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_h_duplicate_configuration_authority_synthetic_probe_fails PASSED [ 84%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_observability_missing_config_raises PASSED [ 87%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_tokenizer_missing_registration_fails_closed PASSED [ 90%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_d_tokenizer_registered_without_explicit_default_not_effective PASSED [ 93%]
+tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_observability_role_missing_sanctioned_backend_fails_closed PASSED [ 96%]
+tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed PASSED [100%]
+
+=================================== PASSES ====================================
+_________________ test_cx_q01_concern_inventory_closed_world __________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q01_concern_inventory_closed_world
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q02_concern_inventory_matches_integration_categories
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q03_composition_roots_discovered_subset_of_production_tree
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q04_blocker_paths_exist_on_disk
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q05_historical_blocker_evidence_parity
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q05b_active_blocker_discovery_empty
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q06_owner_discovery_integration_provider_selection
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q07_owner_discovery_llm_provider_selection
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q08_owner_discovery_execution_bound_integration
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q09_owner_discovery_existing_capability_realization
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q10_owner_discovery_plugin_catalog
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q11_owner_matrix_covers_mandatory_concerns
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q12_classification_sensitivity_synthetic_unclassified_fails_closed
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q13_inventory_reload_stable
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q14_historical_blocker_inventory_documented
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q15_active_blocker_exit_counts_zero
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q16_mechanical_concern_classification_covers_inventory
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q17_active_blockers_derived_not_declared_empty
+PASSED tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q18_frz_cfg_05_semantic_selection_gate
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_a_missing_required_integration_config_fails_closed
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_b_invalid_provider_slug_rejected
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_c_unsupported_backend_category_mismatch
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_d_registered_llm_provider_unconfigured_not_effective
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_e_configured_integration_slug_materializes
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_f_configuration_change_does_not_imply_resolver_owner_change
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_h_duplicate_configuration_authority_synthetic_probe_fails
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_observability_missing_config_raises
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_tokenizer_missing_registration_fails_closed
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_d_tokenizer_registered_without_explicit_default_not_effective
+PASSED tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_observability_role_missing_sanctioned_backend_fails_closed
+PASSED tests/unit/llm_adapters/test_ollama_tool_calling.py::test_unresolved_capabilities_fail_closed
+======================= 32 passed in 106.82s (0:01:46) ========================

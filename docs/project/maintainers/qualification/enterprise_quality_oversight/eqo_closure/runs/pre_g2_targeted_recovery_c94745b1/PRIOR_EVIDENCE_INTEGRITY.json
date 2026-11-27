@@ -1,0 +1,19 @@
+{
+  "schema": "eqo.prior_evidence_integrity.v1",
+  "prior_evidence_publication_sha": "16752778ce3f01cd71ee6d849e071c350f134bc9",
+  "declared_artifact_count": 41,
+  "verified_match_count": 40,
+  "digest_mismatch_count": 1,
+  "mismatches": [
+    {
+      "path": "runs/wb06/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+      "expected": "15a0855e825817d3a3f55ea18275d9ee683c21f82389ba76e81e209ef6b49267",
+      "actual": "aa1e5e953518b8226fdb6935df27c690ee7ac8e4c3714b6c7263bb31d8f2b256"
+    }
+  ],
+  "omitted_from_prior_digest_inventory": {
+    "runs/pre_g2_batch_786088a9/BATCH_SETTLEMENT.md": "5c473657d3d93e316dc14a19589559bb2fb7f916a7c253d1acfa194554518d77",
+    "runs/pre_g2_batch_786088a9/AF_CLOSE_HANDOFF.md": "628d81bda1568e2639d0b168610b6f54ff6d949fef1f652b3454c2c8fadc58c6"
+  },
+  "recorded_utc": "2026-11-27T09:05:42Z"
+}

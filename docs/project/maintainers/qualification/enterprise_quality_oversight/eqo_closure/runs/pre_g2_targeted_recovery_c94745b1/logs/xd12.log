@@ -1,0 +1,60 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\28400-b3a0892c\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 1 item
+
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check FAILED [100%]
+
+================================== FAILURES ===================================
+______ test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check ______
+
+checks = (ManifestCheck(check_id='ENT-A-BND-01', entrypoint_kind='pytest_nodeid', entrypoint='tests/unit/runtime/architecture/t...y.ARCHITECTURE: 'architecture'>, pg_id='PG-003b', depends_on=frozenset(), fast_mandatory=False, schema_version=1), ...)
+pdc_changed = frozenset({'.agents/README.md', '.agents/agents/igx-architect.md', '.agents/agents/igx-implementer.md', '.agents/agents/igx-researcher.md', '.agents/agents/igx-reviewer.md', '.agents/agents/igx-tester.md', ...})
+
+    def test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check(
+        checks,
+        pdc_changed: frozenset[str],  # type: ignore[no-untyped-def]
+    ) -> None:
+        prefixes = load_default_impact_map()
+        unmapped = [
+            path
+            for path in _product_modules(pdc_changed)
+            if not check_ids_for_changed_path(path, prefixes)
+            and not any(_check_touched(c, frozenset({path})) for c in checks)
+        ]
+>       assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E       AssertionError: 3 PDC-touched product modules map to no check, e.g. ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py']
+E       assert ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py'] == []
+E         
+E         Left contains 3 more items, first extra item: 'intergrax/prompts/registry/pin_config.py'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'intergrax/prompts/registry/pin_config.py',
+E         +     'intergrax/prompts/registry/yaml_registry.py',
+E         +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+E         + ]
+
+tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check - AssertionError: 3 PDC-touched product modules map to no check, e.g. ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py']
+assert ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py'] == []
+  
+  Left contains 3 more items, first extra item: 'intergrax/prompts/registry/pin_config.py'
+  
+  Full diff:
+  - []
+  + [
+  +     'intergrax/prompts/registry/pin_config.py',
+  +     'intergrax/prompts/registry/yaml_registry.py',
+  +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+  + ]
+============================== 1 failed in 0.90s ==============================

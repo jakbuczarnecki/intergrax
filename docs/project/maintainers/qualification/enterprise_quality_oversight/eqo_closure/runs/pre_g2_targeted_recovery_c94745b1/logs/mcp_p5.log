@@ -1,0 +1,157 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\53108-2474fd2f\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 1 item
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes FAILED [100%]
+
+================================== FAILURES ===================================
+_______________ test_mcp_server_x_p5_consolidated_batch_passes ________________
+
+    def test_mcp_server_x_p5_consolidated_batch_passes() -> None:
+        for target in MCP_SERVER_X_P5_SELECTION_BATCH:
+            exit_code = pytest.main(
+                [
+                    f"--confcutdir={_CONFCUTDIR}",
+                    str(_REPO_ROOT / target),
+                    "-q",
+                    "--tb=short",
+                ],
+            )
+>           assert exit_code == 0, f"P5 target failed: {target} (exit={exit_code})"
+E           AssertionError: P5 target failed: tests/unit/applications/test_mcp_server_p4_lifecycle.py (exit=1)
+E           assert <ExitCode.TESTS_FAILED: 1> == 0
+
+tests\qualification\mcp_server_x\test_mcp_server_x_p5_qualification_batch.py:28: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+---------------------------- Captured stdout call -----------------------------
+...........                                                              [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_forged_tenant_before_execution
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_invalid_api_key
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_isolates_concurrent_principal_tenants
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 7 warnings in 5.40s
+......                                                                   [100%]
+6 passed in 0.50s
+..................                                                       [100%]
+============================== warnings summary ===============================
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py::test_cancel_a_l3_streamable_http_run_agent_with_task_control_boundary
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py::test_cancel_a_l3_physical_http_client_abandon_admits_governed_cancel
+tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py::test_own_a2_protected_http_missing_supervision_fail_closed_before_execution
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+18 passed, 3 warnings in 18.79s
+........................                                                 [100%]
+24 passed in 1.05s
+.......                                                                  [100%]
+7 passed in 0.22s
+.................                                                        [100%]
+17 passed in 0.73s
+.                                                                        [100%]
+1 passed in 0.16s
+.....                                                                    [100%]
+5 passed in 0.19s
+.........                                                                [100%]
+9 passed in 0.35s
+....F                                                                    [100%]
+================================== FAILURES ===================================
+_____________ test_lab_application_omits_mcp_mount_when_disabled ______________
+tests\unit\applications\test_mcp_server_p4_lifecycle.py:112: in test_lab_application_omits_mcp_mount_when_disabled
+    app = create_lab_application(settings=settings)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+applications\lab_application\host\factory.py:110: in create_lab_application
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:541: in wire_application_environment
+    policy_bundle = merge_skill_policy_fragments(
+intergrax\applications\_shared\skill_bridge_wiring.py:154: in merge_skill_policy_fragments
+    payload = host_policy_fragment_payload(bundle, fragment_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\skills\instruction_policy_pins.py:143: in host_policy_fragment_payload
+    raise SkillBridgeCompositionError(
+E   intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+=========================== short test summary info ===========================
+FAILED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled
+1 failed, 4 passed in 8.25s
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'trust-a-lab' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'shared-mcp-test' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'governed-contractor-mcp' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'governed-contractor-mcp' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'intergrax-research-mcp' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'governed-contractor-mcp' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'governed-contractor-mcp' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+ERROR    intergrax.applications._shared.mcp_wire_errors:mcp_wire_errors.py:80 MCP tool run_agent failed
+Traceback (most recent call last):
+  File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\mcp_wire_errors.py", line 76, in sanitized_tool_errors
+    yield
+  File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\mcp_server_engine.py", line 298, in run_agent
+    return await execute_mcp_agent_task_with_resolved_identity(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\mcp_nexus_server.py", line 237, in execute_mcp_agent_task_with_resolved_identity
+    return await execute_mcp_agent_task(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\mcp_nexus_server.py", line 163, in execute_mcp_agent_task
+    raise McpProtectedHostExecutionAdmissionError(
+intergrax.applications._shared.mcp_host_execution_transport_cancel.McpProtectedHostExecutionAdmissionError: protected MCP run_agent requires root_execution_transport_detachment_supervision
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'tl11-discovery-qual' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'test-srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'facade' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'srv' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+============================== warnings summary ===============================
+tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py: 10 warnings
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\pytest_asyncio\plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+  The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+  
+    warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes - AssertionError: P5 target failed: tests/unit/applications/test_mcp_server_p4_lifecycle.py (exit=1)
+assert <ExitCode.TESTS_FAILED: 1> == 0
+======================= 1 failed, 10 warnings in 52.30s =======================

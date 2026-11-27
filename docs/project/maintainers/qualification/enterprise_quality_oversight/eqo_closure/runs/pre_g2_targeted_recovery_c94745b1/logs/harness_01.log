@@ -1,0 +1,86 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\57224-e57c0716\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 2 items
+
+tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_runtime_tool_invoker_reference_files_are_classified FAILED [ 50%]
+tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified FAILED [100%]
+
+================================== FAILURES ===================================
+_____ test_harness_01_runtime_tool_invoker_reference_files_are_classified _____
+
+    def test_harness_01_runtime_tool_invoker_reference_files_are_classified() -> None:
+        refs = _collect_runtime_tool_invoker_reference_files()
+        unclassified = sorted(refs - HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST)
+        stale = sorted(HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST - refs)
+>       assert unclassified == [], (
+            "Production files referencing RuntimeToolInvoker must be explicitly classified:\n"
+            + "\n".join(unclassified)
+        )
+E       AssertionError: Production files referencing RuntimeToolInvoker must be explicitly classified:
+E         intergrax/queueing/worker/registry.py
+E       assert ['intergrax/queueing/worker/registry.py'] == []
+E         
+E         Left contains one more item: 'intergrax/queueing/worker/registry.py'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'intergrax/queueing/worker/registry.py',
+E         + ]
+
+tests\qualification\harness_01\test_harness_01_gates.py:216: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+__________ test_harness_01_higher_layer_nexus_imports_are_classified __________
+
+    def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:
+        discovered = _collect_higher_layer_nexus_import_files()
+        classified = set(HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS)
+        unclassified = sorted(discovered - classified)
+        stale = sorted(classified - discovered)
+>       assert unclassified == [], (
+            "Higher-layer Nexus importers must be explicitly classified:\n" + "\n".join(unclassified)
+        )
+E       AssertionError: Higher-layer Nexus importers must be explicitly classified:
+E         intergrax/applications/_shared/memory_provider_admission.py
+E       assert ['intergrax/applications/_shared/memory_provider_admission.py'] == []
+E         
+E         Left contains one more item: 'intergrax/applications/_shared/memory_provider_admission.py'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'intergrax/applications/_shared/memory_provider_admission.py',
+E         + ]
+
+tests\qualification\harness_01\test_harness_01_gates.py:502: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_runtime_tool_invoker_reference_files_are_classified - AssertionError: Production files referencing RuntimeToolInvoker must be explicitly classified:
+  intergrax/queueing/worker/registry.py
+assert ['intergrax/queueing/worker/registry.py'] == []
+  
+  Left contains one more item: 'intergrax/queueing/worker/registry.py'
+  
+  Full diff:
+  - []
+  + [
+  +     'intergrax/queueing/worker/registry.py',
+  + ]
+FAILED tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified - AssertionError: Higher-layer Nexus importers must be explicitly classified:
+  intergrax/applications/_shared/memory_provider_admission.py
+assert ['intergrax/applications/_shared/memory_provider_admission.py'] == []
+  
+  Left contains one more item: 'intergrax/applications/_shared/memory_provider_admission.py'
+  
+  Full diff:
+  - []
+  + [
+  +     'intergrax/applications/_shared/memory_provider_admission.py',
+  + ]
+============================= 2 failed in 13.00s ==============================

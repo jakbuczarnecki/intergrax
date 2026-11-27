@@ -1,0 +1,315 @@
+{
+  "schema": "eqo.no_named_test_34_recovery.v1",
+  "execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+  "row_count": 34,
+  "original_artifact_found": true,
+  "rows": [
+    {
+      "obligation_id": "EDER-F-0016",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0020",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0023",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0059",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0076",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0080",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0084",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0091",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": "PARTIAL_GUARD_COVERAGE",
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0107",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0116",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0124",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0154",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0158",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0171",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0182",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0186",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0188",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0192",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0200",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0207",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0209",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0210",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0222",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-F-0236",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": "PARTIAL_CONTRACT_COVERAGE",
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0001",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0002",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0003",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0004",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0005",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0006",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0007",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0008",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0085",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "obligation_id": "EDER-D-0086",
+      "mapping_status": "RECOVERED_FROM_ORIGINAL_ARTIFACT",
+      "mapping_artifact_path": "D:\\Projekty\\intergrax\\.tmp\\session\\ec-campaign-master\\w2-replay-map\\NO_NAMED_TEST_34_MAPPING.md",
+      "mapping_artifact_sha256": "8403415b352392fe50e7fb2d993a43c7da5f735d105c8ed4414c71c2cb73a903",
+      "coverage_class": null,
+      "formal_closure_claim": false,
+      "execution_status_in_this_batch": "NOT_EXECUTED"
+    }
+  ],
+  "recorded_utc": "2026-11-27T09:05:42Z"
+}

@@ -1,0 +1,62 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\65008-146546ad\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 11 items
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_api_key_binds_authoritative_tenant PASSED [  9%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_rejects_forged_tenant PASSED [ 18%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_rejects_forged_user PASSED [ 27%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_fail_closed_without_credentials PASSED [ 36%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_lab_inprocess_explicit_local_dev_preserves_client_tenant PASSED [ 45%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_identity_resolution_isolated_per_request_context PASSED [ 54%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_http_ingress_still_rejects_missing_credentials PASSED [ 63%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant PASSED [ 72%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_forged_tenant_before_execution PASSED [ 81%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_invalid_api_key PASSED [ 90%]
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_isolates_concurrent_principal_tenants PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_forged_tenant_before_execution
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_invalid_api_key
+tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_isolates_concurrent_principal_tenants
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+______ test_mcp_lab_inprocess_explicit_local_dev_preserves_client_tenant ______
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'trust-a-lab' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_mcp_streamable_http_rejects_forged_tenant_before_execution _______
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 10:02:52] Error calling tool 'run_agent'                              
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_api_key_binds_authoritative_tenant
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_rejects_forged_tenant
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_rejects_forged_user
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_resolve_mcp_identity_fail_closed_without_credentials
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_lab_inprocess_explicit_local_dev_preserves_client_tenant
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_identity_resolution_isolated_per_request_context
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_http_ingress_still_rejects_missing_credentials
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_run_agent_binds_verified_tenant
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_forged_tenant_before_execution
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_rejects_invalid_api_key
+PASSED tests/unit/applications/test_mcp_trust_a_principal_binding.py::test_mcp_streamable_http_isolates_concurrent_principal_tenants
+======================= 11 passed, 7 warnings in 15.68s =======================

@@ -1,0 +1,20 @@
+{
+  "schema": "eqo.environment_manifest.v1",
+  "execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+  "environment_ready": true,
+  "uv_sync_exit_code": 0,
+  "import_verification_exit_code": 0,
+  "python_version": "Python 3.12.11",
+  "uv_version": "uv 0.13.4 (7456b60bc 2026-10-20 x86_64-pc-windows-msvc)",
+  "selected_extras": [
+    "dev-ci",
+    "dev-ci-rag",
+    "mcp",
+    "llm-langchain-ollama"
+  ],
+  "key_package_lines": {},
+  "pyproject_blob_sha": "84d0515a09472deaed9ca9b39c0a83b946f1066a",
+  "uv_lock_blob_sha": "431daaa74d4e10ddd5be42f8a10c275adb737b60",
+  "import_verification_output": "QUALIFICATION_IMPORTS_OK\n",
+  "recorded_utc": "2026-11-27T08:59:55Z"
+}

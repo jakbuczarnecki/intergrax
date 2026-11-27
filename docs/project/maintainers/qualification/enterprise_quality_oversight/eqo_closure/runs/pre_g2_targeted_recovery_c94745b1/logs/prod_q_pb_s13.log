@@ -1,0 +1,67 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\24328-6ca70a13\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 1 item
+
+tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py::test_pb_s13_uvicorn_normal_return_surfaces_close_failure FAILED [100%]
+
+================================== FAILURES ===================================
+__________ test_pb_s13_uvicorn_normal_return_surfaces_close_failure ___________
+governed_contractor_application.host.package_b_strict_production_serving_command.PackageBStrictProductionServingCommandError: hosted-runtime-fail
+
+The above exception was the direct cause of the following exception:
+governed_contractor_application.host.package_b_strict_production_serving_command.PackageBStrictProductionServingCommandError: hosted-runtime-fail
+
+The above exception was the direct cause of the following exception:
+
+  + Exception Group Traceback (most recent call last):
+  |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\tests\qualification\prod_q\test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py", line 369, in test_pb_s13_uvicorn_normal_return_surfaces_close_failure
+  |     pb_serve_cmd.run_package_b_strict_production_serving_command()
+  |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\applications\governed_contractor_application\host\package_b_strict_production_serving_command.py", line 160, in run_package_b_strict_production_serving_command
+  |     raise_primary_with_cleanup_errors(
+  |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\process_lifecycle_resource_cleanup.py", line 74, in raise_primary_with_cleanup_errors
+  |     raise_grouped_exceptions(
+  |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\process_lifecycle_resource_cleanup.py", line 63, in raise_grouped_exceptions
+  |     raise ExceptionGroup(message, exception_only) from from_exc
+  | ExceptionGroup: package B strict production serving command failed; errors during command-owned session close (2 sub-exceptions)
+  +-+---------------- 1 ----------------
+    | governed_contractor_application.host.package_b_strict_production_serving_command.PackageBStrictProductionServingCommandError: hosted-runtime-fail
+    +---------------- 2 ----------------
+    | Traceback (most recent call last):
+    |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\applications\governed_contractor_application\host\package_b_strict_production_serving_command.py", line 145, in run_package_b_strict_production_serving_command
+    |     run_governed_contractor_hosted_strict_production_application(
+    |   File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    |     return self._mock_call(*args, **kwargs)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    |     return self._execute_mock_call(*args, **kwargs)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    |     raise effect
+    | RuntimeError: hosted-runtime-fail
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\applications\governed_contractor_application\host\package_b_strict_production_serving_command.py", line 72, in _close_strict_session_when_command_still_owns_shutdown
+    |     session.close()
+    |   File "D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\tests\qualification\prod_q\test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py", line 346, in _close_raises
+    |     raise StrictProductionServingLauncherError("post-uvicorn-close-fail")
+    | intergrax.applications._shared.strict_production_serving_launcher.StrictProductionServingLauncherError: post-uvicorn-close-fail
+    +------------------------------------
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+============================== warnings summary ===============================
+intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166
+  D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_package_b_strict_serving_wiring_gate.py::test_pb_s13_uvicorn_normal_return_surfaces_close_failure - ExceptionGroup: package B strict production serving command failed; errors during command-owned session close (2 sub-exceptions)
+======================== 1 failed, 1 warning in 6.65s =========================

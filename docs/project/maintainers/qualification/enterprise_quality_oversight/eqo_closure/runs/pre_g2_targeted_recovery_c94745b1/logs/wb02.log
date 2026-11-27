@@ -1,0 +1,423 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\63800-ed98ba89\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 75 items
+
+tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context PASSED [  1%]
+tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope PASSED [  2%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[inmemory] PASSED [  4%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[pgvector] SKIPPEDsts) [  5%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[weaviate] FAILED [  6%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[qdrant] PASSED [  8%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[chroma] PASSED [  9%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[lancedb] FAILED [ 10%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[typesense] FAILED [ 12%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_tenant_isolation_backends_match_plan_register PASSED [ 13%]
+tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_inmemory_rejects_metadata_tenant_mismatch_on_ingest PASSED [ 14%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q01_head_is_git_object_not_pinned_task_sha PASSED [ 16%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q02_ctrl_x_historical_evidence_sha PASSED [ 17%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q03_domain_specificity_credentials_before_integrations PASSED [ 18%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q04_recovery_checkpoint_events_specificity PASSED [ 20%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[K] PASSED [ 21%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[L] PASSED [ 22%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[M] PASSED [ 24%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[N] PASSED [ 25%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[O] PASSED [ 26%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[P] PASSED [ 28%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[Q] PASSED [ 29%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[R] PASSED [ 30%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[S] PASSED [ 32%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[T] PASSED [ 33%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[U] PASSED [ 34%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[V] PASSED [ 36%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[W] PASSED [ 37%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[X] PASSED [ 38%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[Y] PASSED [ 40%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[A] PASSED [ 41%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[B] PASSED [ 42%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[C] PASSED [ 44%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[D] PASSED [ 45%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[E] PASSED [ 46%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[F] PASSED [ 48%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[G] PASSED [ 49%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[H] PASSED [ 50%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[I] PASSED [ 52%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[J] PASSED [ 53%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q07_propagation_gaps_not_surrogate_edges PASSED [ 54%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q08_owner_graph_non_authoritative PASSED [ 56%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q09_historical_evidence_requires_replay PASSED [ 57%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q10_proof_coverage_matrix_complete PASSED [ 58%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q11_classifier_no_generic_safe_fallback_on_fixture PASSED [ 60%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q13_storage_key_index_fixture_semantics PASSED [ 61%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory PASSED [ 62%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z1] PASSED [ 64%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z2] PASSED [ 65%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z3] PASSED [ 66%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z4] PASSED [ 68%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z5] PASSED [ 69%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z6] PASSED [ 70%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AA] PASSED [ 72%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AB] PASSED [ 73%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AC] PASSED [ 74%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AD] PASSED [ 76%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AE] PASSED [ 77%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AF] PASSED [ 78%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AG] PASSED [ 80%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AH] PASSED [ 81%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AI] PASSED [ 82%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AJ] PASSED [ 84%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AK] PASSED [ 85%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AL] PASSED [ 86%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AM] PASSED [ 88%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AN] PASSED [ 89%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AO] PASSED [ 90%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AP] PASSED [ 92%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AQ] PASSED [ 93%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AR] PASSED [ 94%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AS] PASSED [ 96%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q02_validator_fixture_not_mint_authority PASSED [ 97%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q03_propagation_gaps_preserved_in_continuity PASSED [ 98%]
+tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q04_credential_recovery_boundary_qualified PASSED [100%]
+
+================================== FAILURES ===================================
+____________ test_vectorstore_tenant_isolation_contract[weaviate] _____________
+
+slug = 'weaviate'
+
+    @pytest.mark.parametrize("slug", list(TENANT_ISOLATION_CONTRACT_BACKENDS))
+    def test_vectorstore_tenant_isolation_contract(slug: str) -> None:
+        if slug == "pgvector":
+            pytest.skip("PgVector requires the explicit Docker-backed runtime in integration tests")
+        result = run_tenant_isolation_contract(
+            _BACKENDS[slug],
+            slug=slug,
+            collection_name=f"iso_{slug}",
+        )
+>       assert result.cross_query_isolated is True, result.reason
+E       AssertionError: tenant_a_ingest_failed:Weaviate vector store requires a native client for vector operations
+E       assert False is True
+E        +  where False = TenantIsolationContractResult(slug='weaviate', cross_query_isolated=False, ingest_mismatch_rejected=False, reason='tenant_a_ingest_failed:Weaviate vector store requires a native client for vector operations').cross_query_isolated
+
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:264: AssertionError
+_____________ test_vectorstore_tenant_isolation_contract[lancedb] _____________
+
+slug = 'lancedb'
+
+    @pytest.mark.parametrize("slug", list(TENANT_ISOLATION_CONTRACT_BACKENDS))
+    def test_vectorstore_tenant_isolation_contract(slug: str) -> None:
+        if slug == "pgvector":
+            pytest.skip("PgVector requires the explicit Docker-backed runtime in integration tests")
+>       result = run_tenant_isolation_contract(
+            _BACKENDS[slug],
+            slug=slug,
+            collection_name=f"iso_{slug}",
+        )
+
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+factory = <function _factory_lancedb at 0x000001DAD43A0680>
+
+    def run_tenant_isolation_contract(
+        factory: StoreFactory,
+        *,
+        slug: str,
+        collection_name: str = "tenant_iso_contract",
+        tenant_a: str = "tenant_A",
+        tenant_b: str = "tenant_B",
+    ) -> TenantIsolationContractResult:
+        """
+        Verify tenant A data is invisible to tenant B and ingest metadata mismatch is rejected.
+        """
+        scope_a = VectorStoreScope(tenant_id=tenant_a)
+        scope_b = VectorStoreScope(tenant_id=tenant_b)
+        manager_a = VectorstoreManager(
+>           store=factory(tenant_a, collection_name),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            scope=scope_a,
+        )
+
+intergrax\rag\vectorstore\tenant\tenant_isolation_contract.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tenant_id = 'tenant_A'
+
+    def _factory_lancedb(tenant_id: str, collection_name: str) -> VectorStore:
+        del collection_name
+>       return create_lancedb_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:236: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vector_store = <intergrax.integrations.providers.vector_store.inmemory.rag_store.InMemoryVectorStore object at 0x000001DAD45BA5D0>
+store = None, store_factory = None, config_overrides = {}
+
+    def create_lancedb_vector_store(
+        *,
+        vector_store: VectorStore | None = None,
+        store: object | None = None,
+        store_factory: Callable[[], object] | None = None,
+        **config_overrides: object,
+    ) -> LancedbVectorStoreIntegration:
+        """Compatibility shim â€” constructs ``LancedbVectorStoreIntegration`` via legacy catalog path."""
+        if vector_store is None and store is None and store_factory is None and not config_overrides:
+            return create_lancedb_vector_store_integration(enabled=False)
+>       return create_lancedb_integration(
+            vector_store=vector_store,
+            store=store,
+            store_factory=store_factory,
+            **config_overrides,
+        ).vector_store
+
+intergrax\integrations\providers\vector_store\lancedb\bundle.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vector_store = <intergrax.integrations.providers.vector_store.inmemory.rag_store.InMemoryVectorStore object at 0x000001DAD45BA5D0>
+store = None, store_factory = None, config_overrides = {}
+
+    def create_lancedb_integration(
+        *,
+        vector_store: VectorStore | None = None,
+        store: object | None = None,
+        store_factory: Callable[[], object] | None = None,
+        **config_overrides: object,
+    ) -> LancedbIntegrationBundle:
+>       config = resolve_lancedb_config(**config_overrides)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\integrations\providers\vector_store\lancedb\bundle.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+overrides = {}
+
+    def resolve_lancedb_config(**overrides: object) -> VectorIntegrationConfig:
+>       return VectorIntegrationConfig.from_env("INTERGRAX_LANCEDB", **overrides)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\integrations\providers\vector_store\lancedb\bundle.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class 'intergrax.integrations._shared.p3.configs.VectorIntegrationConfig'>
+prefix = 'INTERGRAX_LANCEDB', overrides = {}, tenant_override = None
+tenant_from_env = ''
+
+    @classmethod
+    def from_env(cls, prefix: str, **overrides: object) -> VectorIntegrationConfig:
+        tenant_override = overrides.get("tenant_id")
+        tenant_from_env = _env(f"{prefix}_TENANT_ID")
+        if tenant_override is not None:
+            tenant_id = str(tenant_override).strip()
+        elif tenant_from_env:
+            tenant_id = tenant_from_env
+        else:
+>           raise IntegrationConfigurationError(
+                f"Vector integration requires {prefix}_TENANT_ID",
+            )
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_LANCEDB_TENANT_ID
+
+intergrax\integrations\_shared\p3\configs.py:64: IntegrationConfigurationError
+____________ test_vectorstore_tenant_isolation_contract[typesense] ____________
+
+slug = 'typesense'
+
+    @pytest.mark.parametrize("slug", list(TENANT_ISOLATION_CONTRACT_BACKENDS))
+    def test_vectorstore_tenant_isolation_contract(slug: str) -> None:
+        if slug == "pgvector":
+            pytest.skip("PgVector requires the explicit Docker-backed runtime in integration tests")
+>       result = run_tenant_isolation_contract(
+            _BACKENDS[slug],
+            slug=slug,
+            collection_name=f"iso_{slug}",
+        )
+
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+factory = <function _factory_typesense at 0x000001DAD43A0720>
+
+    def run_tenant_isolation_contract(
+        factory: StoreFactory,
+        *,
+        slug: str,
+        collection_name: str = "tenant_iso_contract",
+        tenant_a: str = "tenant_A",
+        tenant_b: str = "tenant_B",
+    ) -> TenantIsolationContractResult:
+        """
+        Verify tenant A data is invisible to tenant B and ingest metadata mismatch is rejected.
+        """
+        scope_a = VectorStoreScope(tenant_id=tenant_a)
+        scope_b = VectorStoreScope(tenant_id=tenant_b)
+        manager_a = VectorstoreManager(
+>           store=factory(tenant_a, collection_name),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            scope=scope_a,
+        )
+
+intergrax\rag\vectorstore\tenant\tenant_isolation_contract.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tenant_id = 'tenant_A'
+
+    def _factory_typesense(tenant_id: str, collection_name: str) -> VectorStore:
+        del collection_name
+>       return create_typesense_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vector_store = <intergrax.integrations.providers.vector_store.inmemory.rag_store.InMemoryVectorStore object at 0x000001DAD45B9520>
+store = None, store_factory = None, config_overrides = {}
+
+    def create_typesense_vector_store(
+        *,
+        vector_store: Optional[VectorStore] = None,
+        store: Optional[object] = None,
+        store_factory: Optional[Callable[[], object]] = None,
+        **config_overrides: object,
+    ) -> TypesenseVectorStoreIntegration:
+        """Compatibility shim â€” constructs ``TypesenseVectorStoreIntegration`` via legacy catalog path."""
+>       return create_typesense_integration(
+            vector_store=vector_store,
+            store=store,
+            store_factory=store_factory,
+            **config_overrides,
+        ).vector_store
+
+intergrax\integrations\providers\vector_store\typesense\bundle.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vector_store = <intergrax.integrations.providers.vector_store.inmemory.rag_store.InMemoryVectorStore object at 0x000001DAD45B9520>
+store = None, store_factory = None, config_overrides = {}
+
+    def create_typesense_integration(
+        *,
+        vector_store: Optional[VectorStore] = None,
+        store: Optional[object] = None,
+        store_factory: Optional[Callable[[], object]] = None,
+        **config_overrides: object,
+    ) -> TypesenseIntegrationBundle:
+>       config = resolve_typesense_config(**config_overrides)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\integrations\providers\vector_store\typesense\bundle.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+overrides = {}
+
+    def resolve_typesense_config(**overrides: object) -> VectorIntegrationConfig:
+>       return VectorIntegrationConfig.from_env("INTERGRAX_TYPESENSE", **overrides)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\integrations\providers\vector_store\typesense\bundle.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class 'intergrax.integrations._shared.p3.configs.VectorIntegrationConfig'>
+prefix = 'INTERGRAX_TYPESENSE', overrides = {}, tenant_override = None
+tenant_from_env = ''
+
+    @classmethod
+    def from_env(cls, prefix: str, **overrides: object) -> VectorIntegrationConfig:
+        tenant_override = overrides.get("tenant_id")
+        tenant_from_env = _env(f"{prefix}_TENANT_ID")
+        if tenant_override is not None:
+            tenant_id = str(tenant_override).strip()
+        elif tenant_from_env:
+            tenant_id = tenant_from_env
+        else:
+>           raise IntegrationConfigurationError(
+                f"Vector integration requires {prefix}_TENANT_ID",
+            )
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_TYPESENSE_TENANT_ID
+
+intergrax\integrations\_shared\p3\configs.py:64: IntegrationConfigurationError
+=================================== PASSES ====================================
+______ test_runtime_tool_invoker_rejects_cross_tenant_invocation_context ______
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+PASSED tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope
+PASSED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[inmemory]
+PASSED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[qdrant]
+PASSED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[chroma]
+PASSED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_tenant_isolation_backends_match_plan_register
+PASSED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_inmemory_rejects_metadata_tenant_mismatch_on_ingest
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q01_head_is_git_object_not_pinned_task_sha
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q02_ctrl_x_historical_evidence_sha
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q03_domain_specificity_credentials_before_integrations
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q04_recovery_checkpoint_events_specificity
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[K]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[L]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[M]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[N]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[O]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[P]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[Q]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[R]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[S]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[T]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[U]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[V]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[W]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[X]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q05_classifier_synthetic_probes[Y]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[A]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[B]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[C]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[D]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[E]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[F]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[G]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[H]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[I]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q06_legacy_bucket_probes[J]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q07_propagation_gaps_not_surrogate_edges
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q08_owner_graph_non_authoritative
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q09_historical_evidence_requires_replay
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q10_proof_coverage_matrix_complete
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q11_classifier_no_generic_safe_fallback_on_fixture
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q13_storage_key_index_fixture_semantics
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r1_q12_propagation_edge_validation_empty_without_inventory
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z1]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z2]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z3]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z4]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z5]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r2_q01_carrier_semantic_probes[Z6]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AA]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AB]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AC]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AD]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AE]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AF]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AG]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AH]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AI]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q01_authority_semantic_probes[AJ]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AK]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AL]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AM]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AN]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AO]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AP]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AQ]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AR]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3r1_q01_authority_mechanism_probes[AS]
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q02_validator_fixture_not_mint_authority
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q03_propagation_gaps_preserved_in_continuity
+PASSED tests/qualification/tenant_x/test_tenant_x_p0_fast.py::test_tx_p0_r3_q04_credential_recovery_boundary_qualified
+SKIPPED [1] tests\unit\rag\vectorstore\test_vectorstore_cross_tenant_isolation.py:258: PgVector requires the explicit Docker-backed runtime in integration tests
+FAILED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[weaviate] - AssertionError: tenant_a_ingest_failed:Weaviate vector store requires a native client for vector operations
+assert False is True
+ +  where False = TenantIsolationContractResult(slug='weaviate', cross_query_isolated=False, ingest_mismatch_rejected=False, reason='tenant_a_ingest_failed:Weaviate vector store requires a native client for vector operations').cross_query_isolated
+FAILED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[lancedb] - intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_LANCEDB_TENANT_ID
+FAILED tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[typesense] - intergrax.integrations.contracts.base.IntegrationConfigurationError: Vector integration requires INTERGRAX_TYPESENSE_TENANT_ID
+================== 3 failed, 71 passed, 1 skipped in 18.89s ===================

@@ -1,0 +1,206 @@
+{
+  "schema": "eqo.failure_node_reconciliation.v1",
+  "execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+  "historical_failure_occurrence_count": 11,
+  "unique_failed_node_count": 10,
+  "nodes": [
+    {
+      "node_id": "tests/qualification/admission_x/test_canonical_policy_in_force.py::test_canonical_policy_is_in_force_and_verifies",
+      "workstreams": [
+        "WB01"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb01/pytest_wb01_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/pre_g2_batch_786088a9/runs/wb01/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "NOT_EXECUTED_IN_THIS_BATCH",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": null,
+      "scope_equivalence_proven": false,
+      "limitation": "WB01 not in targeted replay scope",
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[lancedb]",
+      "workstreams": [
+        "WB02"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb02/pytest_wb02_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb02/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "CONFIRMED_FAIL_ON_NEW_EXECUTION_SHA",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/wb02.log",
+      "scope_equivalence_proven": false,
+      "limitation": "Historical collected-node inventory incomplete vs diagnostic replay",
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[typesense]",
+      "workstreams": [
+        "WB02"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb02/pytest_wb02_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb02/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "CONFIRMED_FAIL_ON_NEW_EXECUTION_SHA",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/wb02.log",
+      "scope_equivalence_proven": false,
+      "limitation": "In-memory vector-store substitution; not live-provider qualification",
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q02_restart_resume_closed_world_parity",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "CONFIRMED_PASS_ON_NEW_EXECUTION_SHA",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/trace_x_p6.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q08_no_unclear_restart_resume_paths",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "CONFIRMED_PASS_ON_NEW_EXECUTION_SHA",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/trace_x_p6.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q11_negative_sensitivity_unregistered_restart_path",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "CONFIRMED_PASS_ON_NEW_EXECUTION_SHA",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/trace_x_p6.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/harness_01/test_harness_01_gates.py::test_harness_01_higher_layer_nexus_imports_are_classified",
+      "workstreams": [
+        "WB07"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb07/pytest_wb07_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb07/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/harness_01.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/roadmap_replay_x.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/roadmap_replay_x.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero",
+      "workstreams": [
+        "WB10"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb10/pytest_wb10_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb10/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/roadmap_replay_x.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "workstreams": [
+        "WB11"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb11/pytest_wb11_exe.log",
+      "previous_diagnostic_outcome": "OUTCOME_NOT_PROVEN",
+      "previous_diagnostic_evidence": "runs/wb11/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/xd12.log",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": "T-IGX-043-H"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p5_qualification_batch.py::test_mcp_server_x_p5_consolidated_batch_passes",
+      "workstreams": [
+        "WB04",
+        "WB09"
+      ],
+      "historical_outcome": "FAILED",
+      "historical_evidence": "runs/wb04/pytest_wb04_exe.log; runs/wb09/pytest_wb09_exe.log",
+      "previous_diagnostic_outcome": "FAILED",
+      "previous_diagnostic_evidence": "runs/wb04/pre_g2_replay_786088a9/pytest.log",
+      "current_targeted_outcome": "FAILED",
+      "current_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+      "current_log_reference": "logs/mcp_p5.log",
+      "mcp_child_trust_a_outcome": "CONFIRMED_PASS_ON_NEW_EXECUTION_SHA",
+      "mcp_child_trust_a_log": "logs/mcp_trust_a.log",
+      "wrapper_child_failure_target": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "shared_failure_note": "Single P5 wrapper failure linked to WB04 and WB09; prior diagnostic cited trust_a exit=2, this run trust_a passed",
+      "scope_equivalence_proven": true,
+      "limitation": null,
+      "owner_ticket": null
+    }
+  ],
+  "recorded_utc": "2026-11-27T09:05:42Z"
+}

@@ -1,0 +1,23 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1\.venv\Scripts\python.exe
+cachedir: build\pytest\59316-d6913eea\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-targeted-exec-c94745b1
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 3 items
+
+tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q02_restart_resume_closed_world_parity PASSED [ 33%]
+tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q08_no_unclear_restart_resume_paths PASSED [ 66%]
+tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q11_negative_sensitivity_unregistered_restart_path PASSED [100%]
+
+=================================== PASSES ====================================
+______________ test_txp6_q02_restart_resume_closed_world_parity _______________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+=========================== short test summary info ===========================
+PASSED tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q02_restart_resume_closed_world_parity
+PASSED tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q08_no_unclear_restart_resume_paths
+PASSED tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py::test_txp6_q11_negative_sensitivity_unregistered_restart_path
+============================= 3 passed in 13.54s ==============================

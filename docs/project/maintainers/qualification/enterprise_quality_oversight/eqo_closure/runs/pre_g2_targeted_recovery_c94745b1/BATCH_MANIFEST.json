@@ -1,0 +1,31 @@
+{
+  "schema": "eqo.pre_g2_targeted_recovery_batch_manifest.v1",
+  "batch_id": "EC-W3-TARGETED-QUALIFICATION-RECOVERY-03",
+  "previous_evidence_publication_sha": "16752778ce3f01cd71ee6d849e071c350f134bc9",
+  "previous_test_execution_sha": "786088a9798ec18a26c22778f8217608e5f15bff",
+  "authorized_diagnostic_execution_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26",
+  "historical_b1_execution_sha": "28c27cb896d02e0185b9fa02047411fa152f6469",
+  "evidence_artifacts": {
+    "runs/pre_g2_targeted_recovery_c94745b1/ENVIRONMENT_MANIFEST.json": "f9863c76c4a6576cba6c127b5cc5cff6c86bc26b",
+    "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_DES_PREREG.json": "2013e75831e87c1ef718610aff2e9cae4ca88d85",
+    "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_RUN_MANIFEST.json": "652dd5454ad4f55b07a78c2397234d9120ce75c6",
+    "runs/pre_g2_targeted_recovery_c94745b1/FAILURE_NODE_RECONCILIATION.json": "982836aed44c91ea331551f51a11ae85cd686373",
+    "runs/pre_g2_targeted_recovery_c94745b1/PRIOR_EVIDENCE_INTEGRITY.json": "66dccce27e85aec0f24c46ab578cf27f53a76381",
+    "runs/pre_g2_targeted_recovery_c94745b1/NO_NAMED_TEST_34_RECOVERY.json": "043d1413234e931f5f7996c830d8c581e367bed3",
+    "runs/pre_g2_targeted_recovery_c94745b1/AF_CLOSE_HANDOFF.md": "3b35ddaad5e18b1012e5f1b443d710508f5817ec",
+    "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_SETTLEMENT.md": "d7de3761d419dbb42483177c017d488a43a1e75c",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/environment_sync.log": "3c7e80eeb40103ef5c2d93c8fffa26c1116846e4",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/wb06.log": "aa1ad5851bcf20f24a4c6fff213cb80a594b7a8a",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/wb02.log": "13a693a0dfc8c00f0ba46f63c2ba2f403992101c",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/mcp_trust_a.log": "8e2958d09d8d5774b10c87c6333573fd6a859b23",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/mcp_p5.log": "352ace06cde5f9ee5864be0e5d7ceaab07e40414",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/trace_x_p6.log": "56f4aa185162ea1253a3081ef1fa9437a40c3a83",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/harness_01.log": "9f5111274faec9daef5af1941f9769840dab8e1c",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/prod_q_pb_s13.log": "fe0a8f142790e3487ceb814e5b03efab7b246a65",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/roadmap_replay_x.log": "85855a0217a0b5ee4114fe5cfe404632edb3a3f0",
+    "runs/pre_g2_targeted_recovery_c94745b1/logs/xd12.log": "250e76d7769d8beecca482efcc3fa29c54e4fc9a"
+  },
+  "formal_certification_status": "NOT_ESTABLISHED",
+  "recorded_utc": "2026-11-27T09:12:00Z",
+  "execution_finish_utc": "2026-11-27T09:05:36Z"
+}
