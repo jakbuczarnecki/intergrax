@@ -50,8 +50,19 @@ def _stub_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_wa_23_default_lkw_roster_builds_without_web_search_qualifier(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _stub_llm(monkeypatch)
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "qdrant")
+    monkeypatch.setenv("INTERGRAX_SANDBOX_ROOT", str(tmp_path / "sandbox"))
+    monkeypatch.setattr(
+        "intergrax.applications._shared.memory_wiring.validate_organization_and_session_admission",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.runtime_event_delivery_wiring._create_export_transport",
+        lambda *_args, **_kwargs: None,
+    )
     assert LOCAL_WORKSPACE_APPLICATION_MANIFEST.environment.integration_profile.search_provider is None
     projection = build_lkw_test_registry_projection()
     registry = projection.agent_registry

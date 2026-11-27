@@ -51,9 +51,27 @@ Nothing was run when this ticket was drafted. One process at a time, one `uv run
 - The 15 product files outside the gate's roots that import `intergrax.applications` (AST count; question Q-WA-01; a dependency on `PT-G01`'s upward-import gate), the two undisposed dynamic nodes of the B1 closed-world run (`mcp_import_guard.py:60`, `mcp_server_engine.py:159`), the other dynamic-import census items that B-1 alpha did not probe (`wiring.py:64`, `context_engine_resolver.py:29`, `intergrax/cli/doctor_*`), the CI wiring of the registry-bypass check that did not run at the baseline (`.github/`, `PT-G01`/`PT-G02`), other fail-closed selectors and wiring (FC-1..FC-4), the one-resolver, profile-projection and composition-root work of W-B (DP-16..DP-19), the rewrite of `check_agent_registry_bypass.py`, the seam ledger, the importlib allowlist gate and the EBH-3 scan extension (`PT-G01`), the canonical layer text and the CTRL-X relabel (`PT-D12`, `PT-D10`), the F10 C4 rules for `agents/` paths (`PT-Q04`), the duplicate orchestration enums in both tiers (Q-WA-07), the S2b authority question (Q-WA-03).
 - The IIAC re-pin (RB-2), the EBH-7 pin, FRZ status promotion, stage closure, GitHub settings and rulesets, validator code, `scripts/`, `.github/`, `pyproject.toml`, `uv.lock`, the roadmap, the FRZ checklist, PDC-X and IIAC record directories, `intergrax/runtime/nexus/nexus_loop.py`, Docker or vendor work.
 
+## AF-W3-PT-WA-01 execution settlement (2026-11-27)
+
+Execution head `ae93859a5e9574b8402f681cb322c1d86be8f772` on `development`. SCOPE closeout ancestor verified (`0a4755281f46653a8b741a26c8e26b0af4555775`).
+
+| Part | Verdict |
+|------|---------|
+| A — runtime boundary inversion | ALREADY_IMPLEMENTED (gate `check_intergrax_no_applications_imports.py` exit 0; NT-WA-01..04 green) |
+| B — OBS-DIAG-X3 support relocation | ALREADY_IMPLEMENTED (`testing_support/architecture/obs_diag_x3_ast_gates.py`; no runtime duplicate) |
+| C — Tier-2 agent seams | ALREADY_IMPLEMENTED (NT-WA-10..14, NT-WA-13/17; registry-bypass diagnostic exit 0 at head) |
+| D — A7-021 AST census | RECORDED (read-only census `.tmp/session/eqo-a-remediation/FC/WA/dynamic_import_census_ae93859a.json`; residuals → PT-G01 / T-IGX-043-H) |
+| E — registry facades / FRZ-BND-04 | ALREADY_IMPLEMENTED (`test_nt_rw_wa_01` green at head; historical `RED_AT_PREFIX` at `0cee41a88274a53d14bb3558752d55bdde0d0b01` unchanged) |
+| K — KR-18 | ALREADY_IMPLEMENTED (NT-WA-KR18-1..4 green) |
+| Amendment 1 — profile-bound roster | CONFIRMED plus NT-WA-23 harness stubs for strict composition at development head |
+
+**Residuals (outside PT-WA write set):** `test_harness_host_runtime_llm.py` (2) — `harness.policy_smoke` (`T-IGX-043-A` / PT-FC1); `test_diag_platform_adoption_gate.py` (2) — OTLP empty endpoint (`T-IGX-043-B` residual). **PT-G01:** registry-bypass gate rewrite and EBH-3 extension remain open. **PT-Q02:** no independent audit or FRZ promotion in this session.
+
+PR #680 is **T-IGX-043-A / PT-FC1** only; not PT-WA delivery evidence.
+
 ## Lifecycle state
 
-plan_approved
+implemented_pending_pt_q02
 
 ## Implementer session
 
