@@ -10,7 +10,7 @@ Prerequisites before implementation starts: master-plan nodes `SCOPE` (wave scop
 
 ## Plan digest
 
-Plan digest: a2dcfffbbaa34d1e6bfc888ca768c5cb3812abaf8d18a7af67c9f0dd8ba91d4b
+Plan digest: bb27c3887dfd8388d63529c613eed3523b04c55f1c0d724548ea50202203f518
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-B.md`](plans/PLAN_T-IGX-043-B.md). The digest was computed with `python -I scripts/governance/plan_digest.py` on the plan text; it must be recomputed after any edit of the plan.
 
@@ -98,3 +98,17 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-REL-10 | NT-REL-10-1 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+### AF-W3-PT-FC1-03 settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-03`. Authorization: OD-AF-W3-FC1-02 variant A.
+
+| Item | Status |
+|---|---|
+| OD-AF-W3-FC1-02 | DECIDED; variant A recorded in operator register |
+| FC1 write authority | `intergrax/runtime/execution/lab_reference_agent_runtime.py` in plan §4 firm list; `HISTORICAL_PUBLICATION_FINDING: PRESERVED`; `CURRENT_WRITE_AUTHORITY: AUTHORIZED`; historic commit `9d0e7c7283f6bc5fac075de5c34dc0971e38f396` |
+| FC2 write authority | `tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py` in plan §5; historic commit `9154971a7ddcfd819137e16c44bf932b44b28093` |
+| BND-05 evidence | `RED_AT_PREFIX` at prefix `13b3789c60910ccd3882bfd39641fb5f8d3530fc`, fix `9d0e7c7283f6bc5fac075de5c34dc0971e38f396`, pin `7b7ec4488c504f1c90dba599d5742197dbbf0c1e`; tracked logs under `continuation/RED_FIRST_EXECUTION_FRZ-BND-05_*` |
+| FRZ-EXE-02 / FRZ-PLG-05 | `EVIDENCE_MISSING` |
+| STRICT host authority | OPEN_RESIDUAL |
+| Ticket lifecycle | `plan_approved`; not full DONE |

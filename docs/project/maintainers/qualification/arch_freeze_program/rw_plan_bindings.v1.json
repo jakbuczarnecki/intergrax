@@ -1392,6 +1392,10 @@
           {
             "path": "tests/integration/platform_plugins/test_plugin_engine_cross_flow.py",
             "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py",
+            "reason": "OD-AF-W3-FC1-02 variant A; section 15 amendment"
           }
         ]
       },
