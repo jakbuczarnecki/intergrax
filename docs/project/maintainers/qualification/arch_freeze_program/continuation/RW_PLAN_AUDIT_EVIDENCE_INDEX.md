@@ -1,7 +1,7 @@
 # T-AF2-RW-PLAN-AUDIT — evidence index (AR-12-07)
 
-> **Obowiązujący stan (AF-W2-FINAL-01, development @ bfecd8314c0990519a7e19733454d51c29a1e2e7):** PLAN_STRUCTURE=PASS; **RED_FIRST_EVIDENCE=INCOMPLETE**; inventory **39** rows — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12** (OP-B / OD-AF-CLOSE-B2, plan acceptance **OD-AF-CLOSE-B6**), **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **PT-B01=ACCEPTED_DIAGNOSTIC_INPUT**; **PT-B02=ACCEPTED_DIAGNOSTIC_INPUT**; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**. Campaign B matrix **28/28** accounted ([CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md](CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md)).
-> **Historyczne (superseded):** wpis COMPLETE (T-IGX-078-A @ 646e63953); starszy fragment poniżej o **36×** EVIDENCE_MISSING i uznanych DEBT-02/03 @ RED_AT_PREFIX — **nie obowiązuje** po GA.2R + OP-B.
+> **Obowiązujący stan (AF-W2-SCOPE-CLOSE-01):** PLAN_STRUCTURE=PASS; **RED_FIRST_EVIDENCE=INCOMPLETE**; inventory **39** — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12**, **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **PT-B01/PT-B02=PREDECESSOR_CONTRACT_SATISFIED** (diagnostic); **RW_PLAN_AUDIT=PASS** (AF-W2-INDEPENDENT-AUDIT-02 @ `73835a889fcebe4393113abd25d9cf9aeceda7c1`); **SCOPE=CLOSED**; mechanical checker `RW_PLAN_AUDIT=NOT_PERFORMED`.
+> **Historyczne (superseded):** AF-W2-FINAL-01 NOT_PERFORMED banner; T-IGX-078-A COMPLETE @ 646e63953; RM-03 structural @ `ebe45c269` — lineage only.
 
 | Artifact | Role |
 | --- | --- |
@@ -13,7 +13,12 @@
 | docs/project/maintainers/qualification/arch_freeze_program/continuation/CAMPAIGN_B_MISSING_CASE_MAP.md | PT-B01/B02 diagnostic matrix (28/28) |
 | scripts/governance/verify_rw_plan_phase_check3.py | Mechanical phase check 3 (+ OP-B progressive structure) |
 
-**Auditor session SHA (historical RM-03):** ebe45c26930a9291a3df2d6a75028c35c036cee2 (2026-11-24). **No implementer audit PASS attached.**
+| Independent audit round 2 | [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) AF-W2-INDEPENDENT-AUDIT-02 |
+| Audited immutable SHA | `73835a889fcebe4393113abd25d9cf9aeceda7c1` |
+| SCOPE formal closeout | [`SCOPE_FORMAL_CLOSEOUT_RECORD.md`](../SCOPE_FORMAL_CLOSEOUT_RECORD.md) |
+| SCOPE predecessor index | [`SCOPE_PREDECESSOR_INDEX.md`](SCOPE_PREDECESSOR_INDEX.md) |
+
+**Auditor session SHA (historical RM-03, superseded):** ebe45c26930a9291a3df2d6a75028c35c036cee2 (2026-11-24). Round-2 PASS is independent only; implementer publication does not re-sign the verdict.
 
 ## PT-Q02 train CI factual replay (2026-11-24) — historical
 
@@ -28,4 +33,4 @@
 
 ## RED_FIRST_EVIDENCE (INCOMPLETE)
 
-**OD-AF-CLOSE-B6=DECIDED** (variant A; clarifies B2; not a waiver). Mechanical rule (`validate_red_first_evidence` + OP-B progressive completeness for future `RED_AT_PREFIX` transitions): **RED_FIRST_EVIDENCE=INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay. **12** OP-B rows remain **EVIDENCE_MISSING** (progressive delivery allowed; structure retains OD-AF-CLOSE-B2 metadata). **FRZ-DEBT-02** and **FRZ-DEBT-03** stay **EVIDENCE_MISSING** with **seeded-red** obligation (not satisfied by mechanical PASS). Validator **does not** claim independent historical replay — it checks pinned records only. **SCOPE not closed.**
+**OD-AF-CLOSE-B6=DECIDED** (variant A). **RED_FIRST_EVIDENCE=INCOMPLETE**; **12** OP-B rows **EVIDENCE_MISSING**; **OP_B_PENDING=12**. **SCOPE=CLOSED** with OP-B obligations preserved ([`SCOPE_FORMAL_CLOSEOUT_RECORD.md`](../SCOPE_FORMAL_CLOSEOUT_RECORD.md)). Validator does not claim independent historical replay.

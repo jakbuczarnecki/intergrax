@@ -85,6 +85,13 @@ erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
 - Mandatory pre-G2 settlement: `verify_rw_plan_phase_check3.py --pre-g2` (`PRE_G2_OP_B_SETTLEMENT`) independent of plan `pre_g2_op_b_gate_enforce`.
 - G2 qualification binding in `rw_plan_bindings.v1.json` `g2_entry_conditions` (MANDATORY_QUALIFICATION_COMMAND).
 - MEP-AF2 V5.2.1 B6 wording; SCOPE predecessor index; audit prep dossier; `SOURCES.sha256` refresh; targeted regression `test_verify_rw_plan_phase_check3_pre_g2_gate.py`.
+
+## AF-W2-SCOPE-CLOSE-01 (2026-11-27)
+
+- Publish independent RW-PLAN-AUDIT round 2 PASS (AF-W2-INDEPENDENT-AUDIT-02 @ `73835a889fcebe4393113abd25d9cf9aeceda7c1`, AR-12-07).
+- Settle PT-B01/PT-B02 as diagnostic `PREDECESSOR_CONTRACT_SATISFIED`; formal SCOPE milestone closure (`SCOPE_FORMAL_CLOSEOUT_RECORD.md`); 12/12 hard predecessors.
+- **SCOPE=CLOSED**; **W2 scope milestone complete**; **W3_ENTRY=AUTHORIZED**; OP-B / red-first obligations preserved (`OP_B_PENDING=12`, `RED_FIRST_EVIDENCE=INCOMPLETE`, `G2=OPEN`).
+
 ## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
 
 - Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.
@@ -95,5 +102,4 @@ erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
 
 ## Lifecycle state
 
-in_progress — AF-W2W3-RESIDUAL-CLOSURE-01 corrective batch complete; formal qualification dimensions not closed. P-R0-6: tracked status remains **in_progress**; does not close the ticket, does not set RW-PLAN-AUDIT PASS or SCOPE (`RW_PLAN_AUDIT_STATUS.md` **BLOCKED**).
-
+in_progress — AF-W2-SCOPE-CLOSE-01 published independent RW-PLAN-AUDIT PASS and SCOPE formal closure; OP-B product evidence and G2 remain open on downstream tickets.

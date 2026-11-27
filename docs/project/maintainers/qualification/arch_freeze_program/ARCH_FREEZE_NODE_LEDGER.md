@@ -4,7 +4,9 @@ Packet: V5 read pin (@ canonical development). Prior packet: V4 identity lock (2
 
 **Recount pins (V5 @ 2026-11-25):** `origin/development` = `5935fa4f0cd3596852b3a6500f9d4e1d613a53df` (**canonical integration head**; **not** G2, **not** R, **not** FCS, **not** M3). `origin/arch-freeze/rw-train` = `e9bebe0aca6f6e80d4f1aa7d52d51292133e8e4a` (published train tip; **not** G2). Historical V4 pin `7657745c38500653c57980b0b477f611a86cccdc` and P0 pin `11787a7e196cbfea32a982bfa260f02a34fe05fc` are ancestors, not the V5 read pin. Local `arch-freeze/fc-train` `ad1fb7f24eec2e730b0e286c60d6dc5b1aeb640a` is cite-only vs prior recounts; use `origin/` for train evidence. `origin/arch-freeze/fc-train` is absent. PT-Q02 candidate `ea923cf03d88fc9d22637796e9002eb9d68e6e59` is **stale**, is **not** an ancestor of `5935fa4f`, and is **not** G2. Local `arch-freeze/rw-train` may be behind `origin/` — use `origin/` only.
 
-**Main-table status histogram (149 data rows):** `UNK` 90, `REQ` 14, `PARTIAL` 18, `DONE-FORMAL` 20, `VOID` 3, `OPEN` 2, `VALIDATED` 2 (T-AF2-RW-PLAN and REV-MASTER). G2, R, FCS, M3, ENTRY and ARCH-FREEZE remain unset.
+**Main-table status histogram (149 data rows):** `UNK` 90, `REQ` 14, `PARTIAL` 16, `DONE-FORMAL` 22, `VOID` 3, `OPEN` 2, `VALIDATED` 2 (T-AF2-RW-PLAN and REV-MASTER). G2, R, FCS, M3, ENTRY and ARCH-FREEZE remain unset.
+
+**Update 2026-11-27** (ticket `T-IGX-073-E`, AF-W2-SCOPE-CLOSE-01): SCOPE, T-AF2-RW-PLAN-AUDIT → **DONE-FORMAL**; PT-B01/PT-B02 predecessor text → **PREDECESSOR_CONTRACT_SATISFIED** (diagnostic); independent **RW_PLAN_AUDIT=PASS** @ `73835a889fcebe4393113abd25d9cf9aeceda7c1`; **`SCOPE=CLOSED`**; **W3_ENTRY=AUTHORIZED**; OP-B / red-first obligations unchanged.
 
 **Update 2026-11-26** (ticket `T-IGX-078-A`, checked at `development` `646e63953`): eight rows changed status (M-NOW, T-AF2-OD-RECORD, T-AF2-PLAN-PUBLISH, T-AF2-SSOT-RECONCILE-A, T-AF2-DAG-REGEN, T-AF2-DS-EXC-PACKAGE, T-AF2-VALIDATOR-AMEND, T-AF2-RED-CLASSES); the SCOPE and T-AF2-RW-PLAN-AUDIT texts were corrected, so SCOPE and T-AF2-RW-PLAN-AUDIT each have one status in both tables. For W0 rows, `DONE-FORMAL` means the deliverable is merged. It is not an FRZ promotion and not P0 `CLOSED`. The ticket files of T-IGX-050-A, B, C and J still read `plan_approved`; this update does not edit them.
 
@@ -18,7 +20,7 @@ The SCOPE, T-AF2-RW-PLAN-AUDIT and T-AF2-RED-CLASSES rows were refreshed at `646
 
 | Node | P0 disposition | Evidence @ pin |
 | --- | --- | --- |
-| SCOPE | **PARTIAL** | **OPEN.** Checker @ `development` `a92a023e`: `RED_FIRST_EVIDENCE=INCOMPLETE` (12× EVIDENCE_MISSING under B6 progressive set), `RW_PLAN_AUDIT=NOT_PERFORMED`, `CODE_FIX_OWNERSHIP=39/39` (AF-W2-GATE-BIND-01). Wpis `646e63953` z COMPLETE jest historyczny (GA.2R/OP-B). |
+| SCOPE | **DONE-FORMAL** | **CLOSED** @ AF-W2-SCOPE-CLOSE-01 (`SCOPE_FORMAL_CLOSEOUT_RECORD.md`). 12/12 hard predecessors satisfied; `RW_PLAN_AUDIT=PASS` (published); `RED_FIRST_EVIDENCE=INCOMPLETE`; `OP_B_PENDING=12`; `G2=OPEN`. Historical OPEN @ `a92a023e` superseded. |
 | PT-WA | **PUBLISHED** (slice) / **PARTIAL** | PR **#680** @ train; W3 gate remnants local only |
 | PT-WB | **PARTIAL** | Plan §1.4; no closure record |
 | PT-WD | **PARTIAL** | RC0 / WD tickets open |
@@ -42,7 +44,7 @@ The SCOPE, T-AF2-RW-PLAN-AUDIT and T-AF2-RED-CLASSES rows were refreshed at `646
 | T-AF2-RW-GATES | **ABSENT** / **PARTIAL** | KR gates open |
 | T-AF2-RW-TYP | **ABSENT** | No closure @ pin |
 | T-AF2-DEPS-BATCH | **ABSENT** | `T-IGX-051-H` plan only |
-| T-AF2-RW-PLAN-AUDIT | **PARTIAL** | Independent audit GA.2 round 1 @ `aabd3925c`: `RW_PLAN_AUDIT_FAIL`. The older RM-03 PASS @ `ebe45c269` was structural only (`RW_PLAN_AUDIT_STATUS.md`). GA.2R (`T-IGX-078-B`) repaired the plan; round 2 is not performed; checker: `RW_PLAN_AUDIT=NOT_PERFORMED` |
+| T-AF2-RW-PLAN-AUDIT | **DONE-FORMAL** | Independent audit round 2 **PASS** @ `73835a889fcebe4393113abd25d9cf9aeceda7c1` (`continuation/RW_PLAN_AUDIT_STATUS.md` AF-W2-INDEPENDENT-AUDIT-02, AR-12-07). Round 1 FAIL @ `aabd3925c` historical. Checker: `RW_PLAN_AUDIT=NOT_PERFORMED`. |
 | T-AF2-RED-CLASSES | **PARTIAL** - red-first card **DECIDED** (that card only) | Register and lint `b3e89fd69`; `continuation/RED_FIRST_V5_RED_CLASSES_DECISION.md` (`a61eeaedf`); GAP FIND-AF2-16 still OPEN |
 | G2 | **ABSENT** | `ARCH_FREEZE_SHA_LADDER.md` L26 NOT SET |
 | R | **ABSENT** | LAD L27 NOT SET |
@@ -79,8 +81,8 @@ Row count: 149
 | PT-AUD-ENF1 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | AUD, REG |
 | PT-AUD-ENF12 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | AUD |
 | PT-AUD-ENFA | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| PT-B01 | PARTIAL | - | NONE | **ACCEPTED_DIAGNOSTIC_INPUT** (AF-W2-FINAL-01); evidence B 7960ae7f; package ff70f3d1; B1 19/19; not formal CLOSED | N | SEC |
-| PT-B02 | PARTIAL | - | NONE | **ACCEPTED_DIAGNOSTIC_INPUT** (AF-W2-FINAL-01); B2 9/9; S03 127 PASS; not formal CLOSED | N | - |
+| PT-B01 | PARTIAL | - | 7960ae7f | **PREDECESSOR_CONTRACT_SATISFIED** (diagnostic, non-certifying); B1 19/19 @ B; independent audit AUDIT-07 PASS; not product qualification | N | SEC |
+| PT-B02 | PARTIAL | - | 7960ae7f | **PREDECESSOR_CONTRACT_SATISFIED** (diagnostic); B2 9/9; S03 127 PASS; 4 NOT_EXECUTABLE_AT_BASELINE documented | N | - |
 | PT-B1W | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-B2W | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-BA | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
@@ -148,7 +150,7 @@ Row count: 149
 | PT-WF | PARTIAL | T-IGX-043-J | db69a9e44 | G-09 product e6b1d97f7 via PR #718; E2-E4 absent @ train (PLAN_T-IGX-043-J, DEF_CB_B2_S03_PT_WF_DISPOSITION.md); dev dc083f6ea not on train; T-IGX-043-J=in_progress | N | SEC |
 | REV-MASTER | VALIDATED | - | deea67621120403edb2d9bdd33e3eed8903199de | REV_MASTER_FORMAL_CLOSEOUT_RECORD.md FORMAL_PASSED=YES; corrective record L22; ancestor of `7657745c` (V4). Not SCOPE, not G2. | N | - |
 | RW | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| SCOPE | PARTIAL | T-IGX-050-N | a92a023e | OPEN @ `development` pin `a92a023e`: RED_FIRST_EVIDENCE=INCOMPLETE, RW_PLAN_AUDIT=NOT_PERFORMED, CODE_FIX_OWNERSHIP=39/39; pre-G2: `verify_rw_plan_phase_check3.py --pre-g2` exit 1 expected (AF-W2-GATE-BIND-01). G2, R, FCS, M3 NOT SET | N | - |
+| SCOPE | DONE-FORMAL | T-IGX-073-E | 73835a88 | CLOSED @ AF-W2-SCOPE-CLOSE-01: 12/12 predecessors; RW_PLAN_AUDIT PASS (published); RED_FIRST_EVIDENCE=INCOMPLETE; OP_B_PENDING=12; W3_ENTRY=AUTHORIZED; pre-G2 exit 1 expected; G2, R, FCS, M3 NOT SET | N | - |
 | T-AF2-BASELINE-PIN | DONE-FORMAL | - | 7960ae7f6 | LAD L25 (AUDIT_BASELINE_2 PINNED); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
 | T-AF2-BND-CLOSURE | UNK | - | NONE | RC0 L59-73; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | BND |
 | T-AF2-CI-HEAD-RUN | PARTIAL | - | 43858457516 | GAP L52; KNOWN_RED_REGISTER.md L12; @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | REG |
@@ -169,8 +171,8 @@ Row count: 149
 | T-AF2-REQUAL-HIST-PASS | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | HIST, CMP, TEN, EVOL, FRZ-11, AUD |
 | T-AF2-RM499-ENTRY | UNK | T-IGX-050-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | T-AF2-RW-GATES | UNK | T-IGX-051-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | OBS |
-| T-AF2-RW-PLAN | VALIDATED | T-IGX-073-D | ebe45c269 | VALIDATED here means the mechanical structure check only; it is not an independent audit result and the node is not CLOSED. Independent audit GA.2 round 1 @ `aabd3925c` failed the plan; GA.2R (`T-IGX-078-B`) regenerated it (`RW_PLAN.md`); round 2 is not performed; `RED_FIRST_EVIDENCE=INCOMPLETE` (`continuation/RED_FIRST_GA2R_RESULT.md`) | N | all CODE_FIX rows |
-| T-AF2-RW-PLAN-AUDIT | PARTIAL | T-IGX-050-N | ebe45c269 | No independent PASS exists. GA.2 round 1 @ `aabd3925c`: `RW_PLAN_AUDIT_FAIL`; round 2 is not performed. The AR-12-07 RM-03 PASS @ `ebe45c269` covered structure only (`continuation/RW_PLAN_AUDIT_STATUS.md`); checker: `RW_PLAN_AUDIT=NOT_PERFORMED` | N | - |
+| T-AF2-RW-PLAN | VALIDATED | T-IGX-073-D | 73835a88 | SCOPE predecessor **SATISFIED** @ audit SHA; mechanical VALIDATED ≠ product qualification; `RED_FIRST_EVIDENCE=INCOMPLETE` | N | all CODE_FIX rows |
+| T-AF2-RW-PLAN-AUDIT | DONE-FORMAL | T-IGX-073-E | 73835a88 | Independent **RW_PLAN_AUDIT=PASS** round 2 @ `73835a889fcebe4393113abd25d9cf9aeceda7c1` (`continuation/RW_PLAN_AUDIT_STATUS.md`); checker `RW_PLAN_AUDIT=NOT_PERFORMED` | N | - |
 | T-AF2-RW-RECOVERY | PARTIAL | T-IGX-051-E | NONE | RC0 L34-42; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-E=plan_approved | N | REL |
 | T-AF2-RW-RUNTIME | REQ | T-IGX-051-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-D=plan_approved | Y | CTR, REL |
 | T-AF2-RW-SUPPLY | REQ | T-IGX-051-B/N | 711ee4a11 | CHECKPOINT.md L120-124; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-B=plan_approved | Y | PLG, SEC |

@@ -1,16 +1,14 @@
 # T-AF2-RW-PLAN-AUDIT — prep dossier (development tor)
 
-**Data:** 2026-11-27 (AF-W2-GATE-BIND-01)
-**Werdykt tej paczki:** PREP DONE — artefakty wejsciowe; nie PASS.
-**Werdykt węzła T-AF2-RW-PLAN-AUDIT:** NOT_PERFORMED.
+**Data:** 2026-11-27 (AF-W2-SCOPE-CLOSE-01 supersedes AF-W2-GATE-BIND-01 prep-only state)
+**Werdykt węzła T-AF2-RW-PLAN-AUDIT:** **PASS** (published independent round 2 — AF-W2-INDEPENDENT-AUDIT-02)
 
 ## Pin snapshot
 
 | Ref | SHA (40) |
 |-----|----------|
-| Tor development (obowiazujacy) | a92a023e1a238b95635dcecdc4e51adecdcbc916 |
-| ARCH-FREEZE lineage pin | 3b9defe83fef7780126d1905d80e6f60721d6318 |
-| origin/arch-freeze/rw-train (historyczny) | dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2 |
+| Audited immutable SHA (round 2) | `73835a889fcebe4393113abd25d9cf9aeceda7c1` |
+| Tor development (lineage) | `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (verified remote @ instruction prep) |
 
 ## Mandat
 
@@ -19,25 +17,24 @@
 | AR-12-07 | GRANTED |
 | OD-AF-CLOSE-B2 / B6 | DECIDED |
 
-## Wejścia round 2 @ development
+## Independent audit publication
 
-- MEP-AF2 v2.1 (V6 + V5.2.1)
-- RW_PLAN.md, rw_plan.v1.json, rw_plan_bindings.v1.json
-- ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md, WP12_DAG.md
-- CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md
-- RED_FIRST_GA2R records
-- verify_rw_plan_phase_check3.py (default + --pre-g2)
-- SOURCES.sha256
-- SCOPE_PREDECESSOR_INDEX.md
-- RW_PLAN_AUDIT_STATUS.md (round 1 baseline)
+| Artefakt | Rola |
+|----------|------|
+| [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) | Canonical PASS record |
+| [`SCOPE_FORMAL_CLOSEOUT_RECORD.md`](../SCOPE_FORMAL_CLOSEOUT_RECORD.md) | SCOPE milestone closeout |
+| [`SCOPE_PREDECESSOR_INDEX.md`](SCOPE_PREDECESSOR_INDEX.md) | 12/12 predecessor settlement |
 
-## Stan oczekiwany
+## Stan po publikacji (AF-W2-SCOPE-CLOSE-01)
 
 | Dimension | Value |
 |-----------|-------|
-| AUDIT_INPUT_READY | YES (inputs consistent) |
-| RW_PLAN_AUDIT | NOT_PERFORMED |
-| SCOPE | OPEN |
-| G2 | OPEN |
+| RW_PLAN_AUDIT (published) | **PASS** |
+| RW_PLAN_AUDIT (mechanical checker) | **NOT_PERFORMED** |
+| SCOPE | **CLOSED** |
+| W3_ENTRY | **AUTHORIZED** |
+| G2 | **OPEN** |
+| RED_FIRST_EVIDENCE | **INCOMPLETE** |
+| PRE_G2_OP_B_SETTLEMENT | **FAIL** |
 
-Niezalezna sesja audytora round 2 — NOT STARTED.
+**Historical prep (AF-W2-GATE-BIND-01):** independent session completed in separate read-only session **INTEGRAX | ARCH-FREEZE | W2 | RW-PLAN-AUDIT | ROUND-02**, verdict delivered 2026-11-27.
