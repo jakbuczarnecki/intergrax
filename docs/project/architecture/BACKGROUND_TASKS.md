@@ -577,7 +577,7 @@ Operators and developers should be able to answer:
 
 **EXTENSIBILITY_GAP (report only):** formal `TaskRegistry` port; unified worker provider port beyond concrete `WorkerRuntime` / broker bases.
 
-> **Registry layering & horizontal-scaling boundary (EQO-W4 / `PDC-D7-R021`, `PDC-D7-R022`):** `TaskRegistry` / `WorkerRuntime` (`intergrax/background_tasks/`) is a layered facade over `TaskExecutionRegistry` (`intergrax/runtime/long_running/`), not a duplicate registry; ownership is recorded in `PDC_OWNERSHIP_MATRIX.md` (D7). Horizontal scaling is scoped to `DIST-SCALE-X` and two-OS-process SQLite fencing (`tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py`); multi-node PostgreSQL / external broker scaling remains deferred under the C10/C15 freeze (`PDC_DEBT_REGISTER.md` / `OD-PDC-X-CLOSE.md`).
+> **Registry layering & horizontal-scaling boundary (EQO-W4 / `PDC-D7-R021`, `PDC-D7-R022`):** `TaskRegistry` / `WorkerRuntime` (`intergrax/background_tasks/`) is a layered facade over `TaskExecutionRegistry` (`intergrax/queueing/worker/registry.py`), not a duplicate registry; ownership is recorded in `PDC_OWNERSHIP_MATRIX.md` (D7). Horizontal scaling is scoped to `DIST-SCALE-X` and two-OS-process SQLite fencing (`tests/qualification/pdc_x/d7/test_d7_fencing_two_process.py`); multi-node PostgreSQL / external broker scaling remains deferred under the C10/C15 freeze (`PDC_DEBT_REGISTER.md` / `OD-PDC-X-CLOSE.md`).
 
 **Evolution:**
 

@@ -32,7 +32,7 @@
   "open_unknown_split": "605 real OPEN/UNKNOWN entries + 155 NOT_AN_ENTRY rows with currency OPEN/UNKNOWN = 760 (605 + 155 = 760)",
   "a7_entries_total": "1480 = 605 ingested OPEN/UNKNOWN + 26 ingested DEFERRED + 456 accepted (155 A2/register rows + 301 IIAC limitations covered by 39 pointer rows) + 211 resolved/closed/superseded not ingested + 182 not-an-entry rows (155 excluded as OPEN/UNKNOWN, 27 other)",
   "register_rows": "1069 rows = 239 findings + 605 OPEN/UNKNOWN entries + 26 DEFERRED entries + 155 accepted A2/register EXCEPTION rows + 39 IIAC pointer rows + 5 category rows (4 skip, 1 N/A)",
-  "eder_total_with_post_ingest": "1073 = 1069 (initial ingest per rows_by_basis below) + 4 POST_INGEST rows EDER-N-0001..EDER-N-0004 in register.jsonl (ingest_basis=POST_INGEST_REGISTER_ITEM); EQO-E-01"
+  "eder_total_with_post_ingest": "1069 initial ingest + 4 POST_INGEST_EDER_N rows (EDER-N-0001..EDER-N-0004, ingest_basis=POST_INGEST_REGISTER_ITEM) = 1073 total, matching rows_by_basis below; EQO-E-01"
  },
  "rows_total": 1073,
  "rows_by_basis": {
@@ -204,7 +204,7 @@
   "rows_with_owner_ref": 1073,
   "rows_without_owner_ref": 0,
   "rows_with_accountable_person": 0,
-  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY are its 'proposed' values and every row also carries owner_vocabulary_status (PROPOSED_UNCONFIRMED until 2026-11-17, CONFIRMED after the DP-47 confirmation; the row-level owner_status values are unchanged)",
+  "owner_status_note": "the merged schema enum has no value PROPOSED_UNCONFIRMED; SINGLE_PROPOSED / SHARED_UNRESOLVED / OPERATOR_ONLY were the initial proposed values alongside owner_vocabulary_status=CONFIRMED (DP-47, 2026-11-17). Under OP-EC-01 / OD-EQO-09=A (2026-11-26, T-IGX-090-B, EQO-E-03), 941 rows (821 SINGLE_PROPOSED + 120 gap mappings) were updated to owner_status=CONFIRMED while 132 OPERATOR_ONLY rows remain preserved and accountable_person stays null on all 1073 rows.",
   "unmapped_owner_raw": [
    "Docs governance / feature owners",
    "Feature doc owners",
