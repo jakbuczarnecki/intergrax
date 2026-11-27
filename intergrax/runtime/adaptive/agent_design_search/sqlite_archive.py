@@ -11,11 +11,12 @@ from typing import Any
 from intergrax.runtime.adaptive.agent_design_search.archive import (
     AgentDesignArchiveError,
     AgentDesignArchiveScopeError,
-    InMemoryAgentDesignArchive,
-    _assert_scope,
-    _freeze_record,
-    _validate_parent_link,
-    _validate_transition,
+    freeze_candidate_record,
+    freeze_evidence_bundle,
+    require_archive_read_scope,
+    validate_evidence_bundle_against_archive,
+    validate_parent_link,
+    validate_transition,
 )
 from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AgentCandidateEvidenceBundle,
@@ -53,17 +54,23 @@ CREATE TABLE IF NOT EXISTS adas_evidence_bundles (
 """
 
 
+def _assert_record_write_scope(record: AgentCandidateRecord, *, tenant_id: str, workspace_id: str) -> None:
+    if record.tenant_id != tenant_id or record.workspace_id != workspace_id:
+        raise AgentDesignArchiveScopeError("record scope mismatch")
+    if record.envelope.tenant_id != tenant_id or record.envelope.workspace_id != workspace_id:
+        raise AgentDesignArchiveScopeError("record scope mismatch")
+
+
 class SQLiteAgentDesignArchive:
     """Durable append-only archive using stdlib sqlite3."""
 
     def __init__(self, db_path: Path) -> None:
         self._db_path = Path(db_path)
-        self._memory = InMemoryAgentDesignArchive()
         self._connection: sqlite3.Connection | None = None
 
     def _connect(self) -> sqlite3.Connection:
         if self._connection is None:
-            self._connection = sqlite3.connect(self._db_path)
+            self._connection = sqlite3.connect(self._db_path, isolation_level=None)
             self._connection.row_factory = sqlite3.Row
             self._connection.executescript(_SCHEMA)
         return self._connection
@@ -79,24 +86,39 @@ class SQLiteAgentDesignArchive:
     def __exit__(self, *_: Any) -> None:
         self.close()
 
-    def _load_from_db(self) -> None:
-        if self._memory._history:
-            return
-        conn = self._connect()
+    def _history_map(self, conn: sqlite3.Connection) -> dict[str, list[AgentCandidateRecord]]:
         rows = conn.execute(
-            "SELECT payload_json FROM adas_candidate_snapshots ORDER BY candidate_id, sequence"
+            """
+            SELECT payload_json FROM adas_candidate_snapshots
+            ORDER BY candidate_id, sequence, created_at, snapshot_id
+            """
         ).fetchall()
+        history: dict[str, list[AgentCandidateRecord]] = {}
         for row in rows:
             record = AgentCandidateRecord.model_validate_json(row["payload_json"])
-            self._memory._snapshots[record.snapshot_id] = record
-            self._memory._history.setdefault(record.candidate_id, []).append(record)
-        bundle_rows = conn.execute("SELECT payload_json FROM adas_evidence_bundles ORDER BY bundle_id").fetchall()
-        for row in bundle_rows:
-            bundle = AgentCandidateEvidenceBundle.model_validate_json(row["payload_json"])
-            self._bundles_put_memory(bundle)
+            history.setdefault(record.candidate_id, []).append(record)
+        return history
 
-    def _bundles_put_memory(self, bundle: AgentCandidateEvidenceBundle) -> None:
-        self._memory._bundles[bundle.bundle_id] = bundle
+    def _fetch_prior_snapshot(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        candidate_id: str,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> AgentCandidateRecord | None:
+        row = conn.execute(
+            """
+            SELECT payload_json FROM adas_candidate_snapshots
+            WHERE candidate_id = ? AND tenant_id = ? AND workspace_id = ?
+            ORDER BY sequence DESC, created_at DESC, snapshot_id DESC
+            LIMIT 1
+            """,
+            (candidate_id, tenant_id, workspace_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return AgentCandidateRecord.model_validate_json(row["payload_json"])
 
     def append_candidate_snapshot(
         self,
@@ -105,45 +127,68 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> AgentCandidateRecord:
-        self._load_from_db()
-        _assert_scope(record, tenant_id=tenant_id, workspace_id=workspace_id)
-        frozen = _freeze_record(record)
-        prior_list = self._memory._history.get(frozen.candidate_id, [])
-        prior = prior_list[-1] if prior_list else None
-        if frozen.snapshot_id in self._memory._snapshots:
-            existing = self._memory._snapshots[frozen.snapshot_id]
-            if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
-                return existing
-            raise AgentDesignArchiveError("conflicting snapshot identity")
-        _validate_parent_link(self._memory._history, frozen)
-        _validate_transition(prior, frozen)
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        _assert_record_write_scope(record, tenant_id=tenant_id, workspace_id=workspace_id)
+        frozen = freeze_candidate_record(record)
         conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
         try:
-            with conn:
-                conn.execute(
-                    """
-                    INSERT INTO adas_candidate_snapshots (
-                        snapshot_id, candidate_id, objective_id, tenant_id, workspace_id,
-                        parent_candidate_id, sequence, status, payload_json, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        frozen.snapshot_id,
-                        frozen.candidate_id,
-                        frozen.objective_id,
-                        frozen.tenant_id,
-                        frozen.workspace_id,
-                        frozen.parent_candidate_id,
-                        frozen.sequence,
-                        frozen.status.value,
-                        frozen.model_dump_json(),
-                        frozen.created_at.isoformat(),
-                    ),
-                )
+            existing_row = conn.execute(
+                "SELECT payload_json FROM adas_candidate_snapshots WHERE snapshot_id = ?",
+                (frozen.snapshot_id,),
+            ).fetchone()
+            if existing_row is not None:
+                existing = AgentCandidateRecord.model_validate_json(existing_row["payload_json"])
+                if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
+                    conn.execute("ROLLBACK")
+                    return existing
+                conn.execute("ROLLBACK")
+                raise AgentDesignArchiveError("conflicting snapshot identity")
+
+            history = self._history_map(conn)
+            prior = self._fetch_prior_snapshot(
+                conn,
+                candidate_id=frozen.candidate_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            validate_parent_link(history, frozen)
+            validate_transition(prior, frozen)
+            conn.execute(
+                """
+                INSERT INTO adas_candidate_snapshots (
+                    snapshot_id, candidate_id, objective_id, tenant_id, workspace_id,
+                    parent_candidate_id, sequence, status, payload_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    frozen.snapshot_id,
+                    frozen.candidate_id,
+                    frozen.objective_id,
+                    frozen.tenant_id,
+                    frozen.workspace_id,
+                    frozen.parent_candidate_id,
+                    frozen.sequence,
+                    frozen.status.value,
+                    frozen.model_dump_json(),
+                    frozen.created_at.isoformat(),
+                ),
+            )
+            conn.execute("COMMIT")
         except sqlite3.IntegrityError as exc:
+            conn.execute("ROLLBACK")
+            existing_row = conn.execute(
+                "SELECT payload_json FROM adas_candidate_snapshots WHERE snapshot_id = ?",
+                (frozen.snapshot_id,),
+            ).fetchone()
+            if existing_row is not None:
+                existing = AgentCandidateRecord.model_validate_json(existing_row["payload_json"])
+                if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
+                    return existing
             raise AgentDesignArchiveError("conflicting snapshot identity") from exc
-        self._memory._snapshots[frozen.snapshot_id] = frozen
-        self._memory._history.setdefault(frozen.candidate_id, []).append(frozen)
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
         return frozen
 
     def get_latest_candidate_snapshot(
@@ -153,8 +198,14 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> AgentCandidateRecord | None:
-        self._load_from_db()
-        return self._memory.get_latest_candidate_snapshot(candidate_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        conn = self._connect()
+        return self._fetch_prior_snapshot(
+            conn,
+            candidate_id=candidate_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
 
     def get_candidate_history(
         self,
@@ -163,8 +214,24 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> list[AgentCandidateRecord]:
-        self._load_from_db()
-        return self._memory.get_candidate_history(candidate_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        conn = self._connect()
+        rows = conn.execute(
+            """
+            SELECT payload_json FROM adas_candidate_snapshots
+            WHERE candidate_id = ? AND tenant_id = ? AND workspace_id = ?
+            ORDER BY sequence, created_at, snapshot_id
+            """,
+            (candidate_id, tenant_id, workspace_id),
+        ).fetchall()
+        if not rows:
+            foreign = conn.execute(
+                "SELECT 1 FROM adas_candidate_snapshots WHERE candidate_id = ? LIMIT 1",
+                (candidate_id,),
+            ).fetchone()
+            if foreign is not None:
+                return []
+        return [AgentCandidateRecord.model_validate_json(row["payload_json"]) for row in rows]
 
     def list_candidates_for_objective(
         self,
@@ -174,13 +241,26 @@ class SQLiteAgentDesignArchive:
         workspace_id: str,
         status: AgentCandidateStatus | None = None,
     ) -> list[AgentCandidateRecord]:
-        self._load_from_db()
-        return self._memory.list_candidates_for_objective(
-            objective_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            status=status,
-        )
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        conn = self._connect()
+        rows = conn.execute(
+            """
+            SELECT payload_json FROM adas_candidate_snapshots
+            WHERE objective_id = ? AND tenant_id = ? AND workspace_id = ?
+            ORDER BY candidate_id, sequence, created_at, snapshot_id
+            """,
+            (objective_id, tenant_id, workspace_id),
+        ).fetchall()
+        latest: dict[str, AgentCandidateRecord] = {}
+        for row in rows:
+            record = AgentCandidateRecord.model_validate_json(row["payload_json"])
+            prior = latest.get(record.candidate_id)
+            if prior is None or record.sequence > prior.sequence:
+                latest[record.candidate_id] = record
+        values = sorted(latest.values(), key=lambda item: (item.created_at, item.candidate_id, item.sequence))
+        if status is None:
+            return values
+        return [item for item in values if item.status is status]
 
     def get_child_candidates(
         self,
@@ -189,11 +269,27 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> list[AgentCandidateRecord]:
-        self._load_from_db()
-        return self._memory.get_child_candidates(
-            parent_candidate_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        parent = self.get_latest_candidate_snapshot(parent_candidate_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        if parent is None:
+            return []
+        conn = self._connect()
+        rows = conn.execute(
+            """
+            SELECT payload_json FROM (
+                SELECT candidate_id, MAX(sequence) AS max_seq
+                FROM adas_candidate_snapshots
+                WHERE tenant_id = ? AND workspace_id = ? AND parent_candidate_id = ?
+                GROUP BY candidate_id
+            ) latest
+            JOIN adas_candidate_snapshots s
+              ON s.candidate_id = latest.candidate_id AND s.sequence = latest.max_seq
+            """,
+            (tenant_id, workspace_id, parent_candidate_id),
+        ).fetchall()
+        return sorted(
+            [AgentCandidateRecord.model_validate_json(row["payload_json"]) for row in rows],
+            key=lambda item: item.candidate_id,
         )
 
     def get_parent_candidate(
@@ -203,8 +299,14 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> AgentCandidateRecord | None:
-        self._load_from_db()
-        return self._memory.get_parent_candidate(candidate_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        latest = self.get_latest_candidate_snapshot(candidate_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        if latest is None or latest.parent_candidate_id is None:
+            return None
+        return self.get_latest_candidate_snapshot(
+            latest.parent_candidate_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
 
     def append_sealed_evidence_bundle(
         self,
@@ -213,40 +315,56 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> AgentCandidateEvidenceBundle:
-        self._load_from_db()
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
         if bundle.tenant_id != tenant_id or bundle.workspace_id != workspace_id:
             raise AgentDesignArchiveScopeError("bundle scope mismatch")
         if not bundle.sealed:
             raise AgentDesignArchiveError("bundle must be sealed before append")
+        conn = self._connect()
+        archived = self.get_latest_candidate_snapshot(
+            bundle.candidate_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        validate_evidence_bundle_against_archive(bundle, archived)
         digest = bundle.bundle_digest or compute_evidence_bundle_digest(bundle)
         payload = bundle.model_dump(mode="python")
         payload["bundle_digest"] = digest
-        frozen = AgentCandidateEvidenceBundle.model_validate(payload)
+        frozen = freeze_evidence_bundle(AgentCandidateEvidenceBundle.model_validate(payload))
         verify_evidence_bundle_digest(frozen)
-        if frozen.bundle_id in self._memory._bundles:
-            existing = self._memory._bundles[frozen.bundle_id]
-            if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
-                return existing
-            raise AgentDesignArchiveError("conflicting evidence bundle identity")
-        conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
         try:
-            with conn:
-                conn.execute(
-                    """
-                    INSERT INTO adas_evidence_bundles (bundle_id, tenant_id, workspace_id, payload_json, created_at)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (
-                        frozen.bundle_id,
-                        frozen.tenant_id,
-                        frozen.workspace_id,
-                        frozen.model_dump_json(),
-                        frozen.created_at.isoformat(),
-                    ),
-                )
+            existing_row = conn.execute(
+                "SELECT payload_json FROM adas_evidence_bundles WHERE bundle_id = ?",
+                (frozen.bundle_id,),
+            ).fetchone()
+            if existing_row is not None:
+                existing = AgentCandidateEvidenceBundle.model_validate_json(existing_row["payload_json"])
+                if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
+                    conn.execute("ROLLBACK")
+                    return existing
+                conn.execute("ROLLBACK")
+                raise AgentDesignArchiveError("conflicting evidence bundle identity")
+            conn.execute(
+                """
+                INSERT INTO adas_evidence_bundles (bundle_id, tenant_id, workspace_id, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    frozen.bundle_id,
+                    frozen.tenant_id,
+                    frozen.workspace_id,
+                    frozen.model_dump_json(),
+                    frozen.created_at.isoformat(),
+                ),
+            )
+            conn.execute("COMMIT")
         except sqlite3.IntegrityError as exc:
+            conn.execute("ROLLBACK")
             raise AgentDesignArchiveError("conflicting evidence bundle identity") from exc
-        self._bundles_put_memory(frozen)
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
         return frozen
 
     def get_sealed_evidence_bundle(
@@ -256,5 +374,18 @@ class SQLiteAgentDesignArchive:
         tenant_id: str,
         workspace_id: str,
     ) -> AgentCandidateEvidenceBundle | None:
-        self._load_from_db()
-        return self._memory.get_sealed_evidence_bundle(bundle_id, tenant_id=tenant_id, workspace_id=workspace_id)
+        require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
+        conn = self._connect()
+        row = conn.execute(
+            "SELECT payload_json FROM adas_evidence_bundles WHERE bundle_id = ?",
+            (bundle_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        bundle = AgentCandidateEvidenceBundle.model_validate_json(row["payload_json"])
+        if bundle.tenant_id != tenant_id or bundle.workspace_id != workspace_id:
+            return None
+        if bundle.bundle_digest is None:
+            raise AgentDesignArchiveError("persisted bundle missing digest")
+        verify_evidence_bundle_digest(bundle)
+        return bundle

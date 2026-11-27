@@ -5,21 +5,253 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
+from collections.abc import Iterator, Mapping
 from datetime import datetime
 from enum import Enum
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
 
 from intergrax.contracts.canonical_payload_hash import canonical_json_bytes
 from intergrax.contracts.orchestration_enums import MergeStrategy
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType
 
-ADAS_CONTRACT_SCHEMA_VERSION = "1.0.0"
+ADAS_CONTRACT_SCHEMA_VERSION = "1.0"
 _SHA256_HEX = re.compile(r"^[a-f0-9]{64}$")
 _W1_MERGE_STRATEGIES = frozenset({MergeStrategy.LAST_WINS, MergeStrategy.CONCAT})
+_SEARCH_RUN_STATUSES = frozenset({"pending", "running", "completed", "failed", "cancelled"})
+_ADAS_JSON_MUTATION_ERROR = "ADAS contract JSON payload is immutable"
+
+type AdasJsonPrimitive = str | int | float | bool | None
+type AdasJsonValue = AdasJsonPrimitive | list[AdasJsonValue] | dict[str, AdasJsonValue]
+type AdasJsonObject = dict[str, AdasJsonValue]
+
+
+def _validate_adas_json_value(
+    value: object,
+    *,
+    field_name: str,
+    path: str = "",
+) -> AdasJsonValue:
+    if isinstance(value, Enum):
+        child_path = path.rstrip(".") if path else field_name
+        raise ValueError(f"{field_name} must contain JSON-compatible values at '{child_path}'")
+    if value is None or isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            label = path.rstrip(".") if path else field_name
+            raise ValueError(f"{field_name} must not contain non-finite float at '{label}'")
+        return value
+    if isinstance(value, Mapping):
+        result: dict[str, AdasJsonValue] = {}
+        for raw_key, child in value.items():
+            if not isinstance(raw_key, str):
+                raise ValueError(f"{field_name} keys must be strings")
+            result[raw_key] = _validate_adas_json_value(
+                child,
+                field_name=field_name,
+                path=f"{path}{raw_key}.",
+            )
+        return result
+    if isinstance(value, list):
+        return [
+            _validate_adas_json_value(child, field_name=field_name, path=f"{path}[{index}].")
+            for index, child in enumerate(value)
+        ]
+    child_path = path.rstrip(".") if path else field_name
+    raise ValueError(f"{field_name} must contain JSON-compatible values at '{child_path}'")
+
+
+def _json_value_to_plain(value: AdasJsonValue) -> AdasJsonValue:
+    if isinstance(value, _FrozenAdasJsonObject):
+        return value.to_plain()
+    if isinstance(value, _FrozenAdasJsonArray):
+        return value.to_plain()
+    if isinstance(value, dict):
+        return {key: _json_value_to_plain(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_json_value_to_plain(child) for child in value]
+    return value
+
+
+class _FrozenAdasJsonArray:
+    __slots__ = ("_items",)
+
+    def __init__(self, items: list[AdasJsonValue]) -> None:
+        object.__setattr__(self, "_items", tuple(_freeze_adas_json_value(item) for item in items))
+
+    def __getitem__(self, index: int | slice) -> AdasJsonValue | _FrozenAdasJsonArray:
+        result = self._items[index]
+        if isinstance(index, slice):
+            return _FrozenAdasJsonArray(list(result))
+        return result
+
+    def __iter__(self) -> Iterator[AdasJsonValue]:
+        return iter(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _FrozenAdasJsonArray):
+            return self._items == other._items
+        if isinstance(other, list):
+            return self.to_plain() == other
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return repr(self.to_plain())
+
+    def to_plain(self) -> list[AdasJsonValue]:
+        return [_json_value_to_plain(item) for item in self._items]
+
+    def __setitem__(self, index: int | slice, value: object) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
+
+    def __delitem__(self, index: int | slice) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
+
+
+class _FrozenAdasJsonObject:
+    __slots__ = ("_items",)
+
+    def __init__(self, value: dict[str, AdasJsonValue]) -> None:
+        object.__setattr__(
+            self,
+            "_items",
+            {key: _freeze_adas_json_value(child) for key, child in value.items()},
+        )
+
+    def __getitem__(self, key: str) -> AdasJsonValue:
+        return self._items[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._items
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _FrozenAdasJsonObject):
+            return self._items == other._items
+        if isinstance(other, Mapping):
+            return self.to_plain() == dict(other)
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return repr(self.to_plain())
+
+    def keys(self) -> Iterator[str]:
+        return iter(self._items.keys())
+
+    def values(self) -> Iterator[AdasJsonValue]:
+        return iter(self._items.values())
+
+    def items(self) -> Iterator[tuple[str, AdasJsonValue]]:
+        return iter(self._items.items())
+
+    def get(self, key: str, default: AdasJsonValue | None = None) -> AdasJsonValue | None:
+        return self._items.get(key, default)
+
+    def to_plain(self) -> dict[str, AdasJsonValue]:
+        return {key: _json_value_to_plain(child) for key, child in self._items.items()}
+
+    def __setitem__(self, key: str, value: object) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
+
+    def __delitem__(self, key: str) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
+
+
+def _freeze_adas_json_value(value: AdasJsonValue) -> AdasJsonValue:
+    if isinstance(value, dict):
+        return _FrozenAdasJsonObject(value)  # pyright: ignore[reportReturnType]
+    if isinstance(value, list):
+        return _FrozenAdasJsonArray(value)  # pyright: ignore[reportReturnType]
+    return value
+
+
+def freeze_adas_json_object(value: Mapping[str, AdasJsonValue]) -> Mapping[str, AdasJsonValue]:
+    if isinstance(value, _FrozenAdasJsonObject):
+        return value
+    return _FrozenAdasJsonObject(dict(value))  # pyright: ignore[reportReturnType]
+
+
+def adas_json_to_plain(value: Mapping[str, AdasJsonValue]) -> dict[str, AdasJsonValue]:
+    if isinstance(value, _FrozenAdasJsonObject):
+        return value.to_plain()
+    return {key: _json_value_to_plain(child) for key, child in value.items()}
+
+
+def _parse_adas_json_object(value: object, *, field_name: str) -> dict[str, AdasJsonValue]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field_name} must be a JSON object")
+    validated = _validate_adas_json_value(value, field_name=field_name)
+    if not isinstance(validated, dict):
+        raise ValueError(f"{field_name} must be a JSON object")
+    return validated
+
+
+def _freeze_parsed_json_object(value: dict[str, AdasJsonValue]) -> Mapping[str, AdasJsonValue]:
+    return freeze_adas_json_object(value)
+
+
+def _adas_json_field_before(value: object, *, field_name: str) -> dict[str, AdasJsonValue] | None:
+    if value is None:
+        return None
+    return _parse_adas_json_object(value, field_name=field_name)
+
+
+def _adas_json_field_after(
+    value: dict[str, AdasJsonValue] | None,
+) -> Mapping[str, AdasJsonValue] | None:
+    if value is None:
+        return None
+    return _freeze_parsed_json_object(value)
+
+
+def _serialize_adas_json_field(value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
+    if value is None:
+        return None
+    return adas_json_to_plain(value)
+
+
+def _reject_executable_payload_tree(value: Mapping[str, AdasJsonValue], *, label: str) -> None:
+    forbidden = ("model", "tool", "capability", "permission", "policy", "source", "eval", "exec", "__import__")
+
+    def walk(node: AdasJsonValue, path: str) -> None:
+        if isinstance(node, dict):
+            for key, child in node.items():
+                lowered = key.lower()
+                if any(marker in lowered for marker in forbidden):
+                    raise ValueError(f"{label} must not carry unauthorized payloads at '{path}.{key}'")
+                walk(child, f"{path}.{key}")
+        elif isinstance(node, list):
+            for index, child in enumerate(node):
+                walk(child, f"{path}[{index}]")
+
+    for key, child in value.items():
+        lowered = key.lower()
+        if any(marker in lowered for marker in forbidden):
+            raise ValueError(f"{label} must not carry unauthorized payloads at '{key}'")
+        walk(child, key)
+
+
+def _empty_adas_json_object() -> Mapping[str, AdasJsonValue]:
+    return _freeze_parsed_json_object({})
 
 
 def _non_blank(value: str, *, field: str) -> str:
@@ -30,7 +262,9 @@ def _non_blank(value: str, *, field: str) -> str:
 
 
 def _validate_sha256_digest(value: str) -> str:
-    normalized = value.strip().lower()
+    normalized = value.strip()
+    if any(char.isupper() for char in normalized):
+        raise ValueError("digest must be lowercase 64-character hexadecimal SHA-256")
     if not _SHA256_HEX.fullmatch(normalized):
         raise ValueError("digest must be lowercase 64-character hexadecimal SHA-256")
     return normalized
@@ -76,6 +310,64 @@ class SearchSelectionOutcome(str, Enum):  # noqa: UP042
     ABSTAIN = "abstain"
 
 
+class AdasExecutionReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    execution_id: str
+
+    @field_validator("execution_id")
+    @classmethod
+    def _execution(cls, value: str) -> str:
+        return _non_blank(value, field="execution_id")
+
+
+class AdasEvalRunReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    eval_run_id: str
+
+    @field_validator("eval_run_id")
+    @classmethod
+    def _eval_run(cls, value: str) -> str:
+        return _non_blank(value, field="eval_run_id")
+
+
+class AdasEvalComparisonReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    comparison_id: str
+
+    @field_validator("comparison_id")
+    @classmethod
+    def _comparison(cls, value: str) -> str:
+        return _non_blank(value, field="comparison_id")
+
+
+class AggregateAccountingEvidenceReference(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    evidence_ref: str
+    completeness: str
+    measurement_uncertainty: str | None = None
+
+    @field_validator("evidence_ref", "completeness")
+    @classmethod
+    def _required(cls, value: str) -> str:
+        return _non_blank(value, field="reference")
+
+
+class StructuredSearchStopReason(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    reason_code: str
+    detail: str | None = None
+
+    @field_validator("reason_code")
+    @classmethod
+    def _code(cls, value: str) -> str:
+        return _non_blank(value, field="reason_code")
+
+
 class AdasOperationalEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -89,9 +381,9 @@ class AdasOperationalEnvelope(BaseModel):
     lab_only_posture: bool = True
     approved_by: str | None = None
     approval_id: str | None = None
-    policy_context_id: str | None = None
-    correlation_id: str | None = None
-    trace_id: str | None = None
+    policy_context_id: str
+    correlation_id: str
+    trace_id: str
     idempotency_key: str | None = None
     artifact_hash: str | None = None
     source_hash: str | None = None
@@ -117,6 +409,11 @@ class AdasOperationalEnvelope(BaseModel):
         if value is None:
             return None
         return _validate_sha256_digest(value)
+
+    @field_validator("correlation_id", "trace_id", "policy_context_id")
+    @classmethod
+    def _w1_operational_context(cls, value: str) -> str:
+        return _non_blank(value, field="operational context")
 
     @model_validator(mode="after")
     def _lab_posture(self) -> Self:
@@ -226,6 +523,16 @@ class AgentDesignObjective(BaseModel):
     target_capability: str
     envelope: AdasOperationalEnvelope
     baseline: BaselineConfigurationRef
+    baseline_agent_id: str | None = None
+    baseline_candidate_id: str | None = None
+    max_iterations: int = 1
+    max_candidates: int = 1
+    max_generation_cost: float | None = None
+    max_eval_cost: float | None = None
+    min_utility_delta: float = 0.0
+    allowed_patterns: tuple[str, ...] = ()
+    allowed_tools: tuple[str, ...] = ()
+    forbidden_tools: tuple[str, ...] = ()
     goal_summary: str
     success_metric: str
     dataset_id: str
@@ -278,6 +585,16 @@ class AgentDesignObjective(BaseModel):
             raise ValueError("W1 objectives must prohibit external effects")
         if set(self.allowed_merge_strategies) != _W1_MERGE_STRATEGIES:
             raise ValueError("W1 allows only last_wins and concat merge strategies")
+        if tuple(self.admitted_configuration_surface) != ("merge_strategy",):
+            raise ValueError("W1 admitted configuration surface must contain only merge_strategy")
+        if len(self.admitted_configuration_surface) != len(set(self.admitted_configuration_surface)):
+            raise ValueError("duplicate admitted configuration surface entries rejected")
+        if self.max_iterations != self.aggregate_limits.max_search_iterations:
+            raise ValueError("max_iterations must match aggregate search iteration limit")
+        if self.max_candidates != self.aggregate_limits.max_candidates:
+            raise ValueError("max_candidates must match aggregate candidate limit")
+        if not math.isfinite(self.min_utility_delta):
+            raise ValueError("min_utility_delta must be finite")
         return self
 
 
@@ -298,6 +615,15 @@ class AgentDesignSearchRun(BaseModel):
     started_at: datetime
     completed_at: datetime | None = None
     generated_candidate_ids: tuple[str, ...] = ()
+    promoted_candidate_id: str | None = None
+    total_generation_cost: float | None = None
+    total_evaluation_cost: float | None = None
+    baseline_execution_ref: str | None = None
+    candidate_execution_ref: str | None = None
+    eval_run_ref: str | None = None
+    eval_comparison_ref: str | None = None
+    accounting_evidence: AggregateAccountingEvidenceReference | None = None
+    structured_stop_reason: StructuredSearchStopReason | None = None
     stop_reason: str | None = None
 
     @field_validator(
@@ -322,6 +648,10 @@ class AgentDesignSearchRun(BaseModel):
 
     @model_validator(mode="after")
     def _scope_and_terminal(self) -> Self:
+        if self.status not in _SEARCH_RUN_STATUSES:
+            raise ValueError("unrecognized search run status")
+        if self.promoted_candidate_id is not None:
+            raise ValueError("W1 search runs keep promoted_candidate_id explicitly absent")
         if self.envelope.tenant_id != self.tenant_id or self.envelope.workspace_id != self.workspace_id:
             raise ValueError("envelope scope must match search run scope")
         if self.status in {"completed", "failed", "cancelled"}:
@@ -355,9 +685,9 @@ class AgentCandidateDraft(BaseModel):
     configuration_delta: ConfigurationDelta
     scaffold_pattern: None = None
     capabilities: tuple[str, ...] = ()
-    contract_draft: dict[str, Any] = Field(default_factory=dict)
-    prompt_assets: dict[str, Any] = Field(default_factory=dict)
-    tool_policy: dict[str, Any] = Field(default_factory=dict)
+    contract_draft: Mapping[str, AdasJsonValue] = Field(default_factory=_empty_adas_json_object)
+    prompt_assets: Mapping[str, AdasJsonValue] = Field(default_factory=_empty_adas_json_object)
+    tool_policy: Mapping[str, AdasJsonValue] = Field(default_factory=_empty_adas_json_object)
     state_schema: None = None
     source_artifact_ref: str | None = None
     scaffold_output_ref: None = None
@@ -388,13 +718,38 @@ class AgentCandidateDraft(BaseModel):
     def _created(cls, value: datetime) -> datetime:
         return _aware_datetime(value)
 
+    @field_validator(
+        "contract_draft",
+        "prompt_assets",
+        "tool_policy",
+        mode="before",
+    )
+    @classmethod
+    def _json_before(cls, value: object, info) -> dict[str, AdasJsonValue] | None:  # type: ignore[no-untyped-def]
+        return _adas_json_field_before(value, field_name=str(info.field_name))
+
+    @field_validator(
+        "contract_draft",
+        "prompt_assets",
+        "tool_policy",
+        mode="after",
+    )
+    @classmethod
+    def _json_after(
+        cls,
+        value: dict[str, AdasJsonValue] | None,
+    ) -> Mapping[str, AdasJsonValue] | None:
+        return _adas_json_field_after(value)
+
+    @field_serializer("contract_draft", "prompt_assets", "tool_policy")
+    def _json_serialize(self, value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
+        return _serialize_adas_json_field(value)
+
     @model_validator(mode="after")
     def _forbid_executable_payloads(self) -> Self:
-        forbidden = ("source", "eval", "exec", "__import__")
-        for key in self.contract_draft:
-            lowered = key.lower()
-            if any(marker in lowered for marker in forbidden):
-                raise ValueError("contract_draft must not carry executable payloads")
+        _reject_executable_payload_tree(self.contract_draft, label="contract_draft")
+        _reject_executable_payload_tree(self.prompt_assets, label="prompt_assets")
+        _reject_executable_payload_tree(self.tool_policy, label="tool_policy")
         return self
 
 
@@ -415,13 +770,13 @@ class AgentCandidateRecord(BaseModel):
     baseline: BaselineConfigurationRef
     candidate_configuration_digest: str
     configuration_delta: ConfigurationDelta
-    agent_contract_snapshot: dict[str, Any] = Field(default_factory=dict)
+    agent_contract_snapshot: Mapping[str, AdasJsonValue] = Field(default_factory=_empty_adas_json_object)
     scaffold_pattern: None = None
     source_artifact_ref: str | None = None
     scaffold_output_ref: None = None
     eval_suite_id: str | None = None
-    static_gate_result: dict[str, Any] | None = None
-    evaluation_result: dict[str, Any] | None = None
+    static_gate_result: Mapping[str, AdasJsonValue] | None = None
+    evaluation_result: Mapping[str, AdasJsonValue] | None = None
     utility_score: float | None = None
     baseline_utility_score: float | None = None
     utility_delta: float | None = None
@@ -465,6 +820,39 @@ class AgentCandidateRecord(BaseModel):
         if value is None:
             return None
         return _aware_datetime(value)
+
+    @field_validator(
+        "agent_contract_snapshot",
+        "static_gate_result",
+        "evaluation_result",
+        mode="before",
+    )
+    @classmethod
+    def _json_before(cls, value: object, info) -> dict[str, AdasJsonValue] | None:  # type: ignore[no-untyped-def]
+        return _adas_json_field_before(value, field_name=str(info.field_name))
+
+    @field_validator(
+        "agent_contract_snapshot",
+        "static_gate_result",
+        "evaluation_result",
+        mode="after",
+    )
+    @classmethod
+    def _json_after(
+        cls,
+        value: dict[str, AdasJsonValue] | None,
+    ) -> Mapping[str, AdasJsonValue] | None:
+        return _adas_json_field_after(value)
+
+    @field_serializer("agent_contract_snapshot", "static_gate_result", "evaluation_result")
+    def _json_serialize(self, value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
+        return _serialize_adas_json_field(value)
+
+    @model_validator(mode="after")
+    def _record_scope(self) -> Self:
+        if self.envelope.tenant_id != self.tenant_id or self.envelope.workspace_id != self.workspace_id:
+            raise ValueError("envelope scope must match record scope")
+        return self
 
     @field_validator(
         "utility_score",
@@ -521,9 +909,6 @@ class AgentCandidateEvaluationResult(BaseModel):
         "utility_score",
         "baseline_utility_score",
         "utility_delta",
-        "golden_pass_rate",
-        "negative_pass_rate",
-        "adversarial_pass_rate",
     )
     @classmethod
     def _optional_metrics(cls, value: float | None) -> float | None:
@@ -531,6 +916,15 @@ class AgentCandidateEvaluationResult(BaseModel):
             return None
         if not math.isfinite(value):
             raise ValueError("metric must be finite")
+        return value
+
+    @field_validator("golden_pass_rate", "negative_pass_rate", "adversarial_pass_rate")
+    @classmethod
+    def _pass_rates(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        if not math.isfinite(value) or value < 0.0 or value > 1.0:
+            raise ValueError("pass rate must be finite and normalized between 0 and 1")
         return value
 
     @field_validator("latency_ms", "total_tokens", "step_count", "tool_calls", "llm_calls", "hitl_interventions")
@@ -580,17 +974,18 @@ class AgentCandidateEvidenceBundle(BaseModel):
     risk_class: str | None = None
     retention_policy: str | None = None
     bundle_digest: str | None = None
+    artifact_hash: str | None = None
     baseline_configuration_digest: str
     candidate_configuration_digest: str
     selection_outcome: SearchSelectionOutcome | None = None
     candidate_record: AgentCandidateRecord
     baseline_evaluation_result: AgentCandidateEvaluationResult | None = None
     evaluation_result: AgentCandidateEvaluationResult | None = None
-    static_gate_result: dict[str, Any] | None = None
-    policy_gate_result: dict[str, Any] | None = None
-    cost_report: dict[str, Any] | None = None
-    security_adversarial_result: dict[str, Any] | None = None
-    approval_record: dict[str, Any] | None = None
+    static_gate_result: Mapping[str, AdasJsonValue] | None = None
+    policy_gate_result: Mapping[str, AdasJsonValue] | None = None
+    cost_report: Mapping[str, AdasJsonValue] | None = None
+    security_adversarial_result: Mapping[str, AdasJsonValue] | None = None
+    approval_record: Mapping[str, AdasJsonValue] | None = None
     promotion_decision: None = None
     rollback_pointer: str | None = None
     assembled_at: datetime
@@ -613,6 +1008,50 @@ class AgentCandidateEvidenceBundle(BaseModel):
     def _times(cls, value: datetime) -> datetime:
         return _aware_datetime(value)
 
+    @field_validator(
+        "static_gate_result",
+        "policy_gate_result",
+        "cost_report",
+        "security_adversarial_result",
+        "approval_record",
+        mode="before",
+    )
+    @classmethod
+    def _json_before(cls, value: object, info) -> dict[str, AdasJsonValue] | None:  # type: ignore[no-untyped-def]
+        return _adas_json_field_before(value, field_name=str(info.field_name))
+
+    @field_validator(
+        "static_gate_result",
+        "policy_gate_result",
+        "cost_report",
+        "security_adversarial_result",
+        "approval_record",
+        mode="after",
+    )
+    @classmethod
+    def _json_after(
+        cls,
+        value: dict[str, AdasJsonValue] | None,
+    ) -> Mapping[str, AdasJsonValue] | None:
+        return _adas_json_field_after(value)
+
+    @field_serializer(
+        "static_gate_result",
+        "policy_gate_result",
+        "cost_report",
+        "security_adversarial_result",
+        "approval_record",
+    )
+    def _json_serialize(self, value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
+        return _serialize_adas_json_field(value)
+
+    @field_validator("artifact_hash")
+    @classmethod
+    def _artifact(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _validate_sha256_digest(value)
+
     @model_validator(mode="after")
     def _scope_and_rejection_shape(self) -> Self:
         record = self.candidate_record
@@ -620,15 +1059,23 @@ class AgentCandidateEvidenceBundle(BaseModel):
             raise ValueError("bundle scope must match nested candidate record scope")
         if record.candidate_id != self.candidate_id or record.objective_id != self.objective_id:
             raise ValueError("bundle lineage identities must match candidate record")
-        if record.status == AgentCandidateStatus.REJECTED and self.evaluation_result is not None:
-            raise ValueError("rejected candidates must not fabricate evaluation results")
-        if self.bundle_digest is not None:
-            verify_evidence_bundle_digest(self)
+        if self.sealed:
+            has_gate = self.static_gate_result is not None
+            has_eval = self.evaluation_result is not None
+            if not has_gate and not has_eval:
+                raise ValueError("sealed bundle requires terminal evidence shape")
+        if (
+            self.artifact_hash is not None
+            and self.bundle_digest is not None
+            and self.artifact_hash == self.bundle_digest
+        ):
+            raise ValueError("artifact_hash must not substitute bundle_digest")
         return self
 
 
 def canonical_record_json(model: BaseModel) -> dict[str, Any]:
-    return model.model_dump(mode="json")
+    dumped = model.model_dump(mode="json")
+    return json.loads(json.dumps(dumped))
 
 
 def compute_evidence_bundle_digest(bundle: AgentCandidateEvidenceBundle) -> str:
