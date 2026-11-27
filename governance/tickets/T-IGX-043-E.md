@@ -55,3 +55,31 @@ Written by the implementer outside the approval lines and outside the plan text.
 - Write set: the capacity script, this ticket and its plan (3 entries, 1 firm script, 3 negative cases as assertions in the script). No product path, no test file, no other `check_*` script.
 - Not run here: E-3 (mutation check, audit only) and the full runner `check_audit_ideal_gates.py`.
 - Residual: part 2 (`check_sandbox_policy_wiring.py`) is held; owner is the fixer ticket of the sandbox residual.
+
+### AF-W3-PT-FC2-E-01 qualification settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC2-E | AF-W3-PT-FC2-E-01`. **Authorization:** read-only re-qualification of the existing production capacity maintenance gate on `development`; no gate-meaning change and no new gate-meaning approval. Historical `Approved` / standing delegation is not treated as authorizing a new meaning change. Operator capacity-gate content ruling remains in `OPERATOR_ANSWERS_CODE_WAVE_TRANSCRIPTION.md`. Base / execution SHA: `a9e759834779c27791de3a9bf052bb3a30db0274` (`HEAD` == `origin/development`). Plan digest unchanged: `5c1a3d11cf7da01b3b5ff27d2e444ee74ad1b61b2bda7a2e8eba06ec43258acd`.
+
+**Preflight:** `SCOPE=CLOSED`; baseline ancestor check PASS; PT-WB / PT-FC2 predecessors present on train (`T-IGX-043-B` checkpoints `AF-W3-PT-FC2-01`, `AF-W3-PT-FC1-*`). Lifecycle remains `quality_gate`. Product delta: **NONE**. Gate script delta: **NONE**.
+
+| Gate check | Contract (read-only) | Result |
+|---|---|---|
+| A — missing boundary | `ECP_BLOCKED_MISSING_BOUNDARY` via `ControlPlaneCompositionError` | PASS (asserted in `_check_missing_boundary`) |
+| B — default posture, no cluster | `enabled`, `adapters is None`, no passed probe, `UNQUALIFIED_NO_CLUSTER` | PASS (`_check_default_posture_without_cluster`, `_cluster_url_removed`) |
+| C — `CI_DETERMINISTIC` | `enabled`, adapters built, no passed probe, `CI_DETERMINISTIC_ONLY` | PASS (`_check_ci_deterministic_posture`) |
+
+**E-1 historical evidence:** disposition `E1_HISTORICAL_EVIDENCE_INCOMPLETE` — ticket cites `.tmp/session/pt-fc2-e/e1_unedited.log` (exit 1, pre-FC-2 `ControlPlaneCompositionError`); file **not present** on this workstation (no SHA-256, no replay). Historical narrative preserved in implementation record above; **not** classified as PT-FC2 regression.
+
+**E-2 current gate:** command `uv run python scripts/maintenance/check_production_capacity_adapters.py`; execution SHA `a9e759834779c27791de3a9bf052bb3a30db0274`; exit **0**; OK line emitted; all three checks executed. Evidence **LOCAL_ONLY:** `.tmp/session/pt-fc2-e/af-w3-pt-fc2-e-01/e2_current_gate.log` SHA-256 `b5bbd5dba2600d1716c8e2ccfe84fef3a71978a71f5ce34dd268716717505f22`.
+
+**E-3 mutation check:** `AUDIT_ONLY_NOT_EXECUTED` (PT-Q02).
+
+**E-4 regression:** node `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity`; command `uv run pytest … -q -o cache_dir=D:/Projekty/_wt/_scratch/af-w3-pt-fc2-e-01/cache` under `D:/Projekty/_wt/_locks/pytest.lock` (stale lock PID 37088 removed after dead-process check); execution SHA `a9e759834779c27791de3a9bf052bb3a30db0274`; **1 passed**, 0 failed, exit **0**. Evidence **LOCAL_ONLY:** `.tmp/session/pt-fc2-e/af-w3-pt-fc2-e-01/e4_regression.log` SHA-256 `86b26a93b5d572b2cdbec4e7c817877e05149bbabfa98866a18a504d399a9dff`.
+
+**Environment isolation:** no live Kubernetes, Celery, Docker, or vendor qualification; `_cluster_url_removed` restores env in `finally`; no capacity mutations on external infra.
+
+**Static / governance:** Ruff check + format PASS on gate script (unchanged). `verify_rw_plan_phase_check3.py` exit 0; `--pre-g2` exit 1 (11 OP-B `RED_FIRST_EVIDENCE` obligations, expected). `verify_arch_freeze_plan_traceability.py` PASS. `igx_gov ticket` PASS. Workspace `git diff --check` exit 2 (foreign trailing whitespace in EQO closure JSON, not in write-set); staged write-set diff check PASS at commit.
+
+**Preserved program state:** `RED_AT_PREFIX=22`, `EVIDENCE_MISSING=11`, `RED_FIRST_OUT=5`, `RED_FIRST_LATER_WAVE=1`, `OP_B_PENDING=11`, `RED_FIRST_EVIDENCE=INCOMPLETE`, `FRZ_EXE_02=EVIDENCE_MISSING`, `FRZ_PLG_05=EVIDENCE_MISSING`, `STRICT_HOST_AUTHORITY=OPEN_RESIDUAL`, `SCOPE=CLOSED`, `PT_Q02=PENDING`, `G2=OPEN`, `RB2=NOT_PERFORMED`, `FRZ_PROMOTION=NONE`, `SANDBOX_PART=HELD`, `CAPACITY_GATE_MEANING_CHANGED=NO`, `IIAC=NOT_REACTIVATED`.
+
+**Verdict:** `QUALIFICATION_SETTLEMENT` — existing gate contract verified and re-executed green on current `development`; not independent PASS or ticket DONE.
