@@ -13,6 +13,7 @@ from intergrax.applications._shared.production_queue_resolver import (
     broker_url_refused_in_strict_posture,
     production_queue_requires_worker,
     require_celery_broker_url_for_strict,
+    resolve_celery_queue_env_config,
     resolve_production_queue_backend,
 )
 from intergrax.applications._shared.reliability_wiring import (
@@ -29,7 +30,6 @@ from intergrax.integrations.contracts.document_store import ConditionalDocumentS
 from intergrax.integrations.contracts.document_store_process_durability import (
     document_store_survives_process_restart,
 )
-from intergrax.integrations.providers.message_bus.celery.config import CeleryIntegrationConfig
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -104,7 +104,7 @@ def wire_optional_queue_execution(
 
     if production_mode and document_store is not None and backend is ProductionQueueBackend.CELERY:
         _assert_durable_task_store(document_store)
-        celery_config = CeleryIntegrationConfig.from_env(app_name=app_name)
+        celery_config = resolve_celery_queue_env_config(app_name=app_name)
         require_celery_broker_url_for_strict(broker_url=celery_config.broker_url)
         from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 

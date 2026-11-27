@@ -60,6 +60,26 @@ Written by the implementer outside the approval lines and outside the plan text.
 - No census file needed an edit: the 25 run files show no red beyond the registered `test_package_wiring.py::test_strict_product_package_closure_passes`.
 - Open residuals, not closed by this ticket: A4-032 leg (a) OTLP exporter with an empty endpoint; A4-032 leg (b) and WP2-OBS-02 sandbox composition guard.
 
+### AF-W3-PT-FC2-01 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC2 | AF-W3-PT-FC2-01`. Authorization: AR-41 / OD-AF-PKT2. Base SHA: `89f0aed35ae7cbc199f981d329daf38cd61c136e` (`origin/development`).
+
+**Verdict:** `QUALITY_GATE_WITH_BOUNDED_DELTA` — FC-2 fail-closed mechanisms were already on `development`; this pass closes the cross-ticket **NT-BND-05-2** residual on `queue_worker_wiring.py` without expanding `CLOSED_PROVIDER_ROOTS`.
+
+| Mechanism | Status |
+|---|---|
+| `production_adapters.py`, `production_capacity_wiring.py`, `production_queue_resolver.py`, `memory_provider_admission.py`, `memory_wiring.py`, `wiring_posture.py` | `ALREADY_IMPLEMENTED` (FC2 tests green) |
+| `queue_worker_wiring.py` fail-closed behaviour | `ALREADY_IMPLEMENTED` |
+| `queue_worker_wiring.py` provider import boundary (NT-BND-05-2) | `NEW_IMPLEMENTATION` — `resolve_celery_queue_env_config` in `production_queue_resolver.py`; removed direct `integrations.providers` import |
+| Importlib b1/b2 caller threading (`wiring.py`, migration manifest loader) | `UNRESOLVED_HANDOFF` — callers lack write authority in T-IGX-043-B; owner PT-FC1 / follow-on per PT-WB checkpoint |
+| A4-032 (a) OTLP, (b) sandbox, PT-FC1 agent `RuntimeContext` fixes | `PRESERVED_OUT_OF_SCOPE` |
+
+**TASK-02 (WB evidence):** Log recovered at `.tmp/proof/af-w3-pt-wb-03/canonical_negative_test_scan_flags_a_rogue_agent.log`; SHA-256 `62c5330515fbcac2e0b20400597267dbe5090fbb0ac1804e98992b5877f22f40` matches contract; execution SHA `13b3789c60910ccd3882bfd39641fb5f8d3530fc`, exit 1, four violations; test blob `06412ff4c544adc2b514c85184af434695b4daaa` unchanged. No `RED_AT_PREFIX` GA2R record (no green-after at prefix for FRZ-BND-05). `SOURCES.sha256` refresh not in FC2 write set (T-IGX-043-H lane).
+
+**Qualification (single pytest process, representative):** FC2 batch + V1/V3/V4 + FRZ probes: 193 passed, 1 failed (`test_ecp_depth_gate.py::test_capacity_event_bridge_records_backpressure` — registered base red, not FC2-caused). V6 docs PASS. Ruff on delta PASS. `verify_arch_freeze_plan_traceability.py` PASS. `verify_rw_plan_phase_check3` structure green; `RED_FIRST_EVIDENCE=INCOMPLETE` (expected). V2 host queue tests and V5 census not re-run in full (unchanged product delta).
+
+Lifecycle stays `quality_gate`; not `DONE`; `G2` open; `SCOPE=CLOSED` unchanged; `PT-Q02` pending.
+
 
 ## RW traceability (GA.2R)
 
