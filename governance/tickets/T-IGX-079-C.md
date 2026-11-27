@@ -6,13 +6,13 @@ Exact R3 three-document corrective payload and separate historical publication d
 
 ## Plan digest
 
-Plan digest: 76e9bf1c6fc844bda87b92d76bf4dbcdd1a9264c8b4480fa0b698ee352812215
+Plan digest: 1ef9fb848ab3dc979f637b6f355bcabbcb8968f4fe485b3cb1b376d83ae97f31
 
 ## Approved
 
 **Historical revision 1 approval:** Operator approval recorded at `2026-11-27T10:16:57+01:00`, commit `c17fe89db72d1eaef4141fdeb70d48fa39a35346`, digest `76e9bf1c6fc844bda87b92d76bf4dbcdd1a9264c8b4480fa0b698ee352812215`. Preserved at candidate `53eee03f2d2b52216e39ce411be196ed6c995d59`; this is not the active approval for revision 2.
 
-**Revision 2 status:** R3.1 LF-only correction prepared. Revision 1 execution reported mandatory ordinary diff-check exit 2, CRLF-aware diagnostic exit 0. No validator waiver. Re-enter the canonical lifecycle before applying the revised exact payload.
+**Revision 2 status:** R3.1 LF-only revision bound to the exact revised plan; awaiting active approval record. Revision 1 execution reported mandatory ordinary diff-check exit 2, CRLF-aware diagnostic exit 0. No validator waiver. Re-enter the canonical lifecycle before applying the revised exact payload.
 
 **Historical decision basis (revision 1):** Operator explicitly approved OD-II-R3-01 and OD-II-R3-02 and the exact plan digest above in the Intelligence architecture chat. Timestamp is the observed decision-recording time; the exact chat submission timestamp is not independently available. This is a transcription of the Operator's decision, not approval by the implementing or architecture agent.
 
@@ -32,4 +32,4 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-draft
+plan_pending
