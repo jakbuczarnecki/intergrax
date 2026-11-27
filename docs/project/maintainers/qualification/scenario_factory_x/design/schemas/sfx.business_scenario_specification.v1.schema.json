@@ -108,7 +108,8 @@
             ]
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by actor_id, rejects duplicates."
     },
     "inputs": {
       "type": "array",
@@ -138,7 +139,8 @@
             ]
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by input_id, rejects duplicates."
     },
     "outputs": {
       "type": "array",
@@ -159,7 +161,8 @@
             "maxLength": 1000
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by output_id, rejects duplicates."
     },
     "business_rules": {
       "type": "array",
@@ -184,7 +187,8 @@
             "type": "boolean"
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by rule_id, rejects duplicates."
     },
     "decision_points": {
       "type": "array",
@@ -209,7 +213,8 @@
             "type": "boolean"
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by decision_id, rejects duplicates."
     },
     "integrations_required": {
       "type": "array",
@@ -238,7 +243,8 @@
             ]
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by integration_id, rejects duplicates."
     },
     "non_functional": {
       "type": "object",
@@ -300,7 +306,8 @@
           }
         }
       },
-      "minItems": 1
+      "minItems": 1,
+      "description": "Set semantics; sorted by criterion_id, rejects duplicates."
     },
     "field_provenance": {
       "type": "object",

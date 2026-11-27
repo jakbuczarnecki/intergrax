@@ -149,7 +149,8 @@
             ]
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by test_id, rejects duplicates."
     },
     "measurements": {
       "type": "object",
@@ -241,7 +242,7 @@
       "items": {
         "$ref": "#/$defs/id"
       },
-      "description": "Evidence plane run and event references (EvidencePersistencePort)."
+      "description": "Evidence plane run and event references (EvidencePersistencePort). Set semantics; sorted lexicographically, rejects duplicates."
     },
     "proof_artifact_path": {
       "type": "string",

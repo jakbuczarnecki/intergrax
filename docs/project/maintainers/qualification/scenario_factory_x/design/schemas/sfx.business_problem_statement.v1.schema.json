@@ -98,7 +98,8 @@
             "maxLength": 1000
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by role, rejects duplicates."
     },
     "constraints": {
       "type": "array",
@@ -106,7 +107,8 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 1000
-      }
+      },
+      "description": "Ordered array; preserves author-stated constraint order."
     },
     "success_criteria": {
       "type": "array",
@@ -127,7 +129,8 @@
             "maxLength": 1000
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by criterion_id, rejects duplicates."
     },
     "data_classification": {
       "enum": [

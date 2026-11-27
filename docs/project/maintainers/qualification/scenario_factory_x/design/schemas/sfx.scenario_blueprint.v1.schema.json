@@ -150,7 +150,8 @@
             "description": "Never production (SFX-P9-02); values of AgentLifecycleState (intergrax/contracts/agent_lifecycle_state.py:10)."
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by agent_id, rejects duplicates."
     },
     "tool_allowlist": {
       "type": "array",
@@ -174,7 +175,7 @@
           }
         }
       },
-      "description": "Explicit allowlist; sorted by tool_id."
+      "description": "Explicit allowlist. Set semantics; sorted by tool_id, rejects duplicates."
     },
     "integration_plan_ref": {
       "anyOf": [

@@ -88,7 +88,7 @@
         "$ref": "#/$defs/artifact_version_ref"
       },
       "minItems": 1,
-      "description": "Sorted by (schema_id, artifact_id)."
+      "description": "Set semantics; sorted by (schema_id, artifact_id), rejects duplicates."
     },
     "engineering_evidence_bundle_digest": {
       "anyOf": [
@@ -105,7 +105,8 @@
       "items": {
         "$ref": "#/$defs/artifact_version_ref"
       },
-      "minItems": 1
+      "minItems": 1,
+      "description": "Set semantics; sorted by (artifact_id, version), rejects duplicates."
     },
     "security_gate_results": {
       "type": "array",
@@ -132,7 +133,8 @@
             "$ref": "#/$defs/id"
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by gate_id, rejects duplicates."
     },
     "required_integrations_for_prod_q": {
       "type": "array",
@@ -158,7 +160,8 @@
             ]
           }
         }
-      }
+      },
+      "description": "Set semantics; sorted by integration_id, rejects duplicates."
     },
     "known_limitations": {
       "type": "array",
@@ -166,7 +169,8 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 2000
-      }
+      },
+      "description": "Set semantics; sorted lexicographically, rejects duplicates."
     },
     "admission_owner_ref": {
       "anyOf": [
