@@ -406,7 +406,7 @@
         {
           "nt_id": "NT-FRZ-10-1",
           "node": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
-          "owner_ticket": "T-B7-PFP-ACTIVATE",
+          "owner_ticket": "T-IGX-052-I",
           "mechanism": "After activation, a change to a frozen path without an exception record fails the policy gate. (planned; not authored at the read pin)"
         }
       ],
@@ -1922,6 +1922,24 @@
       ],
       "note": "Commits with this Ref on development 32005c212: 18 (touching code, tests, CI or project files: 13). Completion is not claimed."
     },
+    "T-IGX-052-I": {
+      "lifecycle": "plan_pending",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
+            "reason": "candidate: planned negative node NT-FRZ-10-1"
+          }
+        ]
+      },
+      "quality": "CANDIDATE",
+      "note": "Ownership ticket (OP-B orchestrator allocation, 2026-11-27) for FRZ-FRZ-10: the T-B7-PFP-ACTIVATE held-path guard. No approved plan.",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan."
+    },
     "T-IGX-078-C": {
       "lifecycle": "plan_pending",
       "plan": null,
@@ -2193,6 +2211,11 @@
       "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
     ],
     [
+      "T-IGX-043-H",
+      "T-IGX-052-I",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
       "T-IGX-043-J",
       "T-IGX-051-A",
       "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
@@ -2377,7 +2400,8 @@
         "T-IGX-051-B",
         "T-IGX-051-G",
         "T-IGX-051-H",
-        "T-IGX-051-I"
+        "T-IGX-051-I",
+        "T-IGX-052-I"
       ],
       "label": "W3 depth 3, part 2"
     },

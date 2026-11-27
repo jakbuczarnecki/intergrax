@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T07:43:11.562253+00:00",
-  "execution_sha": "ae38ccce27f54f5aec6e149d0ab8dad0551bf585",
+  "generated_at": "2026-11-27T07:55:41.236799+00:00",
+  "execution_sha": "cde0b0d833a5413cdfdf657ccc05c4bd6536fdda",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "e37931287983e5a942e7f558d5f661f03171e38acbec6f7e04242340f4c880d0",
+  "bindings_sha256": "79edc22f1024512cdf58762ccd8e0e7c4fa6eaf49c67911db0e41a6786ee373c",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -803,7 +803,7 @@
         {
           "nt_id": "NT-FRZ-10-1",
           "node": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
-          "owner_ticket": "T-B7-PFP-ACTIVATE",
+          "owner_ticket": "T-IGX-052-I",
           "mechanism": "After activation, a change to a frozen path without an exception record fails the policy gate. (planned; not authored at the read pin)",
           "file_state_at_pin": "absent"
         }
@@ -7993,6 +7993,44 @@
       ]
     },
     {
+      "ticket": "T-IGX-052-I",
+      "lifecycle": "plan_pending",
+      "landed": false,
+      "wave": "W3",
+      "plan": null,
+      "plan_state": "NO_PLAN",
+      "write_set_quality": "CANDIDATE",
+      "write_set": [
+        {
+          "path": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
+          "state": "new"
+        }
+      ],
+      "prose_mentions_not_in_write_set": [],
+      "write_set_adjustments": {
+        "extra_paths": [
+          {
+            "path": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
+            "reason": "candidate: planned negative node NT-FRZ-10-1"
+          }
+        ]
+      },
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Ownership ticket (OP-B orchestrator allocation, 2026-11-27) for FRZ-FRZ-10: the T-B7-PFP-ACTIVATE held-path guard. No approved plan.",
+      "code_fix_rows": [],
+      "regression_tests": [],
+      "regression_commands": [],
+      "regression_source": null,
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan.",
+      "lane": "lane_5",
+      "merge_position": 25,
+      "hard_predecessors": [
+        "T-IGX-043-H"
+      ]
+    },
+    {
       "ticket": "T-IGX-078-C",
       "lifecycle": "plan_pending",
       "landed": false,
@@ -8180,7 +8218,7 @@
       "regression_source": null,
       "regression_absent_reason": null,
       "lane": "lane_8",
-      "merge_position": 25,
+      "merge_position": 26,
       "hard_predecessors": [
         "T-IGX-043-A",
         "T-IGX-043-H",
@@ -8559,7 +8597,7 @@
       "regression_source": null,
       "regression_absent_reason": null,
       "lane": "lane_11",
-      "merge_position": 26,
+      "merge_position": 27,
       "hard_predecessors": [
         "T-IGX-043-A",
         "T-IGX-043-B",
@@ -8656,7 +8694,7 @@
       "regression_source": null,
       "regression_absent_reason": null,
       "lane": "lane_12",
-      "merge_position": 27,
+      "merge_position": 28,
       "hard_predecessors": [
         "T-IGX-043-H",
         "T-IGX-051-A"
@@ -8703,7 +8741,7 @@
       "regression_source": null,
       "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-PLG-08-1 and names its regression tests in its own plan.",
       "lane": "lane_9",
-      "merge_position": 28,
+      "merge_position": 29,
       "hard_predecessors": [
         "T-IGX-043-H",
         "T-IGX-051-F"
@@ -9291,6 +9329,11 @@
     },
     {
       "first": "T-IGX-043-H",
+      "second": "T-IGX-052-I",
+      "reason": "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    },
+    {
+      "first": "T-IGX-043-H",
       "second": "T-IGX-078-C",
       "reason": "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
     },
@@ -9419,7 +9462,8 @@
         "T-IGX-051-B",
         "T-IGX-051-G",
         "T-IGX-051-H",
-        "T-IGX-051-I"
+        "T-IGX-051-I",
+        "T-IGX-052-I"
       ],
       "W3 depth 3, part 2"
     ],
@@ -9505,6 +9549,7 @@
     "T-IGX-051-I",
     "T-IGX-051-N",
     "T-IGX-051-F",
+    "T-IGX-052-I",
     "T-IGX-078-C",
     "T-IGX-051-A",
     "T-IGX-078-D",
