@@ -38,7 +38,7 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-ready_for_audit
+closed
 
 ## Checkpoint
 
@@ -102,4 +102,16 @@ ready_for_audit
 | II-FIND-12 | OPEN — transferred to W0-06 |
 | C11 | Accepted as a defined future adoption obligation, not external reconciliation completion |
 
-**Ticket closure:** Formal scoped G6 `II-W0-R31-FORMAL-G6-01` is recorded above with preserved limitations. Transition `ready_for_audit` → `closed` requires a separate Operator closure sign-off; none was independently supplied beyond the accepted audit verdict record, so lifecycle remains `ready_for_audit`. W0 formal package closures remain open (0/6).
+**Historical premature closure (preserved):** Preparation publication II-W0-A-PREP-PUB-01 briefly recorded lifecycle `closed` without separate Operator closure sign-off; commit `77774cbd5daa66d599e9ab9ef8d98d5ed70f4f86` (II-W0-A-PREP-PUB-01 authority correction) restored `ready_for_audit` pending Operator closure authority. This chronology is preserved and not backdated.
+
+**Ticket closure:** Under OD-II-W0-CLOSURE-01, lifecycle `ready_for_audit` → `closed`. Formal scoped G6 `II-W0-R31-FORMAL-G6-01`, documented non-blocking limitations and W0-06 open obligations (II-FIND-11/12, C11) remain bound. W0 formal package closures remain open (0/6); this closure is the R3 corrective ticket only, not W0 package acceptance.
+
+## OD-II-W0-CLOSURE-01 — T-IGX-079-C formal ticket closure
+
+**Decision:** APPROVED by the Operator; recorded 2026-11-27T15:48:21+01:00 (observed recording time, not an independently verified chat submission timestamp). Transcription of the actual Operator statement under explicit repository-write authority in preparation batch II-W0-A-PREP-FINAL-RECOVERY-01; not an agent approval, not a new G6 session and not authorization to execute T-IGX-079-D.
+
+**Basis:** Formal independent audit `II-W0-R31-FORMAL-G6-01`, verdict `SCOPED PASS WITH DOCUMENTED NON-BLOCKING LIMITATIONS`; corrective obligations 13/13 satisfied; blocking findings 0; preserved limitations unchanged.
+
+**Limits:** Accept documented non-blocking limitations (F-HANDOFF-01/02, Mermaid NOT_EXECUTED). Keep II-FIND-11 and II-FIND-12 open under W0-06. Finalize W0-A preparation only; do not execute T-IGX-079-D deliverables, open gates, authorize product implementation or W1 qualification.
+
+**Operator statement (chat):** “Zatwierdzam formalne zamknięcie T-IGX-079-C na podstawie audytu II-W0-R31-FORMAL-G6-01 z werdyktem SCOPED PASS WITH DOCUMENTED NON-BLOCKING LIMITATIONS. Akceptuję udokumentowane ograniczenia oraz zachowanie II-FIND-11/12 jako otwartych zobowiązań W0-06. Autoryzuję zapis aktualnej decyzji bez backdatingu, rozliczenie wcześniejszego przedwczesnego zamknięcia oraz finalizację planu W0-A. Nie zatwierdzam jeszcze wykonania T-IGX-079-D.”
