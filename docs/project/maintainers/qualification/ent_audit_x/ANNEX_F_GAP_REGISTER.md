@@ -5,6 +5,8 @@
 **START_HEAD / PLAN_BASELINE_SHA:** `8a41d32043b89e555d7c18e052cf7022b8c94681`  
 **Corrective reconciliation @ ENT-AUDIT-X wave:** execution SSOT [ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md](./ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md) — **GAP-RC (33)** tracked in Matrix D; formal **GAP-B (6)** remain operator/auditor gates. Mechanical plan validator: `scripts/enterprise_audit/validate_post_implementation_master_plan.py`.
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`):** This register is a frozen historical AS-IS snapshot at `PLAN_BASELINE_SHA` `8a41d32043b89e555d7c18e052cf7022b8c94681`. The original `GAP-C`, `GAP-P`, `GAP-B`, and `GAP-COV` rows below are retained verbatim for plan-validator traceability; current implementation and handoff status live in `ENT_AUDIT_X_ARCH_FREEZE_HANDOFF.md`, `ENT_AUDIT_X_W8_B6_FINDINGS_DISPOSITION.md`, and `intergrax/platform/enterprise_audit/`. This note claims no new PASS or FRZ promotion.
+
 ## Separate counts (not merged)
 
 | Bucket | Count |
@@ -64,3 +66,11 @@
 ## GAP-COV
 
 Each of **85** Annex C checks: **GAP-COV-&lt;CheckID&gt;** = no `AuditCheck` adapter @ HEAD; closes when corresponding WBS batch lands and L2 test passes.
+
+## Currency reconciliation (EQO-W4 @ `646e63953`, `EDER-F-0180` / `EDER-D-0013..0021`)
+
+| Historical Row(s) | Obligation ID(s) | Current Verified State @ `646e63953` | Authority / Residual |
+| --- | --- | --- | --- |
+| `GAP-C-01..14` | `EDER-F-0180` | **Superseded (implemented post-PLAN_BASELINE):** `intergrax/platform/enterprise_audit/` (`runner.py`, `impact_map.py`, CLI, CI workflow, qual tree) exists on `development`; formal freeze-SHA re-audit stays in ARCH-FREEZE `PT-S01..S04`. | `ENT_AUDIT_X_ARCH_FREEZE_HANDOFF.md` |
+| `GAP-P-01`, `GAP-P-02`, `GAP-P-03`, `GAP-P-06`, `GAP-P-07`, `GAP-P-08`, `GAP-P-09` | `EDER-D-0013..0015`, `D-0017..0020` | **Historical @ `8a41d3204`:** superseded by ENT-AUDIT-X implementation waves and `T-IGX-043-I/M` (`PT-WD`: `impact_map.py`, check manifest, CHANGED-SINCE EVOL binding); freeze-SHA certification remains in ARCH-FREEZE `PT-S01..S04` / `PT-Q02`. | `ENT_AUDIT_X_POST_IMPLEMENTATION_FINAL_CLOSURE_MASTER_PLAN.md` |
+| `GAP-P-05`, `BLK-CI-ENFORCE` (`OPEN-BP-01`) | `EDER-D-0016`, `EDER-D-0021` | **Explicitly OPEN / Operator-Deferred (`OPEN-BP-01`):** GitHub `development` branch has no required status checks enforced on its ruleset; Operator deferred ruleset activation (`development` is not the critical branch; `main` is protected) per `OD-MCP-P8-RESIDUAL-01.md` and `ENT_AUDIT_X_ARCH_FREEZE_HANDOFF.md:48-52`. | Operator (`OPEN-BP-01`) |

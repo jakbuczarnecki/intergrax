@@ -25,6 +25,15 @@ The source of truth is a **`ProofReceipt`** document persisted through the provi
 | **Providers** | Vendor backends behind `DocumentStore` (MongoDB default for live proof path; Cassandra, DynamoDB, … as future alternatives) |
 | **Reviewer docs** | Human runbooks and step guides only - never authoritative proof storage |
 
+### Model & Store Disambiguation (EQO-W4, `EDER-F-0148`)
+
+| Symbol | Module | Role & Owner Boundary |
+| --- | --- | --- |
+| `ProofReceipt` (platform proof) | `intergrax/proofs/receipts/contracts.py:30` | **Canonical platform proof receipt model** (this document; historical citation policy per DP-05 below). |
+| `ProofReceipt` (execution evidence) | `intergrax/contracts/execution_evidence/receipt.py:26` | Separate execution-evidence contract DTO (not an alias of `intergrax.proofs.receipts.contracts.ProofReceipt`). |
+| `ProofReceiptStore` (platform engine) | `intergrax/proofs/receipts/store.py:19` | **Canonical platform persistence engine** over `DocumentStore`. |
+| `ProofReceiptStore` (Tier-3 host) | `applications/governed_contractor_application/host/stores.py:83` | Application-local Tier-3 store adapter (governed contractor host; not a Tier-0 authority). |
+
 ---
 
 ## C. Platform proof pattern

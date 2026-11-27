@@ -1,5 +1,7 @@
 # EBH-6 — Operator Decision Register
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0062` / `EDER-F-0211`):** The rows below are preserved verbatim as historical decision records. EBH-6 parent closure was recorded via `OD-EBH6-08` (2026-10-29). `OD-EBH6-ADR-*` (`TRACKED`) remains historical and is not waived by this note. In row `E02-OP-01`, the pre-acceptance cell `E02-AUD-01 PENDING` was subsequently superseded by independent acceptance `E02-AUD-01 — ACCEPT (SCOPED) — 2026-10-29` ([`EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md)). This note adds no new waiver, PASS, or closure claim.
+
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
 | OD-EBH5-08 | EBH-5 formal parent closure publication | **APPROVED — 2026-10-28** — [`EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md`](EBH_5_OD_EBH5_08_CLOSURE_SIGNATURE_RECORD.md) | — (EBH-5 parent **CLOSED — SCOPED**) |

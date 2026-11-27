@@ -1,6 +1,8 @@
 # Historical stage SHA and evidence registry
 Generated 2026-11-08T11:15:30Z from git (`origin/development` = `41908e3fb`). Every SHA below was resolved with `git rev-parse` in the local object store; "UNVERIFIED" means it could not be resolved. A SHA that exists is not evidence that the claim attached to it is true - the claim comes from the cited campaign record.
 
+> **Point-in-time currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`):** This registry is frozen at `2026-11-08` (`41908e3fb`). Section 1 unpublished SHAs `0adb73380` and `10089121e` (`EDER-D-0087`, `EDER-D-0088`) are published blob-identically via `T-IGX-030-A` (see L37); `29c387879` and `98b4bf514` (`EDER-D-0089`, `EDER-D-0090`) remain HELD (`T-IGX-030-C`). Section 2/3 stage statements (including `QUAL-X` DR-10 replay at L69, `EDER-D-0097`) and `HISTORICAL_FRZ_85_FINAL_DISPOSITION_MATRIX.json` (`FRZ-BND-01` at L462, `EDER-F-0108`, where the EBH-4 gate was subsequently fixed by the P4 batch) are point-in-time records superseded by current `development` / ARCH-FREEZE `PT-Q*` and `T-B7-PROMOTE-BND` tracks. No FRZ status is promoted here.
+
 ## 1. SHAs
 | group | label | SHA | date | subject | on origin/development |
 |---|---|---|---|---|---|

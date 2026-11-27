@@ -996,3 +996,17 @@ MP-0 docs (this file + plan hub + README)
 ```
 
 **MP-0 explicitly does not edit domain plans.**
+
+---
+
+## Cross-cutting ownership (EQO-W4, `EDER-F-0239`)
+
+One line per area (as of 2026-11-26 @ `646e63953`); "not applicable" lines state the reason.
+
+| Area | Statement |
+| --- | --- |
+| Tenant & Security | Principal, WorkspaceMembership, Delegation, and `MeaningfulSideEffectAuthorizationPort` fail closed on missing authority or policy (Diagram 3, MP-1/MP-4R); tenant isolation authority is owned by `TENANT-X` and governance seam enforcement by `GOV-X2` (see scope label above; Multiplayer never mints execution or decision authority). |
+| Configuration | Composed through application composition roots (`intergrax/applications/_shared/` and Tier-3 consumer wiring such as LKW MP-7) over replaceable public contracts and `CONFIG-X` profiles; repository/provider adapters are not platform ABI. |
+| Observability | Collaborative Activity (MP-6) is distinct from technical runtime traces (`MP-INV-25`); technical events, diagnostics, and evidence planes remain owned by [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) and [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md). |
+| Failure & Recovery | Authoritative mutation paths fail closed (`DENY`) when authorization or policy is missing; execution pause/resume, retries, and durable recovery remain owned by canonical Governance/HITL, `ExecutionContinuationPort`, and [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) (MP-4R). |
+| Tests | Slice qualification suites and dossiers cover MP-1..MP-7 certified scopes (`MP-5H`, `MP-6`, `MP-7D`, `MP-FINAL-2`, `MP-FINAL-3`), with unit/qualification tests under `tests/` for `collaborative_work`; MP-8 and MP-9 remain planned/unimplemented. |

@@ -1,5 +1,7 @@
 # DUP-X — Operator Decision Register
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0062` / `EDER-F-0211`):** The rows below are preserved verbatim as historical decision records. `OD-DUPX-02` and `OD-DUPX-08` were `APPROVED — 2026-10-29`; the section heading `## Wave-open phrases (not yet recorded)` below is retained as historical pre-closure template text (see `## Engineering record` and the operator authorization line at EOF). `OD-DUPX-01` (`OPEN — NOT TRIGGERED`) and `OD-DUPX-03..07` (`TRACKED`) remain historical records without new operator waivers. This note adds no new waiver, PASS, or closure claim.
+
 | ID | Decision | Status | Blocks |
 | --- | --- | --- | --- |
 | **OD-DUPX-02** | Independent audit of **final parent closure** master plan | **APPROVED — 2026-10-29** — Block I–II · B4 publication · final closure plan execution authorized | Block A hygiene · B6 handoff |
@@ -7,7 +9,7 @@
 | **OD-DUPX-03..07** | Class C architecture reopen (per finding) | **TRACKED** | Ownership / public contract changes |
 | **OD-DUPX-08** | Formal DUP-X closure + roadmap §5 ledger | **APPROVED — 2026-10-29** — operator explicitly authorized final parent closure; B6 **ISSUED — PASS (SCOPED)** | After Protocol PASS only |
 
-## Wave-open phrases (not yet recorded)
+## Wave-open phrases (historical pre-closure template — `OD-DUPX-02` and `OD-DUPX-08` recorded 2026-10-29; `OD-DUPX-01` not triggered)
 
 ```text
 OPERATOR APPROVED — DUP-X PLAN AUDIT (OD-DUPX-02)

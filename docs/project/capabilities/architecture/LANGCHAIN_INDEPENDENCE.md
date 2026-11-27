@@ -362,6 +362,20 @@ Preserved: LangChain-free core strategy; **KEEP_OPTIONAL** LangGraph decision; h
 
 ---
 
+## Cross-cutting ownership (EQO-W4, `EDER-F-0239`)
+
+One line per area (as of 2026-11-26 @ `646e63953`); "not applicable" lines state the reason.
+
+| Area | Statement |
+| --- | --- |
+| Tenant & Security | Canonical `KnowledgeDocumentScope` owns `tenant_id`, `namespace`, and `workspace_id` as system-owned routing fields (`LCI-3C`, `LCI-4C-A1`); user or foreign LangChain metadata cannot supply or override tenant/workspace scope, and delete/count fail closed without proven tenant isolation (Protocol v2 findings 01–02 track remaining compatibility-bridge tightening). |
+| Configuration | Controlled via `pyproject.toml` named optional extras (`llm-langchain-ollama`, `rag-langchain-loaders`, `rag-langchain-embeddings`, `rag-langchain-splitters`, `langgraph-legacy`) and explicit provider registry selection; default installation enables zero LangChain/LangGraph dependencies (`LCI-7A`). |
+| Observability | Owned by anchor runtime domains (`RAG`, `LLM_ADAPTERS`, `OBSERVABILITY`); compatibility bridges emit no separate telemetry plane and preserve canonical document/adapter provenance. |
+| Failure & Recovery | Missing optional compatibility extras raise deterministic provider configuration errors with no silent fallback (`LCI-2E`, `LCI-5C`, `LCI-6E`); runtime retry, circuit-breaking, and recovery remain owned by `LLM_ADAPTERS` and [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md). |
+| Tests | Enforced by AST boundary guard (`scripts/maintenance/check_langchain_boundary.py`), LangGraph packaging guard (`scripts/maintenance/check_langgraph_not_required.py`), native document ABI conformance gates (`LCI-1D`), and default/compatibility installation gates (`LCI-7B`, `LCI-7C`). |
+
+---
+
 ## Related documents
 
 | Document | Role |

@@ -180,3 +180,12 @@ Scoped contribution toward checklist IDs listed in task §42; **global FRZ PASS 
 **NEXT** = independent SCHED-01 audit acceptance, then current-HEAD Harness residual reconciliation (CE-01, PLUG-01, ART-01, etc. not auto-closed).
 
 **production changed files = 0** (recertification-first).
+
+---
+
+Note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`): gap statement only (append-only note matching [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md)). The record text above is unchanged. This note supplies none of the missing facts and adds no acceptance stamp, audit SHA, closure, PASS, verification, or independence claim; the roadmap remains the status owner.
+
+- Tracked debt ownership gap: L166 assigns `test_npsc42_orchestration_backend_access_confined_to_allowlist` ("stale gate") to `HARNESS-FINAL / QUAL-X`, matching the open debt entry in `HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md` L192.
+- Verification gap: [`HARNESS_FINAL_CURRENT_HEAD_CERTIFICATION.md`](HARNESS_FINAL_CURRENT_HEAD_CERTIFICATION.md) contains no occurrence of `npsc42`, `npsc4_2`, or `npsc4.2` (case-insensitive check), so this record does not establish where or when the `npsc42` allowlist failure was resolved, accepted, or re-verified.
+- Related finding: `EQOA-A2-046` (EQO-A Campaign A dossier, PR #589), register row `EDER-F-0075` in `docs/project/maintainers/qualification/enterprise_debt_register/register.jsonl`.
+- Non-claim: this note does not assert whether the test passes or fails at any commit, nor does it declare closure, PASS, or independent acceptance.

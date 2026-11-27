@@ -55,3 +55,14 @@
 | **Exclusion record** | [`DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md`](DUP_X_NPSC_4_2_DUPX_EXCLUSION_RECORD.md) — 10 `_orchestration_backend` modules · **excluded from DUP-X mandatory** |
 
 **Agent forbidden:** forge Protocol 03 PASS · OD-DUPX-08 · declare DUP-X CLOSED.
+
+## Governance Metadata Annex — Owner, Severity & Reopen Conditions (EQO-W4, `EDER-F-0190`)
+
+> **Parser-safety note (as of 2026-11-26 @ `646e63953`):** Existing tables and finding IDs above are unchanged so mechanical exit gates (`tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py`) remain unaffected. This annex supplies governance metadata only and adds no new PASS, waiver, or closure claim.
+
+| Metadata Field | Statement |
+| --- | --- |
+| **Stage Owner** | `DUP-X` (operator decisions governed by [`DUP_X_OPERATOR_DECISION_REGISTER.md`](DUP_X_OPERATOR_DECISION_REGISTER.md)) |
+| **Mechanical Python SSOT** | [`tests/qualification/dup_x/_findings_register.py`](../../../../tests/qualification/dup_x/_findings_register.py) |
+| **Severity Mapping** | Uses the `Severity` column (`Major` for ratified fence `DUPX-F-COMPAT-R3-FENCE`; `Gap` for Wave 1 evidence gaps `DUPX-GAP-*`; zero unresolved `DUPLICATE`/`BLOCKER` findings at audited HEAD) |
+| **Reopen Conditions** | Reopen immediately upon: (1) any new unregistered duplicate, shadow-authority, or bypass violation outside the mechanical SSOT; (2) scope expansion of any ratified fence (`DUPX-F-COMPAT-R3-FENCE` / `DUPX-CAND-*`) beyond its documented lab-only or projection boundary; or (3) modification to cited production paths without re-running `tests/qualification/dup_x/` mechanical exit gates and recording re-qualification. |

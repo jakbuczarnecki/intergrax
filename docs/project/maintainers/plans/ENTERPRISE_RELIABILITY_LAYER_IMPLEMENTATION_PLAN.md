@@ -14,7 +14,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 > When implementing ERL, read **only** the architecture hub, subordinate hubs, and this plan for the domain—unless a phase row explicitly cites a neighbor domain.
 
 **Document type:** Implementation roadmap and technical execution plan (**not** runtime delivery).  
-**Architecture maturity:** TARGET (ERL not started as a dedicated layer).  
+**Architecture maturity:** TARGET (implemented slice exists: `intergrax/runtime/enterprise_reliability/` 29 py, `intergrax/contracts/enterprise_reliability/` 38 py, `tests/unit/runtime/enterprise_reliability/` 18 py per [`ENTERPRISE_RELIABILITY_LAYER.md`](../../architecture/ENTERPRISE_RELIABILITY_LAYER.md); full six-phase ERL remains target architecture; no certification claimed).  
 **Last updated:** 2026-09-11
 
 ---
@@ -40,6 +40,8 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 | **Implementation roadmap** | **This document** | Safe implementation order |
 | Runtime implementation | **Future** | Build ERL capabilities |
 | Enterprise showcase | **Future** | Demonstrate business scenario |
+
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0226`):** The "Runtime implementation: Future" row above reflects full six-phase ERL completion; an implemented baseline slice already exists (`intergrax/runtime/enterprise_reliability/` 29 py, `intergrax/contracts/enterprise_reliability/` 38 py, `tests/unit/runtime/enterprise_reliability/` 18 py) per [`ENTERPRISE_RELIABILITY_LAYER.md`](../../architecture/ENTERPRISE_RELIABILITY_LAYER.md) (`## Current maturity`, line 279). No ERL certification or stage closure is claimed here.
 
 ---
 
