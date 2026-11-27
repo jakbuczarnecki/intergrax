@@ -1,0 +1,93 @@
+{
+  "schema": "eqo.batch_manifest.v1",
+  "files": [
+    {
+      "path": "AUDIT_FINDING_SETTLEMENT.json",
+      "sha256": "7fdcb56d4ad72a73059974b61199db95f376bdc2db5d5a5203ff7067da8f2add"
+    },
+    {
+      "path": "BASELINE_BINDING.json",
+      "sha256": "bcac5f6a92946884adca80d025b70622d96a901104da10645155de1d1e37ae13"
+    },
+    {
+      "path": "DES_PREREG.json",
+      "sha256": "5ac252bd78c4f9253b64ecb945defbeaa83fc7a7058eca8bd426488d9ba1c655"
+    },
+    {
+      "path": "ENVIRONMENT_MANIFEST.json",
+      "sha256": "6711e4fc4844f9812d3ef5ae21205a8fd657b813325cb8a47ad7c76cb6ee64cf"
+    },
+    {
+      "path": "EXECUTION_PUBLICATION_BINDING.json",
+      "sha256": "fee97adeee324040a09629ad6b655ce5f5aa51e445b799b7b3ede34ce0b160b3"
+    },
+    {
+      "path": "FINDING_DISPOSITION.json",
+      "sha256": "94fb9cb10b12e1a548d9461d219d29dd2d6c920d016915a6e6b0ff54882938c8"
+    },
+    {
+      "path": "HOST_POLICY_CORRECTIVE_MANIFEST.json",
+      "sha256": "825ca1de40cdda111f06e69e3d135b1285c9335974b33fbe9b93ca75847e2a1c"
+    },
+    {
+      "path": "junit/d01_architecture.xml",
+      "sha256": "d5e3e604fe4ac13093e37c4ca4b15c7e8529dc8d063ead396a780869d3fe9f84"
+    },
+    {
+      "path": "junit/d02_tenant_rag_context.xml",
+      "sha256": "ff889cd5cd57e044b4a09c09167a64ad97de26e315d3639b25d164cd3bac0525"
+    },
+    {
+      "path": "junit/d03_security.xml",
+      "sha256": "6798455ce386c480e3c1e7a6c53fd4d90fca3057fed1efcc194f4268886965dc"
+    },
+    {
+      "path": "junit/d04_evidence_reliability.xml",
+      "sha256": "34fb8e866167e1d860f771b7ee4d5227b73d8febc891b0519635840802a5a50a"
+    },
+    {
+      "path": "junit/d05_skills.xml",
+      "sha256": "56922179b2782db023533fb4a86b0f4c7d3990dbdd6fe1430c3784d953097227"
+    },
+    {
+      "path": "junit/mcp_p4_lifecycle.xml",
+      "sha256": "60712a157d4d695b10da0134606a8f6ae0fae287472ff3fff5338ca9ee47763e"
+    },
+    {
+      "path": "logs/d01_architecture.log",
+      "sha256": "f082b796507528653611280303fb5fcf826c5f967a3dc1efb8c8aa6fc092b6c0"
+    },
+    {
+      "path": "logs/d02_tenant_rag_context.log",
+      "sha256": "aa078c1c47361ea6b27952ab970fa3ff42cc1aaccd5432f89e9622307b6349f5"
+    },
+    {
+      "path": "logs/d03_security.log",
+      "sha256": "70787829d679d9c839ea51ffb7790507c179583a0ad8de0b990dc5e35afe6841"
+    },
+    {
+      "path": "logs/d04_evidence_reliability.log",
+      "sha256": "450c3d165cae9ab4748dac0dddfdb5d9fa64c3c095033f9c4bc84991c10d9e95"
+    },
+    {
+      "path": "logs/d05_skills.log",
+      "sha256": "75c19467ed87f3a989e1d3c6b100e3b7738a71aa7cf78140ed1e3260c017ac3d"
+    },
+    {
+      "path": "logs/mcp_p4_lifecycle.log",
+      "sha256": "4d09402213be04b3a3789fd4b7adfbd2ef22a84208f31c1a036f4d6ce7bd8780"
+    },
+    {
+      "path": "OBLIGATION_EXECUTION_MATRIX.json",
+      "sha256": "474b1eef2800d92a3472904c9839ad89b5597863e433fd570432694d91b77fdb"
+    },
+    {
+      "path": "REMAINING_QUALIFICATION_QUEUE.json",
+      "sha256": "e3af7217b989456455085992a935bfbbf0b5f9e8296a799deda3784bb5d0b518"
+    },
+    {
+      "path": "RUN_MANIFEST.json",
+      "sha256": "3121d0159ce1b8912c554eefaccc1121ea483ddd8b14a15b1375de7530547778"
+    }
+  ]
+}

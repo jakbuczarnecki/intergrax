@@ -1,0 +1,509 @@
+{
+  "schema": "eqo.remaining_qualification_queue.v1",
+  "execution_sha": "272479cd2cff03ce28130115f5e5ba8286865185",
+  "qualification_test_file_count": 29,
+  "application_host_test_file_count": 2,
+  "support_module_count": 4,
+  "documentary_only_obligation_count": 12,
+  "documentary_only_obligation_ids": [
+    "EDER-F-0016",
+    "EDER-F-0084",
+    "EDER-F-0182",
+    "EDER-F-0209",
+    "EDER-F-0222",
+    "EDER-D-0001",
+    "EDER-D-0002",
+    "EDER-D-0003",
+    "EDER-D-0004",
+    "EDER-D-0006",
+    "EDER-D-0007",
+    "EDER-D-0008"
+  ],
+  "outstanding_failure_families_preserved": [
+    "weaviate_native_client_qualification",
+    "mcp_p5_p4_lifecycle",
+    "harness_01_classification",
+    "bnd05_t_igx_043_h",
+    "prod_q_pb_s13",
+    "roadmap_replay_x",
+    "xd_12",
+    "act_n11_rb_2",
+    "evol_x_b4",
+    "live_provider_qualification",
+    "post_g2_rv_01"
+  ],
+  "qualification_queue": [
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "git_blob_id": "89b4604955ee7b582e3d3506f23779c83403f79a",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "git_blob_id": "3eede46e452e6d2342543329d81b4ec700623e25",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "git_blob_id": "334c1958c26453011262e88ee6e0589446640541",
+      "obligation_ids": [
+        "EDER-F-0020",
+        "EDER-F-0080"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "git_blob_id": "91b815474250868559df3ad7ab77fe6fcca73f10",
+      "obligation_ids": [
+        "EDER-F-0080"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py",
+      "git_blob_id": "a6eae2fb1406ad47956f2a19f44fa2cbdf5dd8d9",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "git_blob_id": "d5cb5e1200adcf0b92d54988cdb0bc4aefa80258",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0186"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "git_blob_id": "d356cf0ebdf245c20e9e1de5716a3be62a850244",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py",
+      "git_blob_id": "5c6ea952ef819e4ceaf3ce53b325e692c62a9a7d",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py",
+      "git_blob_id": "ecafa584d982c15cf1d4e5753a34c6cd66660000",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py",
+      "git_blob_id": "e9aa720fd908a2619b0447393d34a9e6498f3758",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "git_blob_id": "6ab22e632c05ecb5a3d8b9b228a1d14e37f54259",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0210"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py",
+      "git_blob_id": "3997176d4c8ac35fd404ba878972dba099b7b3d4",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py",
+      "git_blob_id": "ab786646d3738668f4044d27e69d5bbcf4316570",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py",
+      "git_blob_id": "4461749b914e62b2633888e9594898b01f4bca41",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py",
+      "git_blob_id": "6177e71ebb6c65f92063e8f3280ab913e1a519c8",
+      "obligation_ids": [
+        "EDER-F-0188"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "git_blob_id": "80160be7545aa0d0edacd9dceaf3a8d862ab34da",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "git_blob_id": "44a7a264ad40eb73cda551ae20a1160f1fdd4d08",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "git_blob_id": "ac05f94ce3b227b325df673e5e20889e0f37d75e",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "git_blob_id": "5ba8691c11b9ed718d56fa47aa2bf417cfcb2f9d",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+      "git_blob_id": "ac50490c9175eb7269da00440890fb31938be243",
+      "obligation_ids": [
+        "EDER-F-0158"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "git_blob_id": "6a36303d82fd7eb0e90737b4ade895ddddb4b2ba",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "git_blob_id": "9b06b6a8b3d5f3e3a06531972ee206ca2a4e0dff",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "git_blob_id": "b2bd6b6020785c3b5614b66757ee6a431783c43f",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "git_blob_id": "434a4e4a25e5ef6ec31c496a1eef22909bbb2ce5",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "git_blob_id": "03d4915ca3531ad93ae68e618ddc2e53de220c34",
+      "obligation_ids": [
+        "EDER-F-0023",
+        "EDER-F-0107"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "git_blob_id": "2790231e1c644541e1b238616ad023c07bb95375",
+      "obligation_ids": [
+        "EDER-F-0107"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "git_blob_id": "e92aa51600398bbe1c59ad33a9295549946cd03d",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "git_blob_id": "9dbce6f1c6d68e341f1636006c4fe6a2f9c61af7",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "git_blob_id": "2e24d0b54a973222b9e631124752278aa062889c",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    }
+  ],
+  "application_host_queue": [
+    {
+      "path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "git_blob_id": "a85efea4bd8fe87e1d37395793c76014aab4bdc1",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    },
+    {
+      "path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "git_blob_id": "4bd8189e6617c2e50d67c8f956faadae6ce51ae3",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ]
+    }
+  ],
+  "support_modules": [
+    {
+      "path": "tests/qualification/ebh_7/_ebh7_scope_residual_register.py",
+      "git_blob_id": "fdfacf08d690e423b9ce1862ecde9213339afef5",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "execution_eligibility": false,
+      "note": "not_standalone_test_file"
+    },
+    {
+      "path": "tests/qualification/ebh_7/_ebh7_skip_disposition_register.py",
+      "git_blob_id": "247956bf613029f15a316415f3757bdb7e97881c",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "execution_eligibility": false,
+      "note": "not_standalone_test_file"
+    },
+    {
+      "path": "tests/qualification/ebh_7/_tenant_unknown_role_dispositions.py",
+      "git_blob_id": "5190521d554c219578d59fe518e6840dd3e24889",
+      "obligation_ids": [
+        "EDER-F-0188"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "execution_eligibility": false,
+      "note": "not_standalone_test_file"
+    },
+    {
+      "path": "tests/unit/campaign_b/_pt_t01_matrix.py",
+      "git_blob_id": "615a4c66b769f836837074d004f15be6e4c27998",
+      "obligation_ids": [
+        "EDER-F-0124"
+      ],
+      "qualification_profile": null,
+      "required_environment": null,
+      "prerequisite_status": "unresolved",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "execution_eligibility": false,
+      "note": "not_standalone_test_file"
+    }
+  ],
+  "recorded_utc": "2026-11-27T10:22:36Z"
+}

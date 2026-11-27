@@ -1,0 +1,17 @@
+{
+  "schema": "eqo.host_policy_corrective_manifest.v1",
+  "batch_id": "EC-W3-HOST-POLICY-CORRECTIVE-07",
+  "execution_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+  "package_a_red_first": {
+    "initial_fc1_red": 4,
+    "final_fc1_red": 0
+  },
+  "mcp_p4": {
+    "passed": 5,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0
+  },
+  "formal_closure_claim": false
+}
