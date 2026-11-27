@@ -38,4 +38,5 @@ Deterministic pre-freeze verification checks (serial execution; zero `pytest` ru
 
 ## Lifecycle state
 
-`plan_approved`
+plan_approved
+

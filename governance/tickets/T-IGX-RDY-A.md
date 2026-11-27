@@ -41,4 +41,5 @@ Post-freeze verification gates (serial execution only; zero `pytest` runs during
 
 ## Lifecycle state
 
-`plan_pending`
+plan_pending
+
