@@ -1,6 +1,6 @@
 # Adaptive Harness Evolution — Architecture
 
-**Revision:** 1.2
+**Revision:** 1.3
 **Document status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Parent architecture:** [ADAPTIVE_HARNESS_INTELLIGENCE.md](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Implementation roadmap:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
@@ -503,6 +503,36 @@ Existing owner mechanisms must remain authoritative.
 
 Retain the canonical ADAS names.
 
+### Canonical ADAS contract compatibility
+
+The canonical ADAS architecture, particularly its §13 data contracts, remains authoritative for contract identity and compatibility.
+
+AHE W1 defines a restricted behavioral profile of ADAS. It does not define replacement ADAS contracts.
+
+The semantic field inventories below are additive W1 requirements, not exhaustive replacement schemas.
+
+The W1 implementation shall preserve canonical ADAS field identities, meanings, provenance and compatibility requirements.
+
+Additional W1 fields may strengthen:
+
+- Tenant and workspace binding.
+- Immutable configuration references.
+- Accepted scope provenance.
+- Aggregate resource limits.
+- Dataset and configuration digests.
+- Mandatory evidence completeness.
+- Explicit accounting uncertainty.
+- LAB-only execution posture.
+
+Do not remove canonical fields solely because W1 does not exercise their associated behavior.
+
+Where a canonical field requires an artifact or lifecycle capability not yet available in W1, use explicit absence or deferred capability semantics only under an architect-approved executable contract.
+
+Do not fabricate scaffold artifacts, approval references, promotion references or production evidence.
+
+Any required canonical schema amendment must be explicitly authorized before implementation. This documentation task does not authorize amendments to canonical ADAS documents.
+
+
 **`AdasOperationalEnvelope`**
 
 Required semantic fields:
@@ -567,19 +597,41 @@ Candidate drafts must not contain executable source code, arbitrary callable ref
 
 **`AgentCandidateStatus`**
 
-W1 lifecycle vocabulary:
+Preserve the canonical `AgentCandidateStatus` members and serialized values:
 
-- DRAFT
-- REJECTED
-- VALIDATED
-- EVALUATED
-- SELECTED
-- NOT_SELECTED
-- FAILED
+- DRAFT = draft
+- SCAFFOLDED = scaffolded
+- STATIC_GATE_FAILED = static_gate_failed
+- STATIC_GATE_PASSED = static_gate_passed
+- EVALUATED = evaluated
+- REJECTED = rejected
+- SHADOW = shadow
+- CANARY = canary
+- PROMOTED = promoted
+- RETIRED = retired
+- ARCHIVED = archived
 
-W1 selection is a LAB result, not production activation.
+W1 shall exercise only the lifecycle states applicable to configuration-only LAB experiments.
 
-Later lifecycle extensions must preserve the existing ADAS promotion architecture.
+W1 shall not exercise scaffold materialization, shadow, canary, production promotion or production retirement.
+
+The former W1 VALIDATED concept maps to STATIC_GATE_PASSED.
+
+Static validation rejection maps to STATIC_GATE_FAILED and preserves its structured rejection evidence.
+
+Do not introduce SELECTED, NOT_SELECTED or FAILED as replacement candidate lifecycle states.
+
+Selection decisions remain separate semantic outcomes:
+
+- SELECT_CANDIDATE
+- RETAIN_BASELINE
+- ABSTAIN
+
+Execution failures and cancellation belong to explicit search-run outcomes, stop reasons and evidence.
+
+Candidate archival operations must preserve the actual historical lifecycle state. Persisting a snapshot does not automatically transition the candidate to ARCHIVED.
+
+Selection must never imply activation or promotion.
 
 **`AgentCandidateRecord`**
 
@@ -619,6 +671,8 @@ Do not treat hashes alone as authorization or correctness proof.
 ## 5.22 Candidate archive
 
 `AgentDesignArchive` is the canonical ADAS archive protocol.
+
+Candidate archival operations must preserve the actual historical lifecycle state. Persisting a snapshot does not automatically transition the candidate to ARCHIVED.
 
 Required operations:
 
@@ -696,6 +750,10 @@ The W1 gate must reject:
 
 The gate must produce a structured rejection reason.
 
+Successful static validation transitions the candidate to STATIC_GATE_PASSED before experimental execution.
+
+Static validation rejection transitions the candidate to STATIC_GATE_FAILED, archives structured rejection evidence and must not proceed to experimental execution.
+
 Rejected candidates must be archived.
 
 No rejected candidate may reach experimental execution.
@@ -703,6 +761,21 @@ No rejected candidate may reach experimental execution.
 Full executable agent scaffold materialization remains outside W1.
 
 Do not declare AHI-ADAS-20 complete from configuration-only evidence.
+
+**Configuration-only execution boundary**
+
+A configuration-only variant of an existing authorized execution composition is not a newly materialized executable agent.
+
+W1 may resolve and execute approved configuration alternatives through existing host composition, provided that agent identities, executable artifacts, capabilities, tool permissions and execution authority remain unchanged.
+
+Any creation or materialization of a new executable agent candidate remains subject to the canonical AgentScaffoldBridge and existing scaffold authority.
+
+W1 must not create an alternative scaffold or materialization path.
+
+The LAST_WINS versus CONCAT witness changes only an admitted configuration surface of an existing execution composition.
+
+This scope does not qualify AgentScaffoldBridge or complete AHI-ADAS-20.
+
 
 ## 5.25 Search policy and resource control
 
@@ -816,6 +889,21 @@ The NexusEvalRunner may return zero cost or token values when telemetry is absen
 
 If a required metric or mandatory evidence is missing, the candidate cannot be accepted on the basis of that missing value.
 
+**Configuration-only execution boundary**
+
+A configuration-only variant of an existing authorized execution composition is not a newly materialized executable agent.
+
+W1 may resolve and execute approved configuration alternatives through existing host composition, provided that agent identities, executable artifacts, capabilities, tool permissions and execution authority remain unchanged.
+
+Any creation or materialization of a new executable agent candidate remains subject to the canonical AgentScaffoldBridge and existing scaffold authority.
+
+W1 must not create an alternative scaffold or materialization path.
+
+The LAST_WINS versus CONCAT witness changes only an admitted configuration surface of an existing execution composition.
+
+This scope does not qualify AgentScaffoldBridge or complete AHI-ADAS-20.
+
+
 ## 5.28 Selection semantics
 
 W1 supports exactly three semantic outcomes:
@@ -853,14 +941,14 @@ Prescribed algorithm:
 6. Generate at most one candidate.
 7. Archive candidate draft.
 8. Run static candidate gate.
-9. Archive rejection and terminate safely if validation fails.
+9. On static gate failure: record STATIC_GATE_FAILED, archive structured rejection evidence and terminate safely.
 10. Recheck resource allowance.
 11. Execute candidate once.
 12. Reconcile resource consumption.
 13. Construct canonical evaluation evidence from actual outcomes.
 14. Compare baseline and candidate.
-15. Determine selection, baseline retention or abstention.
-16. Archive terminal candidate snapshot and evidence bundle.
+15. Determine SELECT_CANDIDATE, RETAIN_BASELINE or ABSTAIN (selection outcomes, not lifecycle states).
+16. Archive terminal candidate snapshot and evidence bundle while preserving the actual lifecycle state.
 17. Return search outcome and stop reason.
 
 The controller must not directly invoke agent execution methods, provider SDKs or tool handlers.
@@ -921,7 +1009,7 @@ If the reviewed execution path does not expose the selected configuration behavi
 - Baseline loses at least one required result marker.
 - Candidate preserves both required result markers.
 - Independent deterministic evaluation distinguishes the results.
-- Candidate is selected.
+- SELECT_CANDIDATE selection outcome is recorded (not a lifecycle state).
 - Evidence is archived.
 - No production promotion occurs.
 - No real external effects occur.
@@ -942,3 +1030,28 @@ If the reviewed execution path does not expose the selected configuration behavi
 This witness qualifies deterministic configuration adaptation and canonical composition only.
 
 It is not a general benchmark of intelligent adaptation or a production readiness claim.
+
+## 5.31 Canonical ADAS implementation and acceptance binding
+
+AHE implements mapped canonical ADAS obligations without introducing competing ownership.
+
+Each executable AHE batch must bind its deliverables to exact AHI-ADAS obligations.
+
+For every touched obligation, record one of:
+
+- NOT_STARTED
+- IMPLEMENTED_PENDING_QUALIFICATION
+- QUALIFIED_SCOPED
+- PARTIALLY_SATISFIED
+- DEFERRED_WITH_REASON
+- ACCEPTED
+
+AHE package publication does not automatically close an ADAS obligation.
+
+An ADAS obligation may become ACCEPTED only after its complete canonical acceptance requirements and applicable independent acceptance requirements are satisfied.
+
+Partial W1 implementations must not be represented as full ADAS phase completion.
+
+Canonical plan updates require separately authorized write scope.
+
+Preserve canonical ADAS delivery rules until an explicit, authorized reconciliation establishes a different applicable publication procedure.

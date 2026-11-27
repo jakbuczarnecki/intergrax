@@ -1,6 +1,6 @@
 # Adaptive Harness Evolution — Implementation Roadmap
 
-**Revision:** 1.2
+**Revision:** 1.3
 **Status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Architecture reference:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../../architecture/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
@@ -92,14 +92,27 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 | Package | Implementation | Review / acceptance | Notes |
 |---|---|---|---|
-| AHE-W0-01 | PUBLISHED | ACCEPTED_SCOPED; Independent acceptance: PENDING | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. |
+| AHE-W0-01 | PUBLISHED | ACCEPTED_SCOPED; Independent acceptance: PENDING; Process finding: repeated prohibited AI-tool attribution in historical commit metadata (no history rewrite) | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. |
 | AHE-W0-02 | PUBLISHED | ACCEPTED_SCOPED_WITH_PROCESS_FINDING; Independent acceptance: PENDING; External owner acceptance: PENDING | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772`. Repeated prohibited AI-tool attribution in historical commit metadata. No history rewrite. |
-| AHE-W0-03 | IN_PROGRESS | Architect-defined implementation contract supplied; Independent acceptance: PENDING | — |
-| W1–W8 | PLANNED | Executable implementation authorization not inferred | — |
+| AHE-W0-03 | PUBLISHED | ACCEPTED_SCOPED; Publication compliance: FAILED; Corrective compatibility status: IN_PROGRESS; Independent acceptance: PENDING | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. |
+| W1–W8 | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
 | AHE-G0 | PENDING | — | — |
 | AHE-G1 | PENDING | — | — |
 
 **Closed waves:** 0. **Formally closed packages:** 0.
+
+## Process findings register
+
+| ID | Finding |
+|---|---|
+| F-AHE-01 | Repeated prohibited AI-tool attribution and violation of publication stop condition. |
+| F-AHE-02 | W0-03 execution register reconciliation. |
+| F-AHE-03 | Canonical ADAS contract compatibility. |
+| F-AHE-04 | Candidate lifecycle vocabulary compatibility. |
+| F-AHE-05 | Canonical delivery and acceptance reconciliation. |
+| F-AHE-06 | Configuration-only versus scaffold materialization boundary. |
+| F-AHE-07 | Restore historical W0-01 process finding. |
+
 
 ---
 
@@ -129,13 +142,45 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 ## W1 implementation contract
 
-These batches define the authorized W1 implementation scope. They are not present execution authority until AHE-G0, AHE-G1 and applicable governance requirements are satisfied.
+These batches define **PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED** for W1. They are not present execution authority until AHE-G0, AHE-G1 and applicable governance requirements are satisfied.
 
 ### W1-B01 — Candidate contracts and archive
 
 **Roadmap package:** AHE-W1-01
 
 **Canonical obligation coverage:** AHI-ADAS-10.1 through AHI-ADAS-10.14, subject to exact obligation-level acceptance and explicit residual tracking.
+
+**W1-B01 canonical obligation inventory (planned coverage; acceptance not claimed):**
+
+| Canonical obligation | W1-B01 responsibility | Status |
+|---|---|---|
+| AHI-ADAS-10.1 | Importable canonical package skeleton, copyright headers and no import side effects | NOT_STARTED |
+| AHI-ADAS-10.2 | Compatible operational envelope and provenance | NOT_STARTED |
+| AHI-ADAS-10.3 | Compatible objective contract, scope, budgets and approval semantics | NOT_STARTED |
+| AHI-ADAS-10.4 | Compatible search-run lifecycle, accounting and stop reasons | NOT_STARTED |
+| AHI-ADAS-10.5 | Compatible candidate draft, lineage and configuration-only restriction | NOT_STARTED |
+| AHI-ADAS-10.6 | Immutable candidate records and canonical lifecycle status | NOT_STARTED |
+| AHI-ADAS-10.7 | Compatible evaluation result and canonical metric references | NOT_STARTED |
+| AHI-ADAS-10.8 | Sealed evidence bundle and deterministic integrity | NOT_STARTED |
+| AHI-ADAS-10.9 | Scoped archive protocol and query semantics | NOT_STARTED |
+| AHI-ADAS-10.10 | In-memory archive with append-only and isolation semantics | NOT_STARTED |
+| AHI-ADAS-10.11 | SQLite archive and restart durability | NOT_STARTED |
+| AHI-ADAS-10.12 | Candidate lineage and historical queries | NOT_STARTED |
+| AHI-ADAS-10.13 | Canonical package exports | NOT_STARTED |
+| AHI-ADAS-10.14 | Contract, archive, isolation and evidence integrity tests | NOT_STARTED |
+
+Explicit residual tracking is required for canonical capabilities outside W1, including:
+
+- Executable agent scaffold artifacts.
+- Promotion-related evidence.
+- Later lifecycle states.
+- Archive query behavior associated with later lifecycle states.
+- Enterprise retention and production integration.
+
+Do not mark any of these obligations complete through documentation alone.
+
+The future W1-B01 executable contract must pin exact schema fields, validation rules, archive operations, test cases and canonical obligation-level acceptance.
+
 
 **Proposed runtime write set:**
 
@@ -246,6 +291,28 @@ Tests must execute actual canonical LAB behavior rather than compare fabricated 
 - Focused and adjacent regression results.
 
 W1 exit requires independently accepted behavioral evidence.
+
+### Canonical ADAS publication boundary
+
+The existing canonical ADAS plan prescribes one phase or narrowly scoped sub-phase per PR and corresponding canonical plan updates.
+
+AHE implementation batches represent engineering coordination units. They do not automatically override canonical ADAS publication units.
+
+The planned W1-B02 engineering batch spans obligations associated with AHI-ADAS-20, AHI-ADAS-30 and AHI-ADAS-40.
+
+Its executable authorization must explicitly reconcile the engineering batch with applicable canonical publication and acceptance boundaries.
+
+Final publication targets development through the repository-authorized procedure.
+
+Direct-push authorization must not be inferred from this roadmap.
+
+The exact executable write set must identify any authorized canonical ADAS register updates.
+
+Protected cross-program documents must not be modified without explicit authorization.
+
+`ADAS_DELIVERY_RECONCILIATION: PENDING_AUTHORIZATION`
+
+
 
 ### W1 authorization boundary
 
