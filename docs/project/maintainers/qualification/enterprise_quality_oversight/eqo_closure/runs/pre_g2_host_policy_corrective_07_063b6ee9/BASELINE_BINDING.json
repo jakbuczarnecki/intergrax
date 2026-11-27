@@ -1,0 +1,8 @@
+{
+  "schema": "eqo.baseline_binding.v1",
+  "task_start_remote_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+  "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+  "candidate_execution_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+  "tested_tree_sha": "b0a6b800d70387f41991080c60281d9169a84eb7",
+  "historical_execution_sha_unreachable": "272479cd2cff03ce28130115f5e5ba8286865185"
+}
