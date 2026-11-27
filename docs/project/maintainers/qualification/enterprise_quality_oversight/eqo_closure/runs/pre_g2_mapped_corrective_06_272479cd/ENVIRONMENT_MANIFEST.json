@@ -1,0 +1,12 @@
+{
+  "schema": "eqo.environment_manifest.v1",
+  "batch_id": "EC-W3-CORRECTIVE-06",
+  "execution_sha": "272479cd2cff03ce28130115f5e5ba8286865185",
+  "worktree_path": "D:\\Projekty\\_wt\\intergrax\\ec-w3-06",
+  "uv_exe_path": "C:\\Users\\XPS\\.local\\bin\\uv.exe",
+  "path_correction": "C:\\Users\\XPS\\.local\\bin prepended for pytest child processes",
+  "uv_sync_command": "uv sync --locked --extra dev-ci --extra dev-ci-rag --extra mcp --extra llm-langchain-ollama",
+  "uv_sync_log": "logs/environment_sync.log",
+  "arch_freeze_dependency_status": "locked_sync_completed",
+  "recorded_utc": "2026-11-27T10:22:36Z"
+}

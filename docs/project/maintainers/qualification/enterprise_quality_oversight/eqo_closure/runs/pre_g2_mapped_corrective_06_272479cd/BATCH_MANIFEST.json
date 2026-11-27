@@ -1,0 +1,29 @@
+{
+  "schema": "eqo.pre_g2_mapped_corrective_batch_manifest.v1",
+  "batch_id": "EC-W3-CORRECTIVE-06",
+  "execution_sha": "272479cd2cff03ce28130115f5e5ba8286865185",
+  "recorded_utc": "2026-11-27T10:22:36Z",
+  "evidence_artifacts": {
+    "BASELINE_BINDING.json": "416735dc638858e9a95c3a401d00f9f5233d3a266a3c8c78f9a1a7bd3178cedd",
+    "CORRECTIVE_SETTLEMENT.md": "5f4ae2d7360363aeba140661a15708fe2d7900bae4cda1f0b81aede5fa20b4d7",
+    "DES_PREREG.json": "32b8b695b9d52d7bf9572681d7a3bfc3c4e1a877762879eafd6b009658b9ec66",
+    "ENVIRONMENT_MANIFEST.json": "6922f8add5f90f8b720429581a353ba3c7dd296e49c06e333d2612f539c02a48",
+    "OBLIGATION_EXECUTION_MATRIX.json": "aa0a0491a431783b7e142758b64c55b988644effd57a1a7d0e3524151c066fe1",
+    "REMAINING_QUALIFICATION_QUEUE.json": "e3af7217b989456455085992a935bfbbf0b5f9e8296a799deda3784bb5d0b518",
+    "RUN_MANIFEST.json": "38a1c5e8eaa65e1451c29f601f139ba870c88daa83ae3de08ab49fa5c1dc52b2",
+    "junit/d01_architecture.xml": "193067e787842be2021e47f58266fec5bcddb0bac68fdfd07efdec678447db3c",
+    "junit/d02_tenant_rag_context.xml": "055e3a49a80b8ba9d4f771ad1716778b690dc1fe5d8b3ce7713517d413c5bf01",
+    "junit/d03_security.xml": "d93b5476b44b37bd4012045a63e092f3a1c23867410a0f6aa6225bf89ffd71cd",
+    "junit/d04_evidence_reliability.xml": "fc2f38781818f6946a27cf0bbbaa73666d606cb0be1cb79ff136e1370e57f981",
+    "junit/d05_skills.xml": "67dc0c7450f284564584b165418912ef53978de5437f4767e7b345d5f63036e2",
+    "logs/d01_architecture.log": "27473f8e76cd2b6d2f1f1686359167ac65f209124c597e810abf3f50164d43fd",
+    "logs/d02_tenant_rag_context.log": "51a7e5fa478f6fbed39e288fdd900a747289c8bbccd27a81aedd40f4e60f36e9",
+    "logs/d03_security.log": "2c75d8b6f7333eafda1e891b7ebc4764a6f33202d033e04258872654a075238a",
+    "logs/d04_evidence_reliability.log": "4358b60d2b870173bc2438ee6190fb9451111cd5ddc9c260e1361dbefbeb7f2a",
+    "logs/d05_skills.log": "8e1a07b468552183840695360b5409de1292064cd98b62721d71a30d56d3a2ab",
+    "logs/environment_sync.log": "6ddee921887c278ab8cd1d03841f4d5bb5bf000ab27e6c973d82bec7767b7474",
+    "logs/mcp_p4_lifecycle.log": "cf82ce66635c49a6b2881eced2080d6b8ce5a8ba21916ba319ce5e96a695fdef",
+    "CORRECTIVE_EXECUTION_MANIFEST.json": "44df96fc1ad0b4a28c9089c5e8a5e451d47e3efd77f0688cf0657a9e8314e674"
+  },
+  "formal_certification_status": "NOT_ESTABLISHED"
+}

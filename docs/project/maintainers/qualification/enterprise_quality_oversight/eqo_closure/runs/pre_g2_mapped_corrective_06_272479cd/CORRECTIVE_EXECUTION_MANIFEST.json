@@ -1,0 +1,26 @@
+{
+  "schema": "eqo.corrective_execution_manifest.v1",
+  "batch_id": "EC-W3-CORRECTIVE-06",
+  "packages": {
+    "EC-F01": {
+      "name": "Package A environment correction",
+      "disposition": "PASS"
+    },
+    "EC-F02": {
+      "name": "Package B cross-application boundary",
+      "disposition": "PASS"
+    },
+    "EC-F03": {
+      "name": "Package C sandbox authority fixture",
+      "disposition": "PASS"
+    },
+    "EC-F04": {
+      "name": "Package D mapped regression replay",
+      "disposition": "EXECUTED_WITH_DOCUMENTED_RESIDUALS"
+    }
+  },
+  "starting_remote_sha": "bfecd8314c0990519a7e19733454d51c29a1e2e7",
+  "execution_sha": "272479cd2cff03ce28130115f5e5ba8286865185",
+  "recorded_utc": "2026-11-27T10:22:36Z",
+  "formal_certification_status": "NOT_ESTABLISHED"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "eqo.baseline_binding.v1",
+  "batch_id": "EC-W3-CORRECTIVE-06",
+  "required_reference_ancestor": "bfecd8314c0990519a7e19733454d51c29a1e2e7",
+  "starting_remote_sha": "bfecd8314c0990519a7e19733454d51c29a1e2e7",
+  "execution_sha": "272479cd2cff03ce28130115f5e5ba8286865185",
+  "ancestry_verified": true,
+  "recorded_utc": "2026-11-27T10:22:36Z"
+}
