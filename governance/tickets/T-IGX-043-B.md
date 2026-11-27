@@ -81,6 +81,11 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC2 | AF-W3-PT-FC2-01`. Authorization
 Lifecycle stays `quality_gate`; not `DONE`; `G2` open; `SCOPE=CLOSED` unchanged; `PT-Q02` pending.
 
 
+
+### AF-W3-PT-FC1-02 executor delta (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-02`. **TASK-02 FC2 precedence:** `resolve_celery_queue_env_config` restores explicit `app_name` precedence over `INTERGRAX_CELERY_APP_NAME` (parity with `CeleryIntegrationConfig.from_env`); broker fail-closed unchanged. Tests: `tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py` plus queue-worker / `NT-BND-05-2` regression batch green in session.
+
 ## RW traceability (GA.2R)
 
 Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.

@@ -86,8 +86,11 @@ def resolve_celery_queue_env_config(
         os.environ.get("INTERGRAX_CELERY_BACKEND_URL", _DEFAULT_CELERY_BACKEND_URL).strip()
         or _DEFAULT_CELERY_BACKEND_URL
     )
-    default_app_name = app_name or "tier3_host_task_worker"
-    resolved_app_name = os.environ.get("INTERGRAX_CELERY_APP_NAME", default_app_name).strip() or default_app_name
+    default_app_name = "tier3_host_task_worker"
+    if app_name is not None:
+        resolved_app_name = app_name.strip() or default_app_name
+    else:
+        resolved_app_name = os.environ.get("INTERGRAX_CELERY_APP_NAME", default_app_name).strip() or default_app_name
     return CeleryQueueEnvConfig(
         app_name=resolved_app_name,
         broker_url=broker,
