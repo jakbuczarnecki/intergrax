@@ -1,4 +1,4 @@
-﻿# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
+# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
 
 ## Scope
 
@@ -164,3 +164,17 @@ Preserved handoffs: `queue_worker_wiring.py` → PT-FC2; importlib b1/b2 → PT-
 **Pre-fix RED baseline (canonical node):** see `.tmp/proof/af-w3-pt-wb-03/` after commit (log SHA256, test blob SHA, execution SHA). `RED_FIRST_EVIDENCE=INCOMPLETE`; `OP_B_PENDING=12`; `FRZ-BND-05` not promoted.
 
 **Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; PT-FC1 product fixes required for GREEN on canonical node; PT-Q02 PENDING.
+
+### AF-W3-PT-FC1-03 settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-03`. Authorization: OD-AF-W3-FC1-02 variant A.
+
+| Item | Status |
+|---|---|
+| OD-AF-W3-FC1-02 | DECIDED; variant A recorded in operator register |
+| FC1 write authority | `intergrax/runtime/execution/lab_reference_agent_runtime.py` in plan §4 firm list; `HISTORICAL_PUBLICATION_FINDING: PRESERVED`; `CURRENT_WRITE_AUTHORITY: AUTHORIZED`; historic commit `9d0e7c7283f6bc5fac075de5c34dc0971e38f396` |
+| FC2 write authority | `tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py` in plan §5; historic commit `9154971a7ddcfd819137e16c44bf932b44b28093` |
+| BND-05 evidence | `RED_AT_PREFIX` at prefix `13b3789c60910ccd3882bfd39641fb5f8d3530fc`, fix `9d0e7c7283f6bc5fac075de5c34dc0971e38f396`, pin `7b7ec4488c504f1c90dba599d5742197dbbf0c1e`; tracked logs under `continuation/RED_FIRST_EXECUTION_FRZ-BND-05_*` |
+| FRZ-EXE-02 / FRZ-PLG-05 | `EVIDENCE_MISSING` |
+| STRICT host authority | OPEN_RESIDUAL |
+| Ticket lifecycle | `plan_approved`; not full DONE |

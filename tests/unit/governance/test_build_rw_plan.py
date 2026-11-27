@@ -836,7 +836,7 @@ def test_live_evidence_missing_rows_carry_od_af_close_b2():
     mod = _import_build()
     inv = {r["frz_id"]: r for r in mod.build()["code_fix_inventory"]}
     missing = [frz for frz, row in inv.items() if row["red_first_status"] == "EVIDENCE_MISSING"]
-    assert len(missing) == 12
+    assert len(missing) == 11
     for frz in missing:
         row = inv[frz]
         assert row.get("operator_decision_id") == "OD-AF-CLOSE-B2"

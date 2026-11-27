@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T15:00:10.430770+00:00",
-  "execution_sha": "d6d809650ae77293d5a649b923516ea2f69bc69c",
+  "generated_at": "2026-11-27T16:14:44.362663+00:00",
+  "execution_sha": "3a3bfcb707e901798d66aab1a11eddb52998d47a",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "e94a36efcf869dc572d136624aff2fb147efd62125fdce4ee20df98c9e7c7280",
+  "bindings_sha256": "2201b59a91d7a974c10d32ea62e8d42bcc71d30619b7ed195941b801c101a20b",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -110,10 +110,10 @@
           "function_state_at_pin": "exists"
         }
       ],
-      "red_first_prefix_sha": null,
-      "red_first_status": "EVIDENCE_MISSING",
+      "red_first_prefix_sha": "13b3789c60910ccd3882bfd39641fb5f8d3530fc",
+      "red_first_status": "RED_AT_PREFIX",
       "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json#FRZ-BND-05",
-      "red_first_reason": "Canonical node test_scan_flags_a_rogue_agent now implements the RuntimeContext construction scan, but no mechanism-aligned prefix FAILED to pin PASSED record exists for that node at identical test_blob_sha (self-test passes at prefix and pin; historical overlay measured posture on a different node).",
+      "red_first_reason": "Mechanism-aligned prefix FAILED on four unauthorized Tier-2 RuntimeContext.build sites; pin PASSED at identical test_blob_sha. Scope: direct Tier-2 construction scan only; STRICT host authority residual remains open.",
       "red_first_superseded_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_STRICT_RESULT.json#FRZ-BND-05",
       "red_first_due_ticket": "T-IGX-043-H",
       "regression_scope": "ENT-A-BND-01..03",
@@ -4861,6 +4861,10 @@
           "state": "exists"
         },
         {
+          "path": "tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py",
+          "state": "new"
+        },
+        {
           "path": "tests/unit/applications/architecture/test_diag_platform_adoption_gate.py",
           "state": "exists"
         },
@@ -5149,6 +5153,10 @@
           {
             "path": "tests/integration/platform_plugins/test_plugin_engine_cross_flow.py",
             "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py",
+            "reason": "OD-AF-W3-FC1-02 variant A; section 15 amendment"
           }
         ]
       },
@@ -5405,6 +5413,10 @@
         },
         {
           "path": "intergrax/runtime/execution/host_orchestration_loop_init_spec.py",
+          "state": "exists"
+        },
+        {
+          "path": "intergrax/runtime/execution/lab_reference_agent_runtime.py",
           "state": "exists"
         },
         {
@@ -8913,6 +8925,7 @@
         "intergrax/runtime/execution/environment_orchestration_materialization.py",
         "intergrax/runtime/execution/host_orchestration_environment_spec_builder.py",
         "intergrax/runtime/execution/host_orchestration_loop_init_spec.py",
+        "intergrax/runtime/execution/lab_reference_agent_runtime.py",
         "intergrax/runtime/execution/nexus_host_execution.py",
         "intergrax/runtime/execution/worker_host_task_execution_composition.py",
         "intergrax/runtime/human/persistence_errors.py",

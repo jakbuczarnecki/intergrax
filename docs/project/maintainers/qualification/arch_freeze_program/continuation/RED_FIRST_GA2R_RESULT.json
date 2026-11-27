@@ -238,7 +238,9 @@
     "measured_rows": 21,
     "red_at_prefix": 8,
     "evidence_missing": 12,
-    "operator_disposition_unchanged": 1
+    "operator_disposition_unchanged": 1,
+    "RED_AT_PREFIX": 9,
+    "EVIDENCE_MISSING": 11
   },
   "rows": [
     {
@@ -271,11 +273,34 @@
     },
     {
       "frz_id": "FRZ-BND-05",
-      "status": "EVIDENCE_MISSING",
+      "status": "RED_AT_PREFIX",
       "mechanism": "cross-layer construction only through sanctioned composition (NT-BND-05-1, NT-BND-05-2)",
-      "reason": "Canonical node test_scan_flags_a_rogue_agent now implements the RuntimeContext construction scan, but no mechanism-aligned prefix FAILED to pin PASSED record exists for that node at identical test_blob_sha (self-test passes at prefix and pin; historical overlay measured posture on a different node).",
+      "reason": "Mechanism-aligned prefix FAILED on four unauthorized Tier-2 RuntimeContext.build sites; pin PASSED at identical test_blob_sha. Scope: direct Tier-2 construction scan only; STRICT host authority residual remains open.",
+      "red_first_prefix_sha": "13b3789c60910ccd3882bfd39641fb5f8d3530fc",
       "due_ticket": "T-IGX-043-H",
       "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent",
+          "counted": true,
+          "prefix_sha": "13b3789c60910ccd3882bfd39641fb5f8d3530fc",
+          "fix_commit": "9d0e7c7283f6bc5fac075de5c34dc0971e38f396",
+          "pin_sha": "7b7ec4488c504f1c90dba599d5742197dbbf0c1e",
+          "test_blob_sha": "06412ff4c544adc2b514c85184af434695b4daaa",
+          "pin_blob_sha": "06412ff4c544adc2b514c85184af434695b4daaa",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 0,
+          "assertion_lines": [
+            "E       AssertionError: agents/boundary_demo/boundary_demo_agent.py:96: unauthorized RuntimeContext.build call",
+            "E         agents/external_contractor_adapter/external_contractor_adapter_agent.py:112: unauthorized RuntimeContext.build call",
+            "E         agents/organization_worker/organization_worker_agent.py:118: unauthorized RuntimeContext.build call",
+            "E         intergrax/agents/authoring/acp_stub_reflex.py:69: unauthorized RuntimeContext.build call",
+            "E       assert violations == []"
+          ],
+          "prefix_log_sha256": "62c5330515fbcac2e0b20400597267dbe5090fbb0ac1804e98992b5877f22f40",
+          "pin_log_sha256": "caf8db4b1099d71b7ce500857d5ca1117a88990ac7fe3fbf7c673163b523e04b"
+        },
         {
           "node": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_tier2_build_context_takes_posture_from_host_not_a_literal",
           "counted": false,

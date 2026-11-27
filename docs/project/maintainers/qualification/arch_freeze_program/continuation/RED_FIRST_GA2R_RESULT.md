@@ -16,7 +16,7 @@ Earlier RED_FIRST records are not edited. This record is not a waiver and adds n
 | FRZ row | Status | Prefix | Red-first due at |
 |---|---|---|---|
 | FRZ-BND-04 | RED_AT_PREFIX | 0cee41a88274 | - |
-| FRZ-BND-05 | EVIDENCE_MISSING | - | T-IGX-043-H |
+| FRZ-BND-05 | RED_AT_PREFIX | 13b3789c60910ccd3882bfd39641fb5f8d3530fc | T-IGX-043-H |
 | FRZ-BND-06 | EVIDENCE_MISSING | - | T-IGX-043-J |
 | FRZ-CFG-06 | RED_AT_PREFIX | 0cee41a88274 | - |
 | FRZ-CTR-02 | RED_AT_PREFIX | 0cee41a88274 | - |
@@ -57,22 +57,23 @@ Behavioural failure on the offending production imports at the prefix; passes at
 
 
 <a id="frz-bnd-05"></a>
-### FRZ-BND-05 - EVIDENCE_MISSING
+### FRZ-BND-05 - RED_AT_PREFIX
 
 Mechanism: cross-layer construction only through sanctioned composition (NT-BND-05-1, NT-BND-05-2).
 
-The Tier-2 node fails on the production_mode posture literal, not on direct RuntimeContext construction (NT-BND-05-1). The provider-switch node (NT-BND-05-2) passes at the prefix and fails at the pin.
+Mechanism-aligned prefix FAILED on four unauthorized Tier-2 `RuntimeContext.build` sites; pin PASSED at identical `test_blob_sha`. Scope is direct Tier-2 construction removal only; STRICT host authority residual remains open.
 
-- `tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_tier2_build_context_takes_posture_from_host_not_a_literal` - not counted; prefix `0cee41a88274` FAILED (run exit 1), pin PASSED (run exit 1); test blob `748b64bd09df2769366917bb244ca1fb0c4bc3cd` from `d81f21a0c78a`; log sha256 `aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65`
+- `tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent` - counted; prefix `13b3789c60910ccd3882bfd39641fb5f8d3530fc` FAILED (run exit 1), pin `7b7ec4488c504f1c90dba599d5742197dbbf0c1e` PASSED (run exit 0); test blob `06412ff4c544adc2b514c85184af434695b4daaa` unchanged; prefix log sha256 `62c5330515fbcac2e0b20400597267dbe5090fbb0ac1804e98992b5877f22f40`; pin log sha256 `caf8db4b1099d71b7ce500857d5ca1117a88990ac7fe3fbf7c673163b523e04b`
 
   ```text
-  E       AssertionError: agents/external_contractor_adapter/external_contractor_adapter_agent.py:110: production_mode reads the lab constant
-  E         agents/organization_worker/organization_worker_agent.py:111: production_mode is a literal
-  E         intergrax/agents/authoring/acp_stub_reflex.py:61: production_mode reads the lab constant
-  E       assert [Violation(re...ab constant')] == []
+  E       AssertionError: agents/boundary_demo/boundary_demo_agent.py:96: unauthorized RuntimeContext.build call
+  E         agents/external_contractor_adapter/external_contractor_adapter_agent.py:112: unauthorized RuntimeContext.build call
+  E         agents/organization_worker/organization_worker_agent.py:118: unauthorized RuntimeContext.build call
+  E         intergrax/agents/authoring/acp_stub_reflex.py:69: unauthorized RuntimeContext.build call
+  E       assert violations == []
   ```
 
-- `tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list` - not counted; prefix `0cee41a88274` PASSED (run exit 1), pin FAILED (run exit 1); test blob `56e1a8fa130ebe47ca28cf8bc4c124652df4e2c8` from `83896a79cc71`; log sha256 `aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65`
+Historical non-counted nodes retained below.
 
 <a id="frz-bnd-06"></a>
 ### FRZ-BND-06 - EVIDENCE_MISSING

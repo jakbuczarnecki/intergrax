@@ -46,13 +46,13 @@ e20a2b263460c989a5cd2e213b56c97ff24e8f3c11ce2fdfc9f34159eda8d68a  known_red_regi
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous c458c854 was stale at base: changed by ebe45c269 and 3bb5fefb4.
 # added 2026-11-27 (T-IGX-078-B, RW-PLAN-AUDIT finding L9): RW plan, its reviewed input, binding record and GA.2R red-first record.
 # Digests record content, not approval. RW_PLAN.md and rw_plan.v1.json are generator output: refresh both entries after every regeneration.
-16ba0dfde90c1545c55ff65410db888daccc92815d39910a341027442ccb7075  RW_PLAN.md
+f6686f4081764c04be0a5373f90be5f645662a4d6e42ee2065e426a9deca1ed1  RW_PLAN.md
 # refreshed AF-W2-GATE-BIND-01; was c4e93a940ffd1f36b0c798375533974d7f02ec271b35710fbe05bb49da25f157
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-c4a9216beb25395a64291200b0c81e03e46b44203b356e9391b5c063f8b39424  rw_plan.v1.json
+b8a34909654e3767c4038459c635a75e93fb6ad0ef9ce9133becb5f81cb2f590  rw_plan.v1.json
 # refreshed AF-W2-GATE-BIND-01; was 28039dfa703293458d4c6559909f19df2c79e30d5facd17d262ce91c16765cea
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-274b823b19e8229f33e8824bd5c60855da3e2ccf74d89ff5e7e9b120cdc5f3a1  rw_plan_bindings.v1.json
+2201b59a91d7a974c10d32ea62e8d42bcc71d30619b7ed195941b801c101a20b  rw_plan_bindings.v1.json
 # refreshed AF-W2-GATE-BIND-01; was bc1754618c2a43e05c12f4fd73dd128b6a9a345f2660d5b4aebfb749f993cd6c
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
 d8815f3f66ba3309894fefaa2dea09b371a0e2513702a5404042d69011b83d11  rw_plan_binding_record/INDEX.md
@@ -63,6 +63,8 @@ c3fdb5aa5c99504b34bd7956fe34bc4f8efc121c60fc958053a0b0c9978fc19b  rw_plan_bindin
 13628681d6d297ee4ee095d5eea8b405751dc96407008998f639c851dd416d7e  rw_plan_binding_record/RW_PLAN_v19.md
 f47dd2e6d940902901030ff43cfa10e707217c5afcf9ebe5f8a301ef3aa20309  rw_plan_binding_record/RW_PLAN_v21.md
 09511de15a74abec8c5b660292ea52e4250ceb10da7af6d85450e24610123446  rw_plan_binding_record/RW_PLAN_v6.md
-cd52e1e84053e032e5b104cf1b8407421657352755e41ad4dda0663da3ba76c6  continuation/RED_FIRST_GA2R_RESULT.json
+62c4305e0a9a00452b58d6c8a015cfcd7972c4bb1fca106225f11d26fc61a55a  continuation/RED_FIRST_GA2R_RESULT.json
 9adf3e0b09a2dc8aa60663afe523cae76d4c6adefba79cf4a16028795e361cae  continuation/RED_FIRST_GA2R_RESULT.md
 8acf28284ae8dc921da6e36203074eb7edb5758e41ba9a822f9b43eb1bc53070  continuation/RED_FIRST_GA2R_OPERATOR_ITEMS.md
+62c5330515fbcac2e0b20400597267dbe5090fbb0ac1804e98992b5877f22f40  continuation/RED_FIRST_EXECUTION_FRZ-BND-05_prefix_13b3789c.log
+caf8db4b1099d71b7ce500857d5ca1117a88990ac7fe3fbf7c673163b523e04b  continuation/RED_FIRST_EXECUTION_FRZ-BND-05_pin_7b7ec448.log
