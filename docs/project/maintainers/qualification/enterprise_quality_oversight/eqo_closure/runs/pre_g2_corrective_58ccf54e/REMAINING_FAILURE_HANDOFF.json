@@ -1,0 +1,55 @@
+{
+  "schema": "eqo.remaining_failure_handoff.v1",
+  "source_run": "pre_g2_targeted_recovery_c94745b1",
+  "families": {
+    "mcp_p5": {
+      "status": "FAIL",
+      "trust_a_child": "11/11 PASS",
+      "failure_node": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled",
+      "diagnostic": "policy fragment missing from host catalog: harness.policy_smoke",
+      "owner_resolution": "required",
+      "evidence": "runs/pre_g2_targeted_recovery_c94745b1/logs/mcp_p5.log"
+    },
+    "harness_01": {
+      "obligations": [
+        "intergrax/queueing/worker/registry.py (RuntimeToolInvoker unclassified)",
+        "intergrax/applications/_shared/memory_provider_admission.py (Nexus unclassified importer)"
+      ],
+      "evidence": "runs/pre_g2_targeted_recovery_c94745b1/logs/harness_01.log"
+    },
+    "weaviate_native_client": {
+      "status": "UNRESOLVED",
+      "note": "Factory supplies no native client; contract test fails ingest"
+    },
+    "bnd05_t_igx_043_h": "remaining qualification obligation",
+    "prod_q_pb_s13_dual_exception": {
+      "evidence": "runs/pre_g2_targeted_recovery_c94745b1/logs/prod_q_pb_s13.log"
+    },
+    "roadmap_replay_x_mechanical_gates": {
+      "evidence": "runs/pre_g2_targeted_recovery_c94745b1/logs/roadmap_replay_x.log"
+    },
+    "xd12_domain_coverage": {
+      "evidence": "runs/pre_g2_targeted_recovery_c94745b1/logs/xd12.log"
+    },
+    "act_n11_rb2": "owner resolution required",
+    "evol_x_b4": "remaining",
+    "live_provider_qualification": "remaining",
+    "post_g2_rv_01": "remaining"
+  },
+  "confirmed_resolved": {
+    "wb06": {
+      "passed": 32,
+      "evidence_sha": "c94745b1 targeted replay"
+    },
+    "mcp_trust_a": {
+      "passed": 11
+    },
+    "trace_x_targeted_nodes": {
+      "passed": 3
+    },
+    "wave2_guards": {
+      "passed": 13
+    }
+  },
+  "formal_closure_claim": false
+}

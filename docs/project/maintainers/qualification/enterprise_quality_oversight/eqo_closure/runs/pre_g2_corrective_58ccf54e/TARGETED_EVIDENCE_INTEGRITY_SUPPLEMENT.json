@@ -1,0 +1,160 @@
+{
+  "schema": "eqo.targeted_evidence_integrity_supplement.v1",
+  "prior_manifest": "runs/pre_g2_targeted_recovery_c94745b1/BATCH_MANIFEST.json",
+  "entries": [
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/ENVIRONMENT_MANIFEST.json",
+      "original_manifest_identifier": "f9863c76c4a6576cba6c127b5cc5cff6c86bc26b",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_DES_PREREG.json",
+      "original_manifest_identifier": "2013e75831e87c1ef718610aff2e9cae4ca88d85",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_RUN_MANIFEST.json",
+      "original_manifest_identifier": "652dd5454ad4f55b07a78c2397234d9120ce75c6",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/FAILURE_NODE_RECONCILIATION.json",
+      "original_manifest_identifier": "982836aed44c91ea331551f51a11ae85cd686373",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/PRIOR_EVIDENCE_INTEGRITY.json",
+      "original_manifest_identifier": "66dccce27e85aec0f24c46ab578cf27f53a76381",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/NO_NAMED_TEST_34_RECOVERY.json",
+      "original_manifest_identifier": "043d1413234e931f5f7996c830d8c581e367bed3",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/AF_CLOSE_HANDOFF.md",
+      "original_manifest_identifier": "3b35ddaad5e18b1012e5f1b443d710508f5817ec",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/TARGETED_SETTLEMENT.md",
+      "original_manifest_identifier": "d7de3761d419dbb42483177c017d488a43a1e75c",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/environment_sync.log",
+      "original_manifest_identifier": "3c7e80eeb40103ef5c2d93c8fffa26c1116846e4",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/wb06.log",
+      "original_manifest_identifier": "aa1ad5851bcf20f24a4c6fff213cb80a594b7a8a",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/wb02.log",
+      "original_manifest_identifier": "13a693a0dfc8c00f0ba46f63c2ba2f403992101c",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/mcp_trust_a.log",
+      "original_manifest_identifier": "8e2958d09d8d5774b10c87c6333573fd6a859b23",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/mcp_p5.log",
+      "original_manifest_identifier": "352ace06cde5f9ee5864be0e5d7ceaab07e40414",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/trace_x_p6.log",
+      "original_manifest_identifier": "56f4aa185162ea1253a3081ef1fa9437a40c3a83",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/harness_01.log",
+      "original_manifest_identifier": "9f5111274faec9daef5af1941f9769840dab8e1c",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/prod_q_pb_s13.log",
+      "original_manifest_identifier": "fe0a8f142790e3487ceb814e5b03efab7b246a65",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/roadmap_replay_x.log",
+      "original_manifest_identifier": "85855a0217a0b5ee4114fe5cfe404632edb3a3f0",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    },
+    {
+      "artifact_path": "runs/pre_g2_targeted_recovery_c94745b1/logs/xd12.log",
+      "original_manifest_identifier": "250e76d7769d8beecca482efcc3fa29c54e4fc9a",
+      "git_blob_id_at_source_publication": "",
+      "original_equals_git_blob_id": false,
+      "sha256_of_committed_blob_bytes": "",
+      "source_publication_sha": "c94745b11b35a3be55e4e9cb6502befc60262e26"
+    }
+  ],
+  "wb06_run_manifest_disposition": {
+    "artifact_path": "runs/wb06/pre_g2_replay_786088a9/RUN_MANIFEST.json",
+    "publication_commit": "16752778ce3f01cd71ee6d849e071c350f134bc9",
+    "historically_expected_sha256": "15a0855e825817d3a3f55ea18275d9ee683c21f82389ba76e81e209ef6b49267",
+    "git_blob_id_at_publication_commit": "6cb3174d938fb209dbfbb7453288ac636dfee4cb",
+    "sha256_raw_blob_bytes": "aa1e5e953518b8226fdb6935df27c690ee7ac8e4c3714b6c7263bb31d8f2b256",
+    "sha256_after_crlf_to_lf_normalization": "604704dde06b8609e8c2fb8fb5be51f9d95bb48c7e86c7384c253854fdff453d",
+    "matches_expected_with_crlf_normalization": false,
+    "attributed_cause": "unresolved_historical_provenance"
+  }
+}

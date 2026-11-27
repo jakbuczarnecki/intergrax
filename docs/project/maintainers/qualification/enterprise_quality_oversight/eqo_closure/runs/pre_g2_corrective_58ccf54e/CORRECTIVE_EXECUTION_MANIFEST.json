@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.corrective_execution_manifest.v1",
+  "batch_id": "EC-W3-CORRECTIVE-IMPLEMENTATION-04",
+  "starting_remote_sha": "58ccf54e7e7c9a1a4bba2e3ef9f8a0b3dbdad66c",
+  "recorded_utc": "2026-11-27T09:22:38Z",
+  "evidence_artifacts": {
+    "NO_NAMED_TEST_34_COMPLETE_MAPPING.json": "9f324bb2b792f469dac2df22edd2807e75370ef034f57069a066906dcc914ef6",
+    "TARGETED_EVIDENCE_INTEGRITY_SUPPLEMENT.json": "fdf03ef68e298330c3ae4130825571927fde1aeec1b003709f45722366d3dfc2",
+    "REMAINING_FAILURE_HANDOFF.json": "15d073ff14a70d09f92c9eb70ba3a51e76d33d7df3d3c15f92d3206a05848e68",
+    "logs/package_a_red_first.log": "04911d870a83569332a77d303417559af7b87517545bb4f384b5562e97a0784b",
+    "logs/package_a_green_adjacent.log": "d6eeddcea65f3e3b66bbb5662e723b3f44bc34d992fa30abb2607d54d9b34bb5",
+    "logs/package_b_red_first.log": "4a5db73ee32548cbaf4a7ed40247806ca02db42312ea17ac1586432bc2ac995f",
+    "logs/package_b_green_focused.log": "7aa1dd013b489aecbbc2506f926e9d44218962634674b19d3a64a273d6c667b0",
+    "logs/package_b_full.log": "c4ec1b324257410646e68e9cafce40a9c21efdb0f4ec12e40de04d99d42824d4",
+    "CORRECTIVE_SETTLEMENT.md": "9df7324c5641ea2c42ddd167148a0599e8d871aba47cac3b7e432f8c739e6980"
+  },
+  "formal_certification_status": "NOT_ESTABLISHED"
+}
