@@ -886,24 +886,20 @@ Positive red-first evidence is **only** the `RED_AT_PREFIX` class whose log name
 
 `verify_rw_plan_phase_check3.py` **must** continue to reject `RED_FIRST_UNREPRODUCIBLE` and `GREEN_AT_PREFIX`. The note in `RED_FIRST_G2_DISPOSITION.md` is **non-blocking** and **historical**; it **does not** close WP-12 phase-check 3 or satisfy REV-MASTER red-first.
 
-### V5.3 Prefix recovery path (no waiver by default)
-
 #### V5.2.1 RW-PLAN acceptance vs evidence completeness (OD-AF-CLOSE-B6, clarifies B2)
 
 **Status:** **DECIDED** variant **A** (2026-11-27; register [../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B6)). **Does not** supersede OD-AF-CLOSE-B2 obligations; **does not** set SCOPE, RW_PLAN_AUDIT, G2, or RED_FIRST_EVIDENCE=COMPLETE.
 
 | Dimension | Rule |
 | --- | --- |
-| **Plan structure acceptance** | May proceed while exactly **12** OP-B rows remain EVIDENCE_MISSING, if each row is explicitly enumerated with owner, planned negative test, mechanism and certification obligation (OD-AF-CLOSE-B2 metadata). |
-| **Independent RW-PLAN audit acceptance** | May proceed under the same **12**-row pending set; **does not** imply PASS or closure of RW_PLAN_AUDIT. |
-| **RED_FIRST_EVIDENCE completeness** | Stays **INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay (including FRZ-DEBT-02/03 seeded-red when promoted). |
-| **SCOPE formal closure** | May proceed **before** OP-B evidences are delivered **only** when the other **12** hard SCOPE predecessors are satisfied; **does not** auto-close SCOPE. |
-| **Pre-G2 / G2 qualification** | All **12** OP-B obligations **must** be settled (**no** EVIDENCE_MISSING) before the proper pre-G2 gate; post_freeze_policy_schedule.pre_g2_op_b_gate_enforce engages fail-closed checks (
-alidate_pre_g2_op_b_settlement). **G2** remains **OPEN** while any OP-B row is unsettled. |
-| **Progressive OP-B evidence contract (AF-W2-FINAL-01)** | Future promotions to RED_AT_PREFIX: pin_sha may equal 
-ix_commit when both are explicit and green-after-fix is measured; **prefix_sha must not equal 
-ix_commit**; 	est_blob_sha **must equal** pin_blob_sha with git blob validation at pin_sha (historical test-only overlay allowed at prefix_sha); GA2R evidence files **must** declare schema f2.red_first_ga2r.v1. |
+| **Plan structure acceptance (W2 default)** | Default invocation `verify_rw_plan_phase_check3.py` (no flags) validates structure only. Between **0** and **12** OP-B rows may remain `EVIDENCE_MISSING`, each a member of the authorized OP-B set with full OD-AF-CLOSE-B2 metadata. **Does not** require exactly twelve open rows. |
+| **Independent RW-PLAN audit acceptance** | May proceed while a progressive pending set remains; **does not** imply PASS or closure of RW_PLAN_AUDIT. |
+| **RED_FIRST_EVIDENCE completeness** | Stays **INCOMPLETE** until every owed inventory row records accepted `RED_AT_PREFIX` replay (including FRZ-DEBT-02/03 seeded-red when promoted). Progressive delivery is allowed. |
+| **SCOPE formal closure** | All **12** canonical hard SCOPE predecessors (the WP-12 `dependencies.SCOPE` set) must each be settled per its own contract before formal SCOPE closure. OD-AF-CLOSE-B6 does **not** add a second twelve-item predecessor list beyond that canonical set. OP-B evidence may still be outstanding while other predecessors close. **Does not** auto-close SCOPE. |
+| **Pre-G2 / G2 qualification** | Mandatory mechanical check: `uv run python scripts/governance/verify_rw_plan_phase_check3.py --pre-g2` with `PRE_G2_OP_B_SETTLEMENT=PASS` and exit **0**. Engages `validate_pre_g2_op_b_settlement` **independently** of `post_freeze_policy_schedule.pre_g2_op_b_gate_enforce`. All **12** OP-B obligations must be `RED_AT_PREFIX` with complete red-first evidence (not status alone). **G2** remains **OPEN** while settlement fails. |
+| **Progressive OP-B evidence contract (AF-W2-FINAL-01)** | Promotions to `RED_AT_PREFIX`: `pin_sha` may equal `fix_commit` when both are explicit and green-after-fix is measured; **`prefix_sha` must not equal `fix_commit`**; `test_blob_sha` **must equal** `pin_blob_sha` with git blob validation at `pin_sha` (historical test-only overlay allowed at `prefix_sha`); GA2R evidence files **must** declare schema `af2.red_first_ga2r.v1`. |
 
+### V5.3 Prefix recovery path (no waiver by default)
 
 1. Worktree at the **prefix SHA** (negative-test era).
 2. Overlay **only** the test file from the fix commit (minimal surface).

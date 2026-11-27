@@ -128,7 +128,7 @@
 - **Operator words** (Polish, quoted as relayed from the ChatGPT ARCH-FREEZE session): «Zatwierdzam OD-AF-CLOSE-B6, wariant A, zgodnie z pełnym opisanym kontraktem.»
 - **English rendering:** the Operator approves **OD-AF-CLOSE-B6, variant A**, under the full contract as described in the W2 final acceptance packet (AF-W2-FINAL-01).
 - **Scope:** clarifies OD-AF-CLOSE-B2 only; recorded as register row **OD-AF-CLOSE-B6** with status **DECIDED**.
-- **Limits:** relay record only; not an `Approved:` line, not a cryptographic signature, not independent RW-PLAN-AUDIT PASS, and sets no gate by itself. Mechanical pre-G2 enforcement remains in `verify_rw_plan_phase_check3.py` when `pre_g2_op_b_gate_enforce` is engaged.
+- **Limits:** relay record only; not an `Approved:` line, not a cryptographic signature, not independent RW-PLAN-AUDIT PASS, and sets no gate by itself. Mechanical pre-G2 settlement: mandatory `verify_rw_plan_phase_check3.py --pre-g2` (independent of `pre_g2_op_b_gate_enforce` in plan data).
 
 ## Proposal only - role registry (file not edited)
 

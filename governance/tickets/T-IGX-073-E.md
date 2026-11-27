@@ -1,4 +1,4 @@
-﻿# T-IGX-073-E — W2-RECOVERY-01: RW-PLAN, phase-check-3, PT-V04, Campaign B alpha
+# T-IGX-073-E — W2-RECOVERY-01: RW-PLAN, phase-check-3, PT-V04, Campaign B alpha
 
 ## Owner
 
@@ -79,6 +79,12 @@ erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
 - Operator decision **OD-AF-CLOSE-B6** (variant A) recorded; MEP-AF2 V5.2.1; Campaign B diagnostic acceptance record; RW-PLAN audit readiness indices.
 - Targeted regression extension `test_verify_rw_plan_phase_check3_op_b_closure03.py`; `development` publication.
 
+
+## AF-W2-GATE-BIND-01 (2026-11-27)
+
+- Mandatory pre-G2 settlement: `verify_rw_plan_phase_check3.py --pre-g2` (`PRE_G2_OP_B_SETTLEMENT`) independent of plan `pre_g2_op_b_gate_enforce`.
+- G2 qualification binding in `rw_plan_bindings.v1.json` `g2_entry_conditions` (MANDATORY_QUALIFICATION_COMMAND).
+- MEP-AF2 V5.2.1 B6 wording; SCOPE predecessor index; audit prep dossier; `SOURCES.sha256` refresh; targeted regression `test_verify_rw_plan_phase_check3_pre_g2_gate.py`.
 ## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
 
 - Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.

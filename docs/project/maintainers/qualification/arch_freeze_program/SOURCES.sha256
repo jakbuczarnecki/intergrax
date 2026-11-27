@@ -1,7 +1,8 @@
 # sha256sum format; check with: sha256sum -c SOURCES.sha256 (run inside this folder)
 # Digests are of the published copies (LF line endings, two machine-path redactions; see README.md).
 # 'source' comments give the original untracked path, its modification time (local) and the sha256 of the source file before normalization/redaction.
-4b97c7e0e5fe2582995043f9c7c587d26fe11732df841fd2559b31d65e98271b  MEP-AF2_v2.1.md
+5c174964eccea4a407335963a6a18e5f26b081a8fd040511492be99e34ea754f  MEP-AF2_v2.1.md
+# refreshed AF-W2-GATE-BIND-01; was 4b97c7e0e5fe2582995043f9c7c587d26fe11732df841fd2559b31d65e98271b
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous 01666b92 was stale at base: changed by deea67621 and de0a621f8; then Appendix V6 (T-IGX-078-A). Then edited again by T-IGX-078-A for the relayed OP-A signature.
 # source of MEP-AF2_v2.1.md: agent-env/plans/pasted-content-id-e2b1-integrax-melodic-aho.md mtime=2026-11-16 13:02:01 sha256=5c31bd9116a587732bc814e12800e904c2ff8a5330e4daeaaf1e17232053af19
 d9655da35e0b11de6aad2423485db41ee7c88ce141040e7d64c9f3f52d3a2896  README.md
@@ -22,7 +23,8 @@ a3db026c33e6e49737412899852fe0772a609045e42aa423a915a9b8b6de82f2  PT_FRZ_RR_PATH
 50a3579bf1774221929e8e1e697ae52656821e928b209a284f2fee903de77984  DELEGATION_RECORD_OD-AF-20_STANDING.md
 bc37e1e774892354eb0be3b4d9ef0d334b12daebf4ea022aa4b103a385ea2a5f  DELEGATION_RECORD_T-IGX-050-L.md
 214f79e1d367507a4db78db177fc458f63101e8054810378dce42a66faefd48f  ECAP_REVISION_DRAFT.md
-d46a50979b2be8a9d3be70b1f67be644a1dc1dd9d09effd32fe15a5ced1fa629  KNOWN_RED_REGISTER.md
+837e7340d7de451bc1e7ff7c306a089867e12417dd31110e036ea93dcc82e873  KNOWN_RED_REGISTER.md
+# refreshed AF-W2-GATE-BIND-01; was d46a50979b2be8a9d3be70b1f67be644a1dc1dd9d09effd32fe15a5ced1fa629
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous 894b047f was stale at base: changed by 200d3ad2e and ebe45c269.
 9f344eeaea745c005356cb320c5408841fc07116c82ff58d1b949fd9867a4cc6  PT_FRZ_RR_FORMAL_CLOSEOUT_RECORD.md
 # written 2026-11-24 T-IGX-073-B (AF-02C)
@@ -32,21 +34,26 @@ ab4d0545e1e3b8b19022676839a03a608d26a8ad429c14f35636f3a5006c0587  REV_MASTER_COR
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous 2385294a was stale at base: changed by deea67621.
 # written 2026-11-24 T-IGX-073-D (AF-02E)
 b1c9b733b20c1bf95f37eeeaadca96b90734446bb4f457a99f52e89535d6bb92  RM499_ENTRY_MAP.md
-9198847c40510c5f436d283d496b3ec36c6a5b1e5b28df45738f1b3609a47b73  RW_TRAIN_DELEGATION_RECORD.md
+9469281eff29fb93d576703913163d5884fa389e05e9cf02ec523a2e991611f3  RW_TRAIN_DELEGATION_RECORD.md
+# refreshed AF-W2-GATE-BIND-01; was 9198847c40510c5f436d283d496b3ec36c6a5b1e5b28df45738f1b3609a47b73
 04045606cd825b619d503c2318cb99f7478d48ea5da6b9f65c9560d726608e3c  RW_TRAIN_DELEGATION_RECORD_2.md
 d507b54e1b06939591033383bdd8c16d132a40ef16eb6a856f1356d6ef335bc7  RW_TRAIN_DELEGATION_RECORD_3.md
 fb1b9f3d1b2a0bfe62edec033d1d8b10203a7e4f43ee95a1637d37eac80b5374  RW_TRAIN_DELEGATION_RECORD_4.md
 9876ee29b3ad8e78510766e5f3050e8136079959dceacf093a873c8806af4a29  RW_TRAIN_STANDING_DELEGATION_RECORD.md
 fae51e58d1f07f0a3f42e8a4f38a8dde2475daef00f61cdf353e32b232dfd0b1  RW_TRAIN_STANDING_DELEGATION_RECORD_2.md
-30d940d8cdda1f5ede1d7b1baed12fc3d086532affddb8982a66d3c8abeb017c  known_red_register.v1.json
+e20a2b263460c989a5cd2e213b56c97ff24e8f3c11ce2fdfc9f34159eda8d68a  known_red_register.v1.json
+# refreshed AF-W2-GATE-BIND-01; was 30d940d8cdda1f5ede1d7b1baed12fc3d086532affddb8982a66d3c8abeb017c
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous c458c854 was stale at base: changed by ebe45c269 and 3bb5fefb4.
 # added 2026-11-27 (T-IGX-078-B, RW-PLAN-AUDIT finding L9): RW plan, its reviewed input, binding record and GA.2R red-first record.
 # Digests record content, not approval. RW_PLAN.md and rw_plan.v1.json are generator output: refresh both entries after every regeneration.
-c4e93a940ffd1f36b0c798375533974d7f02ec271b35710fbe05bb49da25f157  RW_PLAN.md
+16ba0dfde90c1545c55ff65410db888daccc92815d39910a341027442ccb7075  RW_PLAN.md
+# refreshed AF-W2-GATE-BIND-01; was c4e93a940ffd1f36b0c798375533974d7f02ec271b35710fbe05bb49da25f157
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-28039dfa703293458d4c6559909f19df2c79e30d5facd17d262ce91c16765cea  rw_plan.v1.json
+c4a9216beb25395a64291200b0c81e03e46b44203b356e9391b5c063f8b39424  rw_plan.v1.json
+# refreshed AF-W2-GATE-BIND-01; was 28039dfa703293458d4c6559909f19df2c79e30d5facd17d262ce91c16765cea
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-bc1754618c2a43e05c12f4fd73dd128b6a9a345f2660d5b4aebfb749f993cd6c  rw_plan_bindings.v1.json
+274b823b19e8229f33e8824bd5c60855da3e2ccf74d89ff5e7e9b120cdc5f3a1  rw_plan_bindings.v1.json
+# refreshed AF-W2-GATE-BIND-01; was bc1754618c2a43e05c12f4fd73dd128b6a9a345f2660d5b4aebfb749f993cd6c
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
 d8815f3f66ba3309894fefaa2dea09b371a0e2513702a5404042d69011b83d11  rw_plan_binding_record/INDEX.md
 40f5e38ef6154bde62317f535e4d481d771cf79118b2ac0a5995e0ae9487fa81  rw_plan_binding_record/RW_PLAN_v13.md

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import subprocess
@@ -335,18 +336,48 @@ def _validate_evidence_missing_obligations(inventory: list[object]) -> list[str]
     return errors
 
 
-def validate_pre_g2_op_b_settlement(inventory: list[object]) -> list[str]:
-    """Fail-closed when the pre-G2 OP-B gate is active (OD-AF-CLOSE-B6)."""
+def validate_pre_g2_op_b_settlement(
+    inventory: list[object],
+    *,
+    data: dict[str, object] | None = None,
+    git_validate: bool = True,
+) -> list[str]:
+    """Fail-closed OP-B settlement for pre-G2 / G2 qualification (OD-AF-CLOSE-B6).
+
+    Independent of ``post_freeze_policy_schedule.pre_g2_op_b_gate_enforce`` when invoked from ``--pre-g2``.
+    """
+    errors: list[str] = []
     by_frz: dict[str, dict[str, object]] = {}
     for row in inventory:
-        if isinstance(row, dict) and row.get("frz_id"):
-            by_frz[str(row["frz_id"])] = row
-    unsettled = sorted(
-        frz for frz in _EVIDENCE_MISSING_OP_B if by_frz.get(frz, {}).get("red_first_status") == "EVIDENCE_MISSING"
-    )
-    if unsettled:
-        return [f"pre-G2 OP-B gate blocked ({_OD_AF_CLOSE_B6}): unsettled obligations {unsettled}"]
-    return []
+        if not isinstance(row, dict):
+            continue
+        frz = row.get("frz_id")
+        if not frz:
+            continue
+        key = str(frz)
+        if key not in _EVIDENCE_MISSING_OP_B:
+            continue
+        if key in by_frz:
+            errors.append(f"{key}: duplicate OP-B obligation row")
+        by_frz[key] = row
+
+    for frz in sorted(_EVIDENCE_MISSING_OP_B):
+        row = by_frz.get(frz)
+        if row is None:
+            errors.append(f"{frz}: OP-B obligation row missing from inventory")
+            continue
+        status = row.get("red_first_status")
+        if status in _OP_B_FORBIDDEN_STATUSES:
+            errors.append(f"{frz}: OP-B row must not use status {status}")
+        elif status != "RED_AT_PREFIX":
+            errors.append(
+                f"pre-G2 OP-B gate blocked ({_OD_AF_CLOSE_B6}): "
+                f"{frz} requires RED_AT_PREFIX with complete evidence, got {status!r}"
+            )
+        _validate_op_b_row_metadata(frz, row, errors)
+        if status == "RED_AT_PREFIX" and data is not None:
+            errors.extend(_validate_op_b_red_at_prefix_completeness(frz, row, git_validate=git_validate))
+    return errors
 
 
 def _validate_post_freeze_policy_schedule(data: dict[str, object]) -> list[str]:
@@ -387,7 +418,12 @@ def _validate_post_freeze_policy_schedule(data: dict[str, object]) -> list[str]:
         if frz_row.get("red_first_status") != "RED_FIRST_LATER_WAVE":
             errors.append("FRZ-FRZ-10 must stay RED_FIRST_LATER_WAVE")
     if schedule.get("pre_g2_op_b_gate_enforce") is True:
-        errors.extend(validate_pre_g2_op_b_settlement(data.get("code_fix_inventory") or []))
+        errors.extend(
+            validate_pre_g2_op_b_settlement(
+                data.get("code_fix_inventory") or [],
+                data=data,
+            )
+        )
     return errors
 
 
@@ -1072,11 +1108,24 @@ def _emit(
     print(f"CHECK3_STRUCTURE_GREEN={'YES' if plan_status == 'PASS' else 'NO'}")
 
 
-def main() -> int:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Strict WP-12 phase check 3 over RW-PLAN + FRZ matrix.")
+    parser.add_argument(
+        "--pre-g2",
+        action="store_true",
+        help="Engage mandatory OP-B settlement checks for pre-G2 / G2 qualification (OD-AF-CLOSE-B6).",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
     plan_errors: list[str] = []
     if not _RW_JSON.is_file():
         plan_errors.append(f"missing {_RW_JSON.relative_to(_REPO)}")
         _emit(plan_errors, [], ["audit blocked: missing rw plan"], "FAIL", ownership_verified=0, ownership_total=0)
+        if args.pre_g2:
+            print("PRE_G2_OP_B_SETTLEMENT=FAIL")
         return 1
 
     data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
@@ -1085,6 +1134,8 @@ def main() -> int:
     except SystemExit as exc:
         plan_errors.append(f"matrix parse failed: {exc}")
         _emit(plan_errors, [], ["audit blocked: matrix parse failed"], "FAIL", ownership_verified=0, ownership_total=0)
+        if args.pre_g2:
+            print("PRE_G2_OP_B_SETTLEMENT=FAIL")
         return 1
 
     ownership_verified, ownership_total = count_verified_ownership(data)
@@ -1095,6 +1146,19 @@ def main() -> int:
     red_first_errors = validate_red_first_evidence(data)
     audit_notes = validate_rw_plan_audit(data)
     plan_status = "PASS" if not plan_errors else "FAIL"
+
+    pre_g2_errors: list[str] = []
+    pre_g2_settlement = ""
+    if args.pre_g2:
+        pre_g2_errors = validate_pre_g2_op_b_settlement(
+            data.get("code_fix_inventory") or [],
+            data=data,
+        )
+        for e in pre_g2_errors:
+            print(f"[PRE_G2_OP_B] {e}", file=sys.stderr)
+        pre_g2_settlement = "PASS" if plan_status == "PASS" and not pre_g2_errors else "FAIL"
+        print(f"PRE_G2_OP_B_SETTLEMENT={pre_g2_settlement}")
+
     _emit(
         plan_errors,
         red_first_errors,
@@ -1104,6 +1168,8 @@ def main() -> int:
         ownership_total=ownership_total,
         named_negative_tests=count_named_negative_tests(data),
     )
+    if args.pre_g2:
+        return 0 if pre_g2_settlement == "PASS" else 1
     return 0 if plan_status == "PASS" else 1
 
 

@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T10:17:39.349788+00:00",
-  "execution_sha": "bfecd8314c0990519a7e19733454d51c29a1e2e7",
+  "generated_at": "2026-11-27T10:50:37.576064+00:00",
+  "execution_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "3edd913f712b433b4cfc3a03143c68736e88a719ce86a7f69019dbb34a8aea95",
+  "bindings_sha256": "274b823b19e8229f33e8824bd5c60855da3e2ccf74d89ff5e7e9b120cdc5f3a1",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -9682,7 +9682,8 @@
   ],
   "g2_entry_conditions": [
     "The SCOPE hard predecessors of section 18 are satisfied.",
-    "All twelve OP-B EVIDENCE_MISSING obligations are settled to RED_AT_PREFIX with complete evidence before the pre-G2 gate (OD-AF-CLOSE-B6; pre_g2_op_b_gate_enforce when enforcing).",
+    "Before G2 qualification: `uv run python scripts/governance/verify_rw_plan_phase_check3.py --pre-g2` must exit 0 with PRE_G2_OP_B_SETTLEMENT=PASS (OD-AF-CLOSE-B6; mandatory independent of post_freeze_policy_schedule.pre_g2_op_b_gate_enforce).",
+    "All twelve OP-B obligations must be RED_AT_PREFIX with complete red-first evidence (not EVIDENCE_MISSING; not declarative status alone).",
     "W3 runs on `development` (App V6.1, V6.4); there is no RW train branch. Every open W3 ticket of this plan is merged on `development`.",
     "Every pre-G2 item of section 17 is merged.",
     "CI is green except the exact expected-red set (App V6.4). ACT-N11 is expected-red until RB-2 (App V6.3, V5.1).",
@@ -9710,7 +9711,7 @@
     "notes": [
       "Pre-G2: T-IGX-052-I prepares the held-path guard (scripts/, .github/, …) per MEP App V6.3.",
       "W5: T-B7-PFP-ACTIVATE activates policy; W8: T-B7-PFP-VERIFY independently re-checks FRZ-FRZ-10.",
-      "OP-B: twelve EVIDENCE_MISSING rows (OD-AF-CLOSE-B2) must settle before G2 when pre_g2_op_b_gate_enforce is true (OD-AF-CLOSE-B6)."
+      "OP-B: twelve authorized rows (OD-AF-CLOSE-B2) must settle to RED_AT_PREFIX with complete evidence before G2; enforce with verify_rw_plan_phase_check3.py --pre-g2 (OD-AF-CLOSE-B6)."
     ],
     "op_b_pre_g2_enforcement": "OD-AF-CLOSE-B6",
     "pre_g2_op_b_gate_enforce": false

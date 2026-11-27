@@ -1,59 +1,43 @@
 # T-AF2-RW-PLAN-AUDIT — prep dossier (development tor)
 
-**Data:** 2026-11-21 (worktree `af-dev-rw-plan`)  
-**Werdykt tej paczki:** **PREP DONE** — artefakty wejścia dla osobnej sesji audytora; **nie** PASS, **nie** symulacja audytu.  
-**Werdykt węzła `T-AF2-RW-PLAN-AUDIT`:** **BLOCKED** — bez zmian do czasu niezależnej sesji (`RW_PLAN_AUDIT_STATUS.md`).
+**Data:** 2026-11-27 (AF-W2-GATE-BIND-01)
+**Werdykt tej paczki:** PREP DONE — artefakty wejsciowe; nie PASS.
+**Werdykt węzła T-AF2-RW-PLAN-AUDIT:** NOT_PERFORMED.
 
 ## Pin snapshot
 
-| Ref | SHA (40) | Krótki |
-|-----|----------|--------|
-| Tor `development` (baza fali) | `e69e1ff5819b98c316377bcadf749f61fe00abc2` | `e69e1ff58` |
-| `origin/arch-freeze/rw-train` (cite RW-PLAN) | `dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2` | `dbaebfa8` |
-| RC-1 admission (train-only evidence) | `36c470249` | cite-only |
+| Ref | SHA (40) |
+|-----|----------|
+| Tor development (obowiazujacy) | a92a023e1a238b95635dcecdc4e51adecdcbc916 |
+| ARCH-FREEZE lineage pin | 3b9defe83fef7780126d1905d80e6f60721d6318 |
+| origin/arch-freeze/rw-train (historyczny) | dbaebfa8cd13a6ba8bfa6eef2cdf581216ddb3d2 |
 
-## Mandat operatora
+## Mandat
 
-| Id | Stan | Dowód |
-|----|------|-------|
-| AR-12-07 — niezależna sesja `T-AF2-RW-PLAN-AUDIT` | **GRANTED** | [`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`](../../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md) |
-| OD-AF-AUTO-06 | **BLOCKED** bez symulacji | [`OPERATOR_DECISIONS_AUTONOMY.md`](OPERATOR_DECISIONS_AUTONOMY.md) |
-| Ticket prep | **T-IGX-050-N** | `governance/tickets/T-IGX-050-N.md` |
+| Id | Stan |
+|----|------|
+| AR-12-07 | GRANTED |
+| OD-AF-CLOSE-B2 / B6 | DECIDED |
 
-## Wejścia obowiązkowe (MEP / DAG)
+## Wejścia round 2 @ development
 
-| Wejście | Rola | Lokalizacja @ pin |
-|---------|------|-------------------|
-| T-AF2-RW-PLAN | DOC — macierz overlap, kolejność merge, NT per CODE_FIX | Train: `docs/project/maintainers/qualification/arch_freeze_program/` (publish na `arch-freeze/rw-train`; brak pełnej kopii na `development` @ `e69e1ff58`) |
-| T-AF2-FRZ-MATRIX | Appendix C / macierz FRZ | [`ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md`](../../ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md) |
-| REV-MASTER RM-03 | Kryterium audytu (phase check 3, strict) | [`MEP-AF2_v2.1.md`](../MEP-AF2_v2.1.md) §F, [`WP12_DAG.md`](../WP12_DAG.md) węzeł `T-AF2-RW-PLAN-AUDIT` |
-| Plan kontynuacji | Macierz AF-RC | Sesja operatora / plan ARCH-FREEZE continuation (cite-only) |
+- MEP-AF2 v2.1 (V6 + V5.2.1)
+- RW_PLAN.md, rw_plan.v1.json, rw_plan_bindings.v1.json
+- ARCH_FREEZE_FRZ_ACCEPTANCE_MATRIX.md, WP12_DAG.md
+- CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md
+- RED_FIRST_GA2R records
+- verify_rw_plan_phase_check3.py (default + --pre-g2)
+- SOURCES.sha256
+- SCOPE_PREDECESSOR_INDEX.md
+- RW_PLAN_AUDIT_STATUS.md (round 1 baseline)
 
-## Drabinka sesji (RC3-J7 + RC1-J1)
+## Stan oczekiwany
 
-| Krok | Rola | Artefakt / komenda | Bramka | Stan prep |
-|------|------|--------------------|--------|-----------|
-| J7-0 | orchestrator | Ten dossier + ticket `T-IGX-050-N` | — | **DONE** |
-| J7-1 | `independent_auditor` | Nowa sesja Cursor, worktree **read-only** od `development` lub HEAD po merge paczek RC; **bez** edycji product paths | **D6=BLOCKED** do startu sesji | OPEN |
-| J7-1a | auditor | Przeliczenie WP-12 **phase check 3** (strict) na RW-PLAN + wyjście FRZ-MATRIX | RM-03 | OPEN |
-| J7-1b | auditor | **Red-first:** każdy test negatywny pada na pre-fix SHA; „gate już czerwony” nie liczy się | MEP §G | OPEN |
-| J7-1c | auditor | Mapowanie regression scope per ticket → 18 CODE_FIX (`FIND-AF2-23`) | FRZ matrix | OPEN |
-| J7-1d | auditor | Właściciele 6 konfliktów audit-flag (A4-005, A4-018, A6-005, …) | WP12_TICKETS_DRAFT | OPEN |
-| J7-2 | orchestrator | Aktualizacja [`RW_PLAN_AUDIT_STATUS.md`](RW_PLAN_AUDIT_STATUS.md) — **tylko** po sesji; bez PASS z tej fali prep | RC1-J1 | OPEN (prep nie dotyka werdyktu) |
-| J7-3 | architect | `SCOPE` train → `DONE_REQUALIFICATION_REQUIRED` po audycie | Po J7-1 | BLOCKED |
+| Dimension | Value |
+|-----------|-------|
+| AUDIT_INPUT_READY | YES (inputs consistent) |
+| RW_PLAN_AUDIT | NOT_PERFORMED |
+| SCOPE | OPEN |
+| G2 | OPEN |
 
-## Wyjścia oczekiwane od sesji audytora (nie z tej paczki)
-
-- Werdykt niezależny: `PASS` lub `FINDINGS` — **wyłącznie** w sesji J7-1; brak wpisu PASS w repo = nadal **BLOCKED**.
-- Raport phase check 3 (strict) z mapą NT i regression scope.
-- Rekord konfliktów audit-flag z przypisanymi ownerami lub eskalacją.
-
-## Werdykt warstwowy
-
-| Warstwa | Werdykt |
-|---------|---------|
-| Prep dokumentacja + ticket `T-IGX-050-N` | **DONE** @ `e69e1ff58` |
-| Niezależna sesja audytora | **NOT STARTED** |
-| `T-AF2-RW-PLAN-AUDIT` / RC1-J1 / G2-B3 | **BLOCKED** — bez PASS |
-
-Zgodnie z **OD-AF-AUTO-05** i **OD-AF-AUTO-06**: brak G2 PASS, brak SCOPE closure, brak symulacji audytu w sesji implementacyjnej.
+Niezalezna sesja audytora round 2 — NOT STARTED.

@@ -594,5 +594,5 @@ def test_io_error_handled_fail_closed(tmp_path: Path):
 def test_pre_g2_op_b_gate_fail_closed_when_enforced():
     mod = _load_verify()
     plan = _live_rw_plan()
-    errors = mod.validate_pre_g2_op_b_settlement(plan["code_fix_inventory"])
+    errors = mod.validate_pre_g2_op_b_settlement(plan["code_fix_inventory"], data=plan, git_validate=False)
     assert any("pre-G2 OP-B gate blocked" in e for e in errors)
