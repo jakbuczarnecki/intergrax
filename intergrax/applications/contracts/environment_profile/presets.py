@@ -9,7 +9,6 @@ from typing import Any
 from intergrax.applications.contracts.application_recovery_contract import (
     standard_strict_product_recovery_contract,
 )
-from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.environment_profile.bundles import (
     CapabilityBundle,
     CognitionBundle,
@@ -39,6 +38,7 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ScalingProfile,
     ToolSelectionConfig,
 )
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
 from intergrax.contracts.agent_budget import (
     BudgetExceededReaction,
@@ -98,6 +98,43 @@ _HARNESS_OPTIONAL_TOOL_BUNDLE_IDS: tuple[str, ...] = (
     "sandbox",
     "speech",
 )
+
+HARNESS_REFERENCE_POLICY_FRAGMENT_ID = "harness.policy_smoke"
+LEGAL_REFERENCE_POLICY_FRAGMENT_ID = "legal.contract_review.policy"
+
+
+def reference_harness_policy_fragment_payload() -> dict[str, Any]:
+    return {"require_human_on_critical": True}
+
+
+def reference_legal_contract_review_policy_fragment_payload() -> dict[str, Any]:
+    return {"require_human_on_critical": True}
+
+
+def _reference_lab_host_policy_fragments() -> DomainPolicyFragments:
+    return DomainPolicyFragments.from_runtime_dict(
+        {
+            HARNESS_REFERENCE_POLICY_FRAGMENT_ID: reference_harness_policy_fragment_payload(),
+            LEGAL_REFERENCE_POLICY_FRAGMENT_ID: reference_legal_contract_review_policy_fragment_payload(),
+        },
+    )
+
+
+def _merge_product_reference_policy_fragments(
+    *,
+    skill_bundles: list[str],
+    domain_fragments: dict[str, Any] | None,
+) -> DomainPolicyFragments:
+    caller_raw = dict(domain_fragments) if domain_fragments else {}
+    merged = DomainPolicyFragments.from_runtime_dict(caller_raw)
+    if "harness" in skill_bundles and HARNESS_REFERENCE_POLICY_FRAGMENT_ID not in merged.fragments:
+        harness_only = DomainPolicyFragments.from_runtime_dict(
+            {
+                HARNESS_REFERENCE_POLICY_FRAGMENT_ID: reference_harness_policy_fragment_payload(),
+            },
+        )
+        merged = merged.merge(harness_only)
+    return merged
 
 
 def harness_memory_profile() -> MemoryProfile:
@@ -166,9 +203,7 @@ def harness_production_integration_profile(
     allowed_secrets = {"doppler", "aws_secrets_manager", "vault"}
     normalized_secrets = secrets_slug.strip().lower()
     if normalized_secrets not in allowed_secrets:
-        raise ValueError(
-            f"Unsupported secrets slug for harness production stack: {secrets_slug!r}"
-        )
+        raise ValueError(f"Unsupported secrets slug for harness production stack: {secrets_slug!r}")
 
     options: dict[str, dict[str, object]] = {OTEL.slug: {}}
     observability_backend = OTEL
@@ -203,6 +238,9 @@ def build_lab_defaults(
         "cognition": CognitionBundle.lab(),
         "governance": GovernanceBundle.lab(),
         "isolation": IsolationBundle.lab(),
+        "extensions": EnvironmentExtensions(
+            domain_policy_fragments=_reference_lab_host_policy_fragments(),
+        ),
     }
 
 
@@ -252,6 +290,9 @@ def build_harness_production_defaults(
             },
         ),
         "isolation": IsolationBundle.lab(),
+        "extensions": EnvironmentExtensions(
+            domain_policy_fragments=_reference_lab_host_policy_fragments(),
+        ),
     }
 
 
@@ -262,8 +303,12 @@ def build_product_defaults(
     tool_ids: list[str] | None = None,
     domain_fragments: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    bundles = skill_bundles or []
+    bundles = list(skill_bundles or [])
     tools = tool_ids or []
+    policy_fragments = _merge_product_reference_policy_fragments(
+        skill_bundles=bundles,
+        domain_fragments=domain_fragments,
+    )
     return {
         "meta": HostMeta.product(profile_id=profile_id),
         "security": SecurityEnvelope.strict(),
@@ -312,9 +357,7 @@ def build_product_defaults(
                 partial_results_enabled=True,
                 middleware_hook_timeout_seconds=0.25,
                 recovery_contract=standard_strict_product_recovery_contract(),
-                delegated_invocation_correlation_durability=(
-                    DelegatedInvocationCorrelationDurabilityMode.REQUIRED
-                ),
+                delegated_invocation_correlation_durability=(DelegatedInvocationCorrelationDurabilityMode.REQUIRED),
             ),
             observability=GovernanceBundle.production_slo().observability,
             cost=CostProfile(
@@ -343,9 +386,7 @@ def build_product_defaults(
         ),
         "isolation": IsolationBundle.product(),
         "extensions": EnvironmentExtensions(
-            domain_policy_fragments=DomainPolicyFragments.from_runtime_dict(
-                domain_fragments,
-            ),
+            domain_policy_fragments=policy_fragments,
         ),
     }
 

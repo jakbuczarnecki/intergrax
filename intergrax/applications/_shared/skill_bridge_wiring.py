@@ -101,6 +101,11 @@ def _assert_skill_fragment_admissible(
             f"skill fragment cannot clear require_human_on_critical: {fragment_id}",
         )
 
+    if payload.get("require_human_on_critical") is True and not bundle.require_human_on_critical:
+        raise SkillBridgeCompositionError(
+            f"skill fragment requires require_human_on_critical but host bundle does not: {fragment_id}",
+        )
+
     host_tenants = payload.get("allowed_tenants")
     skill_tenants = payload.get("skill_allowed_tenants")
     if isinstance(host_tenants, list) and isinstance(skill_tenants, list):
