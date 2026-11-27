@@ -4,6 +4,8 @@ Each row: requirement → owner → gap → risk → task → test level → FRZ
 
 **P1 links:** architecture [`MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md`](./MCP_SERVER_X_ARCHITECTURE_AND_OWNERSHIP.md); contract/protocol [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](./MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md); ADR-MCP-01..07 map gaps to decisions — closure remains P2–P7.
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`):** The requirement tables below preserve the P1-era gap baseline. Later P2–P8 implementation and scoped closure state are recorded in [`MCP_SERVER_X_FINAL_CLOSURE_REPORT.md`](./MCP_SERVER_X_FINAL_CLOSURE_REPORT.md), [`MCP_SERVER_X_P8_FRZ_EVIDENCE_NOTES.md`](./MCP_SERVER_X_P8_FRZ_EVIDENCE_NOTES.md), and [`operator_decisions/OD-MCP-P8-RESIDUAL-01.md`](./operator_decisions/OD-MCP-P8-RESIDUAL-01.md). This note claims no new PASS or FRZ promotion.
+
 ## Protocol / transport
 
 | REQ-ID | Owner | Gap | Risk | TASK | TEST | FRZ/ECAP |
@@ -66,3 +68,17 @@ Historical TOOL-LIFE-X / host MCP tests are **not** MCP-SERVER-X stage closure. 
 Source: [P7 qualification package](./MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md) @ `abbe1525450da77da6801b080619a600c20cd497`. R-P7-01 = REQ-MCP-OBS-01 (dedicated trace id, operator decision DR-1, no product change in P7); R-P7-02 = 11 pre-existing failures in `test_mcp_surface_opt_in.py`, `test_mcp_surface_opt_in_runtime.py` and `test_mcp_catalog_e2e_hung_server_qualification.py` (core set of 11 at `c59892829`, `d5c1383fc` and the P7 head, observed 11-13 because TL11 subprocess startup timeouts vary; excluded, not counted as passing; marked `gate`/`no_ci`, so green PR CI says nothing about them); R-P7-03 = no result bound on custom tools; R-P7-04 = no server-side deadline / client deadline does not stop server work; R-P7-05 = three error-code enum members declared but not raised; R-P7-06 = `harness_auth=None` in composition; R-P8-01 = a host mounted without harness auth trusts the client-asserted tenant/user (fail-open identity, existing tested behaviour; product decision for the operator, outside the findings-only loop). Documentation findings D-P7-01 and D-P7-02 are fixed in the contract and protocol matrix.
 
 Disposition after the scoped closure ([OD-MCP-P8-RESIDUAL-01](./operator_decisions/OD-MCP-P8-RESIDUAL-01.md)): R-P8-01 stays an open scoped residual; its fail-closed composition fix is bundled into the PDC-X ACT-N11 activation at PDC-P7-00 (one independent delta audit and one two-phase rebind, own ticketed batch). OPEN-BP-01 is DEFERRED by the operator (`development` is not the critical branch; `main` is protected) and stays an accepted limitation; no ruleset change was made.
+
+## P1-snapshot currency reconciliation (EQO-W4 @ `646e63953`, `EDER-F-0201` / `EDER-D-0099..0110`)
+
+The P1-era requirement rows above are retained verbatim; the table below reconciles the tracked gap rows against baseline contract code and P2–P8 closure records without claiming any new PASS or FRZ promotion.
+
+| Requirement / Item | Obligation ID | Current Verified State @ `646e63953` | Authority / Residual |
+| --- | --- | --- | --- |
+| `REQ-MCP-P-05`, `REQ-MCP-S-01`, `REQ-MCP-S-02`, `REQ-MCP-C-01` | `EDER-F-0201` | **Implemented post-P1 (scoped closed in P2–P8):** typed server identity, exposure policy, surface fingerprint, and shared error code catalog exist in `intergrax/contracts/mcp_server_definition.py:24,101,115,179`. Residual `R-P7-05` (three error-code enum members declared but not raised) remains documented in the P7 package. | `MCP_SERVER_X_FINAL_CLOSURE_REPORT.md` / `R-P7-05` |
+| `REQ-MCP-P-01` | `EDER-D-0099` | **Reconciled in P2–P8 (scoped):** FastMCP streamable HTTP protocol revision pinning documented in [`MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md`](./MCP_SERVER_X_CONTRACT_AND_PROTOCOL_MATRIX.md) (`D-P7-01`/`D-P7-02` addressed in P7). | `MCP_SERVER_X_FINAL_CLOSURE_REPORT.md` |
+| `REQ-MCP-S-03` | `EDER-D-0104` | **Reconciled in P2–P8 (scoped):** multi-definition ASGI composition path reconciled in P2–P8; `R-P7-06` (`harness_auth=None` in composition) and `R-P8-01` preserved as explicit residuals. | `MCP_SERVER_X_FINAL_CLOSURE_REPORT.md` / `R-P7-06` |
+| `REQ-MCP-SEC-01` | `EDER-D-0107` | **Open scoped residual (`R-P8-01`):** host mounted without harness auth trusts client-asserted tenant/user; fail-closed composition fix bundled into PDC-X ACT-N11 activation per `OD-MCP-P8-RESIDUAL-01.md`. | `OD-MCP-P8-RESIDUAL-01.md` (`R-P8-01`) |
+| `REQ-MCP-O-02` | `EDER-D-0109` | **Partially implemented + open residuals (`R-P7-03`, `R-P7-04`):** concurrent session cap implemented in `mcp_engine_concurrency.py`; custom-tool result bound (`R-P7-03`) and server-side deadline cancellation (`R-P7-04`) remain documented residuals. | `MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md` (`R-P7-03`/`R-P7-04`) |
+| `REQ-MCP-OBS-01` | `EDER-D-0110` | **Open scoped residual (`R-P7-01`):** dedicated single MCP invocation trace ID deferred with no product change in P7 per operator decision DR-1. | `MCP_SERVER_X_P7_QUALIFICATION_PACKAGE.md` (`R-P7-01` / DR-1) |
+| `OPEN-BP-01` (branch ruleset) | Cross-stage | **Explicitly OPEN / Operator-Deferred:** `development` branch has no required status checks enforced (`main` is protected); accepted limitation per `OD-MCP-P8-RESIDUAL-01.md`. | Operator (`OPEN-BP-01`) |

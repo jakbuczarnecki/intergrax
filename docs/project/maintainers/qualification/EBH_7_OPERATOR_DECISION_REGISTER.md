@@ -1,5 +1,7 @@
 # EBH-7 — Operator decision register
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0062`):** The rows below are preserved verbatim as historical decision records. EBH-7 parent closure was recorded via `OD-EBH7-08` (2026-11-01). `OD-EBH7-SCOPE-RESIDUAL` (`OPEN`) and `W1-PROD-DELTA` (`RETAIN — pending architectural reconciliation`) remain historical records and are not waived or closed by this note. Post-closure EBH-7 re-pin status is tracked in [`platform_domain_completeness/PDC_DOMAIN_CERTIFICATION_MATRIX.md`](platform_domain_completeness/PDC_DOMAIN_CERTIFICATION_MATRIX.md) and [`platform_domain_completeness/operator_decisions/OD-PDC-X-CLOSE.md`](platform_domain_completeness/operator_decisions/OD-PDC-X-CLOSE.md) (Decision 7). This note adds no new waiver, PASS, or closure claim.
+
 | OD ID | Subject | Status | Notes |
 | --- | --- | --- | --- |
 | OD-EBH7-01 | Program entry @ `81679e672` | **APPROVED** | Canonical roadmap + qualification; stage gates + arch controls; see entry readiness record |

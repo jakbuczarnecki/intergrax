@@ -490,7 +490,8 @@
    "p7_path_b": false,
    "p7_ent_dependency": false,
    "p7_scope_limit": "No checklist edit until P8 certifier",
-   "p7_residual_ids": []
+   "p7_residual_ids": [],
+   "p7_currency_note": "Point-in-time replay at ba07ebaa3 (2026-11-08); EBH-4 R1 gate was subsequently fixed in P4 (EDER-F-0108). Historical proposed_status=OPEN is preserved; formal promotion stays in ARCH-FREEZE B7 (T-B7-PROMOTE-BND)."
   },
   {
    "frz_id": "FRZ-BND-02",

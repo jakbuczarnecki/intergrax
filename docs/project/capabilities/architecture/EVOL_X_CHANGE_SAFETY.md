@@ -48,3 +48,15 @@ Architecture frozen on paper; **no** `testing_support/change_safety/` code until
 ## Related W1 artifacts
 
 Hub: [EVOL_X_MASTER_IMPLEMENTATION_AND_CERTIFICATION_PLAN.md](../../maintainers/qualification/EVOL_X_MASTER_IMPLEMENTATION_AND_CERTIFICATION_PLAN.md)
+
+## Cross-cutting ownership (EQO-W4, `EDER-F-0239`)
+
+One line per area (as of 2026-11-26 @ `646e63953`); "not applicable" lines state the reason.
+
+| Area | Statement |
+| --- | --- |
+| Tenant & Security | Not applicable at runtime: EVOL-X is a passive change-time analysis and qualification toolchain (`testing_support/change_safety/`, `tests/qualification/evol_x/`, `scripts/qualification/evol_x_*.py`) that processes repository artifacts and introduces no runtime tenant or authorization bypass; production tiers remain strictly isolated from Q/T/S zones (IB-1). |
+| Configuration | Configured strictly via CLI flags, checked-in change-safety policies, and consumed COMPAT-X / QUAL-X Pop-A manifests; no runtime environment or production config mutation. |
+| Observability | Passive change dossier emission only (Zone Q/D); explicitly does not duplicate or write into `TRACE-X` runtime traces or production telemetry. |
+| Failure & Recovery | Fail-closed static/qualification execution: discovery, diff, or suite-selection errors abort the change-safety assessment with non-zero exit status and never auto-approve deploy or rollback; optional AD rollback precondition port (Zone P) extends canonical Agent Distribution rather than creating a parallel recovery engine. |
+| Tests | Qualification adapters and negative boundary gates live under `tests/qualification/evol_x/` (Zone T), consuming COMPAT-X, QUAL-X, DUP-X, STATE-X, and Agent Distribution harnesses. |

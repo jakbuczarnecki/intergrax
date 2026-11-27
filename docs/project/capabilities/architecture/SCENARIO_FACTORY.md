@@ -119,6 +119,29 @@ All **Proposed**, to be published in [`T-IGX-037-C`](../../../../governance/tick
 | ADR-SFX-005 | Catalog sidecar | Planned — Proposed |
 | ADR-SFX-006 | Authority levels, engineering modes, admission separation | Planned — Proposed |
 
+## Existing Repository Scenario Mechanisms vs SFX Boundary (EQO-W4, `EDER-F-0156`)
+
+SFX-P5+ implementation remains post-`ARCH-FREEZE` and introduces no replacement for existing runtime/proof scenario mechanisms. The four existing repository mechanisms remain owned by their current layers and map onto the proposed SFX closed-world resolver as follows:
+
+| Existing Mechanism | Location | Current Role & Owner | Relationship to Proposed SFX Closed-World Resolver |
+| --- | --- | --- | --- |
+| Scenario runtime baseline | `intergrax/applications/_shared/scenario_runtime_baseline.py:170` | Tier-0/Tier-1 shared scenario runtime profile builders (`build_scenario_lab_runtime`, `build_scenario_production_runtime`) | Reused by SFX sandbox execution (L2 LAB); SFX does not alter production runtime builders or mint L3 authority. |
+| Evidence scenario runner | `intergrax/runtime/evidence/scenario_runner.py:52` | Tier-1 runtime evidence execution harness | Reused as evidence-capture primitive where applicable; SFX does not replace `EvidencePersistencePort` or runtime evidence contracts. |
+| Tier-3 scenario matrix wiring | `intergrax/applications/_shared/tier3_scenario_matrix_wiring.py:13` | Tier-0/Tier-1 helper wiring Tier-3 scenario matrices and host entrypoints | Consumed by scaffolded Tier-3 scenario applications; SFX resolver maps blueprint bindings onto this seam without replacing it. |
+| Platform proof scenarios | `platform_proofs/` | Standalone qualification and proof workloads (e.g., VPI, LKW proof packs) | Proof workloads and dataset harnesses outside SFX; SFX-produced scenarios remain proposal-only or sandbox (L0–L2) until external admission (`SCENARIO-GATE` / `PROD-Q`). |
+
+## Cross-cutting ownership (EQO-W4, `EDER-F-0239`)
+
+One line per area (as of 2026-11-26 @ `646e63953`); "not applicable" lines state the reason.
+
+| Area | Statement |
+| --- | --- |
+| Tenant & Security | Proposed SFX doors (Studio API, CLI, MCP) reuse a single authorization path (harness principal → tenant reconciliation → `PolicyEngine`, PC-3) and are capped at L0–L2 (never L3 credentials or production profile mutation); no SFX product code exists at baseline. |
+| Configuration | Proposed blueprint/profile composition reuses existing `CONFIG-X` and integration/environment profile contracts (`SFX-MASTER-PLAN.md` §5, §7); no new configuration engine is introduced. |
+| Observability | Proposed SFX reporter/ROI and qualification outputs reuse the existing evidence plane (`EvidencePersistencePort`), usage, and observability domains; no second telemetry pipeline is introduced. |
+| Failure & Recovery | Deferred to SFX-P5+ implementation (post-`ARCH-FREEZE`): when implemented, failure handling, retries, and recovery delegate to [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) and [`ENTERPRISE_RELIABILITY_LAYER.md`](../../architecture/ENTERPRISE_RELIABILITY_LAYER.md) with fail-closed L0–L2 boundaries. |
+| Tests | SFX-P0..P4 are documentation and research only; no SFX product code or runtime test suite exists at baseline. Implementation qualification and security gates are planned for SFX-P5+ after `ARCH-FREEZE` = CLOSED and `GATE-SFX-ENTRY`. |
+
 ## Related domain architecture
 
 Coordinates, does not override: [`COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md), [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md), [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](../../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md), [`APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md), [`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md), [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md). Architecture principles: [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).

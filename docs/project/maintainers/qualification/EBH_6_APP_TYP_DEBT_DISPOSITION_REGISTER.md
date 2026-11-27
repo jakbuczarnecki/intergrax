@@ -7,6 +7,8 @@
 | **Operator ratification** | **E02-OP-01 — OPERATOR RATIFIED — 2026-10-29** (conditional on **E02-AUD-01**) |
 | **Independent acceptance** | **E02-AUD-01 — ACCEPT (SCOPED) — 2026-10-29** — [`EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md) |
 
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0211`):** In `## 11/11 matrix (@ baseline)` below, the `Independent = PENDING` column values are preserved verbatim as the pre-acceptance baseline snapshot and are superseded by the header independent acceptance record `E02-AUD-01 — ACCEPT (SCOPED) — 2026-10-29` ([`EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md`](EBH_6_E02_AUD_01_INDEPENDENT_ACCEPTANCE_RECORD.md)). This note adds no new waiver, PASS, or closure claim.
+
 **Rule:** `no unregistered violations` ≠ zero typing concerns — **11 registered seams** remain on scoped `_shared` wiring surface.
 
 ## Disposition key

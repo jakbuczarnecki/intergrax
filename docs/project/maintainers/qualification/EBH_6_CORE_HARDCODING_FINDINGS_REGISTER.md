@@ -56,3 +56,14 @@ Spot-check samples **do not** prove global absence of violations — closed-worl
 Findings classes **D/E** shadow duplicate mechanisms may overlap **DUP-X** scope — unresolved duplicates must not be silently closed here.
 
 Pre-cert reconciliation: [`EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md`](EBH_6_INDEPENDENT_PRE_CERTIFICATION_FINDINGS.md).
+
+## Governance Metadata Annex — Owner, Severity & Reopen Conditions (EQO-W4, `EDER-F-0190`)
+
+> **Parser-safety note (as of 2026-11-26 @ `646e63953`):** Existing tables and finding IDs above are unchanged so qualification integrity and exit gates (`tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py`, `tests/qualification/ebh_6/test_ebh_6_mechanical_exit_gates.py`, `tests/qualification/ebh_7/test_ebh_7_w5_vbn_gates.py`) remain unaffected. This annex supplies governance metadata only and adds no new PASS, waiver, or closure claim.
+
+| Metadata Field | Statement |
+| --- | --- |
+| **Stage Owner** | `EBH-6` (operator decisions governed by [`EBH_6_OPERATOR_DECISION_REGISTER.md`](EBH_6_OPERATOR_DECISION_REGISTER.md)) |
+| **Mechanical Python SSOT** | [`tests/qualification/ebh_6/_findings_register.py`](../../../tests/qualification/ebh_6/_findings_register.py) (with `_layer_evidence.py` and `_l3_reachability_evidence.py`) |
+| **Severity Mapping** | Blocking class `PROHIBITED-*` (must be `0` unresolved at mechanical exit) vs. scoped/ratified architecture debt classes (`REQUIRES ARCHITECTURE DECISION`, `ALLOWED — INTERNAL NON-EXTENSIBLE MECHANISM`) and layer/SQLite accountability records per `VENDOR_BACKEND_NEUTRALITY_AND_REPLACEABILITY_EVIDENCE.md` §2.2 |
+| **Reopen Conditions** | Reopen immediately upon: (1) any new unregistered hardcoding or vendor-coupling violation (`unclassified_findings > 0` or in-scope `PROHIBITED-* > 0`); (2) scope expansion of any ratified fence (`EBH6-DEBT-Q2-D2`, `EBH6-DEBT-BND-COMPAT-R3`, or `EBH6-SQLITE-*`) beyond its documented boundary; or (3) modification to cited production paths without re-running `tests/qualification/ebh_6/` and `tests/qualification/ebh_7/test_ebh_7_w5_vbn_gates.py` and recording re-qualification. |
