@@ -19,7 +19,7 @@ No PASS, closure, FRZ promotion, stage certification or independent verification
 
 ## Plan digest
 
-Plan digest: 0e6541191c74844a6266e1d00f20d0299751bd8255b7968b4e47e6288edd558a
+Plan digest: d04de75531eeaea4824f6f7142217e1f78f61cb35f611e65c68fb2df7a5a5408
 
 Canonical plan: `governance/tickets/plans/PLAN_T-IGX-043-A.md` (drafted at `.tmp/session/arch-freeze/w3-packet-2/043-A/PLAN_T-IGX-043-A.md`). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -111,3 +111,17 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-02`. Authorization
 | TASK-10 qualification | **PARTIAL** — batched FC2/ACP/BND-05/FC1 harness/WA import tests green (33+4); full mandated Enterprise slice not run; `igx_gov ticket` blocked (`uv` not on PATH for gate subprocess) |
 
 **FRZ-EXE-02 / FRZ-PLG-05:** `EVIDENCE_MISSING`. **FRZ-BND-05:** `EVIDENCE_MISSING`. Lifecycle remains `plan_approved`; not `DONE`; **G2** open.
+
+### AF-W3-PT-FC1-03 settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC1 | AF-W3-PT-FC1-03`. Authorization: OD-AF-W3-FC1-02 variant A.
+
+| Item | Status |
+|---|---|
+| OD-AF-W3-FC1-02 | DECIDED; variant A recorded in operator register |
+| FC1 write authority | `intergrax/runtime/execution/lab_reference_agent_runtime.py` in plan §4 firm list; `HISTORICAL_PUBLICATION_FINDING: PRESERVED`; `CURRENT_WRITE_AUTHORITY: AUTHORIZED`; historic commit `9d0e7c7283f6bc5fac075de5c34dc0971e38f396` |
+| FC2 write authority | `tests/unit/applications/_shared/test_fc2_celery_app_name_precedence.py` in plan §5; historic commit `9154971a7ddcfd819137e16c44bf932b44b28093` |
+| BND-05 evidence | `RED_AT_PREFIX` at prefix `13b3789c60910ccd3882bfd39641fb5f8d3530fc`, fix `9d0e7c7283f6bc5fac075de5c34dc0971e38f396`, pin `7b7ec4488c504f1c90dba599d5742197dbbf0c1e`; tracked logs under `continuation/RED_FIRST_EXECUTION_FRZ-BND-05_*` |
+| FRZ-EXE-02 / FRZ-PLG-05 | `EVIDENCE_MISSING` |
+| STRICT host authority | OPEN_RESIDUAL |
+| Ticket lifecycle | `plan_approved`; not full DONE |

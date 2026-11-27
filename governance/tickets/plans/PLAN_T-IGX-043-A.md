@@ -77,11 +77,11 @@ If the replay at the train head of V2 or V6 is negative, the matching part is no
 
 ## 4. Exact write set
 
-Counts parsed from the lists of this section: product paths firm 35 (none new; 19 source files, 12 documents and notebooks, 4 tests under `applications/`); product paths conditional 17; test and support paths firm 109 (6 new, 100 sweep files under `tests/`, 3 under `testing_support/`); test paths conditional 7; documents firm 4.
+Counts parsed from the lists of this section: product paths firm 36 (none new; 20 source files, 12 documents and notebooks, 4 tests under `applications/`); product paths conditional 17; test and support paths firm 109 (6 new, 100 sweep files under `tests/`, 3 under `testing_support/`); test paths conditional 7; documents firm 4.
 
 Product paths (prefix `intergrax/`, `agents/`, `applications/`; each one is ACT-N11 sensitive):
 
-Firm, source files (19; edited, none new):
+Firm, source files (20; edited, none new):
 
 ```text
 intergrax/runtime/nexus/agent_router.py
@@ -104,6 +104,7 @@ agents/organization_worker/organization_worker_agent.py
 agents/external_contractor_adapter/external_contractor_adapter_agent.py
 intergrax/agents/authoring/acp_stub_reflex.py
 agents/boundary_demo/boundary_demo_agent.py
+intergrax/runtime/execution/lab_reference_agent_runtime.py
 ```
 
 Firm, product-path documents and notebooks (sweep of the explicit-posture keyword, no logic) (12):
@@ -489,3 +490,17 @@ Binding decision **OD-AF-W3-FC1-01 variant A** (`ARCH_FREEZE_OPERATOR_DECISION_R
 | FRZ-EXE-02 (NT-EXE-02-1) | extend `tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves` with the Tier-2 `RuntimeContext` construction scan from the BND-05 detector; keep all DP-14 import-boundary assertions |
 | Merge order | `test_rw_bnd05_runtime_context_construction.py` remains **H → A** with posture tests on 043-A; construction gate authorship on 043-H |
 | Out of scope | FRZ owner changes; gate weakening; LAB substitution for STRICT/PRODUCT authority |
+
+## 20. Operator amendment OD-AF-W3-FC1-02 variant A (2026-11-27)
+
+Binding decision **OD-AF-W3-FC1-02 variant A** (`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`). Retains §19 items; does not re-authorize historical commits.
+
+| Item | Effect |
+|---|---|
+| Part C1 Tier-1 composition | add `intergrax/runtime/execution/lab_reference_agent_runtime.py` to the **firm source** write set of this section |
+| Historical publication | `HISTORICAL_PUBLICATION_FINDING: PRESERVED` — product path first published in `9d0e7c7283f6bc5fac075de5c34dc0971e38f396` before complete FC1 write authority |
+| Operator retention | `OPERATOR_RETENTION_DECISION: APPROVED` (2026-11-27) |
+| Current authority | `CURRENT_WRITE_AUTHORITY: AUTHORIZED` under this amendment |
+| PT-WA → PT-FC1 serialization | unchanged |
+| T-IGX-043-G shared test | unchanged co-authority on `tests/unit/agents/test_wa_agent_import_rule.py` |
+| Out of scope | STRICT host composition authority; FRZ promotion; product re-edit solely to satisfy this amendment record |
