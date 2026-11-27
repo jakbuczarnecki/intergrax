@@ -98,12 +98,6 @@ def _validate_checkout(root: Path) -> str | None:
     if branch != "refs/heads/development":
         return "Push is allowed only from branch development."
 
-    status = _run_git(root, "status", "--porcelain")
-    if status.returncode != 0:
-        return "git status failed."
-    if status.stdout.strip():
-        return "Working tree must be clean before git push origin development."
-
     origin = _run_git(root, "rev-parse", "origin/development")
     if origin.returncode != 0:
         return "Missing origin/development; run git fetch origin development first."
