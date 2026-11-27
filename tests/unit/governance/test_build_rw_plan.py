@@ -523,6 +523,23 @@ def test_write_set_fails_closed(plan: str, heading: str):
         mod.extract_write_set(plan, {"sections": [{"heading": heading}]})
 
 
+def test_write_set_expands_brace_shorthand():
+    mod = _import_build()
+    plan = (
+        "## A\n\n```text\n"
+        "intergrax/scaffold/{new_application, new_product}.py   (generated hosts)\n"
+        "applications/{alpha,beta}_application/host/factory.py\n"
+        "```\n"
+    )
+    result = mod.extract_write_set(plan, {"sections": [{"heading": "## A"}]})
+    assert result["paths"] == [
+        "applications/alpha_application/host/factory.py",
+        "applications/beta_application/host/factory.py",
+        "intergrax/scaffold/new_application.py",
+        "intergrax/scaffold/new_product.py",
+    ]
+
+
 def test_write_set_occurrence_selects_duplicate_heading():
     mod = _import_build()
     plan = "## A\n\n```\ntests/a.py\n```\n\n## A\n\n```\ntests/b.py\n```\n"

@@ -458,7 +458,21 @@ def _blocks(lines: list[str]) -> list[tuple[str, list[str]]]:
     return blocks
 
 
+_BRACE_RE = re.compile(r"(?<![\w.\-/])([\w.\-/]*/[\w.\-/]*)\{([\w.\-/ ]+(?:,[\w.\-/ ]+)+)\}([\w.\-/]*)")
+
+
+def _expand_braces(text: str) -> str:
+    """Expand `dir/{a,b}.py` shorthand so every listed path is counted."""
+
+    def _join(match: re.Match[str]) -> str:
+        head, items, tail = match.group(1), match.group(2), match.group(3)
+        return " ".join(f"{head}{item.strip()}{tail}" for item in items.split(",") if item.strip())
+
+    return _BRACE_RE.sub(_join, text)
+
+
 def _listed(text: str) -> list[str]:
+    text = _expand_braces(text)
     note = _NOTE_START_RE.search(text)
     return _PATH_RE.findall(text[: note.start()] if note else text)
 
