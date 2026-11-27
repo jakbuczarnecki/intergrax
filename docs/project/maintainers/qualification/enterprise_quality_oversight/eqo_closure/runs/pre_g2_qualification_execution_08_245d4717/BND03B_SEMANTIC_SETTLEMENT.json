@@ -1,0 +1,8 @@
+{
+  "schema": "eqo.bnd03b_semantic_settlement.v1",
+  "finding": "EDER-F-0200 / HIST-F-BND-03B / EQOA-A7-021",
+  "witness_test": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py",
+  "status": "green",
+  "formal_closure_claim": false,
+  "coverage_limitation": "Scope limited to registered manifest contract; not all upward imports."
+}

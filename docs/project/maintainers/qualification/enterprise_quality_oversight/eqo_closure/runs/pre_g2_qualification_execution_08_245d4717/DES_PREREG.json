@@ -2,7 +2,7 @@
   "schema": "eqo.mapped_des_prereg.v1",
   "batch_id": "EC-W3-QUALIFICATION-EXECUTION-08",
   "execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
-  "preregistration_utc": "2026-11-27T12:48:05Z",
+  "preregistration_utc": "2026-11-27T13:19:25Z",
   "commands": [
     {
       "cmd_id": "Q01",

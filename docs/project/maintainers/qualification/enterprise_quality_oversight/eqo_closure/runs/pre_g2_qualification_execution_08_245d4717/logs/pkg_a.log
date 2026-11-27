@@ -1,0 +1,105 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\59288-3024caec\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 40 items
+
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_lab_defaults_declares_both_reference_fragments PASSED [  2%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_harness_production_defaults_declares_both_reference_fragments PASSED [  5%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_with_harness_bundle_declares_harness_fragment PASSED [  7%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_without_harness_bundle_omits_harness_fragment PASSED [ 10%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_preserves_caller_domain_fragments PASSED [ 12%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_caller_fragment_overrides_reference_default PASSED [ 15%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_build_does_not_mutate_caller_dict PASSED [ 17%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_reference_payload_helpers_return_independent_dicts PASSED [ 20%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_harness_policy_bundle_and_skill_composition_passes PASSED [ 22%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_lab_harness_and_legal_skill_fragment_composition_passes PASSED [ 25%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_missing_required_fragment_still_raises PASSED [ 27%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_fragment_hitl_true_with_host_hitl_false_raises PASSED [ 30%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_fragment_cannot_clear_required_hitl PASSED [ 32%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_merge_does_not_add_allow_rules_or_tools PASSED [ 35%]
+tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_pinned_fragment_digest_drift_refused_on_resume PASSED [ 37%]
+tests/unit/applications/test_skill_bridge_wiring.py::test_skill_prompt_metadata PASSED [ 40%]
+tests/unit/applications/test_skill_bridge_wiring.py::test_merge_skill_policy_fragments_requires_catalog_entry PASSED [ 42%]
+tests/unit/applications/test_skill_bridge_wiring.py::test_merge_skill_policy_fragments_merges_catalog_payload PASSED [ 45%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_unknown_prompt_aborts_bind PASSED [ 47%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_conflicting_prompt_versions_abort_composition PASSED [ 50%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_resume_fails_when_registry_body_changes PASSED [ 52%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_fragment_outside_catalog_fails PASSED [ 55%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_conflicting_fragment_rules_fail PASSED [ 57%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_skill_cannot_weaken_host_policy PASSED [ 60%]
+tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_clearing_require_human_fails PASSED [ 62%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_profile_disabling_task_memory_is_not_reenabled_by_env PASSED [ 65%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_refuses_missing_human_store_without_ack PASSED [ 67%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_accepts_the_typed_acknowledgement PASSED [ 70%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_worker_composition_refuses_missing_persistence PASSED [ 72%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_acknowledgement_is_refused_when_hitl_tools_are_wired PASSED [ 75%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context PASSED [ 77%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_tier2_build_context_takes_posture_from_the_host PASSED [ 80%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_tier2_context_without_host_admission_configuration_fails_closed PASSED [ 82%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject] PASSED [ 85%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate] PASSED [ 87%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings PASSED [ 90%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools PASSED [ 92%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery PASSED [ 95%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed PASSED [ 97%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled PASSED [100%]
+
+=================================== PASSES ====================================
+_____________ test_lab_defaults_declares_both_reference_fragments _____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+_ test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.runtime.task.task_metadata_bridge:task_metadata_bridge.py:261 task task_76b9445c8af94a7f9e462532b0ba7890 uses legacy flat metadata keys ['human_response', 'resume_token']; prefer typed Task.options (Phase Q-X.2)
+_ test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.runtime.task.task_metadata_bridge:task_metadata_bridge.py:261 task task_9864695f3c4c4f9faa71e922b27197f9 uses legacy flat metadata keys ['human_response', 'resume_token']; prefer typed Task.options (Phase Q-X.2)
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\pkg_a.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_lab_defaults_declares_both_reference_fragments
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_harness_production_defaults_declares_both_reference_fragments
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_with_harness_bundle_declares_harness_fragment
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_without_harness_bundle_omits_harness_fragment
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_preserves_caller_domain_fragments
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_caller_fragment_overrides_reference_default
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_product_defaults_build_does_not_mutate_caller_dict
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_reference_payload_helpers_return_independent_dicts
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_harness_policy_bundle_and_skill_composition_passes
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_lab_harness_and_legal_skill_fragment_composition_passes
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_missing_required_fragment_still_raises
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_fragment_hitl_true_with_host_hitl_false_raises
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_fragment_cannot_clear_required_hitl
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_merge_does_not_add_allow_rules_or_tools
+PASSED tests/unit/applications/test_eqo_reference_host_policy_fragments.py::test_pinned_fragment_digest_drift_refused_on_resume
+PASSED tests/unit/applications/test_skill_bridge_wiring.py::test_skill_prompt_metadata
+PASSED tests/unit/applications/test_skill_bridge_wiring.py::test_merge_skill_policy_fragments_requires_catalog_entry
+PASSED tests/unit/applications/test_skill_bridge_wiring.py::test_merge_skill_policy_fragments_merges_catalog_payload
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_unknown_prompt_aborts_bind
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_conflicting_prompt_versions_abort_composition
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_resume_fails_when_registry_body_changes
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_fragment_outside_catalog_fails
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_conflicting_fragment_rules_fail
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_skill_cannot_weaken_host_policy
+PASSED tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py::test_clearing_require_human_fails
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_profile_disabling_task_memory_is_not_reenabled_by_env
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_refuses_missing_human_store_without_ack
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_accepts_the_typed_acknowledgement
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_worker_composition_refuses_missing_persistence
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_acknowledgement_is_refused_when_hitl_tools_are_wired
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_tier2_build_context_takes_posture_from_the_host
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_tier2_context_without_host_admission_configuration_fails_closed
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject]
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate]
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled
+============================= 40 passed in 58.08s =============================
+

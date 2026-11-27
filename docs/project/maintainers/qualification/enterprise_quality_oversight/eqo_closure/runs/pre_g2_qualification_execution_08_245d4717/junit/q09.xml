@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="2" failures="3" skipped="0" tests="20" time="18.345" timestamp="2026-11-27T14:45:58.408656+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_filesystem_key_resolver_roundtrip" time="0.059" /><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_filesystem_key_resolver_malformed_and_deprecated" time="0.052" /><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_cli_help_ascii_safe_inprocess" time="0.206" /><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_tier0_cli_rejects_governed_contractor_commands" time="0.008" /><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_cli_help_cp1252_subprocess_smoke" time="4.940" /><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_verify_key_sources_and_negatives" time="0.006"><error message="failed on setup with &quot;RuntimeError: create_failed:canonical_governance_identity_required&quot;">tmp_path_factory = TempPathFactory(_given_basetemp=WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a'), _trace=&lt;...dowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a'), _retention_count=3, _retention_policy='all')
+
+    @pytest.fixture(scope="module")
+    def demo_store(tmp_path_factory: pytest.TempPathFactory) -&gt; tuple[Path, object]:
+        """One offline demo for the module — avoid re-signing for every negative case."""
+        store = tmp_path_factory.mktemp("demo")
+&gt;       report = run_offline_governed_contractor_demo(store_root=store)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+applications\governed_contractor_application\tests\host\test_cli_verification_hardening.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def run_offline_governed_contractor_demo(
+        *,
+        store_root: Path,
+        task_id: str = "task_" + ("0" * 32),
+        run_id: str = "run_" + ("0" * 32),
+        simulate_signing_failure: bool = False,
+    ) -&gt; OfflineDemoReport:
+        """Full CREATE -&gt; quote -&gt; human fixture -&gt; ACCEPT -&gt; attested receipt -&gt; verify.
+    
+        When ``simulate_signing_failure`` is True, ACCEPT persists GER + EBE but leaves
+        attestation failed so a separate process can ``retry-attestation``.
+        """
+        store_root = Path(store_root)
+        store_root.mkdir(parents=True, exist_ok=True)
+        demo_run_id = validate_run_id(run_id)
+        store = FilesystemHostStore(store_root)
+        bundle = build_demo_policy_bundle()
+        policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
+        fake = DeterministicExternalWorkFake()
+        authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
+            policy,
+            tenant_id="offline-demo-tenant",
+            workspace_id="workspace-a",
+            principal_id="offline-demo-user",
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            task_scope=_FixedActiveTaskScope(task_id=task_id),
+        )
+        from governed_contractor_application.host.provider_invocation_lifecycle import (
+            GovernedProviderInvocationDispatchGate,
+        )
+        from governed_contractor_application.host.stores import InMemoryProviderInvocationStore
+    
+        invocation_store = InMemoryProviderInvocationStore()
+        adapter = ExternalWorkAdapter(
+            fake,
+            authorization_boundary=authorization_boundary,
+            invocation_dispatch=GovernedProviderInvocationDispatchGate(
+                store=invocation_store,
+                clock=lambda: _T0,
+            ),
+        )
+        recovery_attestor = build_deterministic_test_attestor(
+            key_id=DEMO_OFFLINE_KEY_ID,
+            clock=lambda: _T0,
+            attestation_id="att-offline-demo",
+        )
+        # Public verification material is always exported for the known demo key.
+        key_path = write_verification_key_artifact(
+            store_root,
+            key_id=recovery_attestor.key_id,
+            public_key_bytes=recovery_attestor.public_key_bytes,
+            created_at=_T0,
+        )
+        write_demo_mode_marker(store_root, key_id=recovery_attestor.key_id)
+    
+        create_attestor = recovery_attestor
+        accept_attestor: Any = _ThrowingAttestor() if simulate_signing_failure else recovery_attestor
+    
+        orch_create = GovernedExternalWorkOrchestrator(
+            adapter=adapter,
+            policy=policy,
+            bundle=bundle,
+            attestor=create_attestor,
+            capabilities=quote_first_partner_capability_fixture(
+                provider_id=_PROVIDER_ID,
+            ),
+            execution_store=store,
+            receipt_store=store,
+            bundle_store=store,
+            continuation_store=store,
+            provider_invocation_store=invocation_store,
+            clock=lambda: _T0,
+        )
+        meta = _meta()
+        create_identity = mint_root_execution_identity(run_id=demo_run_id)
+        create_token = bind_active_execution_identity(
+            run_id=create_identity.run_id,
+            attempt_id=create_identity.attempt_id,
+            execution_id=create_identity.execution_id,
+            task_id=validate_task_id(task_id),
+        )
+        try:
+            created = orch_create.create(
+                task_id=task_id,
+                run_id=demo_run_id,
+                principal_id="offline-demo-user",
+                tenant_id="offline-demo-tenant",
+                metadata=meta,
+                execution_id=create_identity.execution_id,
+                event_id="ebe-offline-create",
+                receipt_id="rcpt-offline-create",
+            )
+        finally:
+            reset_active_execution_identity(create_token)
+        if created.adapter_result is None or created.governed_result is None:
+&gt;           raise RuntimeError(f"create_failed:{created.reason}")
+E           RuntimeError: create_failed:canonical_governance_identity_required
+
+applications\governed_contractor_application\host\offline_demo.py:359: RuntimeError</error></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_offline_demo_exports_verification_key" time="0.000"><error message="failed on setup with &quot;RuntimeError: create_failed:canonical_governance_identity_required&quot;">tmp_path_factory = TempPathFactory(_given_basetemp=WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a'), _trace=&lt;...dowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a'), _retention_count=3, _retention_policy='all')
+
+    @pytest.fixture(scope="module")
+    def demo_store(tmp_path_factory: pytest.TempPathFactory) -&gt; tuple[Path, object]:
+        """One offline demo for the module — avoid re-signing for every negative case."""
+        store = tmp_path_factory.mktemp("demo")
+&gt;       report = run_offline_governed_contractor_demo(store_root=store)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+applications\governed_contractor_application\tests\host\test_cli_verification_hardening.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def run_offline_governed_contractor_demo(
+        *,
+        store_root: Path,
+        task_id: str = "task_" + ("0" * 32),
+        run_id: str = "run_" + ("0" * 32),
+        simulate_signing_failure: bool = False,
+    ) -&gt; OfflineDemoReport:
+        """Full CREATE -&gt; quote -&gt; human fixture -&gt; ACCEPT -&gt; attested receipt -&gt; verify.
+    
+        When ``simulate_signing_failure`` is True, ACCEPT persists GER + EBE but leaves
+        attestation failed so a separate process can ``retry-attestation``.
+        """
+        store_root = Path(store_root)
+        store_root.mkdir(parents=True, exist_ok=True)
+        demo_run_id = validate_run_id(run_id)
+        store = FilesystemHostStore(store_root)
+        bundle = build_demo_policy_bundle()
+        policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
+        fake = DeterministicExternalWorkFake()
+        authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
+            policy,
+            tenant_id="offline-demo-tenant",
+            workspace_id="workspace-a",
+            principal_id="offline-demo-user",
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            task_scope=_FixedActiveTaskScope(task_id=task_id),
+        )
+        from governed_contractor_application.host.provider_invocation_lifecycle import (
+            GovernedProviderInvocationDispatchGate,
+        )
+        from governed_contractor_application.host.stores import InMemoryProviderInvocationStore
+    
+        invocation_store = InMemoryProviderInvocationStore()
+        adapter = ExternalWorkAdapter(
+            fake,
+            authorization_boundary=authorization_boundary,
+            invocation_dispatch=GovernedProviderInvocationDispatchGate(
+                store=invocation_store,
+                clock=lambda: _T0,
+            ),
+        )
+        recovery_attestor = build_deterministic_test_attestor(
+            key_id=DEMO_OFFLINE_KEY_ID,
+            clock=lambda: _T0,
+            attestation_id="att-offline-demo",
+        )
+        # Public verification material is always exported for the known demo key.
+        key_path = write_verification_key_artifact(
+            store_root,
+            key_id=recovery_attestor.key_id,
+            public_key_bytes=recovery_attestor.public_key_bytes,
+            created_at=_T0,
+        )
+        write_demo_mode_marker(store_root, key_id=recovery_attestor.key_id)
+    
+        create_attestor = recovery_attestor
+        accept_attestor: Any = _ThrowingAttestor() if simulate_signing_failure else recovery_attestor
+    
+        orch_create = GovernedExternalWorkOrchestrator(
+            adapter=adapter,
+            policy=policy,
+            bundle=bundle,
+            attestor=create_attestor,
+            capabilities=quote_first_partner_capability_fixture(
+                provider_id=_PROVIDER_ID,
+            ),
+            execution_store=store,
+            receipt_store=store,
+            bundle_store=store,
+            continuation_store=store,
+            provider_invocation_store=invocation_store,
+            clock=lambda: _T0,
+        )
+        meta = _meta()
+        create_identity = mint_root_execution_identity(run_id=demo_run_id)
+        create_token = bind_active_execution_identity(
+            run_id=create_identity.run_id,
+            attempt_id=create_identity.attempt_id,
+            execution_id=create_identity.execution_id,
+            task_id=validate_task_id(task_id),
+        )
+        try:
+            created = orch_create.create(
+                task_id=task_id,
+                run_id=demo_run_id,
+                principal_id="offline-demo-user",
+                tenant_id="offline-demo-tenant",
+                metadata=meta,
+                execution_id=create_identity.execution_id,
+                event_id="ebe-offline-create",
+                receipt_id="rcpt-offline-create",
+            )
+        finally:
+            reset_active_execution_identity(create_token)
+        if created.adapter_result is None or created.governed_result is None:
+&gt;           raise RuntimeError(f"create_failed:{created.reason}")
+E           RuntimeError: create_failed:canonical_governance_identity_required
+
+applications\governed_contractor_application\host\offline_demo.py:359: RuntimeError</error></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_retry_invalid_execution_and_without_signer" time="0.014"><failure message="RuntimeError: create_failed:canonical_governance_identity_required">tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a/test_retry_invalid_execution_a0')
+
+    def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -&gt; None:
+        store = tmp_path / "empty"
+        store.mkdir()
+        missing = _gca_cli(
+            "external-work",
+            "retry-attestation",
+            "no-such-exec",
+            "--store",
+            str(store),
+        )
+        assert missing.returncode != 0
+        assert "signing_key_source_required" in missing.stdout
+    
+&gt;       run_offline_governed_contractor_demo(
+            store_root=store,
+            simulate_signing_failure=True,
+        )
+
+applications\governed_contractor_application\tests\host\test_cli_verification_hardening.py:345: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def run_offline_governed_contractor_demo(
+        *,
+        store_root: Path,
+        task_id: str = "task_" + ("0" * 32),
+        run_id: str = "run_" + ("0" * 32),
+        simulate_signing_failure: bool = False,
+    ) -&gt; OfflineDemoReport:
+        """Full CREATE -&gt; quote -&gt; human fixture -&gt; ACCEPT -&gt; attested receipt -&gt; verify.
+    
+        When ``simulate_signing_failure`` is True, ACCEPT persists GER + EBE but leaves
+        attestation failed so a separate process can ``retry-attestation``.
+        """
+        store_root = Path(store_root)
+        store_root.mkdir(parents=True, exist_ok=True)
+        demo_run_id = validate_run_id(run_id)
+        store = FilesystemHostStore(store_root)
+        bundle = build_demo_policy_bundle()
+        policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
+        fake = DeterministicExternalWorkFake()
+        authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
+            policy,
+            tenant_id="offline-demo-tenant",
+            workspace_id="workspace-a",
+            principal_id="offline-demo-user",
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            task_scope=_FixedActiveTaskScope(task_id=task_id),
+        )
+        from governed_contractor_application.host.provider_invocation_lifecycle import (
+            GovernedProviderInvocationDispatchGate,
+        )
+        from governed_contractor_application.host.stores import InMemoryProviderInvocationStore
+    
+        invocation_store = InMemoryProviderInvocationStore()
+        adapter = ExternalWorkAdapter(
+            fake,
+            authorization_boundary=authorization_boundary,
+            invocation_dispatch=GovernedProviderInvocationDispatchGate(
+                store=invocation_store,
+                clock=lambda: _T0,
+            ),
+        )
+        recovery_attestor = build_deterministic_test_attestor(
+            key_id=DEMO_OFFLINE_KEY_ID,
+            clock=lambda: _T0,
+            attestation_id="att-offline-demo",
+        )
+        # Public verification material is always exported for the known demo key.
+        key_path = write_verification_key_artifact(
+            store_root,
+            key_id=recovery_attestor.key_id,
+            public_key_bytes=recovery_attestor.public_key_bytes,
+            created_at=_T0,
+        )
+        write_demo_mode_marker(store_root, key_id=recovery_attestor.key_id)
+    
+        create_attestor = recovery_attestor
+        accept_attestor: Any = _ThrowingAttestor() if simulate_signing_failure else recovery_attestor
+    
+        orch_create = GovernedExternalWorkOrchestrator(
+            adapter=adapter,
+            policy=policy,
+            bundle=bundle,
+            attestor=create_attestor,
+            capabilities=quote_first_partner_capability_fixture(
+                provider_id=_PROVIDER_ID,
+            ),
+            execution_store=store,
+            receipt_store=store,
+            bundle_store=store,
+            continuation_store=store,
+            provider_invocation_store=invocation_store,
+            clock=lambda: _T0,
+        )
+        meta = _meta()
+        create_identity = mint_root_execution_identity(run_id=demo_run_id)
+        create_token = bind_active_execution_identity(
+            run_id=create_identity.run_id,
+            attempt_id=create_identity.attempt_id,
+            execution_id=create_identity.execution_id,
+            task_id=validate_task_id(task_id),
+        )
+        try:
+            created = orch_create.create(
+                task_id=task_id,
+                run_id=demo_run_id,
+                principal_id="offline-demo-user",
+                tenant_id="offline-demo-tenant",
+                metadata=meta,
+                execution_id=create_identity.execution_id,
+                event_id="ebe-offline-create",
+                receipt_id="rcpt-offline-create",
+            )
+        finally:
+            reset_active_execution_identity(create_token)
+        if created.adapter_result is None or created.governed_result is None:
+&gt;           raise RuntimeError(f"create_failed:{created.reason}")
+E           RuntimeError: create_failed:canonical_governance_identity_required
+
+applications\governed_contractor_application\host\offline_demo.py:359: RuntimeError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_signer_failure_recovery_fresh_process" time="4.076"><failure message="AssertionError: Traceback (most recent call last):&#10;    File &quot;&lt;frozen runpy&gt;&quot;, line 198, in _run_module_as_main&#10;    File &quot;&lt;frozen runpy&gt;&quot;, line 88, in _run_code&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py&quot;, line 39, in &lt;module&gt;&#10;      raise SystemExit(main())&#10;                       ^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py&quot;, line 35, in main&#10;      return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))&#10;             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\intergrax\cli\main.py&quot;, line 119, in main&#10;      return int(run(args))&#10;                 ^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py&quot;, line 76, in run_demo&#10;      return _run_full_demo(&#10;             ^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py&quot;, line 85, in _run_full_demo&#10;      report = run_offline_governed_contractor_demo(&#10;               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\offline_demo.py&quot;, line 359, in run_offline_governed_contractor_demo&#10;      raise RuntimeError(f&quot;create_failed:{created.reason}&quot;)&#10;  RuntimeError: create_failed:canonical_governance_identity_required&#10;  &#10;assert 1 == 0&#10; +  where 1 = CompletedProcess(args=['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'applications.governed_contractor_application', 'demo', 'governed-contractor', '--offline', '--simulate-signing-failure', '--store', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\build\\pytest\\4440-4a88835a\\test_signer_failure_recovery_f0\\recovery'], returncode=1, stdout='', stderr='Traceback (most recent call last):\n  File &quot;&lt;frozen runpy&gt;&quot;, line 198, in _run_module_as_main\n  File &quot;&lt;frozen runpy&gt;&quot;, line 88, in _run_code\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py&quot;, line 39, in &lt;module&gt;\n    raise SystemExit(main())\n                     ^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py&quot;, line 35, in main\n    return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\intergrax\\cli\\main.py&quot;, line 119, in main\n    return int(run(args))\n               ^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py&quot;, line 76, in run_demo\n    return _run_full_demo(\n           ^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py&quot;, line 85, in _run_full_demo\n    report = run_offline_governed_contractor_demo(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\offline_demo.py&quot;, line 359, in run_offline_governed_contractor_demo\n    raise RuntimeError(f&quot;create_failed:{created.reason}&quot;)\nRuntimeError: create_failed:canonical_governance_identity_required\n').returncode">tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a/test_signer_failure_recovery_f0')
+
+    def test_signer_failure_recovery_fresh_process(tmp_path: Path) -&gt; None:
+        """Fresh-process proof: demo fail -&gt; retry -&gt; verify -&gt; idempotent retry."""
+        store = tmp_path / "recovery"
+        fail = _gca_cli_subprocess(
+            "demo",
+            "governed-contractor",
+            "--offline",
+            "--simulate-signing-failure",
+            "--store",
+            str(store),
+        )
+&gt;       assert fail.returncode == 0, fail.stderr
+E       AssertionError: Traceback (most recent call last):
+E           File "&lt;frozen runpy&gt;", line 198, in _run_module_as_main
+E           File "&lt;frozen runpy&gt;", line 88, in _run_code
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py", line 39, in &lt;module&gt;
+E             raise SystemExit(main())
+E                              ^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py", line 35, in main
+E             return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))
+E                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\intergrax\cli\main.py", line 119, in main
+E             return int(run(args))
+E                        ^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py", line 76, in run_demo
+E             return _run_full_demo(
+E                    ^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py", line 85, in _run_full_demo
+E             report = run_offline_governed_contractor_demo(
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\offline_demo.py", line 359, in run_offline_governed_contractor_demo
+E             raise RuntimeError(f"create_failed:{created.reason}")
+E         RuntimeError: create_failed:canonical_governance_identity_required
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'applications.governed_contractor_application', 'demo', 'governed-contractor', '--offline', '--simulate-signing-failure', '--store', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\build\\pytest\\4440-4a88835a\\test_signer_failure_recovery_f0\\recovery'], returncode=1, stdout='', stderr='Traceback (most recent call last):\n  File "&lt;frozen runpy&gt;", line 198, in _run_module_as_main\n  File "&lt;frozen runpy&gt;", line 88, in _run_code\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py", line 39, in &lt;module&gt;\n    raise SystemExit(main())\n                     ^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py", line 35, in main\n    return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\intergrax\\cli\\main.py", line 119, in main\n    return int(run(args))\n               ^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py", line 76, in run_demo\n    return _run_full_demo(\n           ^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py", line 85, in _run_full_demo\n    report = run_offline_governed_contractor_demo(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\offline_demo.py", line 359, in run_offline_governed_contractor_demo\n    raise RuntimeError(f"create_failed:{created.reason}")\nRuntimeError: create_failed:canonical_governance_identity_required\n').returncode
+
+applications\governed_contractor_application\tests\host\test_cli_verification_hardening.py:371: AssertionError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_cli_verification_hardening" name="test_demo_then_verify_fresh_process" time="4.409"><failure message="AssertionError: Traceback (most recent call last):&#10;    File &quot;&lt;frozen runpy&gt;&quot;, line 198, in _run_module_as_main&#10;    File &quot;&lt;frozen runpy&gt;&quot;, line 88, in _run_code&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py&quot;, line 39, in &lt;module&gt;&#10;      raise SystemExit(main())&#10;                       ^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py&quot;, line 35, in main&#10;      return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))&#10;             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\intergrax\cli\main.py&quot;, line 119, in main&#10;      return int(run(args))&#10;                 ^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py&quot;, line 76, in run_demo&#10;      return _run_full_demo(&#10;             ^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py&quot;, line 85, in _run_full_demo&#10;      report = run_offline_governed_contractor_demo(&#10;               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&#10;    File &quot;D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\offline_demo.py&quot;, line 359, in run_offline_governed_contractor_demo&#10;      raise RuntimeError(f&quot;create_failed:{created.reason}&quot;)&#10;  RuntimeError: create_failed:canonical_governance_identity_required&#10;  &#10;assert 1 == 0&#10; +  where 1 = CompletedProcess(args=['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'applications.governed_contractor_application', 'demo', 'governed-contractor', '--offline', '--store', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\build\\pytest\\4440-4a88835a\\test_demo_then_verify_fresh_pr0\\cli_demo'], returncode=1, stdout='', stderr='Traceback (most recent call last):\n  File &quot;&lt;frozen runpy&gt;&quot;, line 198, in _run_module_as_main\n  File &quot;&lt;frozen runpy&gt;&quot;, line 88, in _run_code\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py&quot;, line 39, in &lt;module&gt;\n    raise SystemExit(main())\n                     ^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py&quot;, line 35, in main\n    return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\intergrax\\cli\\main.py&quot;, line 119, in main\n    return int(run(args))\n               ^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py&quot;, line 76, in run_demo\n    return _run_full_demo(\n           ^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py&quot;, line 85, in _run_full_demo\n    report = run_offline_governed_contractor_demo(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File &quot;D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\offline_demo.py&quot;, line 359, in run_offline_governed_contractor_demo\n    raise RuntimeError(f&quot;create_failed:{created.reason}&quot;)\nRuntimeError: create_failed:canonical_governance_identity_required\n').returncode">tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/4440-4a88835a/test_demo_then_verify_fresh_pr0')
+
+    def test_demo_then_verify_fresh_process(tmp_path: Path) -&gt; None:
+        """Fresh-process proof: demo process exits, verifier process validates via --store."""
+        store = tmp_path / "cli_demo"
+        demo = _gca_cli_subprocess(
+            "demo",
+            "governed-contractor",
+            "--offline",
+            "--store",
+            str(store),
+        )
+&gt;       assert demo.returncode == 0, demo.stderr
+E       AssertionError: Traceback (most recent call last):
+E           File "&lt;frozen runpy&gt;", line 198, in _run_module_as_main
+E           File "&lt;frozen runpy&gt;", line 88, in _run_code
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py", line 39, in &lt;module&gt;
+E             raise SystemExit(main())
+E                              ^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\__main__.py", line 35, in main
+E             return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))
+E                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\intergrax\cli\main.py", line 119, in main
+E             return int(run(args))
+E                        ^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py", line 76, in run_demo
+E             return _run_full_demo(
+E                    ^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\cli_commands.py", line 85, in _run_full_demo
+E             report = run_offline_governed_contractor_demo(
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File "D:\Projekty\_wt\intergrax\ec-w3-08\applications\governed_contractor_application\host\offline_demo.py", line 359, in run_offline_governed_contractor_demo
+E             raise RuntimeError(f"create_failed:{created.reason}")
+E         RuntimeError: create_failed:canonical_governance_identity_required
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'applications.governed_contractor_application', 'demo', 'governed-contractor', '--offline', '--store', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\build\\pytest\\4440-4a88835a\\test_demo_then_verify_fresh_pr0\\cli_demo'], returncode=1, stdout='', stderr='Traceback (most recent call last):\n  File "&lt;frozen runpy&gt;", line 198, in _run_module_as_main\n  File "&lt;frozen runpy&gt;", line 88, in _run_code\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py", line 39, in &lt;module&gt;\n    raise SystemExit(main())\n                     ^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\__main__.py", line 35, in main\n    return intergrax_main(argv, extra_command_sets=(GOVERNED_CONTRACTOR_COMMANDS,))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\intergrax\\cli\\main.py", line 119, in main\n    return int(run(args))\n               ^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py", line 76, in run_demo\n    return _run_full_demo(\n           ^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\cli_commands.py", line 85, in _run_full_demo\n    report = run_offline_governed_contractor_demo(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\applications\\governed_contractor_application\\host\\offline_demo.py", line 359, in run_offline_governed_contractor_demo\n    raise RuntimeError(f"create_failed:{created.reason}")\nRuntimeError: create_failed:canonical_governance_identity_required\n').returncode
+
+applications\governed_contractor_application\tests\host\test_cli_verification_hardening.py:429: AssertionError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_gov1_missing_active_governance_identity_fails_before_provider" time="0.001" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_tid1_missing_active_task_fails_before_provider" time="0.001" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_tid2_task_mismatch_fails_closed" time="0.000" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_tid3_matching_task_reaches_provider" time="0.003" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_ten1_none_tenant_fails_before_provider" time="0.000" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_ten2_blank_tenant_fails_before_provider" time="0.001" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_ten3_tenant_mismatch_fails_before_provider" time="0.000" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_ten4_matching_tenant_passes_identity_gate" time="0.001" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_e2e_tenant_continuity_through_receipt" time="0.001" /><testcase classname="applications.governed_contractor_application.tests.host.test_p3_r1_r1_governed_identity_tenant_gate" name="test_cross_tenant_negative_no_provider_and_no_ger" time="0.001" /></testsuite></testsuites>

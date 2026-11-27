@@ -1,0 +1,144 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\41672-2e779907\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 41 items
+
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[gemini] PASSED [  2%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[langchain-ollama] PASSED [  4%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[openai-chat] PASSED [  7%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[openai-responses] PASSED [  9%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[gemini] PASSED [ 12%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[langchain-ollama] PASSED [ 14%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[openai-chat] PASSED [ 17%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[openai-responses] PASSED [ 19%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[gemini] PASSED [ 21%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[langchain-ollama] PASSED [ 24%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[openai-chat] PASSED [ 26%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[openai-responses] PASSED [ 29%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[gemini] PASSED [ 31%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[langchain-ollama] PASSED [ 34%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[openai-chat] PASSED [ 36%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[openai-responses] PASSED [ 39%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[gemini] PASSED [ 41%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[langchain-ollama] PASSED [ 43%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[openai-chat] PASSED [ 46%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[openai-responses] PASSED [ 48%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[gemini] PASSED [ 51%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[langchain-ollama] PASSED [ 53%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[openai-chat] PASSED [ 56%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[openai-responses] PASSED [ 58%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_with_tools_of_openai_responses_is_guarded_and_registered PASSED [ 60%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_with_tools_of_gemini_is_guarded_and_registered PASSED [ 63%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_source_gate_flags_a_stream_method_that_bypasses_execute_streaming PASSED [ 65%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[aws_bedrock_adapter.py] PASSED [ 68%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[azure_openai_adapter.py] PASSED [ 70%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[claude_adapter.py] PASSED [ 73%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[cohere_native_adapter.py] PASSED [ 75%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[gemini_adapter.py] PASSED [ 78%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[mistral_adapter.py] PASSED [ 80%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[native_ollama_adapter.py] PASSED [ 82%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[ollama_adapter.py] PASSED [ 85%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[openai_chat_completions_adapter.py] PASSED [ 87%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[openai_responses_adapter.py] PASSED [ 90%]
+tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[vertex_gemini_adapter.py] PASSED [ 92%]
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths PASSED [ 95%]
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor PASSED [ 97%]
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check FAILED [100%]
+
+================================== FAILURES ===================================
+______ test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check ______
+
+checks = (ManifestCheck(check_id='ENT-A-BND-01', entrypoint_kind='pytest_nodeid', entrypoint='tests/unit/runtime/architecture/t...y.ARCHITECTURE: 'architecture'>, pg_id='PG-003b', depends_on=frozenset(), fast_mandatory=False, schema_version=1), ...)
+pdc_changed = frozenset({'.agents/README.md', '.agents/agents/igx-architect.md', '.agents/agents/igx-implementer.md', '.agents/agents/igx-researcher.md', '.agents/agents/igx-reviewer.md', '.agents/agents/igx-tester.md', ...})
+
+    def test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check(
+        checks,
+        pdc_changed: frozenset[str],  # type: ignore[no-untyped-def]
+    ) -> None:
+        prefixes = load_default_impact_map()
+        unmapped = [
+            path
+            for path in _product_modules(pdc_changed)
+            if not check_ids_for_changed_path(path, prefixes)
+            and not any(_check_touched(c, frozenset({path})) for c in checks)
+        ]
+>       assert unmapped == [], f"{len(unmapped)} PDC-touched product modules map to no check, e.g. {unmapped[:5]}"
+E       AssertionError: 3 PDC-touched product modules map to no check, e.g. ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py']
+E       assert ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py'] == []
+E         
+E         Left contains 3 more items, first extra item: 'intergrax/prompts/registry/pin_config.py'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'intergrax/prompts/registry/pin_config.py',
+E         +     'intergrax/prompts/registry/yaml_registry.py',
+E         +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+E         + ]
+
+tests\qualification\pdc_x\xd\test_xd_12_evol_ent_audit.py:97: AssertionError
+=================================== PASSES ====================================
+_ test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[gemini] _
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\q06.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_is_denied_by_the_protected_work_guard_before_the_sdk[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_consults_the_tenant_quota[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_registers_and_closes_the_stream_transport[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_provider_permit_exactly_once[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_sdk_stream_fails_mid_way[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[gemini]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[langchain-ollama]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[openai-chat]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_messages_releases_the_permit_when_the_consumer_closes_early[openai-responses]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_with_tools_of_openai_responses_is_guarded_and_registered
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_stream_with_tools_of_gemini_is_guarded_and_registered
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_source_gate_flags_a_stream_method_that_bypasses_execute_streaming
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[aws_bedrock_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[azure_openai_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[claude_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[cohere_native_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[gemini_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[mistral_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[native_ollama_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[ollama_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[openai_chat_completions_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[openai_responses_adapter.py]
+PASSED tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py::test_every_provider_stream_method_goes_through_execute_streaming[vertex_gemini_adapter.py]
+PASSED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths
+PASSED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor
+FAILED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check - AssertionError: 3 PDC-touched product modules map to no check, e.g. ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py']
+assert ['intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py'] == []
+  
+  Left contains 3 more items, first extra item: 'intergrax/prompts/registry/pin_config.py'
+  
+  Full diff:
+  - []
+  + [
+  +     'intergrax/prompts/registry/pin_config.py',
+  +     'intergrax/prompts/registry/yaml_registry.py',
+  +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+  + ]
+======================== 1 failed, 40 passed in 12.16s ========================
+

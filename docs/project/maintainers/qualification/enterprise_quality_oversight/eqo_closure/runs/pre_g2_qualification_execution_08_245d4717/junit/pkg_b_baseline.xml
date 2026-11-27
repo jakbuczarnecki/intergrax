@@ -1,0 +1,1274 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="10" time="4.769" timestamp="2026-11-27T15:21:30.610226+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_health" time="0.009"><failure message="intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only">_stub_host_llm = None, _diagnostic_cursor_secret = None
+
+    def test_governed_contractor_backend_health(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+    ):
+        client = TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+            )
+        )
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+&gt;           validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+
+applications\governed_contractor_application\host\factory.py:207: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_execution_continuation_for_composition(
+        *,
+        production_mode: bool,
+        state_store: ExecutionContinuationStateStore | None,
+        continuation_explicitly_wired: bool,
+        continuation_disabled: bool,
+    ) -&gt; None:
+        """Fail closed when production continuation lacks a restart-safe store.
+    
+        Lab / test hosts (``production_mode=False``) may omit the store and receive the
+        documented in-memory default. Production must inject a durable store
+        (``store.is_durable is True``) or disable continuation intentionally.
+    
+        ``continuation_explicitly_wired`` does **not** bypass durability: an explicit
+        port+lifecycle pair still requires a publicly resolvable durable store
+        (injected store or ``ExecutionContinuationService.store``).
+        """
+        if not production_mode or continuation_disabled:
+            return
+        _ = continuation_explicitly_wired  # API retained; never skips durability.
+        if state_store is None:
+&gt;           raise ExecutionContinuationError(
+                MISSING_CONTINUATION_STORE_MSG,
+                code=ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE,
+            )
+E           intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only
+
+intergrax\runtime\execution\continuation\durability_policy.py:48: ExecutionContinuationError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_lists_agents" time="0.006"><failure message="intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only">_stub_host_llm = None, _diagnostic_cursor_secret = None
+
+    def test_governed_contractor_backend_lists_agents(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+    ):
+        client = TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+            )
+        )
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+&gt;           validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+
+applications\governed_contractor_application\host\factory.py:207: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_execution_continuation_for_composition(
+        *,
+        production_mode: bool,
+        state_store: ExecutionContinuationStateStore | None,
+        continuation_explicitly_wired: bool,
+        continuation_disabled: bool,
+    ) -&gt; None:
+        """Fail closed when production continuation lacks a restart-safe store.
+    
+        Lab / test hosts (``production_mode=False``) may omit the store and receive the
+        documented in-memory default. Production must inject a durable store
+        (``store.is_durable is True``) or disable continuation intentionally.
+    
+        ``continuation_explicitly_wired`` does **not** bypass durability: an explicit
+        port+lifecycle pair still requires a publicly resolvable durable store
+        (injected store or ``ExecutionContinuationService.store``).
+        """
+        if not production_mode or continuation_disabled:
+            return
+        _ = continuation_explicitly_wired  # API retained; never skips durability.
+        if state_store is None:
+&gt;           raise ExecutionContinuationError(
+                MISSING_CONTINUATION_STORE_MSG,
+                code=ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE,
+            )
+E           intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only
+
+intergrax\runtime\execution\continuation\durability_policy.py:48: ExecutionContinuationError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_run" time="0.005"><failure message="intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only">_stub_host_llm = None, _diagnostic_cursor_secret = None
+
+    def test_governed_contractor_backend_run(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+    ):
+        client = TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+            )
+        )
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+&gt;           validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+
+applications\governed_contractor_application\host\factory.py:207: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_execution_continuation_for_composition(
+        *,
+        production_mode: bool,
+        state_store: ExecutionContinuationStateStore | None,
+        continuation_explicitly_wired: bool,
+        continuation_disabled: bool,
+    ) -&gt; None:
+        """Fail closed when production continuation lacks a restart-safe store.
+    
+        Lab / test hosts (``production_mode=False``) may omit the store and receive the
+        documented in-memory default. Production must inject a durable store
+        (``store.is_durable is True``) or disable continuation intentionally.
+    
+        ``continuation_explicitly_wired`` does **not** bypass durability: an explicit
+        port+lifecycle pair still requires a publicly resolvable durable store
+        (injected store or ``ExecutionContinuationService.store``).
+        """
+        if not production_mode or continuation_disabled:
+            return
+        _ = continuation_explicitly_wired  # API retained; never skips durability.
+        if state_store is None:
+&gt;           raise ExecutionContinuationError(
+                MISSING_CONTINUATION_STORE_MSG,
+                code=ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE,
+            )
+E           intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only
+
+intergrax\runtime\execution\continuation\durability_policy.py:48: ExecutionContinuationError</failure></testcase><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path" name="test_sanctioned_process_app_fails_closed_without_activated_registry" time="0.309" /><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path" name="test_sanctioned_process_app_fails_closed_without_durable_continuation_store" time="0.026" /><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path" name="test_strict_process_composition_requires_provider_invocation_store_at_factory" time="0.021" /><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding" name="test_composition_serialized_seal_store_reaches_harness" time="0.018"><failure message="intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020167DF57F0&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08-gca-a92a/build/pytest/53160-50b4db4d/test_composition_serialized_se0')
+
+    def test_composition_serialized_seal_store_reaches_harness(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -&gt; None:
+        install_diagnostic_cursor_secret(monkeypatch)
+        state_file = tmp_path / "continuation.json"
+        durable_store = open_production_execution_continuation_state_store(
+            state_file,
+            missing_file_policy="empty",
+        )
+        composition = create_reference_production_process_composition(
+            provider_invocation_store=DurableTestProviderInvocationStore(),
+            execution_continuation_state_store=durable_store,
+        )
+        captured: dict[str, object] = {}
+    
+        def _capture(*_args, **kwargs):
+            captured.update(kwargs)
+            raise _HarnessStartupCaptured()
+    
+        with patch(
+            "governed_contractor_application.host.factory.build_harness_host_runtime",
+            side_effect=_capture,
+        ):
+            with pytest.raises(_HarnessStartupCaptured):
+&gt;               create_governed_contractor_backend_app(
+                    registry_projection=build_governed_contractor_test_registry_projection(),
+                    process_composition=composition,
+                    document_store=InMemoryDocumentStore(),
+                )
+
+tests\unit\applications\governed_contractor\test_prod_q_r1_dur_02_gca_composition_binding.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+&gt;       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -&gt; NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+&gt;           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError</failure></testcase><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding" name="test_conflicting_kwarg_and_composition_store_rejected" time="0.015" /><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding" name="test_sanctioned_process_app_forwards_composition_store" time="0.026"><failure message="intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020167E32E70&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08-gca-a92a/build/pytest/53160-50b4db4d/test_sanctioned_process_app_fo0')
+
+    def test_sanctioned_process_app_forwards_composition_store(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -&gt; None:
+        from governed_contractor_application.host.environment_profile import (
+            build_governed_contractor_environment_profile,
+        )
+        from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+        from governed_contractor_application.manifest import build_governed_contractor_manifest
+    
+        install_diagnostic_cursor_secret(monkeypatch)
+        monkeypatch.setenv("INTERGRAX_RELATIONAL_DB", str(tmp_path / "relational.db"))
+        state_file = tmp_path / "continuation.json"
+        durable_store = open_production_execution_continuation_state_store(
+            state_file,
+            missing_file_policy="empty",
+        )
+        composition = create_reference_production_process_composition(
+            provider_invocation_store=DurableTestProviderInvocationStore(),
+            execution_continuation_state_store=durable_store,
+        )
+        manifest = build_governed_contractor_manifest()
+        settings = GovernedContractorBackendSettings.from_env()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        projection = build_governed_contractor_test_registry_projection(
+            revision_id="prod-q-r1-dur-02-process-app",
+        )
+        _seed_active_registry_projection(
+            composition,
+            application_id=manifest.app_id,
+            application_environment_id=env.profile_id,
+            projection=projection,
+        )
+        captured: dict[str, object] = {}
+    
+        def _capture(*_args, **kwargs):
+            captured.update(kwargs)
+            raise _HarnessStartupCaptured()
+    
+        with patch(
+            "governed_contractor_application.host.factory.build_harness_host_runtime",
+            side_effect=_capture,
+        ):
+            with pytest.raises(_HarnessStartupCaptured):
+&gt;               create_governed_contractor_process_app(
+                    process_composition=composition,
+                    settings=settings,
+                )
+
+tests\unit\applications\governed_contractor\test_prod_q_r1_dur_02_gca_composition_binding.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -&gt; FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+&gt;       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+&gt;       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -&gt; NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+&gt;           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError</failure></testcase><testcase classname="tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding" name="test_startup_failure_after_open_does_not_pin_writer_lock" time="0.018"><failure message="intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020167DF4F50&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08-gca-a92a/build/pytest/53160-50b4db4d/test_startup_failure_after_ope0')
+
+    def test_startup_failure_after_open_does_not_pin_writer_lock(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -&gt; None:
+        install_diagnostic_cursor_secret(monkeypatch)
+        state_file = tmp_path / "continuation.json"
+        durable_store = open_production_execution_continuation_state_store(
+            state_file,
+            missing_file_policy="empty",
+        )
+        composition = create_reference_production_process_composition(
+            provider_invocation_store=DurableTestProviderInvocationStore(),
+            execution_continuation_state_store=durable_store,
+        )
+        with patch(
+            "governed_contractor_application.host.factory.build_harness_host_runtime",
+            side_effect=RuntimeError("injected startup failure"),
+        ):
+            with pytest.raises(RuntimeError, match="injected startup failure"):
+&gt;               create_governed_contractor_backend_app(
+                    registry_projection=build_governed_contractor_test_registry_projection(),
+                    process_composition=composition,
+                    document_store=InMemoryDocumentStore(),
+                )
+
+tests\unit\applications\governed_contractor\test_prod_q_r1_dur_02_gca_composition_binding.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -&gt; FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+&gt;       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -&gt; NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+&gt;           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError</failure></testcase></testsuite></testsuites>

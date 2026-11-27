@@ -1,0 +1,251 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\38552-45a3bae1\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 83 items
+
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement PASSED [  1%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority PASSED [  2%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement PASSED [  3%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool PASSED [  4%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor PASSED [  6%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess PASSED [  7%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed PASSED [  8%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor PASSED [  9%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider PASSED [ 10%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox PASSED [ 12%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox PASSED [ 13%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox PASSED [ 14%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed PASSED [ 15%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed PASSED [ 16%]
+tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag PASSED [ 18%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy PASSED [ 19%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy PASSED [ 20%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized PASSED [ 21%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof PASSED [ 22%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked PASSED [ 24%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable PASSED [ 25%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry PASSED [ 26%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt PASSED [ 27%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced PASSED [ 28%]
+tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts PASSED [ 30%]
+tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered PASSED [ 31%]
+tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store PASSED [ 32%]
+tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store PASSED [ 33%]
+tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error PASSED [ 34%]
+tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error PASSED [ 36%]
+tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard PASSED [ 37%]
+tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver PASSED [ 38%]
+tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store PASSED [ 39%]
+tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched PASSED [ 40%]
+tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use PASSED [ 42%]
+tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable PASSED [ 43%]
+tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber PASSED [ 44%]
+tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope PASSED [ 45%]
+tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment PASSED [ 46%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point ERROR [ 48%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal PASSED [ 49%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal PASSED [ 50%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload PASSED [ 51%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret PASSED [ 53%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks PASSED [ 54%]
+tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals PASSED [ 55%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed PASSED [ 56%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed PASSED [ 57%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays PASSED [ 59%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy PASSED [ 60%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once PASSED [ 61%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries PASSED [ 62%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay PASSED [ 63%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state PASSED [ 65%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched PASSED [ 66%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain PASSED [ 67%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain PASSED [ 68%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain PASSED [ 69%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain PASSED [ 71%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner PASSED [ 72%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity PASSED [ 73%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once PASSED [ 74%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial PASSED [ 75%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once PASSED [ 77%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path PASSED [ 78%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke PASSED [ 79%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke PASSED [ 80%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again PASSED [ 81%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays PASSED [ 83%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain PASSED [ 84%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit PASSED [ 85%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started PASSED [ 86%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently PASSED [ 87%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain PASSED [ 89%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started PASSED [ 90%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain PASSED [ 91%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain PASSED [ 92%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once PASSED [ 93%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool PASSED [ 95%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close PASSED [ 96%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent PASSED [ 97%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once PASSED [ 98%]
+tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call PASSED [100%]
+
+=================================== ERRORS ====================================
+_ ERROR at setup of test_security_bootstrap_discovers_security_defense_entry_point _
+
+    @pytest.fixture(scope="session")
+    def security_defense_fixture_installed() -> None:
+        """Install security defense EP fixture package for pytest (Phase SEC-EVOL-2)."""
+>       _install_security_defense_fixture_package()
+
+tests\conftest.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def _install_security_defense_fixture_package() -> None:
+>       _install_editable_package(_SECURITY_DEFENSE_FIXTURE_PKG, "intergrax_security_defense_fixture")
+
+tests\conftest.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+package_dir = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/tests/fixtures/plugin_packages/intergrax_security_defense_fixture')
+module_name = 'intergrax_security_defense_fixture'
+
+    def _install_editable_package(package_dir: Path, module_name: str) -> None:
+        import importlib
+        import shutil
+    
+        python = sys.executable
+        uv = shutil.which("uv")
+        if uv is not None:
+            subprocess.check_call(
+                [uv, "pip", "install", str(package_dir), "--python", python],
+                cwd=str(_REPO_ROOT),
+            )
+        else:
+>           subprocess.check_call(
+                [python, "-m", "pip", "install", str(package_dir), "-q"],
+                cwd=str(_REPO_ROOT),
+            )
+
+tests\conftest.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+popenargs = (['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'pip', 'install', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\tests\\fixtures\\plugin_packages\\intergrax_security_defense_fixture', '-q'],)
+kwargs = {'cwd': 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08'}, retcode = 1
+cmd = ['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'pip', 'install', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\tests\\fixtures\\plugin_packages\\intergrax_security_defense_fixture', '-q']
+
+    def check_call(*popenargs, **kwargs):
+        """Run command with arguments.  Wait for command to complete.  If
+        the exit code was zero then return, otherwise raise
+        CalledProcessError.  The CalledProcessError object will have the
+        return code in the returncode attribute.
+    
+        The arguments are the same as for the call function.  Example:
+    
+        check_call(["ls", "-l"])
+        """
+        retcode = call(*popenargs, **kwargs)
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+>           raise CalledProcessError(retcode, cmd)
+E           subprocess.CalledProcessError: Command '['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'pip', 'install', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\tests\\fixtures\\plugin_packages\\intergrax_security_defense_fixture', '-q']' returned non-zero exit status 1.
+
+C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py:413: CalledProcessError
+---------------------------- Captured stderr setup ----------------------------
+D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe: No module named pip
+
+=================================== PASSES ====================================
+____________ test_core_isolated_tools_declare_contract_requirement ____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\pkg_g_d03.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed
+PASSED tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced
+PASSED tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope
+PASSED tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks
+PASSED tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once
+PASSED tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call
+ERROR tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point - subprocess.CalledProcessError: Command '['D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\.venv\\Scripts\\python.exe', '-m', 'pip', 'install', 'D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\tests\\fixtures\\plugin_packages\\intergrax_security_defense_fixture', '-q']' returned non-zero exit status 1.
+======================== 82 passed, 1 error in 15.98s =========================
+
