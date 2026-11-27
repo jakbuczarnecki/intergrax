@@ -1,7 +1,7 @@
 # Adaptive Harness Evolution — Implementation Roadmap
 
 **Revision:** 1.3
-**Status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
+**Status:** ARCHITECT-DEFINED / INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED / OPERATOR_ACCEPTED
 **Architecture reference:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../../architecture/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
 Execution register and implementation work breakdown remain in this document.
@@ -14,8 +14,68 @@ Execution register and implementation work breakdown remain in this document.
 |---|---|
 | Closed waves | 0 |
 | Formally closed packages | 0 |
+| W1 executable authorization | NOT_AUTHORIZED |
 
 **Cross-program coordination:** Explicit. AHE roadmap dependencies do not themselves authorize changes to other programs.
+
+## Operator decision register
+
+| ID | Date | Status | Record |
+|---|---|---|---|
+| OD-AHE-01 | 2026-11-27 | APPROVED | I approve the full scope of the presented operator decision, including the limited historical waiver **F-AHE-01**. Approved scope: (1) AHE architecture revision **1.3**; (2) AHE roadmap revision **1.3**; (3) independent qualification **AHE-W0-IQ-01** within documentation-only scope; (4) historical waiver of **F-AHE-01** for exactly three specified commits; (5) preservation of Git history without rewrite; (6) ADAS remains the canonical runtime implementation owner; (7) existing repository governance and publication rules remain applicable; (8) authorization to prepare **W1-B01** after settlement of remaining G0 requirements. Does not authorize product-code implementation, production authority, external program-owner acceptance replacement, or G6/IIAC certification. |
+
+## Independent documentation qualification — AHE-W0-IQ-01
+
+| Item | Record |
+|---|---|
+| Audited SHA | `1d0181051fa034b5f45101755002e48f5dc35715` |
+| Audited architecture revision | 1.3 |
+| Audited roadmap revision | 1.3 |
+| Scope | Architecture and roadmap documentation only |
+| Independent auditor final verdict (preserved) | `CONDITIONAL_ARCHITECTURE_QUALIFIED / PROGRAM_G0_NOT_CLOSABLE` |
+| Operator disposition (separate) | `INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED_UNDER_OD-AHE-01` |
+
+| Dimension | Verdict |
+|---|---|
+| Architecture qualification | PASS_SCOPED |
+| Roadmap qualification | PASS_SCOPED |
+| Canonical ADAS compatibility | PASS_ARCHITECTURE_ONLY |
+| Reuse qualification | PASS |
+| Cross-program boundaries | PASS_ARCHITECT_DEFINED |
+| W1 implementation boundary | PASS_DEFINITION |
+| Enterprise safety | PASS_INVARIANTS_ON_PAPER |
+| Historical publication governance | FAIL_WITH_OPERATOR_WAIVER |
+| Executable behavioral qualification | NOT_EXECUTED |
+| G6 certification | NOT_CLAIMED |
+| IIAC certification | NOT_CLAIMED |
+
+## Historical publication waiver — F-AHE-01
+
+| Item | Record |
+|---|---|
+| Finding | F-AHE-01 |
+| Disposition | HISTORICAL_NONCOMPLIANCE_ACCEPTED_BY_OPERATOR |
+| Waiver authority | OD-AHE-01 |
+| Historical publication compliance (waived commits) | FAIL (not retroactively relabeled compliant) |
+| Corrective publication evidence SHA | `1d0181051fa034b5f45101755002e48f5dc35715` |
+| Corrective commit metadata | PASS |
+| Waiver exhausted | Yes — exactly three commits; no future-commit exception |
+
+| Historical commit | Historical publication compliance |
+|---|---|
+| `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` | FAIL |
+| `ae93859a5e9574b8402f681cb322c1d86be8f772` | FAIL |
+| `8a4f962e25bd72ab0c183d0d25437f93a8c001d6` | FAIL |
+
+No history rewrite authorized. Future commits, PR text, AI attribution, mandatory gates and publication procedures remain fully applicable.
+
+## Non-blocking independent audit observations
+
+| Observation | Disposition |
+|---|---|
+| Missing AHE reference from the AHI hub | Deferred — outside authorized write set for AHE-W0-SETTLEMENT-01 |
+| Reuse baseline versus current documentation SHA | Exact-SHA evidence discipline required |
+| Canonical ADAS publication reconciliation | Pending authorization (**F-AHE-05**) |
 
 ## ADAS traceability matrix
 
@@ -71,9 +131,9 @@ Constraints:
 
 ## Dependency and gate register
 
-| Gate | Requirement | Initial status |
+| Gate | Requirement | Status |
 |---|---|---|
-| AHE-G0 | Architecture and roadmap acceptance | PENDING |
+| AHE-G0 | Architecture and roadmap acceptance; operator settlement; independent documentation qualification; historical publication waiver | PENDING_FINAL_SETTLEMENT |
 | AHE-G1 | Exact W1 implementation contract, approved ticket and scope authorization | PENDING |
 | AHE-G2 | Executable bounded LAB adaptive loop | PLANNED |
 | AHE-G3 | Propose–Probe–Compose and selection qualification | PLANNED |
@@ -84,6 +144,28 @@ Constraints:
 
 These are AHE program milestone names, not substitutes for DevOS G0–G6, IIAC, FRZ or existing admission controls.
 
+### AHE-G0 subconditions
+
+| Subcondition | Status |
+|---|---|
+| Architecture acceptance | PASS |
+| Roadmap acceptance | PASS |
+| Independent documentation qualification | ACCEPTED_SCOPED |
+| Operator acceptance | APPROVED |
+| Historical publication finding F-AHE-01 | WAIVED |
+| External owner acceptance | PENDING |
+| Settlement publication | PENDING_INDEPENDENT_VERIFICATION |
+
+### AHE-G1 outstanding requirements
+
+- Architect-issued exact W1-B01 executable contract.
+- Explicit canonical schema compatibility decisions.
+- Authorized ADAS publication procedure.
+- Exact canonical plan update scope.
+- Valid DevOS ticket.
+- Required Operator approval.
+- Applicable repository governance checks.
+
 W1 execution requires AHE-G0, AHE-G1 and all applicable existing governance authorizations.
 
 No roadmap row or gate may be declared accepted solely by the implementer.
@@ -92,26 +174,26 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 | Package | Implementation | Review / acceptance | Notes |
 |---|---|---|---|
-| AHE-W0-01 | PUBLISHED | ACCEPTED_SCOPED; Independent acceptance: PENDING; Process finding: repeated prohibited AI-tool attribution in historical commit metadata (no history rewrite) | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. |
-| AHE-W0-02 | PUBLISHED | ACCEPTED_SCOPED_WITH_PROCESS_FINDING; Independent acceptance: PENDING; External owner acceptance: PENDING | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772`. Repeated prohibited AI-tool attribution in historical commit metadata. No history rewrite. |
-| AHE-W0-03 | PUBLISHED | ACCEPTED_SCOPED; Publication compliance: FAILED; Corrective compatibility status: IN_PROGRESS; Independent acceptance: PENDING | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. |
+| AHE-W0-01 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (historical publication compliance FAIL; not retroactively relabeled). |
+| AHE-W0-02 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01; External owner acceptance: PENDING | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772` (historical publication compliance FAIL; not retroactively relabeled). |
+| AHE-W0-03 | PUBLISHED | Architecture acceptance: ACCEPTED_SCOPED; Corrective compatibility status: ACCEPTED_SCOPED; Independent documentation qualification: ACCEPTED_SCOPED; Historical publication finding F-AHE-01: WAIVED_UNDER_OD-AHE-01 | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. Corrective operation **AHE-W0-03-C01** (not a new roadmap package): corrective publication SHA `1d0181051fa034b5f45101755002e48f5dc35715`; corrective commit metadata PASS. |
 | W1–W8 | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
-| AHE-G0 | PENDING | — | — |
+| AHE-G0 | PENDING_FINAL_SETTLEMENT | — | — |
 | AHE-G1 | PENDING | — | — |
 
 **Closed waves:** 0. **Formally closed packages:** 0.
 
 ## Process findings register
 
-| ID | Finding |
-|---|---|
-| F-AHE-01 | Repeated prohibited AI-tool attribution and violation of publication stop condition. |
-| F-AHE-02 | W0-03 execution register reconciliation. |
-| F-AHE-03 | Canonical ADAS contract compatibility. |
-| F-AHE-04 | Candidate lifecycle vocabulary compatibility. |
-| F-AHE-05 | Canonical delivery and acceptance reconciliation. |
-| F-AHE-06 | Configuration-only versus scaffold materialization boundary. |
-| F-AHE-07 | Restore historical W0-01 process finding. |
+| ID | Finding | Disposition |
+|---|---|---|
+| F-AHE-01 | Repeated prohibited AI-tool attribution and violation of publication stop condition. | HISTORICAL_NONCOMPLIANCE_ACCEPTED_BY_OPERATOR (OD-AHE-01; three commits only; historical publication FAIL preserved) |
+| F-AHE-02 | W0-03 execution register reconciliation. | RESOLVED |
+| F-AHE-03 | Canonical ADAS contract compatibility. | RESOLVED_ARCHITECTURE_ONLY |
+| F-AHE-04 | Candidate lifecycle vocabulary compatibility. | RESOLVED |
+| F-AHE-05 | Canonical delivery and acceptance reconciliation. | PENDING_AUTHORIZATION |
+| F-AHE-06 | Configuration-only versus scaffold materialization boundary. | RESOLVED_ARCHITECTURE_ONLY |
+| F-AHE-07 | Restore historical W0-01 process finding. | RESOLVED |
 
 
 ---
@@ -124,7 +206,9 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | AHE-W0-02 | Canonical ownership and baseline reconciliation | Exact-SHA reuse mapping and cross-program boundary acceptance |
 | AHE-W0-03 | W1 implementation contract | Concrete authorized write set, dependencies, tests and acceptance criteria |
 
-**W0 exit:** accepted architecture, roadmap and implementation boundaries.
+**W0 settlement (AHE-W0-SETTLEMENT-01):** documentation acceptance metadata recorded; G0 remains **PENDING_FINAL_SETTLEMENT** until settlement publication independent verification.
+
+**W0 exit:** accepted architecture, roadmap and implementation boundaries (pending final G0 settlement closure).
 
 ---
 

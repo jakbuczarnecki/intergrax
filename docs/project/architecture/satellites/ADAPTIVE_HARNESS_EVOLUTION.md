@@ -1,11 +1,32 @@
 # Adaptive Harness Evolution — Architecture
 
 **Revision:** 1.3
-**Document status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
+**Document status:** ARCHITECT-DEFINED / INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED / OPERATOR_ACCEPTED
 **Parent architecture:** [ADAPTIVE_HARNESS_INTELLIGENCE.md](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Implementation roadmap:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
 Adaptive Harness Evolution (AHE) is a **governed implementation program** within the existing Adaptive Harness Intelligence (AHI) domain. It is not a new architectural layer, runtime, or competing execution engine.
+
+## Architecture acceptance register
+
+Acceptance metadata update only. Normative architecture sections §5.1–§5.31 are unchanged.
+
+| Item | Record |
+|---|---|
+| Operator decision | **OD-AHE-01** — `APPROVED` (2026-11-27). I approve the full scope of the presented operator decision, including the limited historical waiver **F-AHE-01**. This decision does not authorize product-code implementation, production authority, replacement of external program-owner acceptance, or G6/IIAC certification. |
+| Independent documentation qualification | **AHE-W0-IQ-01** — audited SHA `1d0181051fa034b5f45101755002e48f5dc35715`; architecture revision **1.3**; roadmap revision **1.3**. Qualification scope: architecture and roadmap documentation only. |
+| Qualified architecture documentation SHA | `1d0181051fa034b5f45101755002e48f5dc35715` |
+| Reuse baseline SHA (separate) | `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (23-entry reuse matrix in §5.16 unchanged) |
+| Historical publication finding | **F-AHE-01** — `HISTORICAL_NONCOMPLIANCE_ACCEPTED_BY_OPERATOR` under **OD-AHE-01**; historical publication compliance for the three specified commits remains **FAIL**; corrective publication evidence SHA `1d0181051fa034b5f45101755002e48f5dc35715` (corrective commit metadata **PASS**). |
+| External program owner acceptance | **PENDING** |
+| Executable behavioral qualification | **NOT_EXECUTED** |
+| Cross-program boundary status | Unchanged: **ARCHITECT_DEFINED / EXTERNAL_OWNER_ACCEPTANCE_PENDING** (§5.18) |
+
+**Independent auditor final verdict (preserved):** `CONDITIONAL_ARCHITECTURE_QUALIFIED / PROGRAM_G0_NOT_CLOSABLE`
+
+**Operator disposition (separate; not a re-issued auditor verdict):** `INDEPENDENT_DOCUMENTATION_QUALIFICATION_ACCEPTED_SCOPED_UNDER_OD-AHE-01`
+
+Scoped qualification verdicts recorded under **AHE-W0-IQ-01**: architecture **PASS_SCOPED**; roadmap **PASS_SCOPED**; canonical ADAS compatibility **PASS_ARCHITECTURE_ONLY**; reuse **PASS**; cross-program boundaries **PASS_ARCHITECT_DEFINED**; W1 implementation boundary **PASS_DEFINITION**; enterprise safety **PASS_INVARIANTS_ON_PAPER**; historical publication governance **FAIL_WITH_OPERATOR_WAIVER**; executable behavioral qualification **NOT_EXECUTED**; G6 certification **NOT_CLAIMED**; IIAC certification **NOT_CLAIMED**.
 
 ---
 
