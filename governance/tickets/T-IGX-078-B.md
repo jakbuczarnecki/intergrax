@@ -38,8 +38,10 @@ Implementer session: AF-CLOSE GA.2R implementer session (worktree branch `claude
 
 ## Approved
 
-_(pending: a commissioned delegate after an independent REVIEW_PASS; the implementing session does not write this line)_
+Approved: operator @ 2026-11-27T08:52:00+01:00
+
+Decision basis: Operator approval in chat (2026-11-27) after independent igx-reviewer REVIEW_PASS (0 BLOCKER, 0 MAJOR, 4 MINOR) and a matching plan digest. Approval covers this ticket only; push remains an Operator step.
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
