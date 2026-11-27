@@ -90,3 +90,53 @@ The disposition is HIST: an EVOL-X evidence or register drift against the T-IGX-
 | Blocker for integrated qualification | 1: downstream jobs never executed |
 
 These statuses do not support a G2 / R / FCS / M3 claim. CI is red, and must not be described as green or waived.
+
+## Post-publication verification — 69cb58442
+
+- **Regression Gate:** [45959711766](https://github.com/jakbuczarnecki/intergrax/actions/runs/45959711766)
+- **Execution SHA:** `69cb5844285f8f65153818fc8d471b0b5edb1ac2`
+- **Overall conclusion:** FAILURE
+
+| Job | Job ID | Result |
+|---|---|---|
+| Governance Fast | 140374374100 | 1017 passed, 15 failed |
+| EVOL-X B4 | 140374374497 | 485 passed, 10 failed, 2 skipped |
+| Governance Policy Pin | 140374374498 | PASS |
+| CI Smoke | 140374374550 | PASS |
+| Downstream integrated qualification | (gate-tests, governance-tier, wiring, closeout, ci-enterprise, diagnostics, and related) | SKIPPED |
+
+**Comparison against Wave 2 checkpoint (run 45951546692 @ `7d2cc3d28`, governance-fast 140348318639).**
+
+- Governance Fast failures: 17 → 15.
+- Governance Fast passes: 1012 → 1017.
+- Both previously failing PDC inventory test nodes (`test_pdc_x_inventory.py::test_committed_inventory_is_current_and_closed_world` and `test_pdc_x_inventory.py::test_every_item_has_exactly_one_known_category_and_status`) are absent from the failure set.
+- Three new PDC regression tests are included in the expanded suite.
+- No new failing test nodes in the compared Governance Fast and EVOL-X B4 suites (node sets match the prior checkpoint aside from the PDC inventory delta above).
+- **T-IGX-090-E** corrective result: remotely verified for the targeted PDC failures.
+- Integrated Enterprise qualification remains incomplete (downstream jobs skipped because governance-fast and evol-x-b4-preflight still fail).
+
+This section records verified CI evidence only. It does not close any ticket, certify EQO, or claim G2 / R / FCS / M3.
+
+## Independent supervisory audit clarification — EVOL-X B4
+
+The node table in **evol-x-b4-preflight (10 nodes) — all HIST** above is preserved verbatim. The **HIST** classification on each of the ten previously observed failing nodes remains in force for campaign accounting.
+
+The closing paragraph of that section (*"The disposition is HIST: an EVOL-X evidence or register drift against the T-IGX-019-A gate…"*) is **superseded** for causal explanation. Not all ten failures are attributable to real EVOL-X qualification evidence drift or register drift alone. Verified distinctions at run 45959711766 (job 140374374497, SHA `69cb58442`):
+
+1. **Real-register test** — `test_ra_b4_03_real_register_rows_still_classify_correctly`: OD-EVOL-12 classification mismatch. Exact semantic correction is not yet authorized; route to AF-CLOSE / EVOL-X authority.
+
+2. **Real-clone aggregate preflight test** — `test_w402_02_real_clone_is_clean_and_every_imported_gate_module_is_byte_bound` and `test_w402_02_untracked_unrelated_files_outside_evidence_and_modules_stay_clean`: aggregate preflight FAIL with existing A-18/A-19 row failures in the diagnostic bundle. Requires further root-cause analysis; route unresolved semantics to AF-CLOSE / EVOL-X authority.
+
+3. **Synthetic repository tests** — remaining `test_w402_03_*` and related B4 nodes that construct isolated temporary repositories. These cannot all be explained solely by changes to real qualification evidence in the audited tree.
+
+4. **Open blocker text test** — `test_w402_03_open_blocker_text_must_equal_the_published_text`: diagnostic contract mismatch. Expected diagnostic phrase: `differs from the published text`. Actual diagnostic: `no longer carries the text it was published with (text changed or extended)`.
+
+5. **Resolved blocker entry tests (B-4 and B6-P3)** — `test_w402_03_a_resolved_blocker_entry_may_carry_only_allow_listed_keys[B-4]` and `[B6-P3]`: diagnostic contract mismatch. Expected: `unexpected key(s) ['scope_note']`. Actual: `unexpected key 'scope_note'`.
+
+6. **Unindexed directory and root addendum tests** — `test_w402_03_a_committed_file_in_an_unindexed_directory_is_rejected` and `test_w402_03_a_committed_addendum_at_the_evidence_root_is_rejected`: gate identifier contract mismatch. Expected gate identifier in test assertion framing: A-23. Actual gate identifier in preflight output: A-19.
+
+7. **Nested resolution object and unrelated untracked file tests** — `test_w402_03_nested_resolution_objects_are_allow_listed_too` (and the untracked-file node in #2): failures confirmed at this SHA; precise root cause remains unresolved. Route to AF-CLOSE / EVOL-X authority.
+
+8. **Preflight documentation test** — `test_w402_04_commit_graph_and_alternates_are_documented_as_residuals`: required `alternates` residual documentation is missing from the preflight module docstring.
+
+This clarification does not decide whether implementation or test expectations must change. Unresolved semantic corrections remain with AF-CLOSE / EVOL-X authority. All negative security and qualification requirements stand; no skips, xfails, exceptions, or waivers are introduced here.
