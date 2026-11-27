@@ -38,7 +38,7 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-ready_for_audit
+closed
 
 ## Checkpoint
 
@@ -76,3 +76,30 @@ ready_for_audit
 **Evidence limitations for independent G6:** Contrary to the packaging description, the ZIP does not contain the complete original candidate validation directory. The candidate manifest lists 17 files; 5 expected byte hashes occur in the supplied archive (including identical verifier outputs in integrated-stage folders), 12 are absent. The candidate-named ZIP entry is a 140-byte lifecycle-verifier log, not a nested archive or full directory. Manifest digest integrity is verified; complete manifest-to-candidate-file provenance is NOT verified. Both integrated smoke logs are present. Do not treat same-content logs from different stages as proof of the candidate run. Auditor must assess whether the missing original logs or indirect final SHA attribution require focused evidence recovery before a PASS; do not silently waive or re-run the whole campaign by default. Mermaid parser remains NOT_EXECUTED with the explicit Operator-approved non-blocking disposition. C11 / II-FIND-11/12 remain external W0-06 obligations.
 
 **Audit scope:** T-IGX-079-C only, approved plan revision 2 digest unchanged; ratified D1/D2, D3 snapshot and historical governance preserved. Formal G6 is pending a new Operator-authorized independent session. No W0 closure, product authority, external adoption, FRZ/IIAC promotion or gate opening.
+
+## Formal independent audit — II-W0-R31-FORMAL-G6-01
+
+**Audit ID:** `II-W0-R31-FORMAL-G6-01`
+
+**Verdict:** `SCOPED PASS WITH DOCUMENTED NON-BLOCKING LIMITATIONS`
+
+**Corrective obligations:** 13/13 satisfied per approved plan digest `1ef9fb848ab3dc979f637b6f355bcabbcb8968f4fe485b3cb1b376d83ae97f31`.
+
+**Blocking findings:** 0
+
+**Governance smoke:** historical reported result of 1894 passed (not re-executed in this closure recording batch).
+
+**Recording basis:** Accepted formal independent audit result recorded under Operator-authorized preparation batch II-W0-A-PREP-01. This section transcribes the accepted G6 verdict; it is not a new independent audit session and does not assert W0 package closure or gate opening.
+
+### Preserved non-blocking limitations and open obligations
+
+| Finding | Required disposition |
+|---|---|
+| F-HANDOFF-01 | NON-BLOCKING — 12 manifest-listed candidate files absent from supplied archive |
+| F-HANDOFF-02 | NON-BLOCKING — indirect execution SHA attribution |
+| Mermaid syntax validation | NOT_EXECUTED — accepted non-blocking limitation |
+| II-FIND-11 | OPEN — transferred to W0-06 |
+| II-FIND-12 | OPEN — transferred to W0-06 |
+| C11 | Accepted as a defined future adoption obligation, not external reconciliation completion |
+
+**Ticket closure:** lifecycle `ready_for_audit` → `closed` after accepted scoped formal G6. Separate Operator chat closure sign-off for this transition was not independently supplied beyond the accepted audit verdict record above. W0 formal package closures remain open (0/6).

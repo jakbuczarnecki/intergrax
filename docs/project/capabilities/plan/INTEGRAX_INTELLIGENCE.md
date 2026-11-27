@@ -15,32 +15,35 @@ Use, modification, or distribution without written permission is prohibited.
 | Program identity | `INTELLIGENCE-X` |
 | Architecture revision and path | 1.1 — `docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md` |
 | Roadmap revision and path | 1.0 — `governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md` |
-| Actual evidence baseline | Historical v1.0 audit context SHA `aabd3925c48bce40bfa5357f39e81bdc7858f8cc` as recorded in architecture v1.0. Preparation baseline `32005c212ed4debca91f607ee30b3abfab79ce6c`. R2 review baseline `7d2cc3d28640df4823fa04e07abdc8f98451ccc6`; target blobs unchanged. Neither preparation nor review baseline is an audited qualification SHA. |
-| Active wave | W0 documentation candidates |
-| Active batch | II-DOC-R3-CORRECTIVE-01 — proposed; approval and corrective delta review required |
-| GATE-II-ENTRY | not reached on verified evidence |
-| GATE-II-ARCH | not reached |
-| GATE-II-CORE | not reached |
-| GATE-II-ADAPTIVE | not reached |
-| GATE-II-ENTERPRISE | not reached |
-| GATE-INTELLIGENCE-CONSUME | not reached |
-| Blockers | Formal repository ratification is pending. Executable W1 is not authorized. Product implementation is not authorized. Chapter-14 canonical integration has not been performed by this batch. |
-| Next eligible action | Obtain proper R3 plan approval and Operator disposition of the R2 publication exception; exact corrective validation and independent delta audit; authorized publication then separate ratification and W0 adoption. No gate or product implementation. |
-| Ticket refs | `governance/tickets/T-IGX-079-A.md` is `in_progress` and is not executed by this batch. T-IGX-079-B was published as plan_pending and its historical plan/digest remain unchanged. Proposed corrective ticket T-IGX-079-C is not a package closure or an approval. No package below has its own accepted implementation ticket. |
-| Evidence refs | Architecture v1.0 blob `3ffd8de71737a3b606a72e89e439854eabaf9ef2`. Plan index blob `71329af63765c5c4e671880a8921de4103c4b6f2`. R2 candidate published at `3190a448707b9ca0835ba354d4cbd18c23565408`; independent pre-ratification audits 01A/01B/01C reviewed this SHA, consolidated CHANGES_REQUIRED (12 findings, no formal G6). Reports are Operator-supplied audit evidence; no claim of repository dossier publication. |
-| Audited candidate SHA | `3190a448707b9ca0835ba354d4cbd18c23565408` — independent document review CHANGES_REQUIRED. R3 delta review pending. |
-| Authorized publication SHA | `3190a448707b9ca0835ba354d4cbd18c23565408` — R2 candidate publication only (one-time Operator authorization). R3 publication evidence must be separately recorded after actual publication; no self-referential SHA. |
+| Actual evidence baseline | Remote preparation SHA `89f0aed35ae7cbc199f981d329daf38cd61c136e`. R3.1 ratification publication `4637c7fa6295a37ad155fbff9d4a9718646c9cf8`. Historical v1.0/R2/R3 candidate and audit provenance preserved in ticket evidence; not rewritten as pre-ratification facts. |
+| Active wave | W0 — Architecture Acceptance (W0-A) |
+| Active batch | II-W0-A-PREP-01 complete; W0-A execution (`T-IGX-079-D`) pending Operator plan approval |
+| GATE-II-ENTRY | NOT_REACHED |
+| GATE-II-ARCH | NOT_REACHED |
+| GATE-II-CORE | NOT_REACHED |
+| GATE-II-ADAPTIVE | NOT_REACHED |
+| GATE-II-ENTERPRISE | NOT_REACHED |
+| GATE-INTELLIGENCE-CONSUME | NOT_REACHED |
+| Executable W1 | NOT_AUTHORIZED |
+| W0 formal package closures | 0/6 |
+| Total roadmap formal package closures | 0/69 |
+| Blockers | W0-A plan approval required before II-W0-01..04 execution. II-FIND-11/12 and C11 remain W0-06 obligations. Foundation predicate and GATE-II-ENTRY not satisfied. |
+| Next eligible action | Operator approval of `PLAN_T-IGX-079-D.md` digest; then sequential W0-A documentary acceptance. No W0-05/06, W1 or gates. |
+| Ticket refs | T-IGX-079-C `closed` (R3.1 corrective). T-IGX-079-D `plan_pending` (W0-A II-W0-01..04). Historical T-IGX-079-A/B unchanged. |
+| Evidence refs | Ratified D1 blob `c89c4ccb9e253108de70b126c62c1c206063ab83`; D2 blob `ce7d248cd43fe2dace182fb6eedf7cdc65b82622`; OD-INTELLIGENCE-01; R3.1 G6 in `governance/tickets/T-IGX-079-C.md`. Historical R2 `3190a448707b9ca0835ba354d4cbd18c23565408` and pre-ratification audits preserved. |
+| Audited candidate SHA | R3 reviewed candidate `6bd2c62760ba5e91e9f05d3ae3b8df235540b5e5`; formal G6 scoped PASS — T-IGX-079-C. |
+| Authorized publication SHA | R3.1 integration `4637c7fa6295a37ad155fbff9d4a9718646c9cf8`; R2 historical publication preserved. |
 
-**Status of the program direction:** the Operator accepted the strategic direction in chat. Formal repository ratification is pending. Architecture v1.0 is a published proposal. The v1.1 architecture and v1.0 roadmap were published as R2 candidates and independently reviewed; this R3 proposal addresses findings, without approval or ratification. Current preparation comparison baseline `69cb5844285f8f65153818fc8d471b0b5edb1ac2`; EQO source drift requires fresh evidence for entry, not inferred Foundation acceptance. II-FIND-11/12 remain external W0-06 reconciliation obligations. R2 publication preceded formal plan approval; Operator disposition is pending. W0 formal closures: 0. W1 executable qualification is not authorized.
+**Status of the program direction:** Architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified (OD-INTELLIGENCE-01). R3.1 formal scoped G6 for T-IGX-079-C is accepted with documented non-blocking limitations. W0 adoption preparation is active; W0-A is the next eligible execution batch subject to plan approval. Prior R2/R3 chronology and candidate audit records are preserved and not erased by this status refresh. EQO/source drift still requires fresh evidence for entry. W0 formal closures remain 0/6; all package-level closure states Open. W1 executable qualification is not authorized.
 
 DevOS ticket lifecycle uses the existing vocabulary: `draft`, `plan_pending`, `plan_approved`, `in_progress`, `quality_gate`, `ready_for_audit`, `closed`. A dash is absence of a bound record, not a new lifecycle state. Candidate documents are not implementation or formal qualification evidence. No package is formally closed. Reuse dispositions for runtime packages remain unassessed until W1; W0 is document work and does not depend on W1. For a completed row, bind actual ticket, evidence and SHA rather than merely changing a status cell.
 
 | Package | Ticket ref | DevOS lifecycle | Reuse disposition | Evidence status | Qualification | Formal closure | Evidence refs | Candidate SHA | Publication SHA | Residual blocker | Next eligible action |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| II-W0-01 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
-| II-W0-02 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
-| II-W0-03 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
-| II-W0-04 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
+| II-W0-01 | T-IGX-079-D | plan_pending | N/A — documentation | W0-A plan prepared; deliverables not executed | Not independently accepted | Open | PLAN_T-IGX-079-D.md Package A | — | — | Plan approval | Operator approve 079-D; execute Package A |
+| II-W0-02 | T-IGX-079-D | plan_pending | N/A — documentation | W0-A plan prepared; depends on II-W0-01 | Not independently accepted | Open | PLAN_T-IGX-079-D.md Package B | — | — | Plan approval; II-W0-01 | Execute after Package A |
+| II-W0-03 | T-IGX-079-D | plan_pending | N/A — documentation | W0-A plan prepared; depends on II-W0-01 | Not independently accepted | Open | PLAN_T-IGX-079-D.md Package C | — | — | Plan approval; II-W0-01 | Execute after Package A |
+| II-W0-04 | T-IGX-079-D | plan_pending | N/A — documentation | W0-A plan prepared; depends on II-W0-01, II-W0-03 | Not independently accepted | Open | PLAN_T-IGX-079-D.md Package D | — | — | Plan approval; II-W0-01/03 | Execute after Packages A and C |
 | II-W0-05 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
 | II-W0-06 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
 | II-W1-01 | — | — | N/A — baseline | Baseline evidence not yet assessed | Not independently accepted | Open | — | — | — | W0 closure, GATE-II-ENTRY and W1 authority | Await entry; read-only preparation only if authorized |
