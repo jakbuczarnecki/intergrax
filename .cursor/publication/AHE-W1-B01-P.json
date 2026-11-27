@@ -1,0 +1,20 @@
+{
+    "schema":  1,
+    "wave":  "AHE-W1-B01-P",
+    "mode":  "CHATGPT_DIRECT_IMPLEMENTATION",
+    "target":  "development",
+    "kind":  "product",
+    "branch":  "feat/ahe-w1-b01-p",
+    "base_sha":  "101f54059a79dc1c517eb57c62dd6f95aabbb1dd",
+    "ticket":  "governance/tickets/T-IGX-093-A.md",
+    "write_set":  [
+                      "intergrax/runtime/adaptive/agent_design_search/__init__.py",
+                      "intergrax/runtime/adaptive/agent_design_search/contracts.py",
+                      "intergrax/runtime/adaptive/agent_design_search/archive.py",
+                      "intergrax/runtime/adaptive/agent_design_search/sqlite_archive.py",
+                      "tests/unit/runtime/adaptive/agent_design_search/test_contracts.py",
+                      "tests/unit/runtime/adaptive/agent_design_search/test_archive.py",
+                      "tests/unit/runtime/adaptive/agent_design_search/test_sqlite_archive.py"
+                  ],
+    "pr_title":  "feat: implement canonical ADAS candidate contracts and archive"
+}
