@@ -25,6 +25,7 @@ from intergrax.contracts.execution_evidence.receipt import (
     ProofReceiptV2,
     parse_execution_evidence_proof_receipt_json,
 )
+from intergrax.contracts.execution_identity import validate_execution_id
 from intergrax.runtime.execution_evidence.attestor import build_deterministic_test_attestor
 from intergrax.runtime.execution_evidence.key_store import (
     DEMO_OFFLINE_KEY_ID,
@@ -386,6 +387,11 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     assert fail_payload["provider_execution_succeeded"] is True
     assert fail_payload["attestation_succeeded"] is False
     assert fail_payload.get("receipt_path") in (None, "")
+    accept_execution_id = validate_execution_id(fail_payload["accept_execution_id"])
+    create_execution_id = validate_execution_id(fail_payload["create_execution_id"])
+    assert accept_execution_id != create_execution_id
+    assert accept_execution_id in fail_payload["recovery_command"]
+    assert "exec-offline-accept" not in fail_payload["recovery_command"]
     ledger = json.loads((store / "provider_calls.json").read_text(encoding="utf-8"))
     assert ledger["create_calls"] == 1
     assert ledger["accept_calls"] == 1
@@ -393,7 +399,7 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     retry = _gca_cli_subprocess(
         "external-work",
         "retry-attestation",
-        "exec-offline-accept",
+        str(accept_execution_id),
         "--store",
         str(store),
     )
@@ -408,11 +414,17 @@ def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
     verify = _cli_subprocess("receipt", "verify", str(export), "--store", str(store))
     assert verify.returncode == 0
     assert json.loads(verify.stdout)["valid"] is True
+    receipt_obj = parse_execution_evidence_proof_receipt_json(
+        export.read_text(encoding="utf-8"),
+    )
+    assert isinstance(receipt_obj, ProofReceiptV2)
+    assert isinstance(receipt_obj.execution_boundary_event, ExecutionBoundaryEventV2)
+    assert receipt_obj.execution_boundary_event.execution.execution_id == accept_execution_id
 
     again = _gca_cli_subprocess(
         "external-work",
         "retry-attestation",
-        "exec-offline-accept",
+        str(accept_execution_id),
         "--store",
         str(store),
     )

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="1.481" timestamp="2026-11-27T18:31:31.561877+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="" name="tests.unit.applications.test_mcp_server_p4_lifecycle" time="0.000"><error message="collection failure">ImportError while importing test module 'D:\Projekty\_wt\intergrax\ec-w3-11-context-recovery\tests\unit\applications\test_mcp_server_p4_lifecycle.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\unit\applications\test_mcp_server_p4_lifecycle.py:6: in &lt;module&gt;
+    from intergrax.applications._shared.mcp_server_engine import (
+intergrax\applications\_shared\mcp_server_engine.py:15: in &lt;module&gt;
+    from fastmcp import FastMCP
+E   ModuleNotFoundError: No module named 'fastmcp'</error></testcase></testsuite></testsuites>

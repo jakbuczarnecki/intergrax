@@ -1,0 +1,8 @@
+{
+  "EC-F14": {"disposition": "CORRECTED", "package": "A", "evidence": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py"},
+  "EC-F08": {"disposition": "CORRECTED", "package": "B", "evidence": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process"},
+  "EC-F05": {"disposition": "OPEN_COMPAT_X_OWNER_RECONCILIATION"},
+  "EC-F09": {"disposition": "OPEN_REPLAY_X_SCOPED_DELTA_REQUALIFICATION"},
+  "EC-F12": {"disposition": "OPEN_GCA_STRICT_SMOKE_ACTIVATION_MIGRATION"},
+  "EC-F13": {"disposition": "OPEN_BND05_CURRENT_WITNESS"}
+}

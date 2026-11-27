@@ -1,0 +1,7 @@
+{
+  "schema": "eqo.evidence_integrity.v1",
+  "mechanical_validator_exit_code": 0,
+  "reconciled_structural": true,
+  "raw_logs_dir": "logs/",
+  "raw_junit_dir": "junit/"
+}

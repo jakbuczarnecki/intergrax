@@ -1,0 +1,535 @@
+{
+  "batches": [
+    {
+      "batch_id": "fc1_nexus_context",
+      "command": "uv run pytest tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:30:24.997322+00:00",
+      "junit_path": "junit\\fc1_nexus_context.xml",
+      "junit_sha256": "61d2f805679a318d3eb8de88d8b4bc8db2d8e3841d3b00d6a64f2e0580d24019",
+      "log_path": "logs\\fc1_nexus_context.log",
+      "started_at": "2026-11-27T17:30:24.404521+00:00"
+    },
+    {
+      "batch_id": "p2c_http_admission",
+      "command": "uv run pytest tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "exit_code": 1,
+      "finished_at": "2026-11-27T16:56:18.679384+00:00",
+      "junit_path": "junit\\p2c_http_admission.xml",
+      "junit_sha256": "ef293e7314a94181141f41c4f8400e2f0b78edd87ee8c1efac6964d9a07cda4b",
+      "log_path": "logs\\p2c_http_admission.log",
+      "started_at": "2026-11-27T17:33:34.481775+00:00"
+    },
+    {
+      "batch_id": "gca_dur_r4",
+      "command": "uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:25:58.822257+00:00",
+      "junit_path": "junit\\gca_dur_r4.xml",
+      "junit_sha256": "dea978be041f58488245c331b899449f7139aea485a08b184f90e2ada35d4882",
+      "log_path": "logs\\gca_dur_r4.log",
+      "started_at": "2026-11-27T17:25:57.746079+00:00"
+    },
+    {
+      "batch_id": "q09_application_host",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:27:26.224447+00:00",
+      "junit_path": "junit\\q09_application_host.xml",
+      "junit_sha256": "bc9a551e213f190436706c738d24d82c61eaa06689841157d02b496ccc0137c3",
+      "log_path": "logs\\q09_application_host.log",
+      "started_at": "2026-11-27T17:27:25.601876+00:00"
+    },
+    {
+      "batch_id": "erl_bridge",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:27:38.076739+00:00",
+      "junit_path": "junit\\erl_bridge.xml",
+      "junit_sha256": "c6755ce7739c3785bd0de91c4a26aba903162998eb9aba6df2881cabaf0b18bd",
+      "log_path": "logs\\erl_bridge.log",
+      "started_at": "2026-11-27T17:27:37.459725+00:00"
+    },
+    {
+      "batch_id": "trace_x_p3_r1",
+      "command": "uv run pytest tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:30:08.945875+00:00",
+      "junit_path": "junit\\trace_x_p3_r1.xml",
+      "junit_sha256": "43d8c6283f64df5408d38d0cb8cdc8207a18eb08114e63a7e418bcf4a9239d15",
+      "log_path": "logs\\trace_x_p3_r1.log",
+      "started_at": "2026-11-27T17:30:08.386768+00:00"
+    },
+    {
+      "batch_id": "d4_strict_serving",
+      "command": "uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:38:36.447303+00:00",
+      "junit_path": "junit\\d4_strict_serving.xml",
+      "junit_sha256": "d91775fc7d9d7bfa9d5baead6cbcbe219625f7b975a912bf71a15b258f3348b1",
+      "log_path": "logs\\d4_strict_serving.log",
+      "started_at": "2026-11-27T17:38:35.458676+00:00"
+    },
+    {
+      "batch_id": "gca_smoke",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+      "exit_code": 1,
+      "finished_at": "2026-11-27T17:30:49.083788+00:00",
+      "junit_path": "junit\\gca_smoke.xml",
+      "junit_sha256": "5964d6907199be07c0d4a6ecb306e8171af369f65acab5dbc91a3e8a2a3ccdc4",
+      "log_path": "logs\\gca_smoke.log",
+      "started_at": "2026-11-27T17:30:48.118964+00:00"
+    },
+    {
+      "batch_id": "d03_security",
+      "command": "uv run pytest tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:06.744164+00:00",
+      "junit_path": "junit\\d03_security.xml",
+      "junit_sha256": "b8ba956c8fed3799c47a18a2ee28ed8871b114dee3272bf1606e998e8917f272",
+      "log_path": "logs\\d03_security.log",
+      "started_at": "2026-11-27T17:31:06.204369+00:00"
+    },
+    {
+      "batch_id": "xd12_impact",
+      "command": "uv run pytest tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:15.479942+00:00",
+      "junit_path": "junit\\xd12_impact.xml",
+      "junit_sha256": "d665625706713412bd5fb741058e5256c3212f1aebe02e18072a2240e6c2050c",
+      "log_path": "logs\\xd12_impact.log",
+      "started_at": "2026-11-27T17:31:15.015793+00:00"
+    },
+    {
+      "batch_id": "mcp_p4_lifecycle",
+      "command": "uv run pytest tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "exit_code": 2,
+      "finished_at": "2026-11-27T17:31:33.901095+00:00",
+      "junit_path": "junit\\mcp_p4_lifecycle.xml",
+      "junit_sha256": "626c9d18c2ff982a62bb1a2176bc8f4b26bd8c5ae41b2332d9d272fcb4af6d08",
+      "log_path": "logs\\mcp_p4_lifecycle.log",
+      "started_at": "2026-11-27T17:31:33.123322+00:00"
+    },
+    {
+      "batch_id": "bnd05_gate",
+      "command": "uv run pytest tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:41.013997+00:00",
+      "junit_path": "junit\\bnd05_gate.xml",
+      "junit_sha256": "bca4105b0db2c263691d78016c361ec9db5e08d0af26ac46c2f6d640bb413cd0",
+      "log_path": "logs\\bnd05_gate.log",
+      "started_at": "2026-11-27T17:31:40.668112+00:00"
+    },
+    {
+      "batch_id": "bnd03b_witness",
+      "command": "uv run pytest tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:32:27.544932+00:00",
+      "junit_path": "junit\\bnd03b_witness.xml",
+      "junit_sha256": "de0e4f805929628a92b8b9e65fde757a858a18bfabf0a64bad0ca2abdba03adc",
+      "log_path": "logs\\bnd03b_witness.log",
+      "started_at": "2026-11-27T17:32:27.157171+00:00"
+    },
+    {
+      "batch_id": "p3_integration_gate",
+      "command": "uv run pytest tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:32:50.143420+00:00",
+      "junit_path": "junit\\p3_integration_gate.xml",
+      "junit_sha256": "c525aade46192fb2e51bdcc2da8257bcd79e6a3b616c3af7c3f13340393b6c49",
+      "log_path": "logs\\p3_integration_gate.log",
+      "started_at": "2026-11-27T17:32:49.393773+00:00"
+    }
+  ],
+  "files": {
+    "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 10,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "q09_application_host",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 10,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 3,
+        "passed": 0,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "gca_smoke",
+          "errors": 0,
+          "exit_code": 1,
+          "failed": 3,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 10,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "erl_bridge",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 10,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 10,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "q09_application_host",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 10,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 25,
+        "skipped": 13,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "d03_security",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 25,
+          "skipped": 13,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 3,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "xd12_impact",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 3,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 6,
+        "passed": 1,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "p2c_http_admission",
+          "errors": 0,
+          "exit_code": 1,
+          "failed": 6,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 1,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "p3_integration_gate",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 36,
+        "skipped": 2,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "trace_x_p3_r1",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 36,
+          "skipped": 2,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 4,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "gca_dur_r4",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 3,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "gca_dur_r4",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 3,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 23,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "d4_strict_serving",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 23,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/applications/test_mcp_server_p4_lifecycle.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 0,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 4,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "bnd03b_witness",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 2,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "bnd03b_witness",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 3,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "bnd05_gate",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 3,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py": {
+      "aggregate": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 15,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "fc1_nexus_context",
+          "errors": 0,
+          "exit_code": 0,
+          "failed": 0,
+          "passed": 15,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    },
+    "unknown": {
+      "aggregate": {
+        "errors": 1,
+        "failed": 0,
+        "passed": 0,
+        "skipped": 0,
+        "xfailed": 0
+      },
+      "current_batch_outcomes": [
+        {
+          "batch_id": "mcp_p4_lifecycle",
+          "errors": 1,
+          "exit_code": 2,
+          "failed": 0,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0
+        }
+      ],
+      "evidence_validity": "CURRENT",
+      "obligation_ids": []
+    }
+  },
+  "recorded_utc": "2026-11-27T17:38:51.132984+00:00",
+  "schema": "eqo.file_level_execution_matrix.v1",
+  "source_sha": "2944320dad50398a56c738769daeed6089fdf947"
+}

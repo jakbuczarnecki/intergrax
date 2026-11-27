@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="7" time="36.510" timestamp="2026-11-27T18:32:57.868974+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_g00_qualification_baseline_ancestor" time="0.295" /><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_01_positive_http_admission_continuity" time="12.312"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002854D5171D0&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_01_positive_http_admi0')
+
+    def test_p2c_01_positive_http_admission_continuity(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-01-positive",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:358: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x00000285503DC140&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_02_admission_deny_prevents_inner_execution" time="1.245"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002854D658650&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_02_admission_deny_pre0')
+
+    def test_p2c_02_admission_deny_prevents_inner_execution(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-02-deny",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:397: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x000002855061CFE0&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_03_release_after_successful_execution" time="1.169"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002854D6B77D0&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_03_release_after_succ0')
+
+    def test_p2c_03_release_after_successful_execution(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-03-release-ok",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:423: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x00000285503DFB00&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_04_release_after_inner_execution_failure" time="1.173"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002854FE00F20&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_04_release_after_inne0')
+
+    def test_p2c_04_release_after_inner_execution_failure(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-04-release-fail",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:447: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x00000285506F89B0&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_05_identity_and_scope_continuity" time="1.356"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002854D682630&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_05_identity_and_scope0')
+
+    def test_p2c_05_identity_and_scope_continuity(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-05-identity",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:484: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x000002855185A480&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_06_request_tenant_mismatch_skips_execution_seam" time="1.475"><failure message="intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000028550644D10&gt;
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-11-context-recovery/build/pytest/27460-bd3f9d9b/test_p2c_06_request_tenant_mis0')
+
+    def test_p2c_06_request_tenant_mismatch_skips_execution_seam(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -&gt; None:
+&gt;       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-06-tenant-mismatch",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:646: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:327: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:419: in create_governed_contractor_backend_app
+    interaction_service = wire_interaction_intake_service(
+intergrax\applications\_shared\interaction_wiring.py:61: in wire_interaction_intake_service
+    verifier = create_inbound_verifier()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+intergrax\runtime\interactions\verification\factory.py:158: in create_inbound_verifier
+    _require_verifier_operational(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+verifier = &lt;intergrax.runtime.interactions.verification.slack_signature.SlackSignatureVerifier object at 0x000002855195A7B0&gt;
+
+    def _require_verifier_operational(
+        verifier: InboundRequestVerifier,
+        *,
+        mode: InboundVerifierMode,
+        settings: InboundVerifierSettings,
+        lab_opt_in: LabSelectorOptIn | None,
+    ) -&gt; None:
+        enabled = getattr(verifier, "enabled", True)
+        if enabled:
+            return
+        if lab_opt_in is not None:
+            return
+        if mode == InboundVerifierMode.SLACK:
+            if not settings.slack_signing_secret.strip():
+&gt;               raise SecurityConfigurationError(
+                    item=ENV_SLACK_VERIFY_SIGNATURE,
+                    reason_code=INBOUND_VERIFIER_SLACK_SECRET_MISSING,
+                    message="Slack signing secret is required for inbound verification",
+                )
+E               intergrax.core.security.security_configuration.SecurityConfigurationError: INTERGRAX_SLACK_VERIFY_SIGNATURE: Slack signing secret is required for inbound verification [inbound_verifier_slack_secret_missing]
+
+intergrax\runtime\interactions\verification\factory.py:108: SecurityConfigurationError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,93 @@
+{
+  "authorized_write_set": "governance/tickets/T-IGX-094-A.md §Write set",
+  "classification": "PRE_G2_CONTEXT_RECOVERY_AND_EVIDENCE_RECONCILIATION \u2014 NOT FINAL CERTIFICATION",
+  "inventory_source": "runs/pre_g2_qualification_execution_08_245d4717/OBLIGATION_EXECUTION_MATRIX.json",
+  "queue_source": "runs/pre_g2_qualification_execution_08_245d4717/REMAINING_QUALIFICATION_QUEUE.json",
+  "preregistered_at": "2026-11-27T16:52:00Z",
+  "run_id": "ec_w3_11_context_recovery_reconciliation",
+  "source_sha_required_ancestor": "2944320dad50398a56c738769daeed6089fdf947",
+  "ticket": "governance/tickets/T-IGX-094-A.md",
+  "batches": [
+    {
+      "id": "fc1_nexus_context",
+      "paths": ["tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py"],
+      "expected_coverage": "EC-F14 strict context composition + NT-FC1 persistence posture"
+    },
+    {
+      "id": "p2c_http_admission",
+      "paths": ["tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py"],
+      "expected_coverage": "7/7 P2C physical admission"
+    },
+    {
+      "id": "gca_dur_r4",
+      "paths": [
+        "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py",
+        "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py"
+      ],
+      "expected_coverage": "GCA DUR-02 + R4"
+    },
+    {
+      "id": "q09_application_host",
+      "paths": [
+        "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+        "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py"
+      ],
+      "expected_coverage": "Q09 20/20 target"
+    },
+    {
+      "id": "erl_bridge",
+      "paths": [
+        "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py"
+      ],
+      "expected_coverage": "ERL bridge host qualification"
+    },
+    {
+      "id": "trace_x_p3_r1",
+      "paths": ["tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py"],
+      "expected_coverage": "TRACE-X P3-R1 no new regressions"
+    },
+    {
+      "id": "d4_strict_serving",
+      "paths": ["tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py"],
+      "expected_coverage": "D4 strict serving witness"
+    },
+    {
+      "id": "gca_smoke",
+      "paths": ["applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py"],
+      "expected_coverage": "GCA smoke (residual EC-F12 preserved)"
+    },
+    {
+      "id": "d03_security",
+      "paths": ["tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py"],
+      "expected_coverage": "D03 mapped security"
+    },
+    {
+      "id": "xd12_impact",
+      "paths": ["tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py"],
+      "expected_coverage": "XD-12 + impact mapping"
+    },
+    {
+      "id": "mcp_p4_lifecycle",
+      "paths": ["tests/unit/applications/test_mcp_server_p4_lifecycle.py"],
+      "expected_coverage": "MCP P4 lifecycle"
+    },
+    {
+      "id": "bnd05_gate",
+      "paths": ["tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py"],
+      "expected_coverage": "BND-05 gate witness (EC-F13 residual)"
+    },
+    {
+      "id": "bnd03b_witness",
+      "paths": [
+        "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py",
+        "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py"
+      ],
+      "expected_coverage": "BND-03B witness"
+    },
+    {
+      "id": "p3_integration_gate",
+      "paths": ["tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py"],
+      "expected_coverage": "P3 integration gate"
+    }
+  ]
+}

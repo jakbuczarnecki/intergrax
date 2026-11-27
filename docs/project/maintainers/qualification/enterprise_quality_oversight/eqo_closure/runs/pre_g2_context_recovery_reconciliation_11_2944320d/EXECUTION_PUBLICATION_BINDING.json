@@ -1,0 +1,6 @@
+{
+  "schema": "eqo.execution_publication_binding.v1",
+  "baseline_ancestor": "2944320dad50398a56c738769daeed6089fdf947",
+  "ticket": "governance/tickets/T-IGX-094-A.md",
+  "formal_closure_claim": false
+}

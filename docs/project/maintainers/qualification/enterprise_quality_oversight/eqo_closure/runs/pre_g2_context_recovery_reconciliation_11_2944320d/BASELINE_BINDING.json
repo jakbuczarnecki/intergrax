@@ -1,0 +1,9 @@
+{
+  "previous_implementation_sha": "8b78d592e85c5c53036aeeadc4ee1957797251de",
+  "previous_implementation_tree_sha": "192be7b15e032e587ae41b46c6ce73ba957dbe19",
+  "recorded_utc": "2026-11-27T17:38:50.621523+00:00",
+  "required_ancestor": "2944320dad50398a56c738769daeed6089fdf947",
+  "schema": "eqo.baseline_binding.v1",
+  "task_start_remote_sha": "2f38f0031b0e9c1d5b1aba1df7db8b3dfaf31809",
+  "worktree_branch": "ec-w3-11/context-recovery-reconciliation"
+}
