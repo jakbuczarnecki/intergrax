@@ -42,8 +42,8 @@ fae51e58d1f07f0a3f42e8a4f38a8dde2475daef00f61cdf353e32b232dfd0b1  RW_TRAIN_STAND
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous c458c854 was stale at base: changed by ebe45c269 and 3bb5fefb4.
 # added 2026-11-27 (T-IGX-078-B, RW-PLAN-AUDIT finding L9): RW plan, its reviewed input, binding record and GA.2R red-first record.
 # Digests record content, not approval. RW_PLAN.md and rw_plan.v1.json are generator output: refresh both entries after every regeneration.
-0a1c56b2b276de10332924f0b228cf8908bf232698b9bfa551641208cbf90edc  RW_PLAN.md
-b6ddf4fdf01c6fca7c3b367218d16888ffe38e53cb9b5b4387afe7052d576e58  rw_plan.v1.json
+93249869786d989096c87d19529f87696647fdf559d9697f9a8e525368fb350f  RW_PLAN.md
+cbca4dfcde0e0c609f8ce210e3c758a6eca8e9968b6c564ff59912c9ed739890  rw_plan.v1.json
 e37931287983e5a942e7f558d5f661f03171e38acbec6f7e04242340f4c880d0  rw_plan_bindings.v1.json
 d8815f3f66ba3309894fefaa2dea09b371a0e2513702a5404042d69011b83d11  rw_plan_binding_record/INDEX.md
 40f5e38ef6154bde62317f535e4d481d771cf79118b2ac0a5995e0ae9487fa81  rw_plan_binding_record/RW_PLAN_v13.md
