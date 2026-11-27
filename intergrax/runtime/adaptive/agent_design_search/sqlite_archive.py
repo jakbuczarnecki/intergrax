@@ -11,6 +11,7 @@ from typing import Any
 from intergrax.runtime.adaptive.agent_design_search.archive import (
     AgentDesignArchiveError,
     AgentDesignArchiveScopeError,
+    _ensure_global_candidate_scope,
     freeze_candidate_record,
     freeze_evidence_bundle,
     require_archive_read_scope,
@@ -52,6 +53,11 @@ CREATE TABLE IF NOT EXISTS adas_evidence_bundles (
     created_at TEXT NOT NULL
 );
 """
+
+
+def _rollback_if_active(conn: sqlite3.Connection) -> None:
+    if conn.in_transaction:
+        conn.execute("ROLLBACK")
 
 
 def _assert_record_write_scope(record: AgentCandidateRecord, *, tenant_id: str, workspace_id: str) -> None:
@@ -99,6 +105,25 @@ class SQLiteAgentDesignArchive:
             history.setdefault(record.candidate_id, []).append(record)
         return history
 
+    def _fetch_scoped_snapshot(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        snapshot_id: str,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> AgentCandidateRecord | None:
+        row = conn.execute(
+            """
+            SELECT payload_json FROM adas_candidate_snapshots
+            WHERE snapshot_id = ? AND tenant_id = ? AND workspace_id = ?
+            """,
+            (snapshot_id, tenant_id, workspace_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return AgentCandidateRecord.model_validate_json(row["payload_json"])
+
     def _fetch_prior_snapshot(
         self,
         conn: sqlite3.Connection,
@@ -132,7 +157,22 @@ class SQLiteAgentDesignArchive:
         frozen = freeze_candidate_record(record)
         conn = self._connect()
         conn.execute("BEGIN IMMEDIATE")
+        committed = False
         try:
+            scope_row = conn.execute(
+                """
+                SELECT tenant_id, workspace_id FROM adas_candidate_snapshots
+                WHERE candidate_id = ?
+                ORDER BY sequence ASC, created_at ASC, snapshot_id ASC
+                LIMIT 1
+                """,
+                (frozen.candidate_id,),
+            ).fetchone()
+            if scope_row is not None and (
+                scope_row["tenant_id"] != tenant_id or scope_row["workspace_id"] != workspace_id
+            ):
+                raise AgentDesignArchiveScopeError("candidate identity scope mismatch")
+
             existing_row = conn.execute(
                 "SELECT payload_json FROM adas_candidate_snapshots WHERE snapshot_id = ?",
                 (frozen.snapshot_id,),
@@ -140,12 +180,13 @@ class SQLiteAgentDesignArchive:
             if existing_row is not None:
                 existing = AgentCandidateRecord.model_validate_json(existing_row["payload_json"])
                 if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
-                    conn.execute("ROLLBACK")
+                    _rollback_if_active(conn)
                     return existing
-                conn.execute("ROLLBACK")
+                _rollback_if_active(conn)
                 raise AgentDesignArchiveError("conflicting snapshot identity")
 
             history = self._history_map(conn)
+            _ensure_global_candidate_scope(history, frozen, tenant_id=tenant_id, workspace_id=workspace_id)
             prior = self._fetch_prior_snapshot(
                 conn,
                 candidate_id=frozen.candidate_id,
@@ -175,8 +216,9 @@ class SQLiteAgentDesignArchive:
                 ),
             )
             conn.execute("COMMIT")
+            committed = True
         except sqlite3.IntegrityError as exc:
-            conn.execute("ROLLBACK")
+            _rollback_if_active(conn)
             existing_row = conn.execute(
                 "SELECT payload_json FROM adas_candidate_snapshots WHERE snapshot_id = ?",
                 (frozen.snapshot_id,),
@@ -187,7 +229,8 @@ class SQLiteAgentDesignArchive:
                     return existing
             raise AgentDesignArchiveError("conflicting snapshot identity") from exc
         except Exception:
-            conn.execute("ROLLBACK")
+            if not committed:
+                _rollback_if_active(conn)
             raise
         return frozen
 
@@ -321,19 +364,21 @@ class SQLiteAgentDesignArchive:
         if not bundle.sealed:
             raise AgentDesignArchiveError("bundle must be sealed before append")
         conn = self._connect()
-        archived = self.get_latest_candidate_snapshot(
-            bundle.candidate_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-        )
-        validate_evidence_bundle_against_archive(bundle, archived)
-        digest = bundle.bundle_digest or compute_evidence_bundle_digest(bundle)
-        payload = bundle.model_dump(mode="python")
-        payload["bundle_digest"] = digest
-        frozen = freeze_evidence_bundle(AgentCandidateEvidenceBundle.model_validate(payload))
-        verify_evidence_bundle_digest(frozen)
         conn.execute("BEGIN IMMEDIATE")
+        committed = False
         try:
+            archived = self._fetch_scoped_snapshot(
+                conn,
+                snapshot_id=bundle.candidate_record.snapshot_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            validate_evidence_bundle_against_archive(bundle, archived)
+            digest = bundle.bundle_digest or compute_evidence_bundle_digest(bundle)
+            payload = bundle.model_dump(mode="python")
+            payload["bundle_digest"] = digest
+            frozen = freeze_evidence_bundle(AgentCandidateEvidenceBundle.model_validate(payload))
+            verify_evidence_bundle_digest(frozen)
             existing_row = conn.execute(
                 "SELECT payload_json FROM adas_evidence_bundles WHERE bundle_id = ?",
                 (frozen.bundle_id,),
@@ -341,9 +386,9 @@ class SQLiteAgentDesignArchive:
             if existing_row is not None:
                 existing = AgentCandidateEvidenceBundle.model_validate_json(existing_row["payload_json"])
                 if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
-                    conn.execute("ROLLBACK")
+                    _rollback_if_active(conn)
                     return existing
-                conn.execute("ROLLBACK")
+                _rollback_if_active(conn)
                 raise AgentDesignArchiveError("conflicting evidence bundle identity")
             conn.execute(
                 """
@@ -359,11 +404,13 @@ class SQLiteAgentDesignArchive:
                 ),
             )
             conn.execute("COMMIT")
+            committed = True
         except sqlite3.IntegrityError as exc:
-            conn.execute("ROLLBACK")
+            _rollback_if_active(conn)
             raise AgentDesignArchiveError("conflicting evidence bundle identity") from exc
         except Exception:
-            conn.execute("ROLLBACK")
+            if not committed:
+                _rollback_if_active(conn)
             raise
         return frozen
 
@@ -377,8 +424,11 @@ class SQLiteAgentDesignArchive:
         require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
         conn = self._connect()
         row = conn.execute(
-            "SELECT payload_json FROM adas_evidence_bundles WHERE bundle_id = ?",
-            (bundle_id,),
+            """
+            SELECT payload_json FROM adas_evidence_bundles
+            WHERE bundle_id = ? AND tenant_id = ? AND workspace_id = ?
+            """,
+            (bundle_id, tenant_id, workspace_id),
         ).fetchone()
         if row is None:
             return None

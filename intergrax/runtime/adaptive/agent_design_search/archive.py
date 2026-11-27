@@ -168,7 +168,7 @@ def validate_parent_link(
         raise AgentDesignArchiveError("candidate cannot be its own parent")
     history = records_by_candidate.get(parent_id)
     if not history:
-        raise AgentDesignArchiveError("unknown parent candidate")
+        raise AgentDesignArchiveError("parent candidate unavailable")
     parent = history[-1]
     if parent.tenant_id != record.tenant_id or parent.workspace_id != record.workspace_id:
         raise AgentDesignArchiveScopeError("cross-scope lineage rejected")
@@ -248,6 +248,14 @@ def validate_transition(
 ) -> None:
     if incoming.status in _FORBIDDEN_W1_TARGETS:
         raise AgentDesignArchiveError("W1 archive profile forbids this status transition target")
+    if (
+        prior is not None
+        and prior.status is AgentCandidateStatus.EVALUATED
+        and incoming.status is AgentCandidateStatus.REJECTED
+        and prior.evaluation_result is not None
+        and incoming.evaluation_result is None
+    ):
+        raise AgentDesignArchiveError("rejected successor must preserve evaluation evidence")
     if prior is None:
         if incoming.status is not AgentCandidateStatus.DRAFT or incoming.sequence != 0:
             raise AgentDesignArchiveError("first snapshot must be DRAFT at sequence 0")
@@ -297,6 +305,21 @@ def freeze_evidence_bundle(bundle: AgentCandidateEvidenceBundle) -> AgentCandida
     return AgentCandidateEvidenceBundle.model_validate(payload)
 
 
+def _ensure_global_candidate_scope(
+    history: dict[str, list[AgentCandidateRecord]],
+    record: AgentCandidateRecord,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+) -> None:
+    existing = history.get(record.candidate_id)
+    if not existing:
+        return
+    anchor = existing[0]
+    if anchor.tenant_id != tenant_id or anchor.workspace_id != workspace_id:
+        raise AgentDesignArchiveScopeError("candidate identity scope mismatch")
+
+
 class InMemoryAgentDesignArchive:
     """Process-local append-only archive."""
 
@@ -304,6 +327,20 @@ class InMemoryAgentDesignArchive:
         self._history: dict[str, list[AgentCandidateRecord]] = {}
         self._snapshots: dict[str, AgentCandidateRecord] = {}
         self._bundles: dict[str, AgentCandidateEvidenceBundle] = {}
+
+    def _get_scoped_snapshot(
+        self,
+        snapshot_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> AgentCandidateRecord | None:
+        record = self._snapshots.get(snapshot_id)
+        if record is None:
+            return None
+        if record.tenant_id != tenant_id or record.workspace_id != workspace_id:
+            return None
+        return record
 
     def append_candidate_snapshot(
         self,
@@ -315,6 +352,7 @@ class InMemoryAgentDesignArchive:
         require_archive_read_scope(tenant_id=tenant_id, workspace_id=workspace_id)
         _assert_record_write_scope(record, tenant_id=tenant_id, workspace_id=workspace_id)
         frozen = freeze_candidate_record(record)
+        _ensure_global_candidate_scope(self._history, frozen, tenant_id=tenant_id, workspace_id=workspace_id)
         prior = self._history.get(frozen.candidate_id, [None])[-1]  # type: ignore[list-item]
         if frozen.snapshot_id in self._snapshots:
             existing = self._snapshots[frozen.snapshot_id]
@@ -432,8 +470,8 @@ class InMemoryAgentDesignArchive:
             raise AgentDesignArchiveScopeError("bundle scope mismatch")
         if not bundle.sealed:
             raise AgentDesignArchiveError("bundle must be sealed before append")
-        archived = self.get_latest_candidate_snapshot(
-            bundle.candidate_id,
+        archived = self._get_scoped_snapshot(
+            bundle.candidate_record.snapshot_id,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )

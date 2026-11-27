@@ -75,11 +75,18 @@ def test_sqlite_sealed_bundle_persistence(tmp_path: Path) -> None:
         assert loaded.bundle_digest == digest
 
 
-def test_sqlite_no_import_side_effects() -> None:
+def test_q16_import_side_effects_isolated(tmp_path: Path) -> None:
+    workdir = str(tmp_path).replace("\\", "\\\\")
     script = (
+        "import os, sqlite3; "
+        f"os.chdir('{workdir}'); "
+        "original = sqlite3.connect; "
+        "sqlite3.connect = lambda *a, **k: (_ for _ in ()).throw(AssertionError('sqlite import side effect')); "
         "import intergrax.runtime.adaptive.agent_design_search as adas; "
+        "sqlite3.connect = original; "
         "assert adas.__all__; "
-        "assert 'SQLiteAgentDesignArchive' in adas.__all__"
+        "assert 'SQLiteAgentDesignArchive' in adas.__all__; "
+        "assert list(os.listdir('.')) == []"
     )
     completed = subprocess.run([sys.executable, "-c", script], check=False, capture_output=True, text=True)
     assert completed.returncode == 0, completed.stderr

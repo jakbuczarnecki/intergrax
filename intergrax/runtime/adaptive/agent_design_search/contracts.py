@@ -9,7 +9,7 @@ import json
 import math
 import re
 from collections.abc import Iterator, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Self
 
@@ -262,12 +262,13 @@ def _non_blank(value: str, *, field: str) -> str:
 
 
 def _validate_sha256_digest(value: str) -> str:
-    normalized = value.strip()
-    if any(char.isupper() for char in normalized):
+    if value.strip() != value:
         raise ValueError("digest must be lowercase 64-character hexadecimal SHA-256")
-    if not _SHA256_HEX.fullmatch(normalized):
+    if any(char.isupper() for char in value):
         raise ValueError("digest must be lowercase 64-character hexadecimal SHA-256")
-    return normalized
+    if not _SHA256_HEX.fullmatch(value):
+        raise ValueError("digest must be lowercase 64-character hexadecimal SHA-256")
+    return value
 
 
 def _finite_non_negative(value: float, *, field: str) -> float:
@@ -287,7 +288,7 @@ def _finite_non_negative_int(value: int, *, field: str) -> int:
 def _aware_datetime(value: datetime) -> datetime:
     if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
         raise ValueError("timestamp must be timezone-aware")
-    return value
+    return value.astimezone(UTC)
 
 
 class AgentCandidateStatus(str, Enum):  # noqa: UP042 — canonical ADAS serialized enum values
@@ -479,6 +480,14 @@ class ConfigurationDelta(BaseModel):
     prior_value: MergeStrategy
     replacement_value: MergeStrategy
 
+    @field_validator("admitted_field")
+    @classmethod
+    def _admitted_surface(cls, value: str) -> str:
+        normalized = _non_blank(value, field="admitted_field")
+        if normalized != "merge_strategy":
+            raise ValueError("W1 admits only merge_strategy configuration deltas")
+        return normalized
+
     @model_validator(mode="after")
     def _non_noop(self) -> Self:
         if self.prior_value == self.replacement_value:
@@ -529,7 +538,7 @@ class AgentDesignObjective(BaseModel):
     max_candidates: int = 1
     max_generation_cost: float | None = None
     max_eval_cost: float | None = None
-    min_utility_delta: float = 0.0
+    min_utility_delta: float = 0.05
     allowed_patterns: tuple[str, ...] = ()
     allowed_tools: tuple[str, ...] = ()
     forbidden_tools: tuple[str, ...] = ()
@@ -583,6 +592,8 @@ class AgentDesignObjective(BaseModel):
             raise ValueError("envelope workspace_id must match objective workspace_id")
         if not self.external_effects_prohibited:
             raise ValueError("W1 objectives must prohibit external effects")
+        if not self.require_human_approval:
+            raise ValueError("W1 objectives require human approval")
         if set(self.allowed_merge_strategies) != _W1_MERGE_STRATEGIES:
             raise ValueError("W1 allows only last_wins and concat merge strategies")
         if tuple(self.admitted_configuration_surface) != ("merge_strategy",):
@@ -646,6 +657,13 @@ class AgentDesignSearchRun(BaseModel):
             return None
         return _aware_datetime(value)
 
+    @field_validator("total_generation_cost", "total_evaluation_cost")
+    @classmethod
+    def _run_costs(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        return _finite_non_negative(value, field="search run cost")
+
     @model_validator(mode="after")
     def _scope_and_terminal(self) -> Self:
         if self.status not in _SEARCH_RUN_STATUSES:
@@ -654,16 +672,30 @@ class AgentDesignSearchRun(BaseModel):
             raise ValueError("W1 search runs keep promoted_candidate_id explicitly absent")
         if self.envelope.tenant_id != self.tenant_id or self.envelope.workspace_id != self.workspace_id:
             raise ValueError("envelope scope must match search run scope")
+        if self.status in {"running", "pending"}:
+            if self.completed_at is not None:
+                raise ValueError("nonterminal search runs must not declare completed_at")
+            if self.selection_outcome is not None:
+                raise ValueError("nonterminal search runs must not declare selection_outcome")
         if self.status in {"completed", "failed", "cancelled"}:
             if self.completed_at is None:
                 raise ValueError("terminal search runs require completed_at")
+            if self.structured_stop_reason is None:
+                raise ValueError("terminal search runs require structured_stop_reason")
             if self.stop_reason is None or not self.stop_reason.strip():
                 raise ValueError("terminal search runs require stop_reason")
+            if self.completed_at < self.started_at:
+                raise ValueError("completed_at must not be earlier than started_at")
             if self.status == "completed" and self.selection_outcome is None:
                 raise ValueError("completed search runs require selection_outcome")
             failed_or_cancelled = self.status in {"failed", "cancelled"}
             if failed_or_cancelled and self.selection_outcome == SearchSelectionOutcome.SELECT_CANDIDATE:
                 raise ValueError("failed or cancelled runs must not claim candidate selection")
+        for candidate_id in self.generated_candidate_ids:
+            if not candidate_id.strip():
+                raise ValueError("generated_candidate_ids must not contain blank entries")
+        if len(self.generated_candidate_ids) > 1:
+            raise ValueError("W1 search runs admit at most one generated candidate")
         return self
 
 
@@ -746,10 +778,11 @@ class AgentCandidateDraft(BaseModel):
         return _serialize_adas_json_field(value)
 
     @model_validator(mode="after")
-    def _forbid_executable_payloads(self) -> Self:
-        _reject_executable_payload_tree(self.contract_draft, label="contract_draft")
-        _reject_executable_payload_tree(self.prompt_assets, label="prompt_assets")
-        _reject_executable_payload_tree(self.tool_policy, label="tool_policy")
+    def _w1_configuration_only_draft(self) -> Self:
+        if len(self.contract_draft) > 0 or len(self.prompt_assets) > 0 or len(self.tool_policy) > 0:
+            raise ValueError("W1 candidate drafts must not carry executable configuration modifications")
+        if self.capabilities:
+            raise ValueError("W1 candidate drafts must not declare capability changes")
         return self
 
 
@@ -860,8 +893,6 @@ class AgentCandidateRecord(BaseModel):
         "utility_delta",
         "novelty_score",
         "complexity_score",
-        "generation_cost",
-        "evaluation_cost",
     )
     @classmethod
     def _optional_finite(cls, value: float | None) -> float | None:
@@ -870,6 +901,13 @@ class AgentCandidateRecord(BaseModel):
         if not math.isfinite(value):
             raise ValueError("numeric field must be finite")
         return value
+
+    @field_validator("generation_cost", "evaluation_cost")
+    @classmethod
+    def _resource_costs(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        return _finite_non_negative(value, field="resource cost")
 
 
 class AgentCandidateEvaluationResult(BaseModel):
@@ -896,6 +934,9 @@ class AgentCandidateEvaluationResult(BaseModel):
     failure_reasons: tuple[str, ...] = ()
     execution_ref: str | None = None
     evaluation_ref: str | None = None
+    baseline_execution_ref: AdasExecutionReference | None = None
+    eval_run_ref: AdasEvalRunReference | None = None
+    eval_comparison_ref: AdasEvalComparisonReference | None = None
     evidence_complete: bool = False
 
     @field_validator("candidate_id")
@@ -936,6 +977,10 @@ class AgentCandidateEvaluationResult(BaseModel):
 
     @model_validator(mode="after")
     def _w1_verdict_evidence(self) -> Self:
+        if self.execution_ref is not None and self.execution_ref.strip() == "":
+            raise ValueError("execution_ref must not be blank when supplied")
+        if self.evaluation_ref is not None and self.evaluation_ref.strip() == "":
+            raise ValueError("evaluation_ref must not be blank when supplied")
         if self.passed:
             required = (
                 self.quality_score,
@@ -948,6 +993,9 @@ class AgentCandidateEvaluationResult(BaseModel):
                 self.adversarial_pass_rate,
                 self.execution_ref,
                 self.evaluation_ref,
+                self.baseline_execution_ref,
+                self.eval_run_ref,
+                self.eval_comparison_ref,
             )
             if any(item is None for item in required):
                 raise ValueError("successful evaluation verdict requires mandatory W1 evidence")
@@ -1059,6 +1107,14 @@ class AgentCandidateEvidenceBundle(BaseModel):
             raise ValueError("bundle scope must match nested candidate record scope")
         if record.candidate_id != self.candidate_id or record.objective_id != self.objective_id:
             raise ValueError("bundle lineage identities must match candidate record")
+        if self.baseline_configuration_digest != record.baseline.baseline_configuration_digest:
+            raise ValueError("bundle baseline digest must match archived baseline")
+        if self.candidate_configuration_digest != record.candidate_configuration_digest:
+            raise ValueError("bundle candidate configuration digest must match archived record")
+        if self.evaluation_result is not None and self.evaluation_result.candidate_id != self.candidate_id:
+            raise ValueError("evaluation result candidate identity must match bundle")
+        if self.baseline_evaluation_result is not None and self.baseline_evaluation_result.baseline_agent_id is None:
+            raise ValueError("baseline evaluation requires baseline agent identity")
         if self.sealed:
             has_gate = self.static_gate_result is not None
             has_eval = self.evaluation_result is not None

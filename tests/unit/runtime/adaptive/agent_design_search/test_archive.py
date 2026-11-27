@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from intergrax.runtime.adaptive.agent_design_search.archive import (
@@ -15,11 +17,29 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AgentCandidateStatus,
     compute_evidence_bundle_digest,
 )
+from intergrax.runtime.adaptive.agent_design_search.sqlite_archive import SQLiteAgentDesignArchive
 from pydantic import ValidationError
-from tests.unit.runtime.adaptive.agent_design_search.test_contracts import sample_record
+from tests.unit.runtime.adaptive.agent_design_search.test_contracts import _DIGEST, sample_record
 
 _TENANT = "tenant-a"
 _WORKSPACE = "ws-a"
+
+
+@pytest.fixture(params=["memory", "sqlite"])
+def archive_backend(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+) -> Iterator[InMemoryAgentDesignArchive | SQLiteAgentDesignArchive]:
+    if request.param == "memory":
+        yield InMemoryAgentDesignArchive()
+        return
+    db_path = tmp_path / f"adas-{request.node.name}.sqlite3"
+    archive = SQLiteAgentDesignArchive(db_path)
+    archive._connect()
+    try:
+        yield archive
+    finally:
+        archive.close()
 
 
 def test_snapshot_append_history_and_latest() -> None:
@@ -133,3 +153,104 @@ def test_mutation_escape_blocked() -> None:
     stored = archive.append_candidate_snapshot(record, tenant_id=_TENANT, workspace_id=_WORKSPACE)
     with pytest.raises(TypeError):
         stored.agent_contract_snapshot["layer"]["k"] = "mutated"  # type: ignore[index]
+
+
+def test_q11_evidence_binds_exact_historical_snapshot(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    draft = sample_record(sequence=0, status=AgentCandidateStatus.DRAFT, snapshot_id="snap-eval-0")
+    gate_passed = sample_record(
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_PASSED,
+        snapshot_id="snap-eval-1",
+        static_gate_result={"passed": True},
+    )
+    evaluated = sample_record(
+        sequence=2,
+        status=AgentCandidateStatus.EVALUATED,
+        snapshot_id="snap-eval-2",
+        static_gate_result={"passed": True},
+        evaluation_result={
+            "passed": True,
+            "execution_ref": "exec-1",
+            "evaluation_ref": "eval-1",
+        },
+    )
+    archive.append_candidate_snapshot(draft, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    archive.append_candidate_snapshot(gate_passed, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    archive.append_candidate_snapshot(evaluated, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    rejected = sample_record(
+        sequence=3,
+        status=AgentCandidateStatus.REJECTED,
+        snapshot_id="snap-eval-3",
+        static_gate_result={"passed": True},
+        evaluation_result={
+            "passed": True,
+            "execution_ref": "exec-1",
+            "evaluation_ref": "eval-1",
+        },
+        rejection_reason="policy",
+    )
+    archive.append_candidate_snapshot(rejected, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    bundle = AgentCandidateEvidenceBundle(
+        bundle_id="bundle-historical",
+        candidate_id=draft.candidate_id,
+        objective_id=draft.objective_id,
+        tenant_id=draft.tenant_id,
+        workspace_id=draft.workspace_id,
+        created_at=datetime.now(UTC),
+        created_by="operator",
+        baseline_configuration_digest=_DIGEST,
+        candidate_configuration_digest=evaluated.candidate_configuration_digest,
+        candidate_record=evaluated,
+        static_gate_result={"passed": True},
+        assembled_at=datetime.now(UTC),
+        sealed=True,
+    )
+    digest = compute_evidence_bundle_digest(bundle)
+    sealed = bundle.model_copy(update={"bundle_digest": digest})
+    archive.append_sealed_evidence_bundle(sealed, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
+def test_q07_rejects_successor_omitting_prior_evaluation(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    archive.append_candidate_snapshot(
+        sample_record(sequence=0, status=AgentCandidateStatus.DRAFT),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    gate_passed = sample_record(
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_PASSED,
+        static_gate_result={"passed": True},
+    )
+    evaluated = sample_record(
+        sequence=2,
+        status=AgentCandidateStatus.EVALUATED,
+        static_gate_result={"passed": True},
+        evaluation_result={"passed": True, "execution_ref": "exec-1", "evaluation_ref": "eval-1"},
+    )
+    archive.append_candidate_snapshot(gate_passed, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    archive.append_candidate_snapshot(evaluated, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    omitted = sample_record(
+        sequence=3,
+        status=AgentCandidateStatus.REJECTED,
+        static_gate_result={"passed": False, "reason": "later"},
+        rejection_reason="later",
+        evaluation_result=None,
+    )
+    with pytest.raises(AgentDesignArchiveError):
+        archive.append_candidate_snapshot(omitted, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
+def test_q05_unknown_parent_same_as_foreign_parent() -> None:
+    archive = InMemoryAgentDesignArchive()
+    child = sample_record(candidate_id="child-2", sequence=0).model_copy(
+        update={"parent_candidate_id": "missing-parent"},
+    )
+    with pytest.raises(AgentDesignArchiveError) as exc:
+        archive.append_candidate_snapshot(child, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert "foreign" not in str(exc.value).lower()
