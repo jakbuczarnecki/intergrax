@@ -1,4 +1,4 @@
-# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
+﻿# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
 
 ## Scope
 
