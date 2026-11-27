@@ -888,6 +888,23 @@ Positive red-first evidence is **only** the `RED_AT_PREFIX` class whose log name
 
 ### V5.3 Prefix recovery path (no waiver by default)
 
+#### V5.2.1 RW-PLAN acceptance vs evidence completeness (OD-AF-CLOSE-B6, clarifies B2)
+
+**Status:** **DECIDED** variant **A** (2026-11-27; register [../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md](../ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B6)). **Does not** supersede OD-AF-CLOSE-B2 obligations; **does not** set SCOPE, RW_PLAN_AUDIT, G2, or RED_FIRST_EVIDENCE=COMPLETE.
+
+| Dimension | Rule |
+| --- | --- |
+| **Plan structure acceptance** | May proceed while exactly **12** OP-B rows remain EVIDENCE_MISSING, if each row is explicitly enumerated with owner, planned negative test, mechanism and certification obligation (OD-AF-CLOSE-B2 metadata). |
+| **Independent RW-PLAN audit acceptance** | May proceed under the same **12**-row pending set; **does not** imply PASS or closure of RW_PLAN_AUDIT. |
+| **RED_FIRST_EVIDENCE completeness** | Stays **INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay (including FRZ-DEBT-02/03 seeded-red when promoted). |
+| **SCOPE formal closure** | May proceed **before** OP-B evidences are delivered **only** when the other **12** hard SCOPE predecessors are satisfied; **does not** auto-close SCOPE. |
+| **Pre-G2 / G2 qualification** | All **12** OP-B obligations **must** be settled (**no** EVIDENCE_MISSING) before the proper pre-G2 gate; post_freeze_policy_schedule.pre_g2_op_b_gate_enforce engages fail-closed checks (
+alidate_pre_g2_op_b_settlement). **G2** remains **OPEN** while any OP-B row is unsettled. |
+| **Progressive OP-B evidence contract (AF-W2-FINAL-01)** | Future promotions to RED_AT_PREFIX: pin_sha may equal 
+ix_commit when both are explicit and green-after-fix is measured; **prefix_sha must not equal 
+ix_commit**; 	est_blob_sha **must equal** pin_blob_sha with git blob validation at pin_sha (historical test-only overlay allowed at prefix_sha); GA2R evidence files **must** declare schema f2.red_first_ga2r.v1. |
+
+
 1. Worktree at the **prefix SHA** (negative-test era).
 2. Overlay **only** the test file from the fix commit (minimal surface).
 3. Run **one** pytest node for the mapped negative test.

@@ -72,6 +72,13 @@ erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
 - Progressive OP-B execution contract: pin_sha, exit codes, log digests, git ancestry; seeded-red record enforcement (no test-name bypass).
 - Campaign B diagnostic index reconciliation; SCOPE hard-predecessor count 12 (declarative fix).
 - Targeted regression pack test_verify_rw_plan_phase_check3_op_b_closure03.py; development publication.
+
+## AF-W2-FINAL-01 (2026-11-27)
+
+- Final OP-B evidence contract corrections (`verify_rw_plan_phase_check3.py`): pin_sha=fix_commit, test blob identity, overlay, GA2R schema, seeded-red binding, pre-G2 OP-B gate.
+- Operator decision **OD-AF-CLOSE-B6** (variant A) recorded; MEP-AF2 V5.2.1; Campaign B diagnostic acceptance record; RW-PLAN audit readiness indices.
+- Targeted regression extension `test_verify_rw_plan_phase_check3_op_b_closure03.py`; `development` publication.
+
 ## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
 
 - Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.

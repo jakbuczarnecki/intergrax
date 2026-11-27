@@ -1,6 +1,6 @@
 # T-AF2-RW-PLAN-AUDIT — evidence index (AR-12-07)
 
-> **Obowiązujący stan (AF-W2-CLOSURE-03, development @ `009dec215409d6b89c46e9f355449983f03567e5`):** `PLAN_STRUCTURE=PASS`; **RED_FIRST_EVIDENCE=INCOMPLETE**; inventory **39** rows — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12** (OP-B / OD-AF-CLOSE-B2), **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **PT-B01=AWAITING_INDEPENDENT_ACCEPTANCE**; **PT-B02=AWAITING_INDEPENDENT_ACCEPTANCE**; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**. Campaign B matrix **28/28** accounted (diagnostic; not green baseline @ B).
+> **Obowiązujący stan (AF-W2-FINAL-01, development @ bfecd8314c0990519a7e19733454d51c29a1e2e7):** PLAN_STRUCTURE=PASS; **RED_FIRST_EVIDENCE=INCOMPLETE**; inventory **39** rows — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12** (OP-B / OD-AF-CLOSE-B2, plan acceptance **OD-AF-CLOSE-B6**), **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **PT-B01=ACCEPTED_DIAGNOSTIC_INPUT**; **PT-B02=ACCEPTED_DIAGNOSTIC_INPUT**; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**. Campaign B matrix **28/28** accounted ([CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md](CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md)).
 > **Historyczne (superseded):** wpis COMPLETE (T-IGX-078-A @ 646e63953); starszy fragment poniżej o **36×** EVIDENCE_MISSING i uznanych DEBT-02/03 @ RED_AT_PREFIX — **nie obowiązuje** po GA.2R + OP-B.
 
 | Artifact | Role |
@@ -28,4 +28,4 @@
 
 ## RED_FIRST_EVIDENCE (INCOMPLETE)
 
-Mechanical rule (`validate_red_first_evidence` + OP-B progressive completeness for future `RED_AT_PREFIX` transitions): **RED_FIRST_EVIDENCE=INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay. **12** OP-B rows remain **EVIDENCE_MISSING** (progressive delivery allowed; structure retains OD-AF-CLOSE-B2 metadata). **FRZ-DEBT-02** and **FRZ-DEBT-03** stay **EVIDENCE_MISSING** with **seeded-red** obligation (not satisfied by mechanical PASS). Validator **does not** claim independent historical replay — it checks pinned records only. **SCOPE not closed.**
+**OD-AF-CLOSE-B6=DECIDED** (variant A; clarifies B2; not a waiver). Mechanical rule (`validate_red_first_evidence` + OP-B progressive completeness for future `RED_AT_PREFIX` transitions): **RED_FIRST_EVIDENCE=INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay. **12** OP-B rows remain **EVIDENCE_MISSING** (progressive delivery allowed; structure retains OD-AF-CLOSE-B2 metadata). **FRZ-DEBT-02** and **FRZ-DEBT-03** stay **EVIDENCE_MISSING** with **seeded-red** obligation (not satisfied by mechanical PASS). Validator **does not** claim independent historical replay — it checks pinned records only. **SCOPE not closed.**

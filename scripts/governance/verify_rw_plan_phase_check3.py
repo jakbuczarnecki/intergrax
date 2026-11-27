@@ -38,6 +38,7 @@ A4_006_AUDIT_CONTRACT: dict[str, object] = {
 }
 
 _GA2R_RECORD_NAME = "RED_FIRST_GA2R_RESULT"
+_GA2R_SCHEMA_ID = "af2.red_first_ga2r.v1"
 _GA2R_JSON = (
     _REPO / "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json"
 )
@@ -265,6 +266,7 @@ def count_named_negative_tests(data: dict[str, object]) -> tuple[int, int]:
 
 
 _OD_AF_CLOSE_B2 = "OD-AF-CLOSE-B2"
+_OD_AF_CLOSE_B6 = "OD-AF-CLOSE-B6"
 _EVIDENCE_MISSING_OP_B: dict[str, str] = {
     "FRZ-BND-05": "T-IGX-043-H",
     "FRZ-BND-06": "T-IGX-043-J",
@@ -286,6 +288,7 @@ _FRZ_FRZ_10_SCHEDULE = {
     "functional_owner_wave": "W5",
     "verification_node": "T-B7-PFP-VERIFY",
     "verification_wave": "W8",
+    "op_b_pre_g2_enforcement": _OD_AF_CLOSE_B6,
 }
 _SEEDED_RED_REQUIRED = frozenset({"FRZ-DEBT-02", "FRZ-DEBT-03"})
 _OP_B_ALLOWED_STATUSES = frozenset({"EVIDENCE_MISSING", "RED_AT_PREFIX"})
@@ -332,6 +335,20 @@ def _validate_evidence_missing_obligations(inventory: list[object]) -> list[str]
     return errors
 
 
+def validate_pre_g2_op_b_settlement(inventory: list[object]) -> list[str]:
+    """Fail-closed when the pre-G2 OP-B gate is active (OD-AF-CLOSE-B6)."""
+    by_frz: dict[str, dict[str, object]] = {}
+    for row in inventory:
+        if isinstance(row, dict) and row.get("frz_id"):
+            by_frz[str(row["frz_id"])] = row
+    unsettled = sorted(
+        frz for frz in _EVIDENCE_MISSING_OP_B if by_frz.get(frz, {}).get("red_first_status") == "EVIDENCE_MISSING"
+    )
+    if unsettled:
+        return [f"pre-G2 OP-B gate blocked ({_OD_AF_CLOSE_B6}): unsettled obligations {unsettled}"]
+    return []
+
+
 def _validate_post_freeze_policy_schedule(data: dict[str, object]) -> list[str]:
     errors: list[str] = []
     schedule = data.get("post_freeze_policy_schedule")
@@ -369,6 +386,8 @@ def _validate_post_freeze_policy_schedule(data: dict[str, object]) -> list[str]:
             errors.append("FRZ-FRZ-10 must keep W5/W8 canonical ownership")
         if frz_row.get("red_first_status") != "RED_FIRST_LATER_WAVE":
             errors.append("FRZ-FRZ-10 must stay RED_FIRST_LATER_WAVE")
+    if schedule.get("pre_g2_op_b_gate_enforce") is True:
+        errors.extend(validate_pre_g2_op_b_settlement(data.get("code_fix_inventory") or []))
     return errors
 
 
@@ -597,6 +616,69 @@ def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
         return False
 
 
+def _git_blob_exists(blob_sha: str) -> bool:
+    try:
+        proc = subprocess.run(
+            ["git", "cat-file", "-e", f"{blob_sha}^{{blob}}"],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except OSError:
+        return False
+
+
+def _git_blob_for_path_at_commit(commit: str, rel_path: str) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", f"{commit}:{rel_path}"],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            return None
+        text = proc.stdout.strip()
+        return text if _valid_sha40(text) else None
+    except OSError:
+        return None
+
+
+def _pytest_node_test_path(node_id: str) -> str | None:
+    text = node_id.strip()
+    if not text:
+        return None
+    if "::" in text:
+        return text.split("::", 1)[0]
+    return text if text.endswith(".py") else None
+
+
+def _overlay_test_blob_for_prefix(
+    evidence_payload: dict[str, object], prefix_sha: str, rel_path: str
+) -> tuple[str | None, str | None]:
+    """Return (overlay_fix_commit, overlay_test_blob_sha) when prefix used test-only overlay."""
+    runs = evidence_payload.get("prefix_runs")
+    if not isinstance(runs, list):
+        return None, None
+    for entry in runs:
+        if not isinstance(entry, dict) or str(entry.get("prefix_sha")) != prefix_sha:
+            continue
+        overlay = entry.get("overlay")
+        if not isinstance(overlay, dict):
+            continue
+        meta = overlay.get(rel_path)
+        if not isinstance(meta, dict):
+            continue
+        fix = meta.get("fix_commit")
+        blob = meta.get("test_blob_sha")
+        if _valid_sha40(fix) and _valid_sha40(blob):
+            return str(fix), str(blob)
+    return None, None
+
+
 def _parse_evidence_ref(ref: object) -> tuple[str | None, str | None]:
     if not ref or not isinstance(ref, str):
         return None, None
@@ -622,10 +704,21 @@ def _load_ga2r_index_from_file(path: Path) -> tuple[dict[str, dict[str, object]]
     if not path.is_file():
         return {}, ["evidence file missing"]
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {}, [f"evidence file read failed: {exc}"]
+    except UnicodeError as exc:
+        return {}, [f"evidence file encoding invalid: {exc}"]
+    try:
+        payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         return {}, [f"evidence file invalid JSON: {exc}"]
-    rows = payload.get("rows") if isinstance(payload, dict) else payload
+    if not isinstance(payload, dict):
+        return {}, ["evidence file schema: root must be an object"]
+    schema = payload.get("schema")
+    if schema != _GA2R_SCHEMA_ID:
+        return {}, [f"evidence file schema: expected {_GA2R_SCHEMA_ID!r}, got {schema!r}"]
+    rows = payload.get("rows")
     if not isinstance(rows, list):
         return {}, ["evidence file schema: rows must be a list"]
     index: dict[str, dict[str, object]] = {}
@@ -681,12 +774,18 @@ def _assertion_is_mechanism_failure(assertion_lines: object) -> bool:
     return "assertionerror" in lowered
 
 
-def _validate_seeded_red_record(frz: str, node: dict[str, object], errors: list[str]) -> None:
-    if not node.get("seeded_red"):
+def _validate_seeded_red_record(frz: str, node: dict[str, object], binding: str, errors: list[str]) -> None:
+    if node.get("seeded_red") is not True:
         errors.append(f"{frz}: OP-B seeded-red requires seeded_red=true plus full execution record")
         return
-    if not str(node.get("seeded_negative_node") or "").strip():
+    executed = str(node.get("node") or "").strip()
+    seeded_node = str(node.get("seeded_negative_node") or "").strip()
+    if not seeded_node:
         errors.append(f"{frz}: OP-B seeded-red missing seeded_negative_node")
+    elif seeded_node != executed:
+        errors.append(f"{frz}: OP-B seeded-red seeded_negative_node must match executed node")
+    elif not _node_matches_binding(executed, binding):
+        errors.append(f"{frz}: OP-B seeded-red executed node must match planned negative test binding")
     if not str(node.get("seeded_violation_description") or "").strip():
         errors.append(f"{frz}: OP-B seeded-red missing seeded_violation_description")
     desc = str(node.get("seeded_violation_description") or "").lower()
@@ -696,6 +795,60 @@ def _validate_seeded_red_record(frz: str, node: dict[str, object], errors: list[
         errors.append(f"{frz}: OP-B seeded-red violation must describe a temporary compatibility seam")
 
 
+def _validate_op_b_test_version_integrity(
+    frz: str,
+    node: dict[str, object],
+    binding: str,
+    evidence_payload: dict[str, object],
+    errors: list[str],
+    *,
+    git_validate: bool,
+) -> None:
+    test_blob = node.get("test_blob_sha")
+    pin_blob = node.get("pin_blob_sha")
+    if not _valid_sha40(test_blob) or not _valid_sha40(pin_blob):
+        return
+    if str(test_blob) != str(pin_blob):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX requires identical test version in red and green runs")
+        return
+    rel_path = _pytest_node_test_path(binding)
+    if rel_path is None:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX negative test binding is not a pytest node id")
+        return
+    executed = str(node.get("node") or "")
+    if executed and not _node_matches_binding(executed, binding):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX executed node must match bound negative test")
+    if not git_validate:
+        return
+    pin_sha = node.get("pin_sha")
+    prefix_sha = node.get("prefix_sha")
+    if not _valid_sha40(pin_sha):
+        return
+    if not _git_blob_exists(str(test_blob)):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX test_blob_sha {test_blob} not found in repository")
+    pin_tree_blob = _git_blob_for_path_at_commit(str(pin_sha), rel_path)
+    if pin_tree_blob is None:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX test file {rel_path!r} missing at pin_sha")
+    elif pin_tree_blob != str(pin_blob):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX pin_blob_sha does not match test file at pin_sha")
+    if _valid_sha40(prefix_sha):
+        prefix_tree_blob = _git_blob_for_path_at_commit(str(prefix_sha), rel_path)
+        if prefix_tree_blob is None:
+            overlay_fix, overlay_blob = _overlay_test_blob_for_prefix(evidence_payload, str(prefix_sha), rel_path)
+            if overlay_fix is None or overlay_blob is None:
+                errors.append(f"{frz}: OP-B RED_AT_PREFIX test file {rel_path!r} missing at prefix_sha without overlay")
+            else:
+                if overlay_blob != str(test_blob):
+                    errors.append(f"{frz}: OP-B RED_AT_PREFIX overlay test_blob_sha mismatch")
+                overlay_git_blob = _git_blob_for_path_at_commit(overlay_fix, rel_path)
+                if overlay_git_blob is None:
+                    errors.append(f"{frz}: OP-B RED_AT_PREFIX overlay fix_commit missing overlaid test file")
+                elif overlay_git_blob != str(test_blob):
+                    errors.append(f"{frz}: OP-B RED_AT_PREFIX overlay blob does not match test_blob_sha")
+        elif prefix_tree_blob != str(test_blob):
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX test_blob_sha does not match test file at prefix_sha")
+
+
 def _validate_op_b_execution_graph(frz: str, node: dict[str, object], errors: list[str], *, git_validate: bool) -> None:
     prefix_sha = node.get("prefix_sha")
     fix_commit = node.get("fix_commit")
@@ -703,8 +856,8 @@ def _validate_op_b_execution_graph(frz: str, node: dict[str, object], errors: li
     if not _valid_sha40(pin_sha):
         errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green-after-fix execution SHA (pin_sha)")
         return
-    if pin_sha == fix_commit:
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX pin_sha must not be fix_commit only (execution revision)")
+    if _valid_sha40(prefix_sha) and _valid_sha40(fix_commit) and str(prefix_sha) == str(fix_commit):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX prefix_sha must not equal fix_commit")
     if not git_validate:
         return
     for label, sha in (("prefix_sha", prefix_sha), ("fix_commit", fix_commit), ("pin_sha", pin_sha)):
@@ -724,7 +877,7 @@ def _validate_op_b_red_at_prefix_completeness(
     *,
     git_validate: bool = True,
 ) -> list[str]:
-    """Progressive OP-B contract (AF-W2-CLOSURE-04): bind evidence_ref to the cited JSON file."""
+    """Progressive OP-B contract (AF-W2-FINAL-01 / AF-W2-CLOSURE-04): bind evidence_ref to the cited JSON file."""
     errors: list[str] = []
     sha = row.get("red_first_prefix_sha")
     ref = row.get("red_first_evidence_ref")
@@ -742,6 +895,15 @@ def _validate_op_b_red_at_prefix_completeness(
         errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence file must be git-tracked")
         return errors
     evidence_path = _REPO / rel
+    try:
+        evidence_raw = evidence_path.read_text(encoding="utf-8")
+        evidence_payload = json.loads(evidence_raw)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence incomplete ({exc})")
+        return errors
+    if not isinstance(evidence_payload, dict):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence incomplete (root must be object)")
+        return errors
     file_index, load_errors = _load_ga2r_index_from_file(evidence_path)
     for detail in load_errors:
         errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence incomplete ({detail})")
@@ -794,9 +956,10 @@ def _validate_op_b_red_at_prefix_completeness(
         errors.append(f"{frz}: OP-B RED_AT_PREFIX missing prefix measurement log digest (prefix_log_sha256)")
     if not _valid_sha64(node.get("pin_log_sha256")):
         errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green measurement log digest (pin_log_sha256)")
+    _validate_op_b_test_version_integrity(frz, node, binding, evidence_payload, errors, git_validate=git_validate)
     _validate_op_b_execution_graph(frz, node, errors, git_validate=git_validate)
     if frz in _SEEDED_RED_REQUIRED and row.get("evidence_seeded_red_required"):
-        _validate_seeded_red_record(frz, node, errors)
+        _validate_seeded_red_record(frz, node, binding, errors)
     return errors
 
 

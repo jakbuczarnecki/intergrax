@@ -2487,6 +2487,7 @@
   ],
   "g2_entry_conditions": [
     "The SCOPE hard predecessors of section 18 are satisfied.",
+    "All twelve OP-B EVIDENCE_MISSING obligations are settled to RED_AT_PREFIX with complete evidence before the pre-G2 gate (OD-AF-CLOSE-B6; pre_g2_op_b_gate_enforce when enforcing).",
     "W3 runs on `development` (App V6.1, V6.4); there is no RW train branch. Every open W3 ticket of this plan is merged on `development`.",
     "Every pre-G2 item of section 17 is merged.",
     "CI is green except the exact expected-red set (App V6.4). ACT-N11 is expected-red until RB-2 (App V6.3, V5.1).",
@@ -2527,6 +2528,8 @@
   "evidence_missing_obligations": {
     "operator_decision_id": "OD-AF-CLOSE-B2",
     "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
+    "clarified_by": "OD-AF-CLOSE-B6",
+    "clarified_by_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B6",
     "rows": {
       "FRZ-BND-05": {
         "owner_ticket": "T-IGX-043-H",
@@ -2601,7 +2604,10 @@
     "verification_wave": "W8",
     "notes": [
       "Pre-G2: T-IGX-052-I prepares the held-path guard (scripts/, .github/, …) per MEP App V6.3.",
-      "W5: T-B7-PFP-ACTIVATE activates policy; W8: T-B7-PFP-VERIFY independently re-checks FRZ-FRZ-10."
-    ]
+      "W5: T-B7-PFP-ACTIVATE activates policy; W8: T-B7-PFP-VERIFY independently re-checks FRZ-FRZ-10.",
+      "OP-B: twelve EVIDENCE_MISSING rows (OD-AF-CLOSE-B2) must settle before G2 when pre_g2_op_b_gate_enforce is true (OD-AF-CLOSE-B6)."
+    ],
+    "op_b_pre_g2_enforcement": "OD-AF-CLOSE-B6",
+    "pre_g2_op_b_gate_enforce": false
   }
 }

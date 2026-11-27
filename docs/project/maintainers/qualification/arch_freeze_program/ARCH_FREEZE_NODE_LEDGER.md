@@ -79,8 +79,8 @@ Row count: 149
 | PT-AUD-ENF1 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | AUD, REG |
 | PT-AUD-ENF12 | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | AUD |
 | PT-AUD-ENFA | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
-| PT-B01 | PARTIAL | - | NONE | plan section 1.4 (tooling only); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | SEC |
-| PT-B02 | PARTIAL | - | NONE | plan section 1.4 (tooling only); @dev 51edb2a7 / train be0ce70d (P-R0-A) | N | - |
+| PT-B01 | PARTIAL | - | NONE | **ACCEPTED_DIAGNOSTIC_INPUT** (AF-W2-FINAL-01); evidence B 7960ae7f; package ff70f3d1; B1 19/19; not formal CLOSED | N | SEC |
+| PT-B02 | PARTIAL | - | NONE | **ACCEPTED_DIAGNOSTIC_INPUT** (AF-W2-FINAL-01); B2 9/9; S03 127 PASS; not formal CLOSED | N | - |
 | PT-B1W | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-B2W | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | PT-BA | UNK | T-IGX-052-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |

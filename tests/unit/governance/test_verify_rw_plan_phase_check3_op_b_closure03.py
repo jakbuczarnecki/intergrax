@@ -37,7 +37,7 @@ def _complete_node(binding: str, *, prefix_sha: str = "a" * 40, pin_sha: str = "
         "fix_commit": "b" * 40,
         "pin_sha": pin_sha,
         "test_blob_sha": "c" * 40,
-        "pin_blob_sha": "d" * 40,
+        "pin_blob_sha": "c" * 40,
         "prefix_result": "FAILED",
         "prefix_run_exit": 1,
         "pin_result": "PASSED",
@@ -104,7 +104,7 @@ def test_evidence_ref_file_a_cannot_use_records_from_file_b():
     with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}, alt: {}}):
         with patch.object(mod, "_git_tracked", return_value=True):
             errors = mod.validate_red_first_evidence(plan, git_validate=False)
-    assert any("without GA2R inventory row" in e for e in errors)
+    assert any("without GA2R inventory row" in e or "evidence incomplete" in e for e in errors)
 
 
 def test_untracked_evidence_file_rejected():
@@ -342,6 +342,7 @@ def test_complete_seeded_red_record_meets_mechanical_contract():
         }
     )
     node = _complete_node(binding)
+    node["node"] = binding
     node.update(
         {
             "seeded_red": True,
@@ -395,3 +396,203 @@ def test_invalid_prefix_sha_characters_rejected():
     row["red_first_evidence_ref"] = _EVIDENCE_REL
     errors = mod.validate_red_first_evidence(plan, git_validate=False)
     assert any("valid historical prefix SHA" in e or "invalid characters" in e for e in errors)
+
+
+def test_pin_sha_equal_fix_commit_allowed_without_op_b_error():
+    mod = _load_verify()
+    frz = "FRZ-BND-05"
+    plan = _live_rw_plan()
+    row, binding = _op_b_row(plan, frz)
+    sha = "b" * 40
+    node = _complete_node(binding, pin_sha=sha)
+    node["fix_commit"] = sha
+    ga2r = {"frz_id": frz, "nodes": [node]}
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        errors = mod.validate_red_first_evidence(plan, git_validate=False)
+    assert not [e for e in errors if "OP-B RED_AT_PREFIX" in e and "fix_commit" in e]
+
+
+def test_prefix_sha_equal_fix_commit_rejected():
+    mod = _load_verify()
+    frz = "FRZ-BND-05"
+    plan = _live_rw_plan()
+    row, binding = _op_b_row(plan, frz)
+    sha = "b" * 40
+    node = _complete_node(binding, prefix_sha="a" * 40, pin_sha="f" * 40)
+    node["fix_commit"] = sha
+    node["prefix_sha"] = sha
+    ga2r = {"frz_id": frz, "nodes": [node]}
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        errors = mod.validate_red_first_evidence(plan, git_validate=False)
+    assert any("prefix_sha must not equal fix_commit" in e for e in errors)
+
+
+def test_different_test_blob_shas_rejected():
+    mod = _load_verify()
+    frz = "FRZ-BND-05"
+    plan = _live_rw_plan()
+    row, binding = _op_b_row(plan, frz)
+    node = _complete_node(binding)
+    node["pin_blob_sha"] = "d" * 40
+    ga2r = {"frz_id": frz, "nodes": [node]}
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        errors = mod.validate_red_first_evidence(plan, git_validate=False)
+    assert any("identical test version" in e for e in errors)
+
+
+def test_nonexistent_test_blob_rejected_when_git_validate():
+    mod = _load_verify()
+    frz = "FRZ-BND-05"
+    plan = _live_rw_plan()
+    row, binding = _op_b_row(plan, frz)
+    ga2r = _complete_ga2r(frz, binding)
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        with patch.object(mod, "_git_blob_exists", return_value=False):
+            with patch.object(mod, "_git_blob_for_path_at_commit", return_value="c" * 40):
+                errors = mod.validate_red_first_evidence(plan, git_validate=True)
+    assert any("test_blob_sha" in e and "not found" in e for e in errors)
+
+
+def test_test_blob_mismatch_at_pin_sha_rejected():
+    mod = _load_verify()
+    frz = "FRZ-BND-05"
+    plan = _live_rw_plan()
+    row, binding = _op_b_row(plan, frz)
+    ga2r = _complete_ga2r(frz, binding)
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        with patch.object(mod, "_git_blob_exists", return_value=True):
+            with patch.object(mod, "_git_blob_for_path_at_commit", return_value="d" * 40):
+                errors = mod.validate_red_first_evidence(plan, git_validate=True)
+    assert any("pin_blob_sha does not match" in e for e in errors)
+
+
+def test_historical_test_only_overlay_allowed(tmp_path: Path):
+    mod = _load_verify()
+    repo = tmp_path / "overlay.git"
+    repo.mkdir()
+    for cmd in (
+        ["git", "init"],
+        ["git", "config", "user.email", "t@example.com"],
+        ["git", "config", "user.name", "t"],
+    ):
+        subprocess.run(cmd, cwd=repo, check=True, capture_output=True)
+    test_rel = "tests/unit/sample_overlay.py"
+    (repo / "README.md").write_text("root\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "prefix"], cwd=repo, check=True)
+    prefix_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    (repo / "tests" / "unit").mkdir(parents=True)
+    (repo / test_rel).write_text("def test_x():\n    assert True\n", encoding="utf-8")
+    subprocess.run(["git", "add", test_rel], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "fix"], cwd=repo, check=True)
+    fix_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    overlay_blob = subprocess.check_output(["git", "rev-parse", f"HEAD:{test_rel}"], cwd=repo, text=True).strip()
+    pin_sha = fix_sha
+    binding = f"{test_rel}::test_x"
+    evidence = {
+        "schema": "af2.red_first_ga2r.v1",
+        "rows": [],
+        "prefix_runs": [
+            {
+                "prefix_sha": prefix_sha,
+                "overlay": {test_rel: {"fix_commit": fix_sha, "test_blob_sha": overlay_blob}},
+            }
+        ],
+    }
+    node = {
+        "node": binding,
+        "prefix_sha": prefix_sha,
+        "pin_sha": pin_sha,
+        "test_blob_sha": overlay_blob,
+        "pin_blob_sha": overlay_blob,
+    }
+    errors: list[str] = []
+    with patch.object(mod, "_REPO", repo):
+        mod._validate_op_b_test_version_integrity("FRZ-X", node, binding, evidence, errors, git_validate=True)
+    assert not errors
+
+
+def test_seeded_node_mismatch_rejected():
+    mod = _load_verify()
+    frz = "FRZ-DEBT-02"
+    binding = "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01b"
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == frz)
+    row.update(
+        {
+            "red_first_status": "RED_AT_PREFIX",
+            "red_first_prefix_sha": "a" * 40,
+            "red_first_evidence_ref": f"{_GA2R_REF}#{frz}",
+            "evidence_negative_test": binding,
+            "evidence_seeded_red_required": True,
+        }
+    )
+    node = _complete_node(binding)
+    node["node"] = binding
+    node.update(
+        {
+            "seeded_red": True,
+            "seeded_negative_node": binding + "_other",
+            "seeded_violation_description": "unauthorized core dependency without declared owner",
+        }
+    )
+    ga2r = {"frz_id": frz, "nodes": [node]}
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        errors = mod.validate_red_first_evidence(plan, git_validate=False)
+    assert any("seeded_negative_node must match" in e for e in errors)
+
+
+def test_seeded_red_non_true_rejected():
+    mod = _load_verify()
+    frz = "FRZ-DEBT-02"
+    binding = "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01b"
+    plan = _live_rw_plan()
+    row = next(r for r in plan["code_fix_inventory"] if r["frz_id"] == frz)
+    row.update(
+        {
+            "red_first_status": "RED_AT_PREFIX",
+            "red_first_prefix_sha": "a" * 40,
+            "red_first_evidence_ref": f"{_GA2R_REF}#{frz}",
+            "evidence_negative_test": binding,
+            "evidence_seeded_red_required": True,
+        }
+    )
+    node = _complete_node(binding)
+    node["seeded_red"] = "true"
+    ga2r = {"frz_id": frz, "nodes": [node]}
+    with _patch_evidence_file(mod, {_GA2R_REF: {frz: ga2r}}):
+        errors = mod.validate_red_first_evidence(plan, git_validate=False)
+    assert any("seeded_red=true" in e for e in errors)
+
+
+def test_unsupported_evidence_schema_rejected(tmp_path: Path):
+    mod = _load_verify()
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"schema": "af2.other.v9", "rows": []}), encoding="utf-8")
+    index, errs = mod._load_ga2r_index_from_file(bad)
+    assert not index
+    assert any("expected 'af2.red_first_ga2r.v1'" in e for e in errs)
+
+
+def test_bad_encoding_handled_without_unhandled_exception(tmp_path: Path):
+    mod = _load_verify()
+    bad = tmp_path / "bad.json"
+    bad.write_bytes(b"\xff\xfe")
+    index, errs = mod._load_ga2r_index_from_file(bad)
+    assert not index
+    assert any("encoding" in e for e in errs)
+
+
+def test_io_error_handled_fail_closed(tmp_path: Path):
+    mod = _load_verify()
+    missing = tmp_path / "missing.json"
+    index, errs = mod._load_ga2r_index_from_file(missing)
+    assert not index
+    assert any("missing" in e for e in errs)
+
+
+def test_pre_g2_op_b_gate_fail_closed_when_enforced():
+    mod = _load_verify()
+    plan = _live_rw_plan()
+    errors = mod.validate_pre_g2_op_b_settlement(plan["code_fix_inventory"])
+    assert any("pre-G2 OP-B gate blocked" in e for e in errors)

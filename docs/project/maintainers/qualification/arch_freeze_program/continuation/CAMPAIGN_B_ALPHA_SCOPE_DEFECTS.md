@@ -58,3 +58,9 @@ Handoff defect IDs (ID-only; no reproduction steps): `DEF-CB-B2-S03-01`, `DEF-CB
 Does not set SCOPE, omega, or FCS. Fed SCOPE predecessor PT-B02 alpha evidence only.
 
 **Package C (train @ `e9bebe0ac`):** [`DEF_CB_B2_S03_PT_WF_DISPOSITION.md`](DEF_CB_B2_S03_PT_WF_DISPOSITION.md) — DEF-CB-B2-S03-01..03 do **not** activate PT-WF E2–E4 product paths.
+## Diagnostic acceptance (AF-W2-FINAL-01)
+
+- **PT-B01:** ACCEPTED — DIAGNOSTIC INPUT
+- **PT-B02:** ACCEPTED — DIAGNOSTIC INPUT
+- See [CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md](CAMPAIGN_B_DIAGNOSTIC_ACCEPTANCE_RECORD.md).
+
