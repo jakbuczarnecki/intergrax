@@ -44,6 +44,11 @@ from intergrax.runtime.execution_evidence.key_store import (
     write_verification_key_artifact,
 )
 from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    ActiveExecutionGovernanceIdentity,
+    bind_active_execution_governance_identity,
+    reset_active_execution_governance_identity,
+)
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -82,6 +87,11 @@ from governed_contractor_application.host.stores import FilesystemHostStore
 _DIGEST = "sha256:" + ("ab" * 32)
 _T0 = datetime(2026, 7, 21, 8, 0, 0, tzinfo=UTC)
 _PROVIDER_ID = "gec3_deterministic_fake"
+_OFFLINE_ACTIVE_GOVERNANCE = ActiveExecutionGovernanceIdentity(
+    tenant_id="offline-demo-tenant",
+    workspace_id="workspace-a",
+    principal_id="offline-demo-user",
+)
 
 
 def display_relative_path(path: Path, *, cwd: Path | None = None) -> str:
@@ -342,6 +352,9 @@ def run_offline_governed_contractor_demo(
         execution_id=create_identity.execution_id,
         task_id=validate_task_id(task_id),
     )
+    create_governance_token = bind_active_execution_governance_identity(
+        _OFFLINE_ACTIVE_GOVERNANCE,
+    )
     try:
         created = orch_create.create(
             task_id=task_id,
@@ -355,6 +368,7 @@ def run_offline_governed_contractor_demo(
         )
     finally:
         reset_active_execution_identity(create_token)
+        reset_active_execution_governance_identity(create_governance_token)
     if created.adapter_result is None or created.governed_result is None:
         raise RuntimeError(f"create_failed:{created.reason}")
     if created.state is not GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED:
@@ -389,6 +403,9 @@ def run_offline_governed_contractor_demo(
         execution_id=accept_identity.execution_id,
         task_id=validate_task_id(task_id),
     )
+    accept_governance_token = bind_active_execution_governance_identity(
+        _OFFLINE_ACTIVE_GOVERNANCE,
+    )
     try:
         accepted = orch_accept.accept(
             execution_id=accept_identity.execution_id,
@@ -403,6 +420,7 @@ def run_offline_governed_contractor_demo(
         )
     finally:
         reset_active_execution_identity(accept_token)
+        reset_active_execution_governance_identity(accept_governance_token)
     _write_provider_calls(store_root, fake)
 
     store_disp = display_relative_path(store_root)

@@ -10,28 +10,15 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import FastAPI
-from starlette.testclient import TestClient
-
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
-from governed_contractor_application.host.strict_production_serving import (
-    create_governed_contractor_strict_production_asgi_app,
+from intergrax.agent_distribution.activation_domain_coordinator import (
+    ServingExecutionAdmissionRequest,
 )
 from intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (
     VenvBundleColocatedRuntimeDeploymentAdapter,
 )
-from intergrax.applications._shared.strict_production_serving_launcher import (
-    StrictProductionServingSession,
-)
-from intergrax.agent_distribution.activation_domain_coordinator import (
-    ServingExecutionAdmissionRequest,
-)
 from intergrax.applications._shared.colocated_serving_unit_execution_admission import (
     StoreBackedColocatedServingUnitExecutionAdmission,
 )
-from intergrax.contracts.admitted_root_governance_identity import (
-    AdmittedRootGovernanceIdentity,
-)
-from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.applications._shared.serving_runtime_handoff import ServingUnitIdentity
 from intergrax.applications._shared.strict_production_serving_execution_tenant_authority import (
     StrictProductionServingExecutionTenantBinding,
@@ -42,30 +29,40 @@ from intergrax.applications._shared.strict_production_serving_execution_tenant_a
 from intergrax.applications._shared.strict_production_serving_http_execution_principal import (
     get_strict_serving_http_caller_principal,
 )
+from intergrax.applications._shared.strict_production_serving_launcher import (
+    StrictProductionServingSession,
+)
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+from intergrax.integrations.core.binding import IntegrationBinding
+from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+from starlette.testclient import TestClient
 from testing_support.host_fixture_wiring import (
     host_wiring_test_environment,
     install_diagnostic_cursor_secret,
     install_host_llm_stub,
 )
-from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
-    with_qualified_strict_external_work_provider_pin,
-)
 from tests.qualification.prod_q._prod_q_r1_r7_q_p2_strict_integrated_e2e import (
     assert_identity_continuity,
     load_d4_launcher_module,
     repo_root,
+)
+from tests.qualification.prod_q._prod_q_strict_external_work_provider_qualification_config import (
+    with_qualified_strict_external_work_provider_pin,
 )
 from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
     _QUAL_USER,
@@ -73,13 +70,16 @@ from tests.qualification.prod_q._prod_q_strict_http_caller_auth import (
     with_strict_http_api_keys,
 )
 
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.strict_production_serving import (
+    create_governed_contractor_strict_production_asgi_app,
+)
+
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
 
 _EXPECTED_START_HEAD: Final = "3d1a603f9454d17bd15f28c07a9e7731bae2b3de"
 _RUN_ROUTE_SUFFIX: Final = "/run"
-_INNER_DELEGATE = (
-    "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute"
-)
+_INNER_DELEGATE = "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute"
 _STRICT_PRODUCTION_GOVERNANCE_ADMIT = (
     "intergrax.applications._shared.strict_production_host_task_execution_wiring."
     "admit_strict_production_serving_root_governance_identity"
@@ -137,18 +137,32 @@ def test_p2c_g00_qualification_baseline_ancestor() -> None:
 def _strict_http_environment_profile(
     _settings: GovernedContractorBackendSettings,
 ) -> ApplicationEnvironmentProfile:
+    from intergrax.applications._shared.integration_wiring import (
+        bootstrap_application_integration_catalog,
+    )
+    from intergrax.applications._shared.package_wiring import (
+        PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT,
+    )
     from intergrax.applications._shared.strict_host_dependency_concurrency_admission import (
         build_dependency_concurrency_admission_for_tool_ids,
     )
+
+    bootstrap_application_integration_catalog(integration_preset="full")
     from tests.unit.applications.test_production_registry_startup_ac3_final import _ENV
 
     profile = host_wiring_test_environment(
         ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV),
     )
+    log_binding = IntegrationBinding.from_manifest(LOG)
+    integration = profile.integration_profile
+    integration_options = {**integration.options, LOG.slug: {}}
     return profile.model_copy(
         update={
             "observability_profile": profile.observability_profile.model_copy(
-                update={"otel_enabled": False},
+                update={
+                    "otel_enabled": False,
+                    "otlp_export_endpoint": PACKAGE_GATE_OTLP_QUALIFICATION_ENDPOINT,
+                },
             ),
             "reliability_profile": profile.reliability_profile.model_copy(
                 update={
@@ -157,6 +171,12 @@ def _strict_http_environment_profile(
                             ("qualification-http-tool",),
                         )
                     ),
+                },
+            ),
+            "integration_profile": integration.model_copy(
+                update={
+                    "notification_channel": log_binding,
+                    "options": integration_options,
                 },
             ),
         },
@@ -340,10 +360,7 @@ def test_p2c_01_positive_http_admission_continuity(
     assert len(inner_calls) == 1
     assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
     assert fixture.session.composition.serving_runtime_handoff is not None
-    assert (
-        fixture.session.composition.serving_runtime_handoff.colocated_execution_admission
-        is not None
-    )
+    assert fixture.session.composition.serving_runtime_handoff.colocated_execution_admission is not None
 
 
 def test_p2c_02_admission_deny_prevents_inner_execution(
@@ -430,10 +447,7 @@ def _assert_serving_admission_matches_handoff(
     assert request.application_environment_id == authoritative.application_environment_id
     assert request.runtime_revision_id == authoritative.runtime_revision_id
     assert request.serving_unit_ref == authoritative.serving_unit_ref
-    assert (
-        request.materialization_artifact_digest
-        == authoritative.materialization_artifact_digest
-    )
+    assert request.materialization_artifact_digest == authoritative.materialization_artifact_digest
 
 
 def test_p2c_05_identity_and_scope_continuity(
@@ -554,25 +568,28 @@ def test_p2c_05_identity_and_scope_continuity(
         assert governance.binding == binding
         assert governance.principal.user_id == _QUAL_USER
         assert governance.principal.tenant_id == fixture.tenant_id
-        assert (
-            governance.admitted.tenant_id == binding.authoritative_execution_tenant_id
-        )
+        assert governance.admitted.tenant_id == binding.authoritative_execution_tenant_id
         assert binding.application_id == authoritative.application_id
         assert binding.application_environment_id == authoritative.application_environment_id
         return _completed_task_result()
 
-    with patch.object(
-        coordinator,
-        "coordinate_physical_execution_reservation",
-        side_effect=_recording_coordinate_physical_execution_reservation,
-    ), patch.object(
-        StoreBackedColocatedServingUnitExecutionAdmission,
-        "admit_execution",
-        _recording_admit,
-    ), patch(
-        _STRICT_PRODUCTION_GOVERNANCE_ADMIT,
-        side_effect=_recording_governance_admit,
-    ), patch(_INNER_DELEGATE, side_effect=_inner_at_http_execution_seam):
+    with (
+        patch.object(
+            coordinator,
+            "coordinate_physical_execution_reservation",
+            side_effect=_recording_coordinate_physical_execution_reservation,
+        ),
+        patch.object(
+            StoreBackedColocatedServingUnitExecutionAdmission,
+            "admit_execution",
+            _recording_admit,
+        ),
+        patch(
+            _STRICT_PRODUCTION_GOVERNANCE_ADMIT,
+            side_effect=_recording_governance_admit,
+        ),
+        patch(_INNER_DELEGATE, side_effect=_inner_at_http_execution_seam),
+    ):
         with TestClient(fixture.app) as client:
             response = client.post(
                 fixture.run_url,
@@ -591,10 +608,7 @@ def test_p2c_05_identity_and_scope_continuity(
     )
     captured_governance = governance_admission_evidence[0]
     assert captured_governance.binding.application_id == authoritative.application_id
-    assert (
-        captured_governance.binding.application_environment_id
-        == authoritative.application_environment_id
-    )
+    assert captured_governance.binding.application_environment_id == authoritative.application_environment_id
     assert _physical_in_flight(fixture.adapter, fixture.unit_ref) == 0
 
 
@@ -623,11 +637,14 @@ def test_p2c_06_request_tenant_mismatch_skips_execution_seam(
 
     inner_mock = AsyncMock(return_value=_completed_task_result())
 
-    with patch.object(
-        StoreBackedColocatedServingUnitExecutionAdmission,
-        "admit_execution",
-        _recording_admit,
-    ), patch(_INNER_DELEGATE, inner_mock):
+    with (
+        patch.object(
+            StoreBackedColocatedServingUnitExecutionAdmission,
+            "admit_execution",
+            _recording_admit,
+        ),
+        patch(_INNER_DELEGATE, inner_mock),
+    ):
         with TestClient(fixture.app) as client:
             response = client.post(
                 fixture.run_url,

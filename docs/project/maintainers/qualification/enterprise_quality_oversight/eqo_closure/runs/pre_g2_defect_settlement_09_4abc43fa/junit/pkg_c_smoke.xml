@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="12.941" timestamp="2026-11-27T15:43:02.787493+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_health" time="3.258"><failure message="intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint">_stub_host_llm = None, _diagnostic_cursor_secret = None
+execution_continuation_state_store = &lt;intergrax.runtime.execution.continuation.durable_serialized_seal_store.SerializedSealExecutionContinuationStateStore object at 0x000002E8032CB5C0&gt;
+
+    def test_governed_contractor_backend_health(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+        execution_continuation_state_store: SerializedSealExecutionContinuationStateStore,
+    ):
+        with TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+                execution_continuation_state_store=execution_continuation_state_store,
+            )
+        ) as client:
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\governed_contractor_application\host\factory.py:341: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:553: in wire_application_environment
+    event_delivery = resolve_application_runtime_event_delivery_wiring(
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:204: in resolve_application_runtime_event_delivery_wiring
+    otlp_transport = _create_export_transport(export_profile, env, settings=settings)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+export_profile = ObservabilityExportProfile(enabled=True, exporter_kind=&lt;ExporterKind.OTLP: 'otlp'&gt;)
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...olicy_smoke': DomainPolicyFragment(fragment_id='harness.policy_smoke', payload={'require_human_on_critical': True})})))
+
+    def _create_export_transport(
+        export_profile: ObservabilityExportProfile,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: object | None,
+    ) -&gt; OtlpTransportPort | None:
+        if export_profile.exporter_kind is ExporterKind.OTLP:
+            from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+                OtlpTransport,
+            )
+    
+            config = _resolve_otlp_export_configuration(env, settings=settings)
+            if config is None:
+                if wiring_fails_closed(env):
+&gt;                   raise ConfigurationError(
+                        "OTLP export requires non-empty otlp_export_endpoint",
+                    )
+E                   intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint
+
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:112: ConfigurationError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_lists_agents" time="0.114"><failure message="intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint">_stub_host_llm = None, _diagnostic_cursor_secret = None
+execution_continuation_state_store = &lt;intergrax.runtime.execution.continuation.durable_serialized_seal_store.SerializedSealExecutionContinuationStateStore object at 0x000002E805BAED20&gt;
+
+    def test_governed_contractor_backend_lists_agents(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+        execution_continuation_state_store: SerializedSealExecutionContinuationStateStore,
+    ):
+        with TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+                execution_continuation_state_store=execution_continuation_state_store,
+            )
+        ) as client:
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\governed_contractor_application\host\factory.py:341: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:553: in wire_application_environment
+    event_delivery = resolve_application_runtime_event_delivery_wiring(
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:204: in resolve_application_runtime_event_delivery_wiring
+    otlp_transport = _create_export_transport(export_profile, env, settings=settings)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+export_profile = ObservabilityExportProfile(enabled=True, exporter_kind=&lt;ExporterKind.OTLP: 'otlp'&gt;)
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...olicy_smoke': DomainPolicyFragment(fragment_id='harness.policy_smoke', payload={'require_human_on_critical': True})})))
+
+    def _create_export_transport(
+        export_profile: ObservabilityExportProfile,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: object | None,
+    ) -&gt; OtlpTransportPort | None:
+        if export_profile.exporter_kind is ExporterKind.OTLP:
+            from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+                OtlpTransport,
+            )
+    
+            config = _resolve_otlp_export_configuration(env, settings=settings)
+            if config is None:
+                if wiring_fails_closed(env):
+&gt;                   raise ConfigurationError(
+                        "OTLP export requires non-empty otlp_export_endpoint",
+                    )
+E                   intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint
+
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:112: ConfigurationError</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_run" time="0.102"><failure message="intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint">_stub_host_llm = None, _diagnostic_cursor_secret = None
+execution_continuation_state_store = &lt;intergrax.runtime.execution.continuation.durable_serialized_seal_store.SerializedSealExecutionContinuationStateStore object at 0x000002E805BA30E0&gt;
+
+    def test_governed_contractor_backend_run(
+        _stub_host_llm: None,
+        _diagnostic_cursor_secret: None,
+        execution_continuation_state_store: SerializedSealExecutionContinuationStateStore,
+    ):
+        with TestClient(
+&gt;           create_governed_contractor_backend_app(
+                registry_projection=build_governed_contractor_test_registry_projection(),
+                document_store=reference_host_document_store(),
+                execution_continuation_state_store=execution_continuation_state_store,
+            )
+        ) as client:
+
+applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+applications\governed_contractor_application\host\factory.py:341: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:553: in wire_application_environment
+    event_delivery = resolve_application_runtime_event_delivery_wiring(
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:204: in resolve_application_runtime_event_delivery_wiring
+    otlp_transport = _create_export_transport(export_profile, env, settings=settings)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+export_profile = ObservabilityExportProfile(enabled=True, exporter_kind=&lt;ExporterKind.OTLP: 'otlp'&gt;)
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...olicy_smoke': DomainPolicyFragment(fragment_id='harness.policy_smoke', payload={'require_human_on_critical': True})})))
+
+    def _create_export_transport(
+        export_profile: ObservabilityExportProfile,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: object | None,
+    ) -&gt; OtlpTransportPort | None:
+        if export_profile.exporter_kind is ExporterKind.OTLP:
+            from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+                OtlpTransport,
+            )
+    
+            config = _resolve_otlp_export_configuration(env, settings=settings)
+            if config is None:
+                if wiring_fails_closed(env):
+&gt;                   raise ConfigurationError(
+                        "OTLP export requires non-empty otlp_export_endpoint",
+                    )
+E                   intergrax.contracts.observability_export.ConfigurationError: OTLP export requires non-empty otlp_export_endpoint
+
+intergrax\applications\_shared\runtime_event_delivery_wiring.py:112: ConfigurationError</failure></testcase></testsuite></testsuites>

@@ -309,6 +309,10 @@ WAVE_DIFF_FULL_IMPACT_PREFIXES: tuple[str, ...] = (
     "intergrax/compat",
     # Slice 5 (Part E / T-IGX-043-M): intergrax/globals touched on development (Wave 06 AUTH-03 / T-IGX-066-B).
     "intergrax/globals",
+    # Slice 6 (T-IGX-043-M Part E / EC-W3-09): exact paths — FULL manifest check escalation.
+    "intergrax/prompts/registry/pin_config.py",
+    "intergrax/prompts/registry/yaml_registry.py",
+    "intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py",
 )
 
 

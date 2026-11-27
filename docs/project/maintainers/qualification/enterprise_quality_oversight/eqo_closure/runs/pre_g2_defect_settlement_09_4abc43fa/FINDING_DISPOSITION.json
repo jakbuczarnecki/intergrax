@@ -1,0 +1,15 @@
+{
+  "schema": "eqo.defect_settlement_disposition.v1",
+  "batch_id": "EC-W3-DEFECT-SETTLEMENT-09",
+  "findings": {
+    "EC-F04": {"disposition": "CORRECTED", "evidence": "PKG_G_d03 83/83 PASS; uv on PATH; process exit 0 on targeted sec_planes run"},
+    "EC-F06": {"disposition": "CORRECTED", "evidence": "XD-12 3/3 PASS after impact map regeneration"},
+    "EC-F07": {"disposition": "PARTIAL", "evidence": "GCA composition 3/3 notification binding corrected; P2C HTTP 6 tests residual SandboxCompositionError / strict wiring (notification binding cleared)"},
+    "EC-F08": {"disposition": "PARTIAL", "evidence": "offline_demo binds ActiveExecutionGovernanceIdentity; create/accept execute; CLI tests residual ProofReceipt v1 vs v2 schema (out of write-set)"},
+    "EC-F10": {"disposition": "PARTIAL", "evidence": "continuation fixture added; STRICT host wiring residuals (agent contract authority / catalog bootstrap ordering)"},
+    "EC-F05": {"disposition": "OPEN_COMPAT_X_OWNER_RECONCILIATION"},
+    "EC-F09": {"disposition": "OPEN_REPLAY_X_SCOPED_DELTA_REQUALIFICATION"}
+  },
+  "terminal_state": "PRE_G2_TARGETED_DEFECT_SETTLEMENT_PUBLISHED_WITH_EXACT_RESIDUALS",
+  "formal_closure_claim": false
+}

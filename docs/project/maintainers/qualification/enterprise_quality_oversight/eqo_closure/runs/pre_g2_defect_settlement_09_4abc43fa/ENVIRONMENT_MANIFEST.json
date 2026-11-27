@@ -1,0 +1,8 @@
+{
+  "schema": "eqo.environment_manifest.v1",
+  "uv_path": "C:\\Users\\XPS\\.local\\bin\\uv.exe",
+  "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+  "python": "D:\\Projekty\\_wt\\intergrax\\ec-w3-09\\.venv\\Scripts\\python.exe",
+  "worktree": "D:\\Projekty\\_wt\\intergrax\\ec-w3-09",
+  "branch": "t-igx-082-a"
+}
