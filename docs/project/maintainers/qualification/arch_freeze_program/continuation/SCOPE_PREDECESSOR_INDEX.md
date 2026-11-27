@@ -3,7 +3,7 @@
 > **Obowiązujący stan (AF-W2-CLOSURE-01, Appendix V6):** gałąź wykonawcza **`development`** @ `f4e8444551994d9033c00fd6884d5e6f822d3ed7`; **`SCOPE=OPEN`**; **`RED_FIRST_EVIDENCE=INCOMPLETE`**; **`RW_PLAN_AUDIT=NOT_PERFORMED`**. Wpis 2026-11-26 z `RED_FIRST_EVIDENCE=COMPLETE` jest historyczny. **`SCOPE_MILESTONE: READY_TO_RECORD` nie obowiązuje.**
 
 **Tor wykonawczy:** `origin/development` (W3). **Historyczne tory** `arch-freeze/fc-train` / `arch-freeze/rw-train` — cytat only @ `689b277e6` / starsze piny.
-**DAG SSOT:** [`WP12_DAG.md`](../WP12_DAG.md) — 11 twardych poprzedników.
+**DAG SSOT:** [`WP12_DAG.md`](../WP12_DAG.md) — **12** hard SCOPE predecessors (`M1`, `DS-1`..`DS-4`, `DS-EXC`, `PT-V04`, `PT-B01`, `PT-B02`, `REV-MASTER`, `T-AF2-RW-PLAN`, `T-AF2-RW-PLAN-AUDIT`).
 **Ancestry:** dla dowodów na `development`, `merge-base --is-ancestor <sha> f4e8444`; dla cytatów train — ON_TRAIN względem wskazanego train tip.
 
 This index cites in-repo evidence only. It does not set `SCOPE`, `G2`, `FCS`, `M3`, or `ARCH_FREEZE_CLOSED`.
@@ -44,3 +44,14 @@ S03 scaffold node `test_harness_01_new_agent_scaffold_generates_nexus_free_autho
 The killed phase-b2 `run_campaign_b_w2_alpha.py` process (exit `4294967295`, ~56 minutes, no campaign summary) was previously recorded as a **process waiver**. **AF-W2-CLOSURE-02:** that waiver is **historical orchestrator text** and **not** current SCOPE authorization. **PT-B02** is cited via baseline **B** diagnostic matrix ([`CAMPAIGN_B_MISSING_CASE_MAP.md`](CAMPAIGN_B_MISSING_CASE_MAP.md)) and targeted S03 measurement ([`CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md`](CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md)). **SCOPE remains OPEN.**
 
 **SCOPE_MILESTONE:** not set — **SCOPE remains OPEN**.
+
+## SCOPE predecessor reconciliation (AF-W2-CLOSURE-04)
+
+| Metric | Value |
+| --- | ---: |
+| Hard predecessors (declared set) | **12** |
+| Accounted in this index (evidence cited) | **12** |
+| Awaiting independent acceptance | **3** (`PT-B01`, `PT-B02`, `T-AF2-RW-PLAN-AUDIT`) |
+| **SCOPE** | **OPEN** |
+
+`rw_plan.v1.json` `dependencies.SCOPE` matches the same 12-node set. No DAG edges added or removed in this package.

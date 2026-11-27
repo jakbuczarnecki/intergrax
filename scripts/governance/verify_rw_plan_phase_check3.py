@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -40,6 +41,7 @@ _GA2R_RECORD_NAME = "RED_FIRST_GA2R_RESULT"
 _GA2R_JSON = (
     _REPO / "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json"
 )
+_AUTHORIZED_EVIDENCE_PREFIX = "docs/project/maintainers/qualification/arch_freeze_program/continuation/"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _INVALID_PREFIX_FAILURE_MARKERS = (
     "ModuleNotFoundError",
@@ -537,37 +539,114 @@ def _valid_sha64(value: object) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(ch in "0123456789abcdef" for ch in value)
 
 
-def _parse_tracked_evidence_ref(ref: object) -> tuple[Path | None, str | None]:
+def _normalize_repo_relative(path_part: str) -> str | None:
+    text = path_part.strip().replace("\\", "/")
+    if not text or text.startswith("/") or re.match(r"^[A-Za-z]:", text):
+        return None
+    if ".." in text.split("/"):
+        return None
+    parts = [p for p in text.split("/") if p not in ("", ".")]
+    return "/".join(parts)
+
+
+def _is_authorized_evidence_path(rel: str) -> bool:
+    if not rel.endswith(".json"):
+        return False
+    return rel.startswith(_AUTHORIZED_EVIDENCE_PREFIX)
+
+
+def _git_tracked(rel_path: str) -> bool:
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", rel_path],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except OSError:
+        return False
+
+
+def _git_object_exists(sha: str) -> bool:
+    try:
+        proc = subprocess.run(
+            ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except OSError:
+        return False
+
+
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    try:
+        proc = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except OSError:
+        return False
+
+
+def _parse_evidence_ref(ref: object) -> tuple[str | None, str | None]:
     if not ref or not isinstance(ref, str):
         return None, None
     text = ref.strip()
     if "#" not in text:
         return None, None
     path_part, anchor = text.split("#", 1)
-    if not path_part or not anchor:
+    if not path_part or not anchor or anchor.strip() != anchor:
         return None, None
-    candidate = (_REPO / path_part).resolve()
+    rel = _normalize_repo_relative(path_part)
+    if rel is None:
+        return None, None
+    candidate = (_REPO / rel).resolve()
     try:
         candidate.relative_to(_REPO.resolve())
     except ValueError:
         return None, None
-    if not candidate.is_file():
-        return None, None
-    return candidate, anchor
+    return rel, anchor
+
+
+def _load_ga2r_index_from_file(path: Path) -> tuple[dict[str, dict[str, object]], list[str]]:
+    errors: list[str] = []
+    if not path.is_file():
+        return {}, ["evidence file missing"]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return {}, [f"evidence file invalid JSON: {exc}"]
+    rows = payload.get("rows") if isinstance(payload, dict) else payload
+    if not isinstance(rows, list):
+        return {}, ["evidence file schema: rows must be a list"]
+    index: dict[str, dict[str, object]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("evidence file schema: row must be an object")
+            continue
+        frz_id = row.get("frz_id")
+        if not frz_id:
+            errors.append("evidence file schema: row missing frz_id")
+            continue
+        key = str(frz_id)
+        if key in index:
+            errors.append(f"evidence file duplicate frz_id {key}")
+        index[key] = row
+    return index, errors
 
 
 def _load_ga2r_index(path: Path | None = None) -> dict[str, dict[str, object]]:
     target = path or _GA2R_JSON
-    if not target.is_file():
-        return {}
-    payload = json.loads(target.read_text(encoding="utf-8"))
-    rows = payload.get("rows") if isinstance(payload, dict) else payload
-    if not isinstance(rows, list):
-        return {}
-    index: dict[str, dict[str, object]] = {}
-    for row in rows:
-        if isinstance(row, dict) and row.get("frz_id"):
-            index[str(row["frz_id"])] = row
+    index, _errors = _load_ga2r_index_from_file(target)
     return index
 
 
@@ -599,33 +678,81 @@ def _assertion_is_mechanism_failure(assertion_lines: object) -> bool:
     if any(marker in joined for marker in _INVALID_PREFIX_FAILURE_MARKERS):
         return False
     lowered = joined.lower()
-    if "assertionerror" in lowered or "failed:" in lowered:
-        return True
-    return joined.strip().startswith("E ")
+    return "assertionerror" in lowered
+
+
+def _validate_seeded_red_record(frz: str, node: dict[str, object], errors: list[str]) -> None:
+    if not node.get("seeded_red"):
+        errors.append(f"{frz}: OP-B seeded-red requires seeded_red=true plus full execution record")
+        return
+    if not str(node.get("seeded_negative_node") or "").strip():
+        errors.append(f"{frz}: OP-B seeded-red missing seeded_negative_node")
+    if not str(node.get("seeded_violation_description") or "").strip():
+        errors.append(f"{frz}: OP-B seeded-red missing seeded_violation_description")
+    desc = str(node.get("seeded_violation_description") or "").lower()
+    if frz == "FRZ-DEBT-02" and not any(token in desc for token in ("core", "ownership", "dependency")):
+        errors.append(f"{frz}: OP-B seeded-red violation must describe unauthorized core dependency ownership")
+    if frz == "FRZ-DEBT-03" and not any(token in desc for token in ("seam", "compatibility")):
+        errors.append(f"{frz}: OP-B seeded-red violation must describe a temporary compatibility seam")
+
+
+def _validate_op_b_execution_graph(frz: str, node: dict[str, object], errors: list[str], *, git_validate: bool) -> None:
+    prefix_sha = node.get("prefix_sha")
+    fix_commit = node.get("fix_commit")
+    pin_sha = node.get("pin_sha")
+    if not _valid_sha40(pin_sha):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green-after-fix execution SHA (pin_sha)")
+        return
+    if pin_sha == fix_commit:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX pin_sha must not be fix_commit only (execution revision)")
+    if not git_validate:
+        return
+    for label, sha in (("prefix_sha", prefix_sha), ("fix_commit", fix_commit), ("pin_sha", pin_sha)):
+        if isinstance(sha, str) and _valid_sha40(sha) and not _git_object_exists(sha):
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX {label} {sha} not found in repository")
+    if _valid_sha40(prefix_sha) and _valid_sha40(fix_commit) and _git_object_exists(str(prefix_sha)):
+        if not _git_is_ancestor(str(prefix_sha), str(fix_commit)):
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX fix_commit must descend from prefix_sha")
+    if _valid_sha40(fix_commit) and _valid_sha40(pin_sha) and _git_object_exists(str(fix_commit)):
+        if not _git_is_ancestor(str(fix_commit), str(pin_sha)):
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX pin_sha must contain fix_commit in ancestry")
 
 
 def _validate_op_b_red_at_prefix_completeness(
     frz: str,
     row: dict[str, object],
-    ga2r_index: dict[str, dict[str, object]],
+    *,
+    git_validate: bool = True,
 ) -> list[str]:
-    """Progressive OP-B contract (AF-W2-CLOSURE-03): structure-only SHA+ref is insufficient."""
+    """Progressive OP-B contract (AF-W2-CLOSURE-04): bind evidence_ref to the cited JSON file."""
     errors: list[str] = []
     sha = row.get("red_first_prefix_sha")
     ref = row.get("red_first_evidence_ref")
     if not _valid_sha40(sha):
         errors.append(f"{frz}: OP-B RED_AT_PREFIX requires full 40-char lowercase prefix SHA")
         return errors
-    evidence_path, anchor = _parse_tracked_evidence_ref(ref)
-    if evidence_path is None or anchor != frz:
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence ref must name an existing tracked record for this FRZ")
+    rel, anchor = _parse_evidence_ref(ref)
+    if rel is None or anchor != frz:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence ref must cite a repo-relative JSON file#FRZ anchor")
         return errors
-    record = ga2r_index.get(frz)
+    if not _is_authorized_evidence_path(rel):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence path not in authorized continuation evidence")
+        return errors
+    if not _git_tracked(rel):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence file must be git-tracked")
+        return errors
+    evidence_path = _REPO / rel
+    file_index, load_errors = _load_ga2r_index_from_file(evidence_path)
+    for detail in load_errors:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence incomplete ({detail})")
+    if errors:
+        return errors
+    record = file_index.get(frz)
     if record is None:
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX without GA2R inventory row for this FRZ")
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX without GA2R inventory row in cited evidence file")
         return errors
     if str(record.get("frz_id")) != frz:
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX GA2R frz_id mismatch")
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX GA2R frz_id mismatch in cited evidence file")
     binding = str(row.get("evidence_negative_test") or "").strip()
     if not binding:
         errors.append(f"{frz}: OP-B RED_AT_PREFIX missing negative test binding")
@@ -641,23 +768,35 @@ def _validate_op_b_red_at_prefix_completeness(
         errors.append(f"{frz}: OP-B RED_AT_PREFIX inventory SHA must match bound node prefix_sha")
     fix_commit = node.get("fix_commit")
     if not _valid_sha40(fix_commit):
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green-after-fix commit SHA")
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing fix_commit SHA")
     if node.get("prefix_result") != "FAILED":
         errors.append(f"{frz}: OP-B RED_AT_PREFIX requires FAILED at prefix (not collection/import noise)")
     if node.get("pin_result") != "PASSED":
         errors.append(f"{frz}: OP-B RED_AT_PREFIX requires PASSED after fix")
     if node.get("prefix_result") == "PASSED" and node.get("pin_result") == "PASSED":
         errors.append(f"{frz}: OP-B RED_AT_PREFIX cannot be both green at prefix and after fix")
+    prefix_exit = node.get("prefix_run_exit")
+    pin_exit = node.get("pin_run_exit")
+    if prefix_exit is None or pin_exit is None:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing isolated run exit codes")
+    else:
+        if prefix_exit != 1:
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX requires prefix_run_exit=1")
+        if pin_exit != 0:
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX requires pin_run_exit=0")
     if not _assertion_is_mechanism_failure(node.get("assertion_lines")):
         errors.append(f"{frz}: OP-B RED_AT_PREFIX lacks mechanism-aligned assertion failure at prefix")
     if not _valid_sha40(node.get("test_blob_sha")):
         errors.append(f"{frz}: OP-B RED_AT_PREFIX missing executed test version digest (test_blob_sha)")
+    if not _valid_sha40(node.get("pin_blob_sha")):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing post-fix test version digest (pin_blob_sha)")
     if not _valid_sha64(node.get("prefix_log_sha256")):
-        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing pinned measurement log digest (prefix_log_sha256)")
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing prefix measurement log digest (prefix_log_sha256)")
+    if not _valid_sha64(node.get("pin_log_sha256")):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green measurement log digest (pin_log_sha256)")
+    _validate_op_b_execution_graph(frz, node, errors, git_validate=git_validate)
     if frz in _SEEDED_RED_REQUIRED and row.get("evidence_seeded_red_required"):
-        seeded_ok = bool(node.get("seeded_red")) or "seeded" in binding.lower()
-        if not seeded_ok:
-            errors.append(f"{frz}: OP-B RED_AT_PREFIX requires explicit seeded-red evidence (OD-AF-CLOSE-B2)")
+        _validate_seeded_red_record(frz, node, errors)
     return errors
 
 
@@ -670,10 +809,13 @@ def _cited_operator_disposition(row: dict[str, object]) -> bool:
 
 
 def validate_red_first_evidence(
-    data: dict[str, object], *, ga2r_index: dict[str, dict[str, object]] | None = None
+    data: dict[str, object],
+    *,
+    ga2r_index: dict[str, dict[str, object]] | None = None,
+    git_validate: bool = True,
 ) -> list[str]:
     errors: list[str] = []
-    loaded_ga2r = ga2r_index if ga2r_index is not None else _load_ga2r_index()
+    _ = ga2r_index  # injection reserved for isolated unit tests; production loads cited files only
     for row in data.get("code_fix_inventory") or []:
         if not isinstance(row, dict):
             continue
@@ -704,7 +846,7 @@ def validate_red_first_evidence(
             elif sha and not _SHA40.match(str(sha)):
                 errors.append(f"{frz}: RED_AT_PREFIX prefix SHA has invalid characters")
             elif frz in _EVIDENCE_MISSING_OP_B and _valid_sha40(sha) and ref:
-                errors.extend(_validate_op_b_red_at_prefix_completeness(frz, row, loaded_ga2r))
+                errors.extend(_validate_op_b_red_at_prefix_completeness(frz, row, git_validate=git_validate))
         if status in ("RED_FIRST_OUT", "RED_FIRST_LATER_WAVE"):
             if not sha or not isinstance(sha, str) or len(sha) != 40:
                 errors.append(f"{frz}: {status} without valid historical prefix SHA")

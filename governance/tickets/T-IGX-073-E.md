@@ -65,6 +65,13 @@ erify_rw_plan_phase_check3.py, uild_rw_plan.py, unit tests).
 - Owner ticket write-set: NT-BND-06-1, NT-DEBT-04-1, NT-TYP-05-2 test paths in plans + RW generator.
 - Closure qualification pack; `development` publication.
 
+
+## AF-W2-CLOSURE-04 (2026-11-27)
+
+- Evidence reference binds OP-B rows to the cited GA2R JSON file (tracked, authorized path; duplicate FRZ rejection).
+- Progressive OP-B execution contract: pin_sha, exit codes, log digests, git ancestry; seeded-red record enforcement (no test-name bypass).
+- Campaign B diagnostic index reconciliation; SCOPE hard-predecessor count 12 (declarative fix).
+- Targeted regression pack test_verify_rw_plan_phase_check3_op_b_closure03.py; development publication.
 ## AF-W2W3-RESIDUAL-CLOSURE-01 (2026-11-24)
 
 - Test environment: isolated writable UV env (`.tmp/session/af-w2w3-residual-closure-01/.venv`); main `.venv` tiktoken install ACL-denied; `uv sync --extra dev --extra dev-unit-cert --frozen` recovered FastMCP.
