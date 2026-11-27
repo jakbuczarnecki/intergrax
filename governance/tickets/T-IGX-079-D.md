@@ -10,7 +10,13 @@ Plan digest: ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81
 
 ## Approved
 
-_(pending formal review and Operator or commissioned eligible delegate; no approval asserted)_
+Approved: operator @ 2026-11-27T17:08:12+01:00
+
+**Decision ID:** OD-II-W0-A-01 — APPROVED (observed recording time; not an independently verified chat submission timestamp). Transcription of the Operator decision under explicit repository-write authority; not approval by the implementing agent.
+
+**Operator statement (chat):** „Zatwierdzam plan T-IGX-079-D o digescie ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81. Autoryzuję wykonanie skonsolidowanego batcha W0-A obejmującego II-W0-01–04, zgodnie z zatwierdzonym planem, dokładnym write-setem, kontraktem Q01–Q08 i warunkami niezależnego audytu. Autoryzuję zapis decyzji, wymagane przejścia lifecycle, wykonanie, kwalifikację oraz publikację zgodnie z kanonicznym governance. Nie autoryzuję jeszcze formalnego zamknięcia W0-A, W0-05, W0-06, W1, zmian produktowych ani otwarcia bram.”
+
+**Scope bound:** Plan digest `ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81` only. No formal W0-A closure, W0-05/06, W1, product changes, or gate opening.
 
 ## Test contract
 
@@ -22,7 +28,7 @@ II-W0-05, II-W0-06, W0-B/C/D batches beyond this plan, executable W1 qualificati
 
 ## Lifecycle state
 
-plan_pending
+in_progress
 
 ## Checkpoint
 
@@ -31,3 +37,5 @@ plan_pending
 **II-W0-A-PREP-FINAL-01 (2026-11-27):** Exact execution write-set, Package D positive oracle, Q01–Q08 qualification contract and lifecycle sequencing bound in plan; F-W0A-04 Operator ticket closure authority pending at that checkpoint; lifecycle remains `plan_pending`; no W0-A deliverable execution.
 
 **II-W0-A-PREP-FINAL-RECOVERY-01 (2026-11-27T15:48:21+01:00):** Integrated preparation delta onto `origin/development` `4142575fa035ec19f91def3e3236c6e27c6efa7b`; recorded OD-II-W0-CLOSURE-01 on T-IGX-079-C (F-W0A-04 satisfied); reconciled execution register; plan digest unchanged; lifecycle remains `plan_pending`; terminal preparation state `FINAL_W0_A_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`; no W0-A deliverable execution and no `Approved:` line.
+
+**II-W0-A-APPROVAL-01 (2026-11-27T17:08:12+01:00):** OD-II-W0-A-01 recorded; canonical transition `plan_pending` → `plan_approved` → `in_progress`; plan digest unchanged; preflight remote `origin/development` `79e978feb280614e35daf2c8f09d83c9634ed348`; baseline ancestor `7b7ec4488c504f1c90dba599d5742197dbbf0c1e` verified; protected blobs unchanged; deliverable execution authorized; independent G6 and formal package closure not authorized.
