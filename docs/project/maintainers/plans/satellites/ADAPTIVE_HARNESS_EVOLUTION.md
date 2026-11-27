@@ -170,7 +170,7 @@ These are AHE program milestone names, not substitutes for DevOS G0–G6, IIAC, 
 | Independent documentation qualification | ACCEPTED_SCOPED |
 | Operator acceptance | APPROVED |
 | Historical publication finding F-AHE-01 | WAIVED |
-| External owner acceptance | PENDING |
+| External owner acceptance | OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02 |
 | Settlement publication | VERIFIED (AHE-W0-SETTLEMENT-01 @ `550b258bf8d524d907b7720da41ecac64a6bb1a5`) |
 
 ### AHE-G1 outstanding requirements
@@ -212,6 +212,7 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | F-AHE-05 | Canonical delivery and acceptance reconciliation. | PENDING_AUTHORIZATION |
 | F-AHE-06 | Configuration-only versus scaffold materialization boundary. | RESOLVED_ARCHITECTURE_ONLY |
 | F-AHE-07 | Restore historical W0-01 process finding. | RESOLVED |
+| F-AHE-08 | Mixed product and documentation candidate write set incompatible with existing single-kind candidate publisher (`scripts/cursor/igx_publish_candidate.py`, `scripts/cursor/igx_integrator.py`; reviewed base `e2b7a67a89bc9726c5bb1fa446cbc255a32ff74a`). | PAIRED_PUBLICATION_RECONCILIATION_PROPOSED / PENDING_OPERATOR_APPROVAL |
 
 
 ---
@@ -226,7 +227,7 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 **W0 settlement (AHE-W0-SETTLEMENT-01):** independent publication verification recorded; architect verdict **AHE-G0 ACCEPTED_WITH_HISTORICAL_WAIVER**; **W0: CLOSED**; packages **AHE-W0-01**, **AHE-W0-02**, **AHE-W0-03**: **CLOSED**.
 
-**W0 exit:** accepted architecture, roadmap and implementation boundaries (pending final G0 settlement closure).
+**W0 exit:** W0 settlement completed under **AHE-W0-SETTLEMENT-01**; architecture and roadmap revision **1.3** accepted scoped; cross-program boundaries **OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02**; **AHE-G0: ACCEPTED_WITH_HISTORICAL_WAIVER**; **W0: CLOSED**.
 
 ---
 
@@ -250,9 +251,18 @@ These batches define **PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED** for W1. They a
 
 **Implementation status:** PREPARATION / PENDING_TICKET_APPROVAL
 
-**Canonical DevOS ticket:** [`T-IGX-093-A`](../../../../governance/tickets/T-IGX-093-A.md)
+**Canonical DevOS ticket:** [`T-IGX-093-A`](../../../../../governance/tickets/T-IGX-093-A.md)
 
-**Canonical implementation plan:** [`PLAN_T-IGX-093-A`](../../../../governance/tickets/plans/PLAN_T-IGX-093-A.md) (`plan_pending`; operator approval pending)
+**Canonical implementation plan:** [`PLAN_T-IGX-093-A`](../../../../../governance/tickets/plans/PLAN_T-IGX-093-A.md) (`plan_pending`; operator approval pending)
+
+**Publication units (within roadmap package AHE-W1-01; not additional roadmap packages):**
+
+| Unit | Wave ID | Kind | Branch (proposed) | Status |
+|---|---|---|---|---|
+| W1-B01-P | AHE-W1-B01-P | product | `feat/ahe-w1-b01-p` | PLANNED / NOT_AUTHORIZED |
+| W1-B01-D | AHE-W1-B01-D | docs | `feat/ahe-w1-b01-d` | PLANNED / NOT_AUTHORIZED |
+
+**Paired publication procedure:** Proposed under **F-AHE-08**; requires explicit Operator approval. Until approval, the canonical ADAS delivery rule (relevant plan update in each implementation PR) remains unchanged. **W1-B02** remains unauthorized until applicable **W1-B01** acceptance requirements are satisfied. Product integration does not by itself close **W1-B01**.
 
 **Roadmap package:** AHE-W1-01
 
@@ -403,6 +413,8 @@ W1 exit requires independently accepted behavioral evidence.
 ### Canonical ADAS publication boundary
 
 The existing canonical ADAS plan prescribes one phase or narrowly scoped sub-phase per PR and corresponding canonical plan updates.
+
+**F-AHE-08:** `MIXED_PRODUCT_DOCUMENTATION_WRITE_SET_INCOMPATIBLE_WITH_EXISTING_CANDIDATE_PUBLISHER` — disposition **PAIRED_PUBLICATION_RECONCILIATION_PROPOSED / PENDING_OPERATOR_APPROVAL** (see `governance/tickets/plans/PLAN_T-IGX-093-A.md`).
 
 AHE implementation batches represent engineering coordination units. They do not automatically override canonical ADAS publication units.
 

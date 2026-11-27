@@ -8,33 +8,37 @@ Deliver the ADAS typed contract and append-only candidate archive foundation. Im
 
 This plan defines the executable implementation contract for W1-B01. It is an approval artifact and must remain stable after operator approval. Neither OD-AHE-01 nor OD-AHE-02 constitutes approval of this plan.
 
-## Future authorized write set (implementation candidate only)
+## Future authorized write set (W1-B01 engineering scope — eleven files)
 
-### Runtime files
+The engineering batch spans **eleven files**. Publication is proposed as **paired candidates** (F-AHE-08) because the existing publisher accepts only a single kind per candidate.
+
+### Product candidate (W1-B01-P) — seven files
+
+**Runtime files**
 
 - `intergrax/runtime/adaptive/agent_design_search/__init__.py`
 - `intergrax/runtime/adaptive/agent_design_search/contracts.py`
 - `intergrax/runtime/adaptive/agent_design_search/archive.py`
 - `intergrax/runtime/adaptive/agent_design_search/sqlite_archive.py`
 
-### Focused test files
+**Focused test files**
 
 - `tests/unit/runtime/adaptive/agent_design_search/test_contracts.py`
 - `tests/unit/runtime/adaptive/agent_design_search/test_archive.py`
 - `tests/unit/runtime/adaptive/agent_design_search/test_sqlite_archive.py`
 
-### Canonical plan register updates (evidence and obligation tracking only)
+The product candidate must contain only these seven files. Do not modify the parent adaptive runtime package exports. Do not modify existing profile stores. Governance ticket lifecycle and publication authorization records are external authority artifacts; they must not be changed inside the product candidate.
+
+### Documentation candidate (W1-B01-D) — four files
+
+**Canonical plan register updates (evidence and obligation tracking only)**
 
 - `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`
 - `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`
 - `docs/project/maintainers/plans/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`
 - `docs/project/maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md`
 
-The future candidate may update these plan registers only to record implementation evidence, exact touched obligations and residuals. No independent acceptance may be declared by the implementer.
-
-Do not modify the parent adaptive runtime package exports. Do not modify existing profile stores.
-
-Governance ticket lifecycle and publication authorization records are external authority artifacts. They must not be changed inside the product candidate.
+The documentation candidate may update these registers only to record implementation evidence, exact touched obligations and residuals. No independent acceptance may be declared by the implementer.
 
 ## Contract implementation requirements
 
@@ -219,7 +223,64 @@ Map each implementation result to AHI-ADAS-10.1–10.14. For every obligation, r
 Preserve canonical residuals associated with executable agent scaffolding; full canonical promotion evidence; non-W1 lifecycle behavior; enterprise retention; production persistence integration.
 
 Do not automatically declare AHI-ADAS-10 fully accepted.
+## Publication coordination (proposed paired candidates — F-AHE-08)
 
-The implementation candidate is a single scoped AHI-ADAS-10 PR targeting development. Use the existing `CHATGPT_DIRECT_IMPLEMENTATION` candidate publication route only after its exact external authorization exists. The future implementation ticket must be approved and present on the authorized base. The future exact write set must be registered by the external authority. The implementer must not create or alter its own publication authorization.
+**Finding F-AHE-08:** `MIXED_PRODUCT_DOCUMENTATION_WRITE_SET_INCOMPATIBLE_WITH_EXISTING_CANDIDATE_PUBLISHER`.
 
-The implementer commits the candidate with exactly one canonical ticket Ref trailer. The implementer publishes the candidate through the approved publisher. Independent review and applicable integration requirements remain mandatory. Do not bypass the canonical ADAS PR delivery rule.
+Architect-reviewed evidence at `e2b7a67a89bc9726c5bb1fa446cbc255a32ff74a`: `scripts/cursor/igx_publish_candidate.py` imports `valid_path()` from `scripts/cursor/igx_integrator.py`. The publisher requires a single publication kind per candidate. For kind `product`, only product roots are valid; for kind `docs`, only document roots are valid. The original eleven-file mixed candidate cannot be authorized by the current publisher.
+
+**Disposition:** `PAIRED_PUBLICATION_RECONCILIATION_PROPOSED / PENDING_OPERATOR_APPROVAL`. Do not modify the publisher or bypass its allowlist. Do not mark F-AHE-08 resolved before explicit Operator approval and required publication authorizations.
+
+The total **W1-B01** engineering scope remains **eleven files** across two publication units within roadmap package **AHE-W1-01** (not new roadmap packages).
+
+### W1-B01-P — Product candidate
+
+| Field | Value |
+|---|---|
+| Publication wave ID | `AHE-W1-B01-P` |
+| Candidate kind | `product` |
+| Target | `development` |
+| Proposed branch | `feat/ahe-w1-b01-p` |
+| Ticket | `governance/tickets/T-IGX-093-A.md` |
+
+**Exact product write set (seven files only):**
+
+- `intergrax/runtime/adaptive/agent_design_search/__init__.py`
+- `intergrax/runtime/adaptive/agent_design_search/contracts.py`
+- `intergrax/runtime/adaptive/agent_design_search/archive.py`
+- `intergrax/runtime/adaptive/agent_design_search/sqlite_archive.py`
+- `tests/unit/runtime/adaptive/agent_design_search/test_contracts.py`
+- `tests/unit/runtime/adaptive/agent_design_search/test_archive.py`
+- `tests/unit/runtime/adaptive/agent_design_search/test_sqlite_archive.py`
+
+**Future product candidate prerequisites (not satisfied by this preparation batch):** Operator approval of the amended plan; valid approved ticket on the authorized immutable base; external canonical candidate publication authorization; publisher preflight PASS; local implementation and validation; exactly one canonical ticket Ref trailer; no AI attribution; draft PR publication through the existing publisher; independent exact-candidate review; required formal audit and integration authorization. Do not automatically merge or mark the product PR ready.
+
+### W1-B01-D — Documentation candidate
+
+| Field | Value |
+|---|---|
+| Publication wave ID | `AHE-W1-B01-D` |
+| Candidate kind | `docs` |
+| Target | `development` |
+| Proposed branch | `feat/ahe-w1-b01-d` |
+
+**Exact documentation write set (four files only):**
+
+- `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`
+- `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`
+- `docs/project/maintainers/plans/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`
+- `docs/project/maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md`
+
+Requires its own external publication authorization and an eligible approved ticket on its authorized base. Prepare after the product candidate's required review and authorized integration. Bind documented results to actual product candidate SHA, integration SHA and accepted evidence. Record all fourteen **AHI-ADAS-10** obligations individually with actual behavior, test results, qualification scope and residuals. Do not fabricate independent acceptance or claim full AHI-ADAS-10 completion unless canonical acceptance requirements are actually satisfied. Run applicable documentation and governance validation; publish through the existing docs candidate publisher.
+
+### Paired publication acceptance
+
+**W1-B01-P** and **W1-B01-D** are publication units within **AHE-W1-01**, not new roadmap packages.
+
+The paired procedure is a proposed, narrowly scoped exception to the canonical ADAS requirement to update the relevant plan in each implementation PR. The exception requires actual Operator approval. Until approval is recorded, the canonical ADAS delivery rule remains unchanged. The exception applies only to **T-IGX-093-A** and the two exact proposed candidate write sets; it does not authorize similar exceptions for later ADAS phases.
+
+Product publication, product integration and documentation publication are distinct milestones. Product integration does not by itself close **W1-B01**. **W1-B01** may be formally accepted only after: product implementation qualification; required independent review; authorized product integration; canonical register reconciliation; verified documentation publication and integration; exact obligation-level disposition; Operator and governance requirements satisfied.
+
+**W1-B02** must remain unauthorized until relevant **W1-B01** acceptance requirements are satisfied.
+
+The canonical ADAS delivery rule (relevant plan update in each implementation PR) remains in force until the paired-publication exception is explicitly Operator-approved for this ticket only.

@@ -18,7 +18,7 @@ Acceptance metadata update only. Normative architecture sections §5.1–§5.31 
 | Qualified architecture documentation SHA | `1d0181051fa034b5f45101755002e48f5dc35715` |
 | Reuse baseline SHA (separate) | `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac` (23-entry reuse matrix in §5.16 unchanged) |
 | Historical publication finding | **F-AHE-01** — `HISTORICAL_NONCOMPLIANCE_ACCEPTED_BY_OPERATOR` under **OD-AHE-01**; historical publication compliance for the three specified commits remains **FAIL**; corrective publication evidence SHA `1d0181051fa034b5f45101755002e48f5dc35715` (corrective commit metadata **PASS**). |
-| External program owner acceptance | **PENDING** |
+| External program owner acceptance | **OWNER_BOUNDARIES_ACCEPTED_UNDER_OD-AHE-02** |
 | Executable behavioral qualification | **NOT_EXECUTED** |
 | Operator decision (ownership boundaries) | **OD-AHE-02** — `APPROVED` (2026-11-27). As operator and authorized owner of the stated domains, I approve the full presented scope of responsibility boundaries, preparation of exact future canonical ADAS register updates, and formal W0 settlement. Does not approve a product implementation ticket. |
 | W0 program closure | **CLOSED** under architect verdict **AHE-G0 ACCEPTED_WITH_HISTORICAL_WAIVER**; settlement operation **AHE-W0-SETTLEMENT-01** reviewed commit `550b258bf8d524d907b7720da41ecac64a6bb1a5`; verification authority ChatGPT architecture review; publication scope two AHE documentation files; normative architecture unchanged relative to `1d0181051fa034b5f45101755002e48f5dc35715`; publication metadata **PASS**; remote reachability **PASS**. |
