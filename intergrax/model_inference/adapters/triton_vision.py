@@ -77,8 +77,6 @@ class TritonVisionServingAdapter(VisionInferenceAdapter):
             body = response.json()
         detections = _parse_triton_detections(body, top_k=request.top_k)
         if not detections:
-            if self._fallback is not None:
-                return self._fallback.detect(request, artifact=artifact)
             return VisionInferenceResult(
                 request_id=request.request_id,
                 artifact_id=artifact.artifact_id,

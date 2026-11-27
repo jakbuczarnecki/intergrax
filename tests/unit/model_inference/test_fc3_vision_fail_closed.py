@@ -82,7 +82,12 @@ def test_nt_fc3_vis3_triton_zero_detections_empty_no_stub(artifact: ModelArtifac
     mock_client.__enter__.return_value = mock_client
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
-    adapter = TritonVisionServingAdapter(base_url="http://triton.local", model_name="yolo")
+    fallback = MagicMock()
+    adapter = TritonVisionServingAdapter(
+        base_url="http://triton.local",
+        model_name="yolo",
+        fallback=fallback,
+    )
     authorized = AuthorizedLocalMedia(
         resolved_path=image.resolve(),
         remote_egress_permitted=True,
@@ -97,8 +102,11 @@ def test_nt_fc3_vis3_triton_zero_detections_empty_no_stub(artifact: ModelArtifac
             ),
             artifact=artifact,
         )
+    assert result.request_id == "r3"
+    assert result.artifact_id == artifact.artifact_id
     assert result.detections == []
     assert result.provenance == VisionResultProvenance.ENGINE
+    fallback.detect.assert_not_called()
 
 
 def test_nt_fc3_vis4_hf_zero_detections_empty(artifact: ModelArtifact, tmp_path) -> None:
@@ -111,7 +119,8 @@ def test_nt_fc3_vis4_hf_zero_detections_empty(artifact: ModelArtifact, tmp_path)
     mock_client.__enter__.return_value = mock_client
     mock_client.__exit__.return_value = None
     mock_client.post.return_value = mock_response
-    adapter = HuggingFaceInferenceVisionAdapter(api_key="hf-test-key")
+    fallback = MagicMock()
+    adapter = HuggingFaceInferenceVisionAdapter(api_key="hf-test-key", fallback=fallback)
     authorized = AuthorizedLocalMedia(
         resolved_path=image.resolve(),
         remote_egress_permitted=True,
@@ -129,8 +138,11 @@ def test_nt_fc3_vis4_hf_zero_detections_empty(artifact: ModelArtifact, tmp_path)
             ),
             artifact=artifact,
         )
+    assert result.request_id == "r4"
+    assert result.artifact_id == artifact.artifact_id
     assert result.detections == []
     assert result.provenance == VisionResultProvenance.ENGINE
+    fallback.detect.assert_not_called()
 
 
 def test_nt_fc3_vis5_stub_operations_carry_stub_provenance(artifact: ModelArtifact) -> None:

@@ -1,4 +1,4 @@
-# T-IGX-043-C — EQO-A remediation FC-3: vendor/provider selector fail-closed
+﻿# T-IGX-043-C — EQO-A remediation FC-3: vendor/provider selector fail-closed
 
 ## Scope
 
@@ -44,7 +44,7 @@ The census of default-dependent tests (a bounded run over the 52 files of `censu
 
 Everything outside the write set above: the CONFIG-X scan extension (`T-IGX-043-F`); `scripts/`, `.github/`, `docs/`, `governance/` other than this ticket and its plan, the roadmap, the FRZ checklist, qualification and IIAC records, `pyproject.toml`, `uv.lock`; the files of FC-1 (Nexus routing, stores, `harness_host_runtime.py`; FC-3 only passes an existing keyword to it from the host factories), FC-2 (capacity, queue, memory, OTLP, sandbox: A4-032 parts a and b; creator of `wiring_posture.py`), FC-4 (skill pinning, KV durability), W-A/W-B (boundary inversion, resolver, composition roots); FRZ promotion; Docker, new vendor integrations and production configuration (C10/C15 freeze); live vendor tests; fabricated parse defaults in vendor vision adapters, the explicit in-memory vector store of `legal_product()` and the Hugging Face host literal (recorded as observations in the plan, section 16).
 
-## Lifecycle state
+## Lifecycle state (superseded by settlement below)
 
 plan_approved
 
@@ -59,3 +59,51 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-SEC-04 | NT-SEC-04-1, NT-SEC-04-2 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+## Execution settlement (AF-W3-PT-FC3-01, 2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3 | AF-W3-PT-FC3-01`. Base SHA: `f991794d8755b9a5df7a40959f1995dd4cefead6` (`HEAD` == `origin/development` at preflight). SCOPE=CLOSED; plan digest `475a6642fe356f678c3619abd5551f4fcc55bc80f55a3876406978514b2e0da4` unchanged.
+
+### Parts A–F disposition
+
+| Part | Status | Notes |
+|------|--------|-------|
+| A Embedding | ALREADY_IMPLEMENTED_VERIFIED | NT-FC3-E1..E6 green in Q1 (54 collected). |
+| B Vector store | ALREADY_IMPLEMENTED_VERIFIED | NT-FC3-V1..V4 green in Q1. |
+| C Notifications | ALREADY_IMPLEMENTED_VERIFIED | NT-FC3-N1..N13 green in Q1; O-08/L-1 preserved. |
+| D Vision | CORRECTED | Residual: post-backend zero detections invoked LAB fallback in Triton/HF adapters (plan §3.4). Fixed; NT-FC3-VIS3/VIS4 extended with injected fallback + `assert_not_called`. |
+| E Inbound verification | ALREADY_IMPLEMENTED_VERIFIED | NT-FC3-INT1..INT12 green in Q1. |
+| F Guardrails | ALREADY_IMPLEMENTED_VERIFIED | NT-FC3-GR1..GR5 green in Q1. |
+
+### Vision zero-detections evidence
+
+- RED SHA: `f991794d8755b9a5df7a40959f1995dd4cefead6`, exit 1 (`test_nt_fc3_vis4_hf_zero_detections_empty`; HF fallback invoked).
+- GREEN: post-fix local run, 11/11 in `test_fc3_vision_fail_closed.py`.
+- Evidence logs: `.tmp/session/af-w3-pt-fc3-01/vision_zero_detections_red.log` (SHA256 `32B2733310B25A25DD2A1843818A14601C64DF3EE578FA7D137D3771F1DBBDAA`), `vision_zero_detections_green.log`, `q1_fc3.log`.
+
+### Qualification (this session)
+
+| Batch | Result |
+|-------|--------|
+| Q1 FC3 selectors | 54 passed (pytest `-o cache_dir=…`; `-p no:cacheprovider` aborts per DEV-03) |
+| Q2 CONFIG-X | 77 passed |
+| Q3 RW regression slice | 65 passed |
+| Q4 plan §6 (78 nodes) | PARTIAL — canonical `regression_nodes.txt` not in repo; `regression_scope_fc3_bundle.txt` lists 28 paths; slice executed via Q1–Q3 only |
+| FRZ-CFG-02/06, FRZ-SEC-04 | Owner NTs covered in Q1+Q3; prior red-first disposition preserved |
+
+### Changed paths (this delta)
+
+- `intergrax/model_inference/adapters/triton_vision.py`
+- `intergrax/model_inference/adapters/huggingface_inference_vision.py`
+- `tests/unit/model_inference/test_fc3_vision_fail_closed.py`
+
+### Residuals (unchanged)
+
+- FRZ-EXE-02 / FRZ-PLG-05: EVIDENCE_MISSING
+- STRICT host authority: OPEN_RESIDUAL (PT-FC1)
+- OP_B_PENDING=11; RED_FIRST_EVIDENCE=INCOMPLETE
+- PT-Q02 handoff prepared in session artifacts; no independent G6 PASS
+
+## Lifecycle state
+
+quality_gate
