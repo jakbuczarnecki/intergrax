@@ -34,7 +34,7 @@ One process at a time, under the shared pytest lock; none run when this ticket w
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Implementer session
 
@@ -54,3 +54,28 @@ Recorded by the implementer outside the plan text (the plan digest is unchanged)
 - Step 0 inventory (static, `.tmp/session/af2-pt-fc4/step0_inventory.md`): one product call site, `harness_host_runtime.py:409`; about 99 files reference `build_harness_host_runtime` and about 40 mention strict or product mode. Which of them pass a non-durable KV or document store in STRICT was not enumerated (needs a test run) and stays with the integrated-tree census of plan section 6; no host was adapted.
 - Not run (wave level, as the plan says): EBH-7 F10 classifier probe, COMPAT-X persisted inventory, ROADMAP-REPLAY-X, RB-2 re-pin, `tests/integration/distributed/test_redis_kv_store.py` (needs live Redis). No live Redis evidence exists.
 - Open items kept open as signed: who may attest Redis durability (no role named in `SKILLS.md`), the EBH-7 F10 classification of the six paths, and the test authorisations as the plan names them.
+
+## Qualification session AF-W3-PT-FC4-01
+
+Executor: Cursor Composer (`AF-W3-PT-FC4-01`). Execution SHA `2944320dad50398a56c738769daeed6089fdf947` on `development` (identical to verified remote baseline and FC3 publication ancestor). No new product-path delta in this session (six FC4 product files already on `development`).
+
+### Strict caller inventory (PRODUCT paths)
+
+| Caller | Line | Posture | KV / document source | Durability | STRICT expectation | Owner / residual |
+|--------|------|---------|----------------------|------------|--------------------|------------------|
+| `intergrax/applications/_shared/harness_host_runtime.py` | 426 | `production_mode` from profile; passes `kv_store` / `document_store` from host wiring | Host-supplied `DistributedKVStore` / `DocumentStore` | Derived via pin store | Admission when backing durable; refusal otherwise | Host composition owner |
+| `intergrax/skills/skill_execution_pinning_wiring.py` | 37–47 | KV authoritative when both backends supplied | `wire_skill_execution_pinning_store` → `KvSkillExecutionPinningStore` / `DocumentStoreSkillExecutionPinningStore` | `kv_store_survives_process_restart` / strict document capability | Fail-closed via `validate_skill_execution_pinning_durability_for_composition` | T-IGX-043-D product set |
+| `applications/governed_contractor_application/host/factory.py` | 346 | STRICT host entry | `profile_persistence_kwargs.key_value_cache` (composition) | UNVERIFIED without live host profile trace | Expected Sqlite KV when wired per reference persistence | GCA host owner |
+| `build_harness_host_runtime` (other application factories) | various | LAB / STRICT per manifest | UNVERIFIED per host | UNVERIFIED | Integrated-tree census deferred per plan §6 | Respective application owners |
+
+### Qualification results (@ `2944320d`)
+
+- **Q1 (FC4 focused):** green — all nodes in the four FC4 test files plus migrated SKILL-X nodes for durability (no failures in unit scope).
+- **Q2 (mandated regression batch, one process, 185 items):** 178 passed, 7 failed, 0 skipped. Residuals (out of FC4 write-set): `test_me15_bound_skill_composition_uses_canonical_execution_binding` (`SkillBridgeCompositionError: prompt_registry required`); six `test_prod_q_r1_r7_q_p2_c_http_execution_admission.py` nodes (`ProductionContextCompositionError` — production context manager missing engine/LLM adapter). Classified REGRESSION_RESIDUAL / owner: marketplace integration and PROD-Q harness respectively.
+- **Q3 (Redis environment):** `redis` importable in project venv; all six historical `ModuleNotFoundError` nodes in `test_redis.py` green in this run (0 current Redis-env failures).
+- **Q4 static:** `ruff check` and `ruff format --check` PASS on twelve FC4 paths; `pyright` 24 findings (12× `bundle.py` `**config_overrides: object` forwarding including `durability_attestation`; 1× `DurableSkillPinningCapability` protocol return; 11× test doubles / `SkillExecutionPinningStore.is_durable` — pre-existing pattern plus durability_attestation surface); `check_docs_domain_pairs.py` OK; ticket-only `git diff --check` clean.
+- **Q5 governance:** `verify_rw_plan_phase_check3.py` exit 0; `--pre-g2` exit 1 (11 OP-B `EVIDENCE_MISSING`, expected); `verify_arch_freeze_plan_traceability.py` exit 0; `igx_gov ticket` exit 0 after ticket staging.
+- **Documentation (`SKILLS.md`):** ALREADY_IMPLEMENTED_VERIFIED — default-False KV, SQLite reused-file limit, strict document `is True`, KV precedence, Redis typed attestation, both AOF mechanisms, claim limits, no live Redis, OPEN-ATT-1 (operator authority unnamed).
+- **Historical red-first @ `258bbf6a`:** HISTORICAL_RED_FIRST_EVIDENCE_INCOMPLETE (no authorized replay); prior implementer notes retained.
+- **Evidence log:** `.tmp/proof/af-w3-pt-fc4-01/pytest_batch.txt` (LOCAL_ONLY).
+- **FRZ / wave:** EQOA-A4-002 not closed; FRZ-PRD-07 not promoted; `RED_FIRST_EVIDENCE=INCOMPLETE`; OPEN-ATT-1 open; PT-Q02 / RB-2 / independent audit pending.
