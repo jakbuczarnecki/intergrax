@@ -1,0 +1,28 @@
+{
+  "schema": "eqo.pre_g2_mapped_qualification_batch_manifest.v1",
+  "batch_id": "EC-W3-MAPPED-QUALIFICATION-05",
+  "execution_sha": "f0cc4cf6e5c3a439762ccd7e17c96f2f2474c0df",
+  "recorded_utc": "2026-11-27T09:37:02Z",
+  "evidence_artifacts": {
+    "CORRECTIVE_SETTLEMENT.md": "1b528f7ffb50bbf361a37a7a771e1965753d48b65b57483efccc5598df659dbb",
+    "DES_PREREG.json": "201b86773869e75552b44b53b360a0e8b832059611853287e5a7096e7c87c281",
+    "ENVIRONMENT_MANIFEST.json": "ac7fa7e352ba566955ae1955e4f955d466e032ba420633adea044d9043d9a119",
+    "EVIDENCE_INTEGRITY_REPAIR.json": "ac25cb13f78eb21fa43d42735e5944c1ed0145f09562ec89071fe8d0ca7ad9b5",
+    "junit/d01_architecture.xml": "bc41a2f9bd790c4b08307a42c0e2700c26d452680bab5e155ca5420452d5f971",
+    "junit/d02_tenant_rag_context.xml": "880af20d2b995635d318f58454e26dd22a5038fa5068bb2901c4659ae60034de",
+    "junit/d03_security.xml": "dc8b6e5ed69eaa5c1ce2937cbf6eb4f6ccec492839071896de856c3c324a81be",
+    "junit/d04_evidence_reliability.xml": "c6f98ae9e7716eb8ff53795a6471141f6198691ef9bf21a12c636e0270858b13",
+    "junit/d05_skills.xml": "78740b7917dafe052107e60a12f14fc32bfecd446a10b63a364eae830b8f90b6",
+    "logs/d01_architecture.log": "fcf0dbdb2475d781adf3d5738ed43604fc4bdb914f78d1dbafd62af6726b5aaa",
+    "logs/d02_tenant_rag_context.log": "52ea40733de6a29c2eaa45f06995fa9dbcf7e85fdba2e09b384cd81ec62c6a2d",
+    "logs/d03_security.log": "46ef2397a50e870d2f75c33c0a2ba31d89390cc5c45d34d7c62f8eb05c62f3dd",
+    "logs/d04_evidence_reliability.log": "3e93a1e8f3c87630fbac36de51fa09d51792a2f03372e13f90113b9c1416ee4a",
+    "logs/d05_skills.log": "2eb65df9d107bf3755ed8f81d597c8b6f9d68cae2373a79107599a99f18f50f2",
+    "logs/environment_sync.log": "b86c71837e9e415ff1d68af169b7ea1f51bfcc7e08d7c598a9ff0cacba29f911",
+    "MAPPED_TEST_EXECUTION_QUEUE.json": "1d1fb821263ee96fb2083abe354e7cdfcefa704218f3856cf60ef668a55a0fd1",
+    "OBLIGATION_EXECUTION_MATRIX.json": "6e5d5751d097aec3face8dc27a9a6757961597b0bf44759daa0f5805d95af75a",
+    "REMAINING_QUALIFICATION_QUEUE.json": "7285d5dfc1b9980f2d0c5a359780f5a24757ac852205525d9a5801709f5680ec",
+    "RUN_MANIFEST.json": "190d89d0e4a0854e4beb0753b52e252466d51751bfc959123737ad7a00b3b01e"
+  },
+  "formal_certification_status": "NOT_ESTABLISHED"
+}

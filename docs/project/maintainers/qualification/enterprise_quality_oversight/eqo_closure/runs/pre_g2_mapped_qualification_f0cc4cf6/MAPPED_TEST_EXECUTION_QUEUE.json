@@ -1,0 +1,649 @@
+{
+  "schema": "eqo.mapped_test_execution_queue.v1",
+  "execution_sha": "f0cc4cf6e5c3a439762ccd7e17c96f2f2474c0df",
+  "recorded_utc": "2026-11-27T09:31:54Z",
+  "classification_counts": {
+    "APPLICATION_HOST_QUEUE": 2,
+    "QUALIFICATION_QUEUE": 29,
+    "SUPPORT_MODULE": 4,
+    "UNIT_EXECUTION": 28
+  },
+  "unique_path_count": 63,
+  "paths": [
+    {
+      "path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "git_blob_id_at_execution_sha": "a85efea4bd8fe87e1d37395793c76014aab4bdc1",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "path_classification": "APPLICATION_HOST_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "git_blob_id_at_execution_sha": "4bd8189e6617c2e50d67c8f956faadae6ce51ae3",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "path_classification": "APPLICATION_HOST_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "git_blob_id_at_execution_sha": "89b4604955ee7b582e3d3506f23779c83403f79a",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "git_blob_id_at_execution_sha": "3eede46e452e6d2342543329d81b4ec700623e25",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "git_blob_id_at_execution_sha": "334c1958c26453011262e88ee6e0589446640541",
+      "obligation_ids": [
+        "EDER-F-0020",
+        "EDER-F-0080"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "git_blob_id_at_execution_sha": "91b815474250868559df3ad7ab77fe6fcca73f10",
+      "obligation_ids": [
+        "EDER-F-0080"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py",
+      "git_blob_id_at_execution_sha": "a6eae2fb1406ad47956f2a19f44fa2cbdf5dd8d9",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "git_blob_id_at_execution_sha": "d5cb5e1200adcf0b92d54988cdb0bc4aefa80258",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0186"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "git_blob_id_at_execution_sha": "d356cf0ebdf245c20e9e1de5716a3be62a850244",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/_ebh7_scope_residual_register.py",
+      "git_blob_id_at_execution_sha": "fdfacf08d690e423b9ce1862ecde9213339afef5",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path_classification": "SUPPORT_MODULE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/_ebh7_skip_disposition_register.py",
+      "git_blob_id_at_execution_sha": "247956bf613029f15a316415f3757bdb7e97881c",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path_classification": "SUPPORT_MODULE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/_tenant_unknown_role_dispositions.py",
+      "git_blob_id_at_execution_sha": "5190521d554c219578d59fe518e6840dd3e24889",
+      "obligation_ids": [
+        "EDER-F-0188"
+      ],
+      "path_classification": "SUPPORT_MODULE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py",
+      "git_blob_id_at_execution_sha": "5c6ea952ef819e4ceaf3ce53b325e692c62a9a7d",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py",
+      "git_blob_id_at_execution_sha": "ecafa584d982c15cf1d4e5753a34c6cd66660000",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py",
+      "git_blob_id_at_execution_sha": "e9aa720fd908a2619b0447393d34a9e6498f3758",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "git_blob_id_at_execution_sha": "6ab22e632c05ecb5a3d8b9b228a1d14e37f54259",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0210"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py",
+      "git_blob_id_at_execution_sha": "3997176d4c8ac35fd404ba878972dba099b7b3d4",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py",
+      "git_blob_id_at_execution_sha": "ab786646d3738668f4044d27e69d5bbcf4316570",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py",
+      "git_blob_id_at_execution_sha": "4461749b914e62b2633888e9594898b01f4bca41",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py",
+      "git_blob_id_at_execution_sha": "6177e71ebb6c65f92063e8f3280ab913e1a519c8",
+      "obligation_ids": [
+        "EDER-F-0188"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "git_blob_id_at_execution_sha": "80160be7545aa0d0edacd9dceaf3a8d862ab34da",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "git_blob_id_at_execution_sha": "44a7a264ad40eb73cda551ae20a1160f1fdd4d08",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "git_blob_id_at_execution_sha": "ac05f94ce3b227b325df673e5e20889e0f37d75e",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "git_blob_id_at_execution_sha": "5ba8691c11b9ed718d56fa47aa2bf417cfcb2f9d",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+      "git_blob_id_at_execution_sha": "ac50490c9175eb7269da00440890fb31938be243",
+      "obligation_ids": [
+        "EDER-F-0158"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "git_blob_id_at_execution_sha": "6a36303d82fd7eb0e90737b4ade895ddddb4b2ba",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "git_blob_id_at_execution_sha": "9b06b6a8b3d5f3e3a06531972ee206ca2a4e0dff",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "git_blob_id_at_execution_sha": "b2bd6b6020785c3b5614b66757ee6a431783c43f",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "git_blob_id_at_execution_sha": "434a4e4a25e5ef6ec31c496a1eef22909bbb2ce5",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "git_blob_id_at_execution_sha": "03d4915ca3531ad93ae68e618ddc2e53de220c34",
+      "obligation_ids": [
+        "EDER-F-0023",
+        "EDER-F-0107"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "git_blob_id_at_execution_sha": "2790231e1c644541e1b238616ad023c07bb95375",
+      "obligation_ids": [
+        "EDER-F-0107"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "git_blob_id_at_execution_sha": "e92aa51600398bbe1c59ad33a9295549946cd03d",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "git_blob_id_at_execution_sha": "9dbce6f1c6d68e341f1636006c4fe6a2f9c61af7",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "git_blob_id_at_execution_sha": "2e24d0b54a973222b9e631124752278aa062889c",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "path_classification": "QUALIFICATION_QUEUE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py",
+      "git_blob_id_at_execution_sha": "df74737b9213b31f51b85b791d4f13fbc58b4a5b",
+      "obligation_ids": [
+        "EDER-F-0124"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/applications/test_a4007_caller_import_refusal.py",
+      "git_blob_id_at_execution_sha": "354f2641d8d7f6c38345b338eb72d8377297359d",
+      "obligation_ids": [
+        "EDER-F-0116"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/applications/test_a4007_import_policy_derivation.py",
+      "git_blob_id_at_execution_sha": "e1101646feb465a390041c62376cfe8a3bb59d75",
+      "obligation_ids": [
+        "EDER-F-0116"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/applications/test_wb_import_allowlist.py",
+      "git_blob_id_at_execution_sha": "16e5e6d0c909938f2549437ed3b23d7b6d463fbf",
+      "obligation_ids": [
+        "EDER-F-0116"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "git_blob_id_at_execution_sha": "901387a10d56588d0628db8edcfc1385df0e094d",
+      "obligation_ids": [
+        "EDER-F-0200"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+      "git_blob_id_at_execution_sha": "748b64bd09df2769366917bb244ca1fb0c4bc3cd",
+      "obligation_ids": [
+        "EDER-F-0124"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/architecture/test_tier_dependency_boundaries.py",
+      "git_blob_id_at_execution_sha": "f57e7fdab78f3b0ac8400f94dc0e88475457a689",
+      "obligation_ids": [
+        "EDER-F-0200"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/campaign_b/_pt_t01_matrix.py",
+      "git_blob_id_at_execution_sha": "615a4c66b769f836837074d004f15be6e4c27998",
+      "obligation_ids": [
+        "EDER-F-0124"
+      ],
+      "path_classification": "SUPPORT_MODULE",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": false
+    },
+    {
+      "path": "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py",
+      "git_blob_id_at_execution_sha": "d29232e3a5e4cfb5d319443f452b42e9efb807b7",
+      "obligation_ids": [
+        "EDER-F-0124"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py",
+      "git_blob_id_at_execution_sha": "2d0e14d7aa300cee11504dd80710b9a58e1c1d92",
+      "obligation_ids": [
+        "EDER-F-0236"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/contracts/test_acp_prod_artifact_privacy.py",
+      "git_blob_id_at_execution_sha": "2c0fbb724e9f3344ee238aa7ce44f14c8f02fff4",
+      "obligation_ids": [
+        "EDER-F-0154"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "git_blob_id_at_execution_sha": "5f343c8845d7a689ba29c124ce8defc7acc79e0c",
+      "obligation_ids": [
+        "EDER-F-0154"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/contracts/test_evidence_artifact_reference.py",
+      "git_blob_id_at_execution_sha": "b125d9fc536e8e3adea0eef7db432aa4bf6e8399",
+      "obligation_ids": [
+        "EDER-F-0154"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "git_blob_id_at_execution_sha": "fcb517c4d45cf505c00fce8edbe6acd14e2effdb",
+      "obligation_ids": [
+        "EDER-F-0158"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "git_blob_id_at_execution_sha": "7d51f016cc2211c33c3110babe8f4a3001eadc86",
+      "obligation_ids": [
+        "EDER-F-0236"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+      "git_blob_id_at_execution_sha": "e8cd400fcc174fb26798cc0fb520391cee1e7cd6",
+      "obligation_ids": [
+        "EDER-F-0091"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "git_blob_id_at_execution_sha": "3f6c983f236f9fe889d81bc32c8f42c5b3f05018",
+      "obligation_ids": [
+        "EDER-F-0091"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py",
+      "git_blob_id_at_execution_sha": "fb71f55deb0d67ec830e01fff6ed06ad576e59e4",
+      "obligation_ids": [
+        "EDER-D-0005"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py",
+      "git_blob_id_at_execution_sha": "baadeb34df3810943d3e73c5cd4688b821096f7a",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "git_blob_id_at_execution_sha": "29154d31f68031b82a3e688f2e6bd53bb94ebf4b",
+      "obligation_ids": [
+        "EDER-F-0154"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "git_blob_id_at_execution_sha": "4747af9817d78d9f4fce16f2fcc146405c0a6b39",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "git_blob_id_at_execution_sha": "a7f71c20bd3145e50ffced2b6748a48cdaf330c8",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/security/test_sec_ent.py",
+      "git_blob_id_at_execution_sha": "96e5fce093c20ec0ed9278ffa573310b7fe75894",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "git_blob_id_at_execution_sha": "44aef55eff2c0b68a4acc69abf412b159851255e",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "git_blob_id_at_execution_sha": "abebbf7e924ad3fd48d8fe30c70b38609abb5c59",
+      "obligation_ids": [
+        "EDER-F-0236"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "git_blob_id_at_execution_sha": "2325c416765125ad2823470e97dafc7135db83a1",
+      "obligation_ids": [
+        "EDER-F-0080"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "git_blob_id_at_execution_sha": "b469b013e6f4da89ecb06c0d2db08995152d0eae",
+      "obligation_ids": [
+        "EDER-D-0085"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "git_blob_id_at_execution_sha": "c45c456b1be7973ad6a511a92dd330afbcefe651",
+      "obligation_ids": [
+        "EDER-D-0085",
+        "EDER-F-0107"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    },
+    {
+      "path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "git_blob_id_at_execution_sha": "f66582356019f0934f7f1bab7c570fb28121f19f",
+      "obligation_ids": [
+        "EDER-D-0085"
+      ],
+      "path_classification": "UNIT_EXECUTION",
+      "exists_at_execution_sha": true,
+      "execution_eligibility": true
+    }
+  ]
+}

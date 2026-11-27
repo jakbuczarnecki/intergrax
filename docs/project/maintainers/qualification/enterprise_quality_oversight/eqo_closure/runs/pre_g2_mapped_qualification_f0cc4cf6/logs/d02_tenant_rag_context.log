@@ -1,0 +1,96 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax-ec-w3-05-f0cc4cf6\.venv\Scripts\python.exe
+cachedir: build\pytest\63656-8b31017d\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax-ec-w3-05-f0cc4cf6
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 38 items
+
+tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant PASSED [  2%]
+tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes PASSED [  5%]
+tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id PASSED [  7%]
+tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id PASSED [ 10%]
+tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id PASSED [ 13%]
+tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id PASSED [ 15%]
+tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution PASSED [ 18%]
+tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch PASSED [ 21%]
+tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths PASSED [ 23%]
+tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute PASSED [ 26%]
+tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory PASSED [ 28%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator PASSED [ 31%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible PASSED [ 34%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden PASSED [ 36%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record PASSED [ 39%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation PASSED [ 42%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility PASSED [ 44%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing PASSED [ 47%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation PASSED [ 50%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring PASSED [ 52%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly PASSED [ 55%]
+tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids PASSED [ 57%]
+tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context PASSED [ 60%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest PASSED [ 63%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms PASSED [ 65%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes PASSED [ 68%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result PASSED [ 71%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result PASSED [ 73%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result PASSED [ 76%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id PASSED [ 78%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically PASSED [ 81%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy PASSED [ 84%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields PASSED [ 86%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content PASSED [ 89%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content PASSED [ 92%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields PASSED [ 94%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content PASSED [ 97%]
+tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed PASSED [100%]
+
+=================================== PASSES ====================================
+______ test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant _______
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: d:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_mapped_qualification_f0cc4cf6\junit\d02_tenant_rag_context.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant
+PASSED tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes
+PASSED tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id
+PASSED tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id
+PASSED tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id
+PASSED tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id
+PASSED tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution
+PASSED tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch
+PASSED tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths
+PASSED tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute
+PASSED tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly
+PASSED tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids
+PASSED tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content
+PASSED tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed
+============================= 38 passed in 3.63s ==============================
+
+warning: `VIRTUAL_ENV=D:\Projekty\intergrax\.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead

@@ -1,0 +1,14 @@
+{
+  "schema": "eqo.environment_manifest.v1",
+  "batch_id": "EC-W3-MAPPED-QUALIFICATION-05",
+  "execution_sha": "f0cc4cf6e5c3a439762ccd7e17c96f2f2474c0df",
+  "worktree_path": "D:\\Projekty\\_wt\\intergrax-ec-w3-05-f0cc4cf6",
+  "uv_sync_command": "uv sync --locked --extra dev-ci --extra dev-ci-rag --extra mcp --extra llm-langchain-ollama",
+  "uv_sync_log": "logs/environment_sync.log",
+  "python_version": "3.12.11 (main, Sep  2 2025, 14:18:04) [MSC v.1944 64 bit (AMD64)]",
+  "import_verification_exit_code": 0,
+  "import_verification_stdout": "imports_ok",
+  "import_verification_stderr": "warning: `VIRTUAL_ENV=D:\\Projekty\\intergrax\\.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead",
+  "arch_freeze_dependency_status": "locked_sync_completed",
+  "recorded_utc": "2026-11-27T09:32:29Z"
+}

@@ -1,0 +1,2392 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax-ec-w3-05-f0cc4cf6\.venv\Scripts\python.exe
+cachedir: build\pytest\4384-9a008056\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax-ec-w3-05-f0cc4cf6
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 55 items
+
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_profile_disabling_task_memory_is_not_reenabled_by_env PASSED [  1%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_refuses_missing_human_store_without_ack FAILED [  3%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_accepts_the_typed_acknowledgement FAILED [  5%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_worker_composition_refuses_missing_persistence PASSED [  7%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_acknowledgement_is_refused_when_hitl_tools_are_wired FAILED [  9%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context FAILED [ 10%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_tier2_build_context_takes_posture_from_the_host PASSED [ 12%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_tier2_context_without_host_admission_configuration_fails_closed PASSED [ 14%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject] PASSED [ 16%]
+tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate] PASSED [ 18%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_01_build_agent_product_context_refuses_unregistered_import_path PASSED [ 20%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_02_build_agent_strict_only_context_refuses_unregistered_import_path PASSED [ 21%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_03_build_agent_product_context_refuses_unregistered_factory_path PASSED [ 23%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_04_resolve_builder_with_empty_builders_refuses_unregistered_import_path PASSED [ 25%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_05_factory_result_validation_refuses_unregistered_import_path PASSED [ 27%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_06_environment_conformance_refuses_unregistered_import_path PASSED [ 29%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_07_manifest_lab_compat_authority_refuses_unregistered_import_path PASSED [ 30%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_08_package_dependencies_product_balanced_refuses_unregistered_import_path PASSED [ 32%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_01_lab_context_loads_serialized_unregistered_agent PASSED [ 34%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_02_product_context_resolves_registered_serialized_agent PASSED [ 36%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_03_diff_roster_never_imports PASSED [ 38%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_05_operator_added_binding_under_product_context_is_not_refused PASSED [ 40%]
+tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_06_lab_manifest_context_stays_unrestricted_for_unregistered_serialized_binding PASSED [ 41%]
+tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_01_sets_follow_the_registered_manifests PASSED [ 43%]
+tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_02_empty_registry_in_guard_posture_permits_nothing PASSED [ 45%]
+tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_03_posture_is_decided_by_wiring_fails_closed PASSED [ 47%]
+tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_04_new_keywords_forward_to_the_loader PASSED [ 49%]
+tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_05_registered_product_ids_map_to_application_directories PASSED [ 50%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_18_load_callable_outside_allowlist_refused PASSED [ 52%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_19_fail_closed_without_allowlist_refused PASSED [ 54%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_20_resolve_agent_type_outside_allowlist_refused PASSED [ 56%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_21_migration_manifest_outside_allowlist_refused PASSED [ 58%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_22_mcp_builder_outside_allowlist_refused PASSED [ 60%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_23_prefix_boundary PASSED [ 61%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_24_lab_unrestricted_control PASSED [ 63%]
+tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_30_scoreboard_loader_outside_agents_refused PASSED [ 65%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports PASSED [ 67%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings PASSED [ 69%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected PASSED [ 70%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged PASSED [ 72%]
+tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_tier2_build_context_takes_posture_from_host_not_a_literal PASSED [ 74%]
+tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent PASSED [ 76%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_platform_does_not_statically_import_agents_or_applications PASSED [ 78%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_agents_do_not_statically_import_applications PASSED [ 80%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_applications_do_not_import_other_applications FAILED [ 81%]
+tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py::test_nt02_bare_external_contractor_agent_default_is_relaxed PASSED [ 83%]
+tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py::test_nt02_strict_host_flag_prepares_production_mode PASSED [ 85%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_python_sources_utf8_no_bom_and_parseable PASSED [ 87%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_allowlist_entries_currently_import_runtime PASSED [ 89%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist PASSED [ 90%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_self_healing_contracts_have_no_runtime_imports PASSED [ 92%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_unallowlisted_runtime_import_detected_in_isolated_tree PASSED [ 94%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_documented_allowlist_permits_runtime_import_in_isolated_tree PASSED [ 96%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_synthetic_stale_allowlist_entry_detected PASSED [ 98%]
+tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_qual_x_reconciliation_uses_same_allowlist_ssot PASSED [100%]
+
+================================== FAILURES ===================================
+_____ test_strict_harness_runtime_refuses_missing_human_store_without_ack _____
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_strict_harness_runtime_re0')
+
+    def test_strict_harness_runtime_refuses_missing_human_store_without_ack(tmp_path: Path) -> None:
+        """NT-FC1-20: refused before the loop is returned."""
+        with pytest.raises(HumanDecisionPersistenceNotConfiguredError):
+>           _strict_harness(tmp_path)
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:205: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_strict_harness_runtime_re0')
+
+    def _strict_harness(
+        tmp_path: Path,
+        *,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+        enabled_bundles: tuple[str, ...] = (),
+    ) -> HarnessHostRuntime:
+        """Real STRICT governed-contractor ``build_harness_host_runtime`` with legal prerequisites."""
+        settings = GovernedContractorBackendSettings.from_env()
+        manifest = build_governed_contractor_manifest()
+        base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        env = resolve_reference_production_strict_host_environment(base_env)
+        env = env.model_copy(
+            update={
+                "observability_profile": env.observability_profile.model_copy(
+                    update={"bounded_event_delivery_enabled": False},
+                ),
+            },
+        )
+        sandbox_root = tmp_path / "sandbox"
+        if env.sandbox is None:
+            env = env.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+        else:
+            env = env.model_copy(
+                update={"sandbox": env.sandbox.model_copy(update={"root": sandbox_root})},
+            )
+        if env.reliability_profile.dependency_concurrency_admission is None:
+            env = env.model_copy(
+                update={
+                    "reliability_profile": env.reliability_profile.model_copy(
+                        update={
+                            "dependency_concurrency_admission": tool_dependency_concurrency_admission_configuration(
+                                "fc1-harness-tool",
+                            ),
+                        },
+                    ),
+                },
+            )
+        if enabled_bundles:
+            merged = [*env.tool_profile.enabled_bundles, *enabled_bundles]
+            env = env.model_copy(
+                update={"tool_profile": env.tool_profile.model_copy(update={"enabled_bundles": merged})},
+            )
+        manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        platform = build_reference_production_platform_persistence(db_path=tmp_path / "fc1-kv.db")
+        backing = ExecutionContinuationDurableBacking()
+        backing_execution_continuation_state_store(backing)
+        continuation_store = execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(backing),
+        )
+>       return build_harness_host_runtime(
+            manifest_for_runtime,
+            env,
+            settings=settings,
+            tenant_id=manifest.app_id,
+            registry_projection=build_governed_contractor_test_registry_projection(),
+            key_value_cache=platform.kv_store,
+            document_store=platform.document_store,
+            execution_continuation_state_store=continuation_store,
+            collaborative_work_repositories=CollaborativeWorkRepositories(
+                membership=InMemoryWorkspaceMembershipRepository(),
+                delegation=InMemoryAuthorityDelegationRepository(),
+                principal_authority=InMemoryPrincipalAuthorityRepository(),
+                policy=InMemoryCollaborativePolicyRepository(),
+                operation_profile=InMemoryCollaborativeOperationPolicyProfileRepository(),
+                store=_InMemoryCollaborativeWorkStoreOwner(),
+            ),
+            orchestration_decision_requirement_policy=(
+                default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            ),
+            agent_contract_authority=materialize_manifest_contract_authority_lab_compat(manifest_for_runtime),
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+        )
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+environment = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def build_harness_host_runtime(
+        manifest: ApplicationManifest,
+        environment: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        tenant_id: str | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        idempotency_db_path: Path | None = None,
+        use_in_memory_trace: bool = False,
+        builders: dict[type, Any] | None = None,
+        compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]] | None = None,
+        registry: AgentRegistry | None = None,
+        registry_projection: MaterializedRegistryProjection | None = None,
+        registry_assembly_mode: RegistryAssemblyMode | None = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
+        notification_adapter: NotificationAdapter | None = None,
+        application_host: ApplicationHost | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        profile_layers: tuple[ProfileLayerInput, ...] = (),
+        revision_store: EffectiveProfileRevisionStore | None = None,
+        pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+        active_store: ActiveEffectiveProfileRevisionStore | None = None,
+        llm_adapter: LLMAdapter | None = None,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: SkillRegistry | None = None,
+        meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+        runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+        active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
+        orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+        collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+        collaborative_work_integration_profile: IntegrationProfile | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
+        provider_invocation_store: ProviderInvocationStore | None = None,
+        require_strict_orchestration_topology_reliability: bool = False,
+        strict_orchestration_topology_submission_port_builder: (
+            StrictOrchestrationTopologySubmissionPortBuilder | None
+        ) = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
+        tool_life_durable_db_path: Path | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+    ) -> HarnessHostRuntime:
+        """
+        Single H-APP path: environment â†’ platform composition â†’ canonical execution.
+    
+        Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+        Nexus is composed internally as the ORCHESTRATION strategy backend only.
+        """
+        resolved_manifest = manifest
+        if manifest.environment is None:
+            resolved_manifest = manifest.model_copy(update={"environment": environment})
+    
+        profile_resolution = resolve_profile(environment, layers=profile_layers)
+        effective_environment = profile_resolution.effective_profile
+        production_mode = effective_environment.execution_mode.value == "strict"
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        profile_persistence = resolve_effective_profile_persistence_wiring(
+            production_mode=production_mode,
+            kv_store=kv_store,
+            document_store=doc_store,
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            active_store=active_store,
+        )
+        revision_scope = EffectiveProfileRevisionScope(
+            application_id=resolved_manifest.app_id,
+            tenant_id=tenant_id,
+        )
+        # P1.6B: capture activation baseline before candidate preparation â€” immutable intent.
+        activation_baseline_binding: ActiveEffectiveProfileRevisionBinding | None = (
+            profile_persistence.active_store.get_active(revision_scope)
+        )
+        activation_baseline_revision_id = (
+            activation_baseline_binding.revision_id if activation_baseline_binding is not None else None
+        )
+        effective_profile_revision = materialize_effective_profile_revision(
+            profile_resolution,
+            scope=revision_scope,
+            store=profile_persistence.revision_store,
+        )
+    
+        resolved_agent_contract_authority = agent_contract_authority
+        if resolved_agent_contract_authority is None and not production_mode:
+            from intergrax.applications._shared.roster_agent_contract_authority import (
+                materialize_manifest_contract_authority_lab_compat,
+            )
+    
+            resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+                resolved_manifest,
+            )
+    
+>       env_wiring = wire_application_environment(
+            resolved_manifest,
+            effective_environment,
+            settings=settings,
+            tenant_id=tenant_id,
+            document_store=document_store,
+            key_value_cache=key_value_cache,
+            boundary_event_buffer=boundary_event_buffer,
+            llm_adapter=llm_adapter,
+            application_tool_registry=application_tool_registry,
+            application_skill_registry=application_skill_registry,
+            agent_contract_authority=resolved_agent_contract_authority,
+            human_decision_store=human_decision_store,
+        )
+
+intergrax\applications\_shared\harness_host_runtime.py:396: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def wire_application_environment(
+        manifest: ApplicationManifest,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        integration_profile: Any = None,
+        tenant_id: str | None = None,
+        runtime_event_bus: RuntimeEventBus | None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        sandbox_session: Any | None = None,
+        websearch_executor: WebSearchQueryExecutor | None = None,
+        conformance_check: bool = True,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: Any | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
+        llm_adapter: LLMAdapter | None = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+    ) -> ApplicationEnvironmentWiring:
+        """
+        Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
+    
+        Replaces scattered per-host wiring sequences (lab/legal/research/poc).
+        """
+        normalized_tenant_id = _normalize_host_tenant_id(tenant_id)
+        bootstrap_application_integration_catalog()
+        security_bootstrap = _bootstrap_application_security_providers()
+        _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
+        context_bootstrap = bootstrap_application_context_catalog()
+        assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
+        resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+        reliability_wiring = wire_application_reliability(env)
+        integration_health = probe_integration_profile_health(
+            resolved_integration,
+            circuit_breaker_config=reliability_wiring.circuit_breaker_config,
+        )
+    
+        rag_stack = None
+        rag_llm_adapter = None
+        host_embedding_manager = None
+        host_rag_profile = None
+        if env.context_profile.enable_rag:
+            host_rag_profile = resolve_rag_profile_for_environment(
+                env,
+                integration_profile=resolved_integration,
+            )
+            if tenant_id is None:
+                embedding_slug = (
+                    resolved_integration.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER)
+                    if resolved_integration is not None
+                    else None
+                )
+                lab_opt_in: LabSelectorOptIn | None = None
+                if wiring_fails_closed(env):
+                    if embedding_slug is None:
+                        raise EmbeddingProviderConfigurationError(
+                            "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
+                        )
+                elif embedding_slug is None:
+                    lab_opt_in = LabSelectorOptIn(
+                        selector=lab_embedding_provider_slug(),
+                        reason="derived laboratory embedding default for non-strict host wiring",
+                    )
+                host_embedding_manager = create_default_embedding_manager(
+                    integration_profile=resolved_integration,
+                    lab_opt_in=lab_opt_in,
+                )
+        if tenant_id is not None:
+            rag_llm_adapter = llm_adapter
+            if rag_llm_adapter is None:
+                rag_llm_adapter = resolve_optional_environment_llm_adapter(env)
+            rag_stack = resolve_rag_stack_for_memory_wiring(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                llm_adapter=rag_llm_adapter,
+            )
+            assert_memory_vector_backend_available(env, rag_stack)
+    
+        tool_profile = tool_profile_with_sandbox(env)
+        env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+        tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+        if resolved_integration is not None:
+            tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
+    
+        skill_bundle_ids = tuple(env.skill_profile.enabled_bundles) if env.skill_profile.enabled_bundles else None
+        catalog_bootstrap = bootstrap_catalogs(
+            register_shipped=True,
+            skill_bundle_ids=skill_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
+        assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
+        assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+    
+        skill_wiring = build_application_skill_wiring(
+            env.skill_profile,
+            catalog_bootstrap=catalog_bootstrap,
+        )
+        if application_skill_registry is not None:
+            from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring
+            from intergrax.skills.registry.runtime import SkillRegistry
+    
+            if not isinstance(application_skill_registry, SkillRegistry):
+                raise TypeError("application_skill_registry must be a SkillRegistry")
+            skill_wiring = ApplicationSkillWiring(
+                profile=skill_wiring.profile,
+                registry=application_skill_registry,
+            )
+    
+        validate_capability_dependencies_for_environment(
+            env.model_copy(update={"tool_profile": tool_profile}),
+            skill_registry=skill_wiring.registry,
+        )
+        wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
+        if env.modality_profile is not None:
+            wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+        from intergrax.applications._shared.integration_tool_wiring import (
+            wire_integration_tool_context,
+        )
+    
+        wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+        if document_store is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, document_store=document_store)
+        if key_value_cache is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
+        codecraft_wiring = wire_application_codecraft(env, producer_adapter=None)
+        wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            extras={
+                **wiring_context.extras,
+                "effective_environment_profile": env,
+            },
+        )
+        if resolved_integration is not None:
+            wiring_context = replace(
+                wiring_context,
+                extras={
+                    **wiring_context.extras,
+                    "integration_profile": resolved_integration,
+                },
+            )
+    
+        memory_wiring = resolve_memory_platform_wiring(
+            env,
+            integration_profile=resolved_integration,
+            tenant_id=normalized_tenant_id,
+        )
+        assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
+        from intergrax.applications._shared.memory_wiring import (
+            build_session_manager_from_environment,
+        )
+    
+        if tenant_id is None:
+            from intergrax.runtime.execution.session_host_composition import SessionManager
+    
+            session_manager = SessionManager(memory_wiring.session_storage)
+            user_profile_manager = None
+        else:
+            session_manager = build_session_manager_from_environment(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                memory_wiring=memory_wiring,
+                rag_stack=rag_stack,
+            )
+            user_profile_manager = build_user_profile_manager(
+                memory_wiring.user_profile_store,
+                env,
+                tenant_id=tenant_id,
+                rag_stack=rag_stack,
+            )
+        from dataclasses import replace
+    
+        session_wiring_extras = {
+            **wiring_context.extras,
+            "session_manager": session_manager,
+        }
+        host_memory_plane = session_manager.memory_control_plane
+        if host_memory_plane is not None:
+            session_wiring_extras["memory_control_plane"] = host_memory_plane
+        if user_profile_manager is not None:
+            wiring_context = replace(
+                wiring_context,
+                user_profile_manager=user_profile_manager,
+                extras=session_wiring_extras,
+            )
+        else:
+            wiring_context = replace(
+                wiring_context,
+                extras=session_wiring_extras,
+            )
+        wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+        wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
+        wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
+    
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            tenant_id=normalized_tenant_id,
+            storage_audit_sink=ListStorageAccessAuditSink(),
+        )
+    
+        hosted_session = None
+        if wiring_context.sandbox_session is None and resolved_integration is not None:
+            from intergrax.applications._shared.sandbox_host_wiring import (
+                resolve_hosted_sandbox_session,
+            )
+            from intergrax.runtime.sandbox.hosted_session import (
+                LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                HostedSandboxTenantRequiredError,
+            )
+    
+            if normalized_tenant_id is not None:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=normalized_tenant_id,
+                    task_id=manifest.app_id,
+                )
+            elif wiring_fails_closed(env) and _integration_sandbox_host_configured(resolved_integration):
+                raise HostedSandboxTenantRequiredError(
+                    "hosted sandbox session requires a host tenant when sandbox_host is configured"
+                )
+            else:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                    task_id=LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                )
+    
+        tool_wiring = build_application_tool_wiring(
+            tool_profile,
+            catalog_bootstrap=catalog_bootstrap,
+            integration_profile=resolved_integration,
+            wiring_context=wiring_context,
+            vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
+            embedding_manager=rag_stack.embedding_manager if rag_stack is not None else host_embedding_manager,
+            retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+            reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
+            rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
+            retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+            rag_graph_store=rag_stack.graph_store if rag_stack is not None else None,
+            toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
+            sandbox_session=sandbox_session or hosted_session,
+            websearch_executor=websearch_executor,
+            security_profile=env.security_profile,
+            human_decision_store=human_decision_store,
+        )
+        tool_wiring = apply_application_owned_tool_registry(
+            manifest,
+            tool_wiring,
+            application_tool_registry,
+        )
+        policy_bundle = wire_policy_bundle(
+            env.model_copy(
+                update={
+                    "domain_policy_fragments": {
+                        **env.domain_policy_fragments,
+                        **codecraft_wiring.domain_fragments,
+                    },
+                },
+            ),
+            package_qualifications=platform_plugin_package_qualifications,
+        )
+        assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
+        prompt_registry = resolve_prompt_registry(env.prompt_profile)
+        if env.prompt_profile.load_on_startup and prompt_registry is not None:
+            prompt_registry.load_all()
+        enabled_skill_ids = enabled_skill_ids_for_profile(skill_wiring.profile)
+        if enabled_skill_ids:
+            skill_composition = SkillResolver(skill_wiring.registry).resolve_composition(
+                enabled_skill_ids,
+            )
+>           policy_bundle = merge_skill_policy_fragments(
+                policy_bundle,
+                skill_composition.pack,
+                composition=skill_composition,
+            )
+
+intergrax\applications\_shared\environment_wiring.py:541: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x00000282766EDDC0>, declarative_policy_runtime=None)
+pack = ResolvedSkillPack(resolved_skills=(ResolvedSkillRef(skill_id='harness.context_demo', version='1.0.0', qualified_id='ha...lRiskTier.MEDIUM: 'medium'>, snapshot_digest='sha256:a9b9a19c63fb7aef5a7c43faa5ffefef8a688be13ae7d3b9b9bd8a412c183a06')
+
+    def merge_skill_policy_fragments(
+        bundle: RuntimePolicyBundle,
+        pack: ResolvedSkillPack,
+        *,
+        composition: ResolvedSkillComposition | None = None,
+    ) -> RuntimePolicyBundle:
+        """SK-BRIDGE.2 â€” merge skill catalog policy fragments into the host bundle."""
+        del composition
+        if not pack.policy_fragment_ids:
+            return bundle
+    
+        fragments = dict(bundle.domain_fragments)
+        appended_rules: list[DeclarativePolicyRule] = []
+        skill_rules_with_source: list[tuple[str, DeclarativePolicyRule]] = []
+    
+        for fragment_id in sorted(pack.policy_fragment_ids):
+>           payload = host_policy_fragment_payload(bundle, fragment_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\applications\_shared\skill_bridge_wiring.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x00000282766EDDC0>, declarative_policy_runtime=None)
+fragment_id = 'harness.policy_smoke'
+
+    def host_policy_fragment_payload(
+        bundle: RuntimePolicyBundle,
+        fragment_id: str,
+    ) -> dict[str, Any]:
+        raw = bundle.domain_fragments.get(fragment_id)
+        if raw is None:
+>           raise SkillBridgeCompositionError(
+                f"policy fragment missing from host catalog: {fragment_id}",
+            )
+E           intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+
+intergrax\skills\instruction_policy_pins.py:143: SkillBridgeCompositionError
+________ test_strict_harness_runtime_accepts_the_typed_acknowledgement ________
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_strict_harness_runtime_ac0')
+
+    def test_strict_harness_runtime_accepts_the_typed_acknowledgement(tmp_path: Path) -> None:
+        """Control for NT-FC1-20: the acknowledgement path composes."""
+>       runtime = _strict_harness(tmp_path, disable_human_decision_persistence=True)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_strict_harness_runtime_ac0')
+
+    def _strict_harness(
+        tmp_path: Path,
+        *,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+        enabled_bundles: tuple[str, ...] = (),
+    ) -> HarnessHostRuntime:
+        """Real STRICT governed-contractor ``build_harness_host_runtime`` with legal prerequisites."""
+        settings = GovernedContractorBackendSettings.from_env()
+        manifest = build_governed_contractor_manifest()
+        base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        env = resolve_reference_production_strict_host_environment(base_env)
+        env = env.model_copy(
+            update={
+                "observability_profile": env.observability_profile.model_copy(
+                    update={"bounded_event_delivery_enabled": False},
+                ),
+            },
+        )
+        sandbox_root = tmp_path / "sandbox"
+        if env.sandbox is None:
+            env = env.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+        else:
+            env = env.model_copy(
+                update={"sandbox": env.sandbox.model_copy(update={"root": sandbox_root})},
+            )
+        if env.reliability_profile.dependency_concurrency_admission is None:
+            env = env.model_copy(
+                update={
+                    "reliability_profile": env.reliability_profile.model_copy(
+                        update={
+                            "dependency_concurrency_admission": tool_dependency_concurrency_admission_configuration(
+                                "fc1-harness-tool",
+                            ),
+                        },
+                    ),
+                },
+            )
+        if enabled_bundles:
+            merged = [*env.tool_profile.enabled_bundles, *enabled_bundles]
+            env = env.model_copy(
+                update={"tool_profile": env.tool_profile.model_copy(update={"enabled_bundles": merged})},
+            )
+        manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        platform = build_reference_production_platform_persistence(db_path=tmp_path / "fc1-kv.db")
+        backing = ExecutionContinuationDurableBacking()
+        backing_execution_continuation_state_store(backing)
+        continuation_store = execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(backing),
+        )
+>       return build_harness_host_runtime(
+            manifest_for_runtime,
+            env,
+            settings=settings,
+            tenant_id=manifest.app_id,
+            registry_projection=build_governed_contractor_test_registry_projection(),
+            key_value_cache=platform.kv_store,
+            document_store=platform.document_store,
+            execution_continuation_state_store=continuation_store,
+            collaborative_work_repositories=CollaborativeWorkRepositories(
+                membership=InMemoryWorkspaceMembershipRepository(),
+                delegation=InMemoryAuthorityDelegationRepository(),
+                principal_authority=InMemoryPrincipalAuthorityRepository(),
+                policy=InMemoryCollaborativePolicyRepository(),
+                operation_profile=InMemoryCollaborativeOperationPolicyProfileRepository(),
+                store=_InMemoryCollaborativeWorkStoreOwner(),
+            ),
+            orchestration_decision_requirement_policy=(
+                default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            ),
+            agent_contract_authority=materialize_manifest_contract_authority_lab_compat(manifest_for_runtime),
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+        )
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+environment = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def build_harness_host_runtime(
+        manifest: ApplicationManifest,
+        environment: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        tenant_id: str | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        idempotency_db_path: Path | None = None,
+        use_in_memory_trace: bool = False,
+        builders: dict[type, Any] | None = None,
+        compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]] | None = None,
+        registry: AgentRegistry | None = None,
+        registry_projection: MaterializedRegistryProjection | None = None,
+        registry_assembly_mode: RegistryAssemblyMode | None = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
+        notification_adapter: NotificationAdapter | None = None,
+        application_host: ApplicationHost | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        profile_layers: tuple[ProfileLayerInput, ...] = (),
+        revision_store: EffectiveProfileRevisionStore | None = None,
+        pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+        active_store: ActiveEffectiveProfileRevisionStore | None = None,
+        llm_adapter: LLMAdapter | None = None,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: SkillRegistry | None = None,
+        meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+        runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+        active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
+        orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+        collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+        collaborative_work_integration_profile: IntegrationProfile | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
+        provider_invocation_store: ProviderInvocationStore | None = None,
+        require_strict_orchestration_topology_reliability: bool = False,
+        strict_orchestration_topology_submission_port_builder: (
+            StrictOrchestrationTopologySubmissionPortBuilder | None
+        ) = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
+        tool_life_durable_db_path: Path | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+    ) -> HarnessHostRuntime:
+        """
+        Single H-APP path: environment â†’ platform composition â†’ canonical execution.
+    
+        Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+        Nexus is composed internally as the ORCHESTRATION strategy backend only.
+        """
+        resolved_manifest = manifest
+        if manifest.environment is None:
+            resolved_manifest = manifest.model_copy(update={"environment": environment})
+    
+        profile_resolution = resolve_profile(environment, layers=profile_layers)
+        effective_environment = profile_resolution.effective_profile
+        production_mode = effective_environment.execution_mode.value == "strict"
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        profile_persistence = resolve_effective_profile_persistence_wiring(
+            production_mode=production_mode,
+            kv_store=kv_store,
+            document_store=doc_store,
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            active_store=active_store,
+        )
+        revision_scope = EffectiveProfileRevisionScope(
+            application_id=resolved_manifest.app_id,
+            tenant_id=tenant_id,
+        )
+        # P1.6B: capture activation baseline before candidate preparation â€” immutable intent.
+        activation_baseline_binding: ActiveEffectiveProfileRevisionBinding | None = (
+            profile_persistence.active_store.get_active(revision_scope)
+        )
+        activation_baseline_revision_id = (
+            activation_baseline_binding.revision_id if activation_baseline_binding is not None else None
+        )
+        effective_profile_revision = materialize_effective_profile_revision(
+            profile_resolution,
+            scope=revision_scope,
+            store=profile_persistence.revision_store,
+        )
+    
+        resolved_agent_contract_authority = agent_contract_authority
+        if resolved_agent_contract_authority is None and not production_mode:
+            from intergrax.applications._shared.roster_agent_contract_authority import (
+                materialize_manifest_contract_authority_lab_compat,
+            )
+    
+            resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+                resolved_manifest,
+            )
+    
+>       env_wiring = wire_application_environment(
+            resolved_manifest,
+            effective_environment,
+            settings=settings,
+            tenant_id=tenant_id,
+            document_store=document_store,
+            key_value_cache=key_value_cache,
+            boundary_event_buffer=boundary_event_buffer,
+            llm_adapter=llm_adapter,
+            application_tool_registry=application_tool_registry,
+            application_skill_registry=application_skill_registry,
+            agent_contract_authority=resolved_agent_contract_authority,
+            human_decision_store=human_decision_store,
+        )
+
+intergrax\applications\_shared\harness_host_runtime.py:396: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def wire_application_environment(
+        manifest: ApplicationManifest,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        integration_profile: Any = None,
+        tenant_id: str | None = None,
+        runtime_event_bus: RuntimeEventBus | None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        sandbox_session: Any | None = None,
+        websearch_executor: WebSearchQueryExecutor | None = None,
+        conformance_check: bool = True,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: Any | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
+        llm_adapter: LLMAdapter | None = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+    ) -> ApplicationEnvironmentWiring:
+        """
+        Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
+    
+        Replaces scattered per-host wiring sequences (lab/legal/research/poc).
+        """
+        normalized_tenant_id = _normalize_host_tenant_id(tenant_id)
+        bootstrap_application_integration_catalog()
+        security_bootstrap = _bootstrap_application_security_providers()
+        _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
+        context_bootstrap = bootstrap_application_context_catalog()
+        assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
+        resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+        reliability_wiring = wire_application_reliability(env)
+        integration_health = probe_integration_profile_health(
+            resolved_integration,
+            circuit_breaker_config=reliability_wiring.circuit_breaker_config,
+        )
+    
+        rag_stack = None
+        rag_llm_adapter = None
+        host_embedding_manager = None
+        host_rag_profile = None
+        if env.context_profile.enable_rag:
+            host_rag_profile = resolve_rag_profile_for_environment(
+                env,
+                integration_profile=resolved_integration,
+            )
+            if tenant_id is None:
+                embedding_slug = (
+                    resolved_integration.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER)
+                    if resolved_integration is not None
+                    else None
+                )
+                lab_opt_in: LabSelectorOptIn | None = None
+                if wiring_fails_closed(env):
+                    if embedding_slug is None:
+                        raise EmbeddingProviderConfigurationError(
+                            "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
+                        )
+                elif embedding_slug is None:
+                    lab_opt_in = LabSelectorOptIn(
+                        selector=lab_embedding_provider_slug(),
+                        reason="derived laboratory embedding default for non-strict host wiring",
+                    )
+                host_embedding_manager = create_default_embedding_manager(
+                    integration_profile=resolved_integration,
+                    lab_opt_in=lab_opt_in,
+                )
+        if tenant_id is not None:
+            rag_llm_adapter = llm_adapter
+            if rag_llm_adapter is None:
+                rag_llm_adapter = resolve_optional_environment_llm_adapter(env)
+            rag_stack = resolve_rag_stack_for_memory_wiring(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                llm_adapter=rag_llm_adapter,
+            )
+            assert_memory_vector_backend_available(env, rag_stack)
+    
+        tool_profile = tool_profile_with_sandbox(env)
+        env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+        tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+        if resolved_integration is not None:
+            tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
+    
+        skill_bundle_ids = tuple(env.skill_profile.enabled_bundles) if env.skill_profile.enabled_bundles else None
+        catalog_bootstrap = bootstrap_catalogs(
+            register_shipped=True,
+            skill_bundle_ids=skill_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
+        assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
+        assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+    
+        skill_wiring = build_application_skill_wiring(
+            env.skill_profile,
+            catalog_bootstrap=catalog_bootstrap,
+        )
+        if application_skill_registry is not None:
+            from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring
+            from intergrax.skills.registry.runtime import SkillRegistry
+    
+            if not isinstance(application_skill_registry, SkillRegistry):
+                raise TypeError("application_skill_registry must be a SkillRegistry")
+            skill_wiring = ApplicationSkillWiring(
+                profile=skill_wiring.profile,
+                registry=application_skill_registry,
+            )
+    
+        validate_capability_dependencies_for_environment(
+            env.model_copy(update={"tool_profile": tool_profile}),
+            skill_registry=skill_wiring.registry,
+        )
+        wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
+        if env.modality_profile is not None:
+            wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+        from intergrax.applications._shared.integration_tool_wiring import (
+            wire_integration_tool_context,
+        )
+    
+        wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+        if document_store is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, document_store=document_store)
+        if key_value_cache is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
+        codecraft_wiring = wire_application_codecraft(env, producer_adapter=None)
+        wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            extras={
+                **wiring_context.extras,
+                "effective_environment_profile": env,
+            },
+        )
+        if resolved_integration is not None:
+            wiring_context = replace(
+                wiring_context,
+                extras={
+                    **wiring_context.extras,
+                    "integration_profile": resolved_integration,
+                },
+            )
+    
+        memory_wiring = resolve_memory_platform_wiring(
+            env,
+            integration_profile=resolved_integration,
+            tenant_id=normalized_tenant_id,
+        )
+        assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
+        from intergrax.applications._shared.memory_wiring import (
+            build_session_manager_from_environment,
+        )
+    
+        if tenant_id is None:
+            from intergrax.runtime.execution.session_host_composition import SessionManager
+    
+            session_manager = SessionManager(memory_wiring.session_storage)
+            user_profile_manager = None
+        else:
+            session_manager = build_session_manager_from_environment(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                memory_wiring=memory_wiring,
+                rag_stack=rag_stack,
+            )
+            user_profile_manager = build_user_profile_manager(
+                memory_wiring.user_profile_store,
+                env,
+                tenant_id=tenant_id,
+                rag_stack=rag_stack,
+            )
+        from dataclasses import replace
+    
+        session_wiring_extras = {
+            **wiring_context.extras,
+            "session_manager": session_manager,
+        }
+        host_memory_plane = session_manager.memory_control_plane
+        if host_memory_plane is not None:
+            session_wiring_extras["memory_control_plane"] = host_memory_plane
+        if user_profile_manager is not None:
+            wiring_context = replace(
+                wiring_context,
+                user_profile_manager=user_profile_manager,
+                extras=session_wiring_extras,
+            )
+        else:
+            wiring_context = replace(
+                wiring_context,
+                extras=session_wiring_extras,
+            )
+        wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+        wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
+        wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
+    
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            tenant_id=normalized_tenant_id,
+            storage_audit_sink=ListStorageAccessAuditSink(),
+        )
+    
+        hosted_session = None
+        if wiring_context.sandbox_session is None and resolved_integration is not None:
+            from intergrax.applications._shared.sandbox_host_wiring import (
+                resolve_hosted_sandbox_session,
+            )
+            from intergrax.runtime.sandbox.hosted_session import (
+                LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                HostedSandboxTenantRequiredError,
+            )
+    
+            if normalized_tenant_id is not None:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=normalized_tenant_id,
+                    task_id=manifest.app_id,
+                )
+            elif wiring_fails_closed(env) and _integration_sandbox_host_configured(resolved_integration):
+                raise HostedSandboxTenantRequiredError(
+                    "hosted sandbox session requires a host tenant when sandbox_host is configured"
+                )
+            else:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                    task_id=LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                )
+    
+        tool_wiring = build_application_tool_wiring(
+            tool_profile,
+            catalog_bootstrap=catalog_bootstrap,
+            integration_profile=resolved_integration,
+            wiring_context=wiring_context,
+            vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
+            embedding_manager=rag_stack.embedding_manager if rag_stack is not None else host_embedding_manager,
+            retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+            reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
+            rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
+            retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+            rag_graph_store=rag_stack.graph_store if rag_stack is not None else None,
+            toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
+            sandbox_session=sandbox_session or hosted_session,
+            websearch_executor=websearch_executor,
+            security_profile=env.security_profile,
+            human_decision_store=human_decision_store,
+        )
+        tool_wiring = apply_application_owned_tool_registry(
+            manifest,
+            tool_wiring,
+            application_tool_registry,
+        )
+        policy_bundle = wire_policy_bundle(
+            env.model_copy(
+                update={
+                    "domain_policy_fragments": {
+                        **env.domain_policy_fragments,
+                        **codecraft_wiring.domain_fragments,
+                    },
+                },
+            ),
+            package_qualifications=platform_plugin_package_qualifications,
+        )
+        assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
+        prompt_registry = resolve_prompt_registry(env.prompt_profile)
+        if env.prompt_profile.load_on_startup and prompt_registry is not None:
+            prompt_registry.load_all()
+        enabled_skill_ids = enabled_skill_ids_for_profile(skill_wiring.profile)
+        if enabled_skill_ids:
+            skill_composition = SkillResolver(skill_wiring.registry).resolve_composition(
+                enabled_skill_ids,
+            )
+>           policy_bundle = merge_skill_policy_fragments(
+                policy_bundle,
+                skill_composition.pack,
+                composition=skill_composition,
+            )
+
+intergrax\applications\_shared\environment_wiring.py:541: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x00000282769B3A40>, declarative_policy_runtime=None)
+pack = ResolvedSkillPack(resolved_skills=(ResolvedSkillRef(skill_id='harness.context_demo', version='1.0.0', qualified_id='ha...lRiskTier.MEDIUM: 'medium'>, snapshot_digest='sha256:a9b9a19c63fb7aef5a7c43faa5ffefef8a688be13ae7d3b9b9bd8a412c183a06')
+
+    def merge_skill_policy_fragments(
+        bundle: RuntimePolicyBundle,
+        pack: ResolvedSkillPack,
+        *,
+        composition: ResolvedSkillComposition | None = None,
+    ) -> RuntimePolicyBundle:
+        """SK-BRIDGE.2 â€” merge skill catalog policy fragments into the host bundle."""
+        del composition
+        if not pack.policy_fragment_ids:
+            return bundle
+    
+        fragments = dict(bundle.domain_fragments)
+        appended_rules: list[DeclarativePolicyRule] = []
+        skill_rules_with_source: list[tuple[str, DeclarativePolicyRule]] = []
+    
+        for fragment_id in sorted(pack.policy_fragment_ids):
+>           payload = host_policy_fragment_payload(bundle, fragment_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\applications\_shared\skill_bridge_wiring.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x00000282769B3A40>, declarative_policy_runtime=None)
+fragment_id = 'harness.policy_smoke'
+
+    def host_policy_fragment_payload(
+        bundle: RuntimePolicyBundle,
+        fragment_id: str,
+    ) -> dict[str, Any]:
+        raw = bundle.domain_fragments.get(fragment_id)
+        if raw is None:
+>           raise SkillBridgeCompositionError(
+                f"policy fragment missing from host catalog: {fragment_id}",
+            )
+E           intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+
+intergrax\skills\instruction_policy_pins.py:143: SkillBridgeCompositionError
+__________ test_acknowledgement_is_refused_when_hitl_tools_are_wired __________
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_acknowledgement_is_refuse0')
+
+    def test_acknowledgement_is_refused_when_hitl_tools_are_wired(tmp_path: Path) -> None:
+        """NT-FC1-26 (case 1): the acknowledgement and wired HITL tools are mutually exclusive."""
+        with pytest.raises(ValueError, match="HITL tool bundle"):
+>           _strict_harness(
+                tmp_path,
+                disable_human_decision_persistence=True,
+                enabled_bundles=("hitl",),
+            )
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:230: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_acknowledgement_is_refuse0')
+
+    def _strict_harness(
+        tmp_path: Path,
+        *,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+        enabled_bundles: tuple[str, ...] = (),
+    ) -> HarnessHostRuntime:
+        """Real STRICT governed-contractor ``build_harness_host_runtime`` with legal prerequisites."""
+        settings = GovernedContractorBackendSettings.from_env()
+        manifest = build_governed_contractor_manifest()
+        base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        env = resolve_reference_production_strict_host_environment(base_env)
+        env = env.model_copy(
+            update={
+                "observability_profile": env.observability_profile.model_copy(
+                    update={"bounded_event_delivery_enabled": False},
+                ),
+            },
+        )
+        sandbox_root = tmp_path / "sandbox"
+        if env.sandbox is None:
+            env = env.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+        else:
+            env = env.model_copy(
+                update={"sandbox": env.sandbox.model_copy(update={"root": sandbox_root})},
+            )
+        if env.reliability_profile.dependency_concurrency_admission is None:
+            env = env.model_copy(
+                update={
+                    "reliability_profile": env.reliability_profile.model_copy(
+                        update={
+                            "dependency_concurrency_admission": tool_dependency_concurrency_admission_configuration(
+                                "fc1-harness-tool",
+                            ),
+                        },
+                    ),
+                },
+            )
+        if enabled_bundles:
+            merged = [*env.tool_profile.enabled_bundles, *enabled_bundles]
+            env = env.model_copy(
+                update={"tool_profile": env.tool_profile.model_copy(update={"enabled_bundles": merged})},
+            )
+        manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        platform = build_reference_production_platform_persistence(db_path=tmp_path / "fc1-kv.db")
+        backing = ExecutionContinuationDurableBacking()
+        backing_execution_continuation_state_store(backing)
+        continuation_store = execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(backing),
+        )
+>       return build_harness_host_runtime(
+            manifest_for_runtime,
+            env,
+            settings=settings,
+            tenant_id=manifest.app_id,
+            registry_projection=build_governed_contractor_test_registry_projection(),
+            key_value_cache=platform.kv_store,
+            document_store=platform.document_store,
+            execution_continuation_state_store=continuation_store,
+            collaborative_work_repositories=CollaborativeWorkRepositories(
+                membership=InMemoryWorkspaceMembershipRepository(),
+                delegation=InMemoryAuthorityDelegationRepository(),
+                principal_authority=InMemoryPrincipalAuthorityRepository(),
+                policy=InMemoryCollaborativePolicyRepository(),
+                operation_profile=InMemoryCollaborativeOperationPolicyProfileRepository(),
+                store=_InMemoryCollaborativeWorkStoreOwner(),
+            ),
+            orchestration_decision_requirement_policy=(
+                default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            ),
+            agent_contract_authority=materialize_manifest_contract_authority_lab_compat(manifest_for_runtime),
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+        )
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+environment = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def build_harness_host_runtime(
+        manifest: ApplicationManifest,
+        environment: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        tenant_id: str | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        idempotency_db_path: Path | None = None,
+        use_in_memory_trace: bool = False,
+        builders: dict[type, Any] | None = None,
+        compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]] | None = None,
+        registry: AgentRegistry | None = None,
+        registry_projection: MaterializedRegistryProjection | None = None,
+        registry_assembly_mode: RegistryAssemblyMode | None = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
+        notification_adapter: NotificationAdapter | None = None,
+        application_host: ApplicationHost | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        profile_layers: tuple[ProfileLayerInput, ...] = (),
+        revision_store: EffectiveProfileRevisionStore | None = None,
+        pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+        active_store: ActiveEffectiveProfileRevisionStore | None = None,
+        llm_adapter: LLMAdapter | None = None,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: SkillRegistry | None = None,
+        meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+        runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+        active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
+        orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+        collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+        collaborative_work_integration_profile: IntegrationProfile | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
+        provider_invocation_store: ProviderInvocationStore | None = None,
+        require_strict_orchestration_topology_reliability: bool = False,
+        strict_orchestration_topology_submission_port_builder: (
+            StrictOrchestrationTopologySubmissionPortBuilder | None
+        ) = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
+        tool_life_durable_db_path: Path | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+    ) -> HarnessHostRuntime:
+        """
+        Single H-APP path: environment â†’ platform composition â†’ canonical execution.
+    
+        Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+        Nexus is composed internally as the ORCHESTRATION strategy backend only.
+        """
+        resolved_manifest = manifest
+        if manifest.environment is None:
+            resolved_manifest = manifest.model_copy(update={"environment": environment})
+    
+        profile_resolution = resolve_profile(environment, layers=profile_layers)
+        effective_environment = profile_resolution.effective_profile
+        production_mode = effective_environment.execution_mode.value == "strict"
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        profile_persistence = resolve_effective_profile_persistence_wiring(
+            production_mode=production_mode,
+            kv_store=kv_store,
+            document_store=doc_store,
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            active_store=active_store,
+        )
+        revision_scope = EffectiveProfileRevisionScope(
+            application_id=resolved_manifest.app_id,
+            tenant_id=tenant_id,
+        )
+        # P1.6B: capture activation baseline before candidate preparation â€” immutable intent.
+        activation_baseline_binding: ActiveEffectiveProfileRevisionBinding | None = (
+            profile_persistence.active_store.get_active(revision_scope)
+        )
+        activation_baseline_revision_id = (
+            activation_baseline_binding.revision_id if activation_baseline_binding is not None else None
+        )
+        effective_profile_revision = materialize_effective_profile_revision(
+            profile_resolution,
+            scope=revision_scope,
+            store=profile_persistence.revision_store,
+        )
+    
+        resolved_agent_contract_authority = agent_contract_authority
+        if resolved_agent_contract_authority is None and not production_mode:
+            from intergrax.applications._shared.roster_agent_contract_authority import (
+                materialize_manifest_contract_authority_lab_compat,
+            )
+    
+            resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+                resolved_manifest,
+            )
+    
+>       env_wiring = wire_application_environment(
+            resolved_manifest,
+            effective_environment,
+            settings=settings,
+            tenant_id=tenant_id,
+            document_store=document_store,
+            key_value_cache=key_value_cache,
+            boundary_event_buffer=boundary_event_buffer,
+            llm_adapter=llm_adapter,
+            application_tool_registry=application_tool_registry,
+            application_skill_registry=application_skill_registry,
+            agent_contract_authority=resolved_agent_contract_authority,
+            human_decision_store=human_decision_store,
+        )
+
+intergrax\applications\_shared\harness_host_runtime.py:396: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def wire_application_environment(
+        manifest: ApplicationManifest,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        integration_profile: Any = None,
+        tenant_id: str | None = None,
+        runtime_event_bus: RuntimeEventBus | None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        sandbox_session: Any | None = None,
+        websearch_executor: WebSearchQueryExecutor | None = None,
+        conformance_check: bool = True,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: Any | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
+        llm_adapter: LLMAdapter | None = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+    ) -> ApplicationEnvironmentWiring:
+        """
+        Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
+    
+        Replaces scattered per-host wiring sequences (lab/legal/research/poc).
+        """
+        normalized_tenant_id = _normalize_host_tenant_id(tenant_id)
+        bootstrap_application_integration_catalog()
+        security_bootstrap = _bootstrap_application_security_providers()
+        _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
+        context_bootstrap = bootstrap_application_context_catalog()
+        assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
+        resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+        reliability_wiring = wire_application_reliability(env)
+        integration_health = probe_integration_profile_health(
+            resolved_integration,
+            circuit_breaker_config=reliability_wiring.circuit_breaker_config,
+        )
+    
+        rag_stack = None
+        rag_llm_adapter = None
+        host_embedding_manager = None
+        host_rag_profile = None
+        if env.context_profile.enable_rag:
+            host_rag_profile = resolve_rag_profile_for_environment(
+                env,
+                integration_profile=resolved_integration,
+            )
+            if tenant_id is None:
+                embedding_slug = (
+                    resolved_integration.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER)
+                    if resolved_integration is not None
+                    else None
+                )
+                lab_opt_in: LabSelectorOptIn | None = None
+                if wiring_fails_closed(env):
+                    if embedding_slug is None:
+                        raise EmbeddingProviderConfigurationError(
+                            "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
+                        )
+                elif embedding_slug is None:
+                    lab_opt_in = LabSelectorOptIn(
+                        selector=lab_embedding_provider_slug(),
+                        reason="derived laboratory embedding default for non-strict host wiring",
+                    )
+                host_embedding_manager = create_default_embedding_manager(
+                    integration_profile=resolved_integration,
+                    lab_opt_in=lab_opt_in,
+                )
+        if tenant_id is not None:
+            rag_llm_adapter = llm_adapter
+            if rag_llm_adapter is None:
+                rag_llm_adapter = resolve_optional_environment_llm_adapter(env)
+            rag_stack = resolve_rag_stack_for_memory_wiring(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                llm_adapter=rag_llm_adapter,
+            )
+            assert_memory_vector_backend_available(env, rag_stack)
+    
+        tool_profile = tool_profile_with_sandbox(env)
+        env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+        tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+        if resolved_integration is not None:
+            tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
+    
+        skill_bundle_ids = tuple(env.skill_profile.enabled_bundles) if env.skill_profile.enabled_bundles else None
+        catalog_bootstrap = bootstrap_catalogs(
+            register_shipped=True,
+            skill_bundle_ids=skill_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
+        assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
+        assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+    
+        skill_wiring = build_application_skill_wiring(
+            env.skill_profile,
+            catalog_bootstrap=catalog_bootstrap,
+        )
+        if application_skill_registry is not None:
+            from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring
+            from intergrax.skills.registry.runtime import SkillRegistry
+    
+            if not isinstance(application_skill_registry, SkillRegistry):
+                raise TypeError("application_skill_registry must be a SkillRegistry")
+            skill_wiring = ApplicationSkillWiring(
+                profile=skill_wiring.profile,
+                registry=application_skill_registry,
+            )
+    
+        validate_capability_dependencies_for_environment(
+            env.model_copy(update={"tool_profile": tool_profile}),
+            skill_registry=skill_wiring.registry,
+        )
+        wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
+        if env.modality_profile is not None:
+            wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+        from intergrax.applications._shared.integration_tool_wiring import (
+            wire_integration_tool_context,
+        )
+    
+        wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+        if document_store is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, document_store=document_store)
+        if key_value_cache is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
+        codecraft_wiring = wire_application_codecraft(env, producer_adapter=None)
+        wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            extras={
+                **wiring_context.extras,
+                "effective_environment_profile": env,
+            },
+        )
+        if resolved_integration is not None:
+            wiring_context = replace(
+                wiring_context,
+                extras={
+                    **wiring_context.extras,
+                    "integration_profile": resolved_integration,
+                },
+            )
+    
+        memory_wiring = resolve_memory_platform_wiring(
+            env,
+            integration_profile=resolved_integration,
+            tenant_id=normalized_tenant_id,
+        )
+        assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
+        from intergrax.applications._shared.memory_wiring import (
+            build_session_manager_from_environment,
+        )
+    
+        if tenant_id is None:
+            from intergrax.runtime.execution.session_host_composition import SessionManager
+    
+            session_manager = SessionManager(memory_wiring.session_storage)
+            user_profile_manager = None
+        else:
+            session_manager = build_session_manager_from_environment(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                memory_wiring=memory_wiring,
+                rag_stack=rag_stack,
+            )
+            user_profile_manager = build_user_profile_manager(
+                memory_wiring.user_profile_store,
+                env,
+                tenant_id=tenant_id,
+                rag_stack=rag_stack,
+            )
+        from dataclasses import replace
+    
+        session_wiring_extras = {
+            **wiring_context.extras,
+            "session_manager": session_manager,
+        }
+        host_memory_plane = session_manager.memory_control_plane
+        if host_memory_plane is not None:
+            session_wiring_extras["memory_control_plane"] = host_memory_plane
+        if user_profile_manager is not None:
+            wiring_context = replace(
+                wiring_context,
+                user_profile_manager=user_profile_manager,
+                extras=session_wiring_extras,
+            )
+        else:
+            wiring_context = replace(
+                wiring_context,
+                extras=session_wiring_extras,
+            )
+        wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+        wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
+        wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
+    
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            tenant_id=normalized_tenant_id,
+            storage_audit_sink=ListStorageAccessAuditSink(),
+        )
+    
+        hosted_session = None
+        if wiring_context.sandbox_session is None and resolved_integration is not None:
+            from intergrax.applications._shared.sandbox_host_wiring import (
+                resolve_hosted_sandbox_session,
+            )
+            from intergrax.runtime.sandbox.hosted_session import (
+                LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                HostedSandboxTenantRequiredError,
+            )
+    
+            if normalized_tenant_id is not None:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=normalized_tenant_id,
+                    task_id=manifest.app_id,
+                )
+            elif wiring_fails_closed(env) and _integration_sandbox_host_configured(resolved_integration):
+                raise HostedSandboxTenantRequiredError(
+                    "hosted sandbox session requires a host tenant when sandbox_host is configured"
+                )
+            else:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                    task_id=LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                )
+    
+        tool_wiring = build_application_tool_wiring(
+            tool_profile,
+            catalog_bootstrap=catalog_bootstrap,
+            integration_profile=resolved_integration,
+            wiring_context=wiring_context,
+            vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
+            embedding_manager=rag_stack.embedding_manager if rag_stack is not None else host_embedding_manager,
+            retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+            reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
+            rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
+            retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+            rag_graph_store=rag_stack.graph_store if rag_stack is not None else None,
+            toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
+            sandbox_session=sandbox_session or hosted_session,
+            websearch_executor=websearch_executor,
+            security_profile=env.security_profile,
+            human_decision_store=human_decision_store,
+        )
+        tool_wiring = apply_application_owned_tool_registry(
+            manifest,
+            tool_wiring,
+            application_tool_registry,
+        )
+        policy_bundle = wire_policy_bundle(
+            env.model_copy(
+                update={
+                    "domain_policy_fragments": {
+                        **env.domain_policy_fragments,
+                        **codecraft_wiring.domain_fragments,
+                    },
+                },
+            ),
+            package_qualifications=platform_plugin_package_qualifications,
+        )
+        assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
+        prompt_registry = resolve_prompt_registry(env.prompt_profile)
+        if env.prompt_profile.load_on_startup and prompt_registry is not None:
+            prompt_registry.load_all()
+        enabled_skill_ids = enabled_skill_ids_for_profile(skill_wiring.profile)
+        if enabled_skill_ids:
+            skill_composition = SkillResolver(skill_wiring.registry).resolve_composition(
+                enabled_skill_ids,
+            )
+>           policy_bundle = merge_skill_policy_fragments(
+                policy_bundle,
+                skill_composition.pack,
+                composition=skill_composition,
+            )
+
+intergrax\applications\_shared\environment_wiring.py:541: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x000002827698B320>, declarative_policy_runtime=None)
+pack = ResolvedSkillPack(resolved_skills=(ResolvedSkillRef(skill_id='harness.context_demo', version='1.0.0', qualified_id='ha...lRiskTier.MEDIUM: 'medium'>, snapshot_digest='sha256:a9b9a19c63fb7aef5a7c43faa5ffefef8a688be13ae7d3b9b9bd8a412c183a06')
+
+    def merge_skill_policy_fragments(
+        bundle: RuntimePolicyBundle,
+        pack: ResolvedSkillPack,
+        *,
+        composition: ResolvedSkillComposition | None = None,
+    ) -> RuntimePolicyBundle:
+        """SK-BRIDGE.2 â€” merge skill catalog policy fragments into the host bundle."""
+        del composition
+        if not pack.policy_fragment_ids:
+            return bundle
+    
+        fragments = dict(bundle.domain_fragments)
+        appended_rules: list[DeclarativePolicyRule] = []
+        skill_rules_with_source: list[tuple[str, DeclarativePolicyRule]] = []
+    
+        for fragment_id in sorted(pack.policy_fragment_ids):
+>           payload = host_policy_fragment_payload(bundle, fragment_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\applications\_shared\skill_bridge_wiring.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x000002827698B320>, declarative_policy_runtime=None)
+fragment_id = 'harness.policy_smoke'
+
+    def host_policy_fragment_payload(
+        bundle: RuntimePolicyBundle,
+        fragment_id: str,
+    ) -> dict[str, Any]:
+        raw = bundle.domain_fragments.get(fragment_id)
+        if raw is None:
+>           raise SkillBridgeCompositionError(
+                f"policy fragment missing from host catalog: {fragment_id}",
+            )
+E           intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+
+intergrax\skills\instruction_policy_pins.py:143: SkillBridgeCompositionError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_acknowledgement_is_refuse0')
+
+    def test_acknowledgement_is_refused_when_hitl_tools_are_wired(tmp_path: Path) -> None:
+        """NT-FC1-26 (case 1): the acknowledgement and wired HITL tools are mutually exclusive."""
+>       with pytest.raises(ValueError, match="HITL tool bundle"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'HITL tool bundle'
+E        Input: 'policy fragment missing from host catalog: harness.policy_smoke'
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:229: AssertionError
+_______ test_injected_human_decision_store_reaches_tool_wiring_context ________
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_injected_human_decision_s0')
+
+    def test_injected_human_decision_store_reaches_tool_wiring_context(tmp_path: Path) -> None:
+        """NT-FC1-26 (case 2): harness store is the same object on ToolWiringContext."""
+        from intergrax.runtime.persistence.sqlite_composition import create_sqlite_human_decision_store
+    
+        store = create_sqlite_human_decision_store(db_path=tmp_path / "human_decisions.db")
+>       runtime = _strict_harness(tmp_path, human_decision_store=store)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:242: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax-ec-w3-05-f0cc4cf6/build/pytest/4384-9a008056/test_injected_human_decision_s0')
+
+    def _strict_harness(
+        tmp_path: Path,
+        *,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+        enabled_bundles: tuple[str, ...] = (),
+    ) -> HarnessHostRuntime:
+        """Real STRICT governed-contractor ``build_harness_host_runtime`` with legal prerequisites."""
+        settings = GovernedContractorBackendSettings.from_env()
+        manifest = build_governed_contractor_manifest()
+        base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        env = resolve_reference_production_strict_host_environment(base_env)
+        env = env.model_copy(
+            update={
+                "observability_profile": env.observability_profile.model_copy(
+                    update={"bounded_event_delivery_enabled": False},
+                ),
+            },
+        )
+        sandbox_root = tmp_path / "sandbox"
+        if env.sandbox is None:
+            env = env.model_copy(update={"sandbox": SandboxProfile(root=sandbox_root)})
+        else:
+            env = env.model_copy(
+                update={"sandbox": env.sandbox.model_copy(update={"root": sandbox_root})},
+            )
+        if env.reliability_profile.dependency_concurrency_admission is None:
+            env = env.model_copy(
+                update={
+                    "reliability_profile": env.reliability_profile.model_copy(
+                        update={
+                            "dependency_concurrency_admission": tool_dependency_concurrency_admission_configuration(
+                                "fc1-harness-tool",
+                            ),
+                        },
+                    ),
+                },
+            )
+        if enabled_bundles:
+            merged = [*env.tool_profile.enabled_bundles, *enabled_bundles]
+            env = env.model_copy(
+                update={"tool_profile": env.tool_profile.model_copy(update={"enabled_bundles": merged})},
+            )
+        manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        platform = build_reference_production_platform_persistence(db_path=tmp_path / "fc1-kv.db")
+        backing = ExecutionContinuationDurableBacking()
+        backing_execution_continuation_state_store(backing)
+        continuation_store = execution_continuation_state_store_from_durable_export(
+            export_durable_continuation_state(backing),
+        )
+>       return build_harness_host_runtime(
+            manifest_for_runtime,
+            env,
+            settings=settings,
+            tenant_id=manifest.app_id,
+            registry_projection=build_governed_contractor_test_registry_projection(),
+            key_value_cache=platform.kv_store,
+            document_store=platform.document_store,
+            execution_continuation_state_store=continuation_store,
+            collaborative_work_repositories=CollaborativeWorkRepositories(
+                membership=InMemoryWorkspaceMembershipRepository(),
+                delegation=InMemoryAuthorityDelegationRepository(),
+                principal_authority=InMemoryPrincipalAuthorityRepository(),
+                policy=InMemoryCollaborativePolicyRepository(),
+                operation_profile=InMemoryCollaborativeOperationPolicyProfileRepository(),
+                store=_InMemoryCollaborativeWorkStoreOwner(),
+            ),
+            orchestration_decision_requirement_policy=(
+                default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            ),
+            agent_contract_authority=materialize_manifest_contract_authority_lab_compat(manifest_for_runtime),
+            human_decision_store=human_decision_store,
+            disable_human_decision_persistence=disable_human_decision_persistence,
+        )
+
+tests\unit\applications\_shared\test_fc1_harness_strict_persistence_wiring.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+environment = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def build_harness_host_runtime(
+        manifest: ApplicationManifest,
+        environment: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        tenant_id: str | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        idempotency_db_path: Path | None = None,
+        use_in_memory_trace: bool = False,
+        builders: dict[type, Any] | None = None,
+        compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]] | None = None,
+        registry: AgentRegistry | None = None,
+        registry_projection: MaterializedRegistryProjection | None = None,
+        registry_assembly_mode: RegistryAssemblyMode | None = None,
+        checkpoint_store: TaskCheckpointPersistence | None = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
+        notification_adapter: NotificationAdapter | None = None,
+        application_host: ApplicationHost | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        profile_layers: tuple[ProfileLayerInput, ...] = (),
+        revision_store: EffectiveProfileRevisionStore | None = None,
+        pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+        active_store: ActiveEffectiveProfileRevisionStore | None = None,
+        llm_adapter: LLMAdapter | None = None,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: SkillRegistry | None = None,
+        meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+        runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+        active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
+        orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+        collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+        collaborative_work_integration_profile: IntegrationProfile | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
+        provider_invocation_store: ProviderInvocationStore | None = None,
+        require_strict_orchestration_topology_reliability: bool = False,
+        strict_orchestration_topology_submission_port_builder: (
+            StrictOrchestrationTopologySubmissionPortBuilder | None
+        ) = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        strict_production_serving_execution_tenant_binding: (StrictProductionServingExecutionTenantBinding | None) = None,
+        tool_life_durable_db_path: Path | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+        disable_human_decision_persistence: bool = False,
+    ) -> HarnessHostRuntime:
+        """
+        Single H-APP path: environment â†’ platform composition â†’ canonical execution.
+    
+        Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+        Nexus is composed internally as the ORCHESTRATION strategy backend only.
+        """
+        resolved_manifest = manifest
+        if manifest.environment is None:
+            resolved_manifest = manifest.model_copy(update={"environment": environment})
+    
+        profile_resolution = resolve_profile(environment, layers=profile_layers)
+        effective_environment = profile_resolution.effective_profile
+        production_mode = effective_environment.execution_mode.value == "strict"
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        profile_persistence = resolve_effective_profile_persistence_wiring(
+            production_mode=production_mode,
+            kv_store=kv_store,
+            document_store=doc_store,
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            active_store=active_store,
+        )
+        revision_scope = EffectiveProfileRevisionScope(
+            application_id=resolved_manifest.app_id,
+            tenant_id=tenant_id,
+        )
+        # P1.6B: capture activation baseline before candidate preparation â€” immutable intent.
+        activation_baseline_binding: ActiveEffectiveProfileRevisionBinding | None = (
+            profile_persistence.active_store.get_active(revision_scope)
+        )
+        activation_baseline_revision_id = (
+            activation_baseline_binding.revision_id if activation_baseline_binding is not None else None
+        )
+        effective_profile_revision = materialize_effective_profile_revision(
+            profile_resolution,
+            scope=revision_scope,
+            store=profile_persistence.revision_store,
+        )
+    
+        resolved_agent_contract_authority = agent_contract_authority
+        if resolved_agent_contract_authority is None and not production_mode:
+            from intergrax.applications._shared.roster_agent_contract_authority import (
+                materialize_manifest_contract_authority_lab_compat,
+            )
+    
+            resolved_agent_contract_authority = materialize_manifest_contract_authority_lab_compat(
+                resolved_manifest,
+            )
+    
+>       env_wiring = wire_application_environment(
+            resolved_manifest,
+            effective_environment,
+            settings=settings,
+            tenant_id=tenant_id,
+            document_store=document_store,
+            key_value_cache=key_value_cache,
+            boundary_event_buffer=boundary_event_buffer,
+            llm_adapter=llm_adapter,
+            application_tool_registry=application_tool_registry,
+            application_skill_registry=application_skill_registry,
+            agent_contract_authority=resolved_agent_contract_authority,
+            human_decision_store=human_decision_store,
+        )
+
+intergrax\applications\_shared\harness_host_runtime.py:396: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = ApplicationManifest(app_id='governed_contractor', name='Governed Contractor API', description='Governed External Contr...ntExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={}))), ownership=None, application_owned_tools=[])
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='governed_contractor.product', spec_version='1.0.0', applicatio...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def wire_application_environment(
+        manifest: ApplicationManifest,
+        env: ApplicationEnvironmentProfile,
+        *,
+        settings: Any = None,
+        integration_profile: Any = None,
+        tenant_id: str | None = None,
+        runtime_event_bus: RuntimeEventBus | None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        sandbox_session: Any | None = None,
+        websearch_executor: WebSearchQueryExecutor | None = None,
+        conformance_check: bool = True,
+        application_tool_registry: ToolRegistry | None = None,
+        application_skill_registry: Any | None = None,
+        document_store: Any | None = None,
+        key_value_cache: Any | None = None,
+        boundary_event_buffer: Any | None = None,
+        platform_plugin_package_qualifications: (PlatformPluginPackageQualificationBundle | None) = None,
+        llm_adapter: LLMAdapter | None = None,
+        agent_contract_authority: ContractAuthority | None = None,
+        human_decision_store: HumanDecisionPersistence | None = None,
+    ) -> ApplicationEnvironmentWiring:
+        """
+        Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
+    
+        Replaces scattered per-host wiring sequences (lab/legal/research/poc).
+        """
+        normalized_tenant_id = _normalize_host_tenant_id(tenant_id)
+        bootstrap_application_integration_catalog()
+        security_bootstrap = _bootstrap_application_security_providers()
+        _assert_strict_security_bootstrap_acceptable(env, security_bootstrap)
+        context_bootstrap = bootstrap_application_context_catalog()
+        assert_strict_context_bootstrap_acceptable(env, context_bootstrap)
+        resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+        reliability_wiring = wire_application_reliability(env)
+        integration_health = probe_integration_profile_health(
+            resolved_integration,
+            circuit_breaker_config=reliability_wiring.circuit_breaker_config,
+        )
+    
+        rag_stack = None
+        rag_llm_adapter = None
+        host_embedding_manager = None
+        host_rag_profile = None
+        if env.context_profile.enable_rag:
+            host_rag_profile = resolve_rag_profile_for_environment(
+                env,
+                integration_profile=resolved_integration,
+            )
+            if tenant_id is None:
+                embedding_slug = (
+                    resolved_integration.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER)
+                    if resolved_integration is not None
+                    else None
+                )
+                lab_opt_in: LabSelectorOptIn | None = None
+                if wiring_fails_closed(env):
+                    if embedding_slug is None:
+                        raise EmbeddingProviderConfigurationError(
+                            "embedding provider binding is required for RAG in STRICT or PRODUCT posture"
+                        )
+                elif embedding_slug is None:
+                    lab_opt_in = LabSelectorOptIn(
+                        selector=lab_embedding_provider_slug(),
+                        reason="derived laboratory embedding default for non-strict host wiring",
+                    )
+                host_embedding_manager = create_default_embedding_manager(
+                    integration_profile=resolved_integration,
+                    lab_opt_in=lab_opt_in,
+                )
+        if tenant_id is not None:
+            rag_llm_adapter = llm_adapter
+            if rag_llm_adapter is None:
+                rag_llm_adapter = resolve_optional_environment_llm_adapter(env)
+            rag_stack = resolve_rag_stack_for_memory_wiring(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                llm_adapter=rag_llm_adapter,
+            )
+            assert_memory_vector_backend_available(env, rag_stack)
+    
+        tool_profile = tool_profile_with_sandbox(env)
+        env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+        tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+        if resolved_integration is not None:
+            tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
+    
+        skill_bundle_ids = tuple(env.skill_profile.enabled_bundles) if env.skill_profile.enabled_bundles else None
+        catalog_bootstrap = bootstrap_catalogs(
+            register_shipped=True,
+            skill_bundle_ids=skill_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
+        assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
+        assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+    
+        skill_wiring = build_application_skill_wiring(
+            env.skill_profile,
+            catalog_bootstrap=catalog_bootstrap,
+        )
+        if application_skill_registry is not None:
+            from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring
+            from intergrax.skills.registry.runtime import SkillRegistry
+    
+            if not isinstance(application_skill_registry, SkillRegistry):
+                raise TypeError("application_skill_registry must be a SkillRegistry")
+            skill_wiring = ApplicationSkillWiring(
+                profile=skill_wiring.profile,
+                registry=application_skill_registry,
+            )
+    
+        validate_capability_dependencies_for_environment(
+            env.model_copy(update={"tool_profile": tool_profile}),
+            skill_registry=skill_wiring.registry,
+        )
+        wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
+        if env.modality_profile is not None:
+            wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+        from intergrax.applications._shared.integration_tool_wiring import (
+            wire_integration_tool_context,
+        )
+    
+        wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+        if document_store is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, document_store=document_store)
+        if key_value_cache is not None:
+            from dataclasses import replace
+    
+            wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
+        codecraft_wiring = wire_application_codecraft(env, producer_adapter=None)
+        wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            extras={
+                **wiring_context.extras,
+                "effective_environment_profile": env,
+            },
+        )
+        if resolved_integration is not None:
+            wiring_context = replace(
+                wiring_context,
+                extras={
+                    **wiring_context.extras,
+                    "integration_profile": resolved_integration,
+                },
+            )
+    
+        memory_wiring = resolve_memory_platform_wiring(
+            env,
+            integration_profile=resolved_integration,
+            tenant_id=normalized_tenant_id,
+        )
+        assert_strict_memory_bootstrap_acceptable(env, memory_wiring)
+        from intergrax.applications._shared.memory_wiring import (
+            build_session_manager_from_environment,
+        )
+    
+        if tenant_id is None:
+            from intergrax.runtime.execution.session_host_composition import SessionManager
+    
+            session_manager = SessionManager(memory_wiring.session_storage)
+            user_profile_manager = None
+        else:
+            session_manager = build_session_manager_from_environment(
+                env,
+                tenant_id=tenant_id,
+                integration_profile=resolved_integration,
+                memory_wiring=memory_wiring,
+                rag_stack=rag_stack,
+            )
+            user_profile_manager = build_user_profile_manager(
+                memory_wiring.user_profile_store,
+                env,
+                tenant_id=tenant_id,
+                rag_stack=rag_stack,
+            )
+        from dataclasses import replace
+    
+        session_wiring_extras = {
+            **wiring_context.extras,
+            "session_manager": session_manager,
+        }
+        host_memory_plane = session_manager.memory_control_plane
+        if host_memory_plane is not None:
+            session_wiring_extras["memory_control_plane"] = host_memory_plane
+        if user_profile_manager is not None:
+            wiring_context = replace(
+                wiring_context,
+                user_profile_manager=user_profile_manager,
+                extras=session_wiring_extras,
+            )
+        else:
+            wiring_context = replace(
+                wiring_context,
+                extras=session_wiring_extras,
+            )
+        wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+        wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
+        wiring_context = _merge_integration_read_allowlist_roots(wiring_context, resolved_integration)
+    
+        from dataclasses import replace
+    
+        wiring_context = replace(
+            wiring_context,
+            tenant_id=normalized_tenant_id,
+            storage_audit_sink=ListStorageAccessAuditSink(),
+        )
+    
+        hosted_session = None
+        if wiring_context.sandbox_session is None and resolved_integration is not None:
+            from intergrax.applications._shared.sandbox_host_wiring import (
+                resolve_hosted_sandbox_session,
+            )
+            from intergrax.runtime.sandbox.hosted_session import (
+                LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                HostedSandboxTenantRequiredError,
+            )
+    
+            if normalized_tenant_id is not None:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=normalized_tenant_id,
+                    task_id=manifest.app_id,
+                )
+            elif wiring_fails_closed(env) and _integration_sandbox_host_configured(resolved_integration):
+                raise HostedSandboxTenantRequiredError(
+                    "hosted sandbox session requires a host tenant when sandbox_host is configured"
+                )
+            else:
+                hosted_session = resolve_hosted_sandbox_session(
+                    resolved_integration,
+                    tenant_id=LAB_ONLY_HOSTED_SANDBOX_TENANT_ID,
+                    task_id=LAB_ONLY_HOSTED_SANDBOX_TASK_ID,
+                )
+    
+        tool_wiring = build_application_tool_wiring(
+            tool_profile,
+            catalog_bootstrap=catalog_bootstrap,
+            integration_profile=resolved_integration,
+            wiring_context=wiring_context,
+            vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
+            embedding_manager=rag_stack.embedding_manager if rag_stack is not None else host_embedding_manager,
+            retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+            reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
+            rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
+            retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+            rag_graph_store=rag_stack.graph_store if rag_stack is not None else None,
+            toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
+            sandbox_session=sandbox_session or hosted_session,
+            websearch_executor=websearch_executor,
+            security_profile=env.security_profile,
+            human_decision_store=human_decision_store,
+        )
+        tool_wiring = apply_application_owned_tool_registry(
+            manifest,
+            tool_wiring,
+            application_tool_registry,
+        )
+        policy_bundle = wire_policy_bundle(
+            env.model_copy(
+                update={
+                    "domain_policy_fragments": {
+                        **env.domain_policy_fragments,
+                        **codecraft_wiring.domain_fragments,
+                    },
+                },
+            ),
+            package_qualifications=platform_plugin_package_qualifications,
+        )
+        assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
+        prompt_registry = resolve_prompt_registry(env.prompt_profile)
+        if env.prompt_profile.load_on_startup and prompt_registry is not None:
+            prompt_registry.load_all()
+        enabled_skill_ids = enabled_skill_ids_for_profile(skill_wiring.profile)
+        if enabled_skill_ids:
+            skill_composition = SkillResolver(skill_wiring.registry).resolve_composition(
+                enabled_skill_ids,
+            )
+>           policy_bundle = merge_skill_policy_fragments(
+                policy_bundle,
+                skill_composition.pack,
+                composition=skill_composition,
+            )
+
+intergrax\applications\_shared\environment_wiring.py:541: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x0000028276A38F80>, declarative_policy_runtime=None)
+pack = ResolvedSkillPack(resolved_skills=(ResolvedSkillRef(skill_id='harness.context_demo', version='1.0.0', qualified_id='ha...lRiskTier.MEDIUM: 'medium'>, snapshot_digest='sha256:a9b9a19c63fb7aef5a7c43faa5ffefef8a688be13ae7d3b9b9bd8a412c183a06')
+
+    def merge_skill_policy_fragments(
+        bundle: RuntimePolicyBundle,
+        pack: ResolvedSkillPack,
+        *,
+        composition: ResolvedSkillComposition | None = None,
+    ) -> RuntimePolicyBundle:
+        """SK-BRIDGE.2 â€” merge skill catalog policy fragments into the host bundle."""
+        del composition
+        if not pack.policy_fragment_ids:
+            return bundle
+    
+        fragments = dict(bundle.domain_fragments)
+        appended_rules: list[DeclarativePolicyRule] = []
+        skill_rules_with_source: list[tuple[str, DeclarativePolicyRule]] = []
+    
+        for fragment_id in sorted(pack.policy_fragment_ids):
+>           payload = host_policy_fragment_payload(bundle, fragment_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+intergrax\applications\_shared\skill_bridge_wiring.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+bundle = RuntimePolicyBundle(tool_access=None, require_human_on_critical=True, domain_fragments={'cost_governance': {'quota_deg...cy.configuration_contract.ConfigurationContractRegistry object at 0x0000028276A38F80>, declarative_policy_runtime=None)
+fragment_id = 'harness.policy_smoke'
+
+    def host_policy_fragment_payload(
+        bundle: RuntimePolicyBundle,
+        fragment_id: str,
+    ) -> dict[str, Any]:
+        raw = bundle.domain_fragments.get(fragment_id)
+        if raw is None:
+>           raise SkillBridgeCompositionError(
+                f"policy fragment missing from host catalog: {fragment_id}",
+            )
+E           intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+
+intergrax\skills\instruction_policy_pins.py:143: SkillBridgeCompositionError
+_____________ test_applications_do_not_import_other_applications ______________
+
+    @pytest.mark.gate
+    def test_applications_do_not_import_other_applications() -> None:
+        apps = _app_dirs()
+        violations: list[str] = []
+        for app in apps:
+            for path in _iter_py_files(REPO / "applications" / app):
+                for module in _static_imports(path):
+                    top = _top(module)
+                    if top in apps and top != app:
+                        violations.append(
+                            f"{path.relative_to(REPO)} imports {module} "
+                            f"(application {app} â†’ {top})"
+                        )
+                    if top == "applications":
+                        parts = module.split(".")
+                        if len(parts) > 1 and parts[1] in apps and parts[1] != app:
+                            violations.append(
+                                f"{path.relative_to(REPO)} imports {module} "
+                                f"(application {app} â†’ {parts[1]})"
+                            )
+>       assert not violations, "application â†’ application edges:\n" + "\n".join(
+            violations
+        )
+E       AssertionError: application â†’ application edges:
+E         applications\local_workspace_application\tests\host\test_local_workspace_policy_wiring.py imports lab_application.host.settings (application local_workspace_application â†’ lab_application)
+E       assert not ['applications\\local_workspace_application\\tests\\host\\test_local_workspace_policy_wiring.py imports lab_application.host.settings (application local_workspace_application \u2192 lab_application)']
+
+tests\unit\architecture\test_tier_dependency_boundaries.py:119: AssertionError
+=================================== PASSES ====================================
+_________ test_profile_disabling_task_memory_is_not_reenabled_by_env __________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+_ test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.runtime.task.task_metadata_bridge:task_metadata_bridge.py:261 task task_3efa0c47bc8b4648ae33c359e87851df uses legacy flat metadata keys ['human_response', 'resume_token']; prefer typed Task.options (Phase Q-X.2)
+_ test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.runtime.task.task_metadata_bridge:task_metadata_bridge.py:261 task task_838b71ed7db449c8afea58a69e55d635 uses legacy flat metadata keys ['human_response', 'resume_token']; prefer typed Task.options (Phase Q-X.2)
+- generated xml file: d:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_mapped_qualification_f0cc4cf6\junit\d01_architecture.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_profile_disabling_task_memory_is_not_reenabled_by_env
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_worker_composition_refuses_missing_persistence
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_tier2_build_context_takes_posture_from_the_host
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_tier2_context_without_host_admission_configuration_fails_closed
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[reject]
+PASSED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_reject_and_escalate_verdicts_are_recorded_through_materialization[escalate]
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_01_build_agent_product_context_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_02_build_agent_strict_only_context_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_03_build_agent_product_context_refuses_unregistered_factory_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_04_resolve_builder_with_empty_builders_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_05_factory_result_validation_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_06_environment_conformance_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_07_manifest_lab_compat_authority_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_nt_a7c_08_package_dependencies_product_balanced_refuses_unregistered_import_path
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_01_lab_context_loads_serialized_unregistered_agent
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_02_product_context_resolves_registered_serialized_agent
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_03_diff_roster_never_imports
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_05_operator_added_binding_under_product_context_is_not_refused
+PASSED tests/unit/applications/test_a4007_caller_import_refusal.py::test_ctl_a7c_06_lab_manifest_context_stays_unrestricted_for_unregistered_serialized_binding
+PASSED tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_01_sets_follow_the_registered_manifests
+PASSED tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_02_empty_registry_in_guard_posture_permits_nothing
+PASSED tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_03_posture_is_decided_by_wiring_fails_closed
+PASSED tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_04_new_keywords_forward_to_the_loader
+PASSED tests/unit/applications/test_a4007_import_policy_derivation.py::test_ut_a7c_05_registered_product_ids_map_to_application_directories
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_18_load_callable_outside_allowlist_refused
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_19_fail_closed_without_allowlist_refused
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_20_resolve_agent_type_outside_allowlist_refused
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_21_migration_manifest_outside_allowlist_refused
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_22_mcp_builder_outside_allowlist_refused
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_23_prefix_boundary
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_24_lab_unrestricted_control
+PASSED tests/unit/applications/test_wb_import_allowlist.py::test_nt_wb_30_scoreboard_loader_outside_agents_refused
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged
+PASSED tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_tier2_build_context_takes_posture_from_host_not_a_literal
+PASSED tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent
+PASSED tests/unit/architecture/test_tier_dependency_boundaries.py::test_platform_does_not_statically_import_agents_or_applications
+PASSED tests/unit/architecture/test_tier_dependency_boundaries.py::test_agents_do_not_statically_import_applications
+PASSED tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py::test_nt02_bare_external_contractor_agent_default_is_relaxed
+PASSED tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py::test_nt02_strict_host_flag_prepares_production_mode
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_python_sources_utf8_no_bom_and_parseable
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_allowlist_entries_currently_import_runtime
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_contracts_do_not_import_runtime_except_allowlist
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_self_healing_contracts_have_no_runtime_imports
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_unallowlisted_runtime_import_detected_in_isolated_tree
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_documented_allowlist_permits_runtime_import_in_isolated_tree
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_synthetic_stale_allowlist_entry_detected
+PASSED tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py::test_hardening_3_qual_x_reconciliation_uses_same_allowlist_ssot
+FAILED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_refuses_missing_human_store_without_ack - intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+FAILED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_strict_harness_runtime_accepts_the_typed_acknowledgement - intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+FAILED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_acknowledgement_is_refused_when_hitl_tools_are_wired - AssertionError: Regex pattern did not match.
+ Regex: 'HITL tool bundle'
+ Input: 'policy fragment missing from host catalog: harness.policy_smoke'
+FAILED tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py::test_injected_human_decision_store_reaches_tool_wiring_context - intergrax.skills.instruction_policy_pins.SkillBridgeCompositionError: policy fragment missing from host catalog: harness.policy_smoke
+FAILED tests/unit/architecture/test_tier_dependency_boundaries.py::test_applications_do_not_import_other_applications - AssertionError: application â†’ application edges:
+  applications\local_workspace_application\tests\host\test_local_workspace_policy_wiring.py imports lab_application.host.settings (application local_workspace_application â†’ lab_application)
+assert not ['applications\\local_workspace_application\\tests\\host\\test_local_workspace_policy_wiring.py imports lab_application.host.settings (application local_workspace_application \u2192 lab_application)']
+================== 5 failed, 50 passed in 126.99s (0:02:06) ===================
+
+warning: `VIRTUAL_ENV=D:\Projekty\intergrax\.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
