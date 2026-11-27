@@ -2,7 +2,7 @@
 
 ## Scope
 
-Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C is `closed` under OD-II-W0-CLOSURE-01 with formal scoped G6 `II-W0-R31-FORMAL-G6-01` and documented non-blocking limitations preserved; II-FIND-11/12 remain W0-06 obligations. This ticket remains `plan_pending` pending separate Operator approval of this plan only. Preparation remote baseline for identifier check: `4142575fa035ec19f91def3e3236c6e27c6efa7b` (`origin/development` at II-W0-A-PREP-FINAL-RECOVERY-01 integration). No II-W0-05, II-W0-06, executable W1, product code, gate opening or normative D1/D2 edits.
+Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C is `closed` under OD-II-W0-CLOSURE-01 with formal scoped G6 `II-W0-R31-FORMAL-G6-01` and documented non-blocking limitations preserved; II-FIND-11/12 remain W0-06 obligations. W0-A execution under OD-II-W0-A-01; formal package closure not authorized. Preparation remote baseline for identifier check: `4142575fa035ec19f91def3e3236c6e27c6efa7b` (`origin/development` at II-W0-A-PREP-FINAL-RECOVERY-01 integration). No II-W0-05, II-W0-06, executable W1, product code, gate opening or normative D1/D2 edits.
 
 ## Plan digest
 
