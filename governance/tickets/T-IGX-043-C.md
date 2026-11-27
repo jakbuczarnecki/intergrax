@@ -47,3 +47,15 @@ Everything outside the write set above: the CONFIG-X scan extension (`T-IGX-043-
 ## Lifecycle state
 
 plan_approved
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-CFG-02 | NT-CFG-02-1, NT-CFG-02-2 |
+| FRZ-CFG-06 | NT-CFG-06-1, NT-CFG-06-2 |
+| FRZ-SEC-04 | NT-SEC-04-1, NT-SEC-04-2 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

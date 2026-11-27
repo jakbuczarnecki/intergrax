@@ -1,0 +1,1319 @@
+{
+  "schema": "af2.red_first_ga2r.v1",
+  "ticket": "T-IGX-078-B",
+  "measured_on": "2026-11-27",
+  "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
+  "method": "MEP-AF2 Appendix V5.3: detached worktree at the prefix SHA, only the test file overlaid from its fix commit, one pytest process at a time under the shared lock. RED_AT_PREFIX only if the node collects, fails on a behavioural assertion about the declared FRZ mechanism and passes at the read pin.",
+  "environment": "Windows 11, CPython 3.12.11; uv sync --frozen with extras dev-ci and dev-unit-cert (pin), dev-ci and mcp (prefix worktrees)",
+  "command_prefix": "uv run pytest <overlaid files> -rfEs -v --continue-on-collection-errors",
+  "pin_run": {
+    "files": [
+      "tests/unit/architecture/test_wa_integrations_shared_leakage.py",
+      "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+      "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py",
+      "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+      "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py",
+      "tests/unit/model_inference/test_fc3_vision_fail_closed.py",
+      "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py",
+      "tests/unit/rag/vectorstore/test_fc3_vectorstore_selector_fail_closed.py",
+      "tests/unit/runtime/notifications/test_fc3_notification_selector_fail_closed.py",
+      "tests/unit/architecture/test_rw_deps_core_ownership_declared.py",
+      "tests/unit/architecture/test_rw_gates_eval_digest_denied.py",
+      "tests/unit/agents/test_wa_agent_import_rule.py",
+      "tests/unit/runtime/execution/test_fc1_host_task_routing_posture.py",
+      "tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py",
+      "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py",
+      "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py",
+      "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py",
+      "tests/unit/architecture/test_nt_prd_red_first_probes.py",
+      "tests/unit/applications/test_wb_serving_bind_defaults.py",
+      "tests/unit/architecture/test_nt_rpl_red_first_probes.py",
+      "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py",
+      "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py",
+      "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py",
+      "tests/unit/applications/test_nt_ten_red_first_probes.py",
+      "tests/unit/runtime/events/test_event_id_persistence_semantics.py",
+      "tests/unit/scripts/test_check_runtime_event_tenant_propagation.py",
+      "tests/unit/runtime/kernel/test_step_kernel.py",
+      "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+      "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py",
+      "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py"
+    ],
+    "exit": 1,
+    "summary": "1 failed, 248 passed, 1 warning in 144.05s (0:02:24)",
+    "log_sha256": "2686c4dea8f442ce8075b1149a09a48a16877ad4ce5ba9572d2fbbabab170590",
+    "failed_nodes": [
+      "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list"
+    ]
+  },
+  "prefix_runs": [
+    {
+      "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "exit": 1,
+      "summary": "12 failed, 5 passed, 4 errors in 228.76s (0:03:48)",
+      "log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65",
+      "overlay": {
+        "tests/unit/architecture/test_wa_integrations_shared_leakage.py": {
+          "fix_commit": "a40e7291a66f5eb806da8f34d70da43a82cdbbe1",
+          "test_blob_sha": "987b203cdfaf56e22c9e143ce7cdabc1cb76bbe0"
+        },
+        "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py": {
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "748b64bd09df2769366917bb244ca1fb0c4bc3cd"
+        },
+        "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py": {
+          "fix_commit": "83896a79cc7161f9144b709c75936065ee05ecc7",
+          "test_blob_sha": "56e1a8fa130ebe47ca28cf8bc4c124652df4e2c8"
+        },
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py": {
+          "fix_commit": "a27671e784a2a2562985ad11b45cc392ca0ea262",
+          "test_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62"
+        },
+        "tests/unit/model_inference/test_fc3_vision_fail_closed.py": {
+          "fix_commit": "500f136d86fe68f8a0ad944c1e35c0cca1ba03e4",
+          "test_blob_sha": "b341e36164c43219b1e2102d72deeba499a471dd"
+        },
+        "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py": {
+          "fix_commit": "66664e2bffa1de7ee5405b4d16d771302d676080",
+          "test_blob_sha": "b885473947a9c7a6bfb53416201f45d60df44d04"
+        },
+        "tests/unit/rag/vectorstore/test_fc3_vectorstore_selector_fail_closed.py": {
+          "fix_commit": "71e69cad061e872141961304a8f14f2600c35e66",
+          "test_blob_sha": "2a281e831edbc45273dded4b0cff583196cfbd0c"
+        },
+        "tests/unit/runtime/notifications/test_fc3_notification_selector_fail_closed.py": {
+          "fix_commit": "c038b95f133f2c562f0810e7fb3a81640e1a96ad",
+          "test_blob_sha": "023592604849b3daed99b9cfc8a77e6d0621e9cf"
+        },
+        "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py": {
+          "fix_commit": "83896a79cc7161f9144b709c75936065ee05ecc7",
+          "test_blob_sha": "182c5f1e18ad658d40efed729392ec4eed14a503"
+        },
+        "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py": {
+          "fix_commit": "6fdc2b5c22b809b98a5fd078abc43217ae1f2f8f",
+          "test_blob_sha": "ca647a4091646db0e970dc6c7687c82ac3313b3e"
+        },
+        "tests/unit/applications/test_nt_ten_red_first_probes.py": {
+          "fix_commit": "ce0b63fab74f92e6179f71febcb91149d66a280d",
+          "test_blob_sha": "0e03f805961a1e7052990c0838409c5c6ec984f4"
+        },
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py": {
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf"
+        },
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py": {
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf"
+        },
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py": {
+          "fix_commit": "4060193d4fe9bb95cfb3f12773dad7da511f9fc0",
+          "test_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada"
+        }
+      }
+    },
+    {
+      "prefix_sha": "307a871c059f150a6b744e39135a737399467e88",
+      "exit": 1,
+      "summary": "7 failed, 1 passed in 1.82s",
+      "log_sha256": "b8c158e653827ca31f7ae2a552d1848ad7571aee3ec7f34ba990bd6562799772",
+      "overlay": {
+        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py": {
+          "fix_commit": "5a87046ba6b5dc46ffb3693417b4d2bf96a561c5",
+          "test_blob_sha": "50d9dab5bca0fe954c73a6b7328af968392658e2"
+        }
+      }
+    },
+    {
+      "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+      "exit": 1,
+      "summary": "3 failed, 16 passed in 2.13s",
+      "log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b",
+      "overlay": {
+        "tests/unit/architecture/test_rw_deps_core_ownership_declared.py": {
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290"
+        }
+      }
+    },
+    {
+      "prefix_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
+      "exit": 1,
+      "summary": "1 error in 0.78s",
+      "log_sha256": "847eef1e2e05dd486c21096817a05f8d1bc8e4f797e144557a03c49d6cdd5c55",
+      "overlay": {
+        "tests/unit/architecture/test_rw_gates_eval_digest_denied.py": {
+          "fix_commit": "86602507054756b49dfe824d0355de69e78894ba",
+          "test_blob_sha": "f38ed9330481c1ca1a3063d912576ade549f1122"
+        }
+      }
+    },
+    {
+      "prefix_sha": "b7855b83e98e3cbf2589775dabd64d990385dc24",
+      "exit": 1,
+      "summary": "7 failed, 2 passed in 103.67s (0:01:43)",
+      "log_sha256": "624c04a6ec2a80037556eff46635307fe38edc89ac5ce894f7a3320852e263ea",
+      "overlay": {
+        "tests/unit/agents/test_wa_agent_import_rule.py": {
+          "fix_commit": "fab086f37f3620ae546f28079982cf6ebb273e2a",
+          "test_blob_sha": "6bb73f92cb6a59e84d11c0dbbc2ee67e7f871212"
+        },
+        "tests/unit/runtime/execution/test_fc1_host_task_routing_posture.py": {
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "6aeb19344ac4e3607858ac5e46796846ff4d2b8f"
+        },
+        "tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py": {
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "67a97368c3823eb6beb6069693abea6551c8680d"
+        }
+      }
+    },
+    {
+      "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+      "exit": 1,
+      "summary": "6 failed, 12 passed in 2.51s",
+      "log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c",
+      "overlay": {
+        "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py": {
+          "fix_commit": "2cd836a0c4a7e9aa7c82223a8b3f77474dd7c7cf",
+          "test_blob_sha": "45f49aef1f6c4b52a5f78674ffd36930d29e823e"
+        },
+        "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py": {
+          "fix_commit": "adaaa374e465bcc1634273b667e51765296eef11",
+          "test_blob_sha": "5a8148d245c9996a2b07caded6e90bd29a59376c"
+        },
+        "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py": {
+          "fix_commit": "2cd836a0c4a7e9aa7c82223a8b3f77474dd7c7cf",
+          "test_blob_sha": "811a35adf21b928ac7bfe69d89e523593a915c00"
+        }
+      }
+    },
+    {
+      "prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "exit": 1,
+      "summary": "6 failed, 1 passed in 100.73s (0:01:40)",
+      "log_sha256": "0e402073e427fddaaaff7c24a9807ffb69b7edbded715e1914d708bf833c9faf",
+      "overlay": {
+        "tests/unit/architecture/test_nt_prd_red_first_probes.py": {
+          "fix_commit": "dff5449c97bf9a637c59e09e41c1177be420a730",
+          "test_blob_sha": "ab4ba59fb2acf76f8dd14bd75109d97d8e3abab3"
+        },
+        "tests/unit/applications/test_wb_serving_bind_defaults.py": {
+          "fix_commit": "923c80addf8e330cf8d9e0a3aa2e370e94a54c2c",
+          "test_blob_sha": "805f5cf4bd681ea833f8c447fc2f3f41797d3922"
+        },
+        "tests/unit/architecture/test_nt_rpl_red_first_probes.py": {
+          "fix_commit": "1bc28033cf0fdf95b169ec3b16b3ea5d930c0f09",
+          "test_blob_sha": "d3d664359e600e4dda70b1a73284428e8b57d24c"
+        }
+      }
+    },
+    {
+      "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+      "exit": 1,
+      "summary": "12 failed in 38.06s",
+      "log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23",
+      "overlay": {
+        "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py": {
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35"
+        }
+      }
+    },
+    {
+      "prefix_sha": "5fe00c793c5e1f04cb7cebd729ab0eae8f2519d4",
+      "exit": 1,
+      "summary": "1 error in 10.15s",
+      "log_sha256": "fc074dc01df388e1f08eda4005bfd89f56b65b95c2debbc061b230519dbba33c",
+      "overlay": {
+        "tests/unit/runtime/events/test_event_id_persistence_semantics.py": {
+          "fix_commit": "6d1670b230fee23d6d54e1648085d5ce8c483b3d",
+          "test_blob_sha": "0a09a36eb44be475d47b3057eb7942e74a5fd38c"
+        }
+      }
+    }
+  ],
+  "log_note": "Logs are session artifacts (.tmp/session/ga2r/red/) and are not tracked; the assertion lines below are copied from them, with the replay worktree path shown as `<replay-worktree>` and the account home as `<user-home>`.",
+  "totals": {
+    "measured_rows": 21,
+    "red_at_prefix": 8,
+    "evidence_missing": 12,
+    "operator_disposition_unchanged": 1
+  },
+  "rows": [
+    {
+      "frz_id": "FRZ-BND-04",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "private implementation leakage = 0: a production module must not import intergrax.integrations._shared",
+      "reason": "Behavioural failure on the offending production imports at the prefix; passes at the pin. Coverage not shown: the node is not seeded and carries documented exceptions.",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_wa_integrations_shared_leakage.py::test_nt_rw_wa_01_production_modules_do_not_import_integrations_shared",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "a40e7291a66f5eb806da8f34d70da43a82cdbbe1",
+          "test_blob_sha": "987b203cdfaf56e22c9e143ce7cdabc1cb76bbe0",
+          "pin_blob_sha": "81b7250045e3875a58af3cd586cd5b71d5f14598",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['agents/web_...actory.py:10'] == []",
+            "E         Left contains 4 more items, first extra item: 'agents/web_search_qualifier/search_provider_resolver.py:10'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-BND-05",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "cross-layer construction only through sanctioned composition (NT-BND-05-1, NT-BND-05-2)",
+      "reason": "The Tier-2 node fails on the production_mode posture literal, not on direct RuntimeContext construction (NT-BND-05-1). The provider-switch node (NT-BND-05-2) passes at the prefix and fails at the pin.",
+      "due_ticket": "T-IGX-043-H",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_tier2_build_context_takes_posture_from_host_not_a_literal",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "748b64bd09df2769366917bb244ca1fb0c4bc3cd",
+          "pin_blob_sha": "748b64bd09df2769366917bb244ca1fb0c4bc3cd",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: agents/external_contractor_adapter/external_contractor_adapter_agent.py:110: production_mode reads the lab constant",
+            "E         agents/organization_worker/organization_worker_agent.py:111: production_mode is a literal",
+            "E         intergrax/agents/authoring/acp_stub_reflex.py:61: production_mode reads the lab constant",
+            "E       assert [Violation(re...ab constant')] == []"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "83896a79cc7161f9144b709c75936065ee05ecc7",
+          "test_blob_sha": "56e1a8fa130ebe47ca28cf8bc4c124652df4e2c8",
+          "pin_blob_sha": "83d0825b2a054410f3cf2dcfc000a525f74e2f77",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "FAILED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-BND-06",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "transport adapters do not own runtime semantics (NT-BND-06-1)",
+      "reason": "The W5 nodes fail on OTLP export payload typing. None shows a gate turning red because a transport adapter constructs or interprets a RuntimeEvent or envelope (NT-BND-06-1).",
+      "due_ticket": "T-IGX-043-J",
+      "nodes": [
+        {
+          "node": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py::test_g1_otlp_transport_port_export_parameter",
+          "counted": false,
+          "prefix_sha": "307a871c059f150a6b744e39135a737399467e88",
+          "fix_commit": "5a87046ba6b5dc46ffb3693417b4d2bf96a561c5",
+          "test_blob_sha": "50d9dab5bca0fe954c73a6b7328af968392658e2",
+          "pin_blob_sha": "236fe56f36cb97f4b380c3808e3e4caf199d20c2",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert 'object' == 'ObservabilityExportPayload'",
+            "E         - ObservabilityExportPayload",
+            "E         + object"
+          ],
+          "prefix_log_sha256": "b8c158e653827ca31f7ae2a552d1848ad7571aee3ec7f34ba990bd6562799772"
+        },
+        {
+          "node": "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py::test_g4_transport_export_bodies_no_dynamic_probing",
+          "counted": false,
+          "prefix_sha": "307a871c059f150a6b744e39135a737399467e88",
+          "fix_commit": "5a87046ba6b5dc46ffb3693417b4d2bf96a561c5",
+          "test_blob_sha": "50d9dab5bca0fe954c73a6b7328af968392658e2",
+          "pin_blob_sha": "236fe56f36cb97f4b380c3808e3e4caf199d20c2",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['OtlpTranspo...s isinstance'] == []",
+            "E         Left contains one more item: 'OtlpTransport.export uses isinstance'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "b8c158e653827ca31f7ae2a552d1848ad7571aee3ec7f34ba990bd6562799772"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-CFG-06",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "an unconfigured vendor cannot be reached around the factory: no vendor SDK import outside the provider boundary (NT-CFG-06-1, as FRZ-CTR-02)",
+      "reason": "Behavioural failure on two modules importing the ollama SDK outside the provider package; passes at the pin. Coverage not shown: the scan does not include applications/ (one `import ollama` remains at applications/local_workspace_application/benchmarks/local_model_qualification/environment.py:108 at the pin), the node has no seeded case, and the vendor list in scripts/maintenance/check_integration_vendor_imports.py does not name ollama. The FC-3 selector files do not collect at the prefix (ImportError) and are not counted, so the selector fail-closed findings A4-017 and A4-019 have no red-first evidence.",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "a27671e784a2a2562985ad11b45cc392ca0ea262",
+          "test_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "pin_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['intergrax/m...ion_types.py'] == []",
+            "E         Left contains 2 more items, first extra item: 'intergrax/multimedia/images_loader.py'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/model_inference/test_fc3_vision_fail_closed.py",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "500f136d86fe68f8a0ad944c1e35c0cca1ba03e4",
+          "test_blob_sha": "b341e36164c43219b1e2102d72deeba499a471dd",
+          "pin_blob_sha": "b341e36164c43219b1e2102d72deeba499a471dd",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "11 nodes: 11 PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name 'VisionAdapterCapabilityError' from 'intergrax.model_inference.contracts' (<replay-worktree>\\intergrax\\model_inference\\contracts.py)"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "66664e2bffa1de7ee5405b4d16d771302d676080",
+          "test_blob_sha": "b885473947a9c7a6bfb53416201f45d60df44d04",
+          "pin_blob_sha": "b885473947a9c7a6bfb53416201f45d60df44d04",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "6 nodes: 6 PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name 'LabSelectorOptIn' from 'intergrax.integrations.contracts.base' (<replay-worktree>\\intergrax\\integrations\\contracts\\base.py)"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/rag/vectorstore/test_fc3_vectorstore_selector_fail_closed.py",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "71e69cad061e872141961304a8f14f2600c35e66",
+          "test_blob_sha": "2a281e831edbc45273dded4b0cff583196cfbd0c",
+          "pin_blob_sha": "2a281e831edbc45273dded4b0cff583196cfbd0c",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "4 nodes: 4 PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name 'LabSelectorOptIn' from 'intergrax.integrations.contracts.base' (<replay-worktree>\\intergrax\\integrations\\contracts\\base.py)"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/runtime/notifications/test_fc3_notification_selector_fail_closed.py",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "c038b95f133f2c562f0810e7fb3a81640e1a96ad",
+          "test_blob_sha": "023592604849b3daed99b9cfc8a77e6d0621e9cf",
+          "pin_blob_sha": "023592604849b3daed99b9cfc8a77e6d0621e9cf",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "16 nodes: 16 PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name 'resolve_host_notification_adapter' from 'intergrax.applications._shared.notification_wiring' (<replay-worktree>\\intergrax\\applications\\_shared\\notification_wiring.py)"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-CTR-02",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "concrete provider leakage = 0: `import ollama` outside the provider boundary fails (NT-CTR-02-1)",
+      "reason": "Behavioural failure on two modules importing the ollama SDK outside the provider package; passes at the pin. Coverage not shown: the scan does not include applications/ (one `import ollama` remains at applications/local_workspace_application/benchmarks/local_model_qualification/environment.py:108 at the pin), the node has no seeded case, and the vendor list in scripts/maintenance/check_integration_vendor_imports.py does not name ollama.",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "a27671e784a2a2562985ad11b45cc392ca0ea262",
+          "test_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "pin_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['intergrax/m...ion_types.py'] == []",
+            "E         Left contains 2 more items, first extra item: 'intergrax/multimedia/images_loader.py'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-CTR-06",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "as FRZ-CTR-02: vendor SDK import outside the provider boundary fails (NT-CTR-06-1)",
+      "reason": "Same node as FRZ-CTR-02 (the matrix defines NT-CTR-06-1 as that gate). Coverage not shown: the scan does not include applications/ (one `import ollama` remains at applications/local_workspace_application/benchmarks/local_model_qualification/environment.py:108 at the pin), the node has no seeded case, and the vendor list in scripts/maintenance/check_integration_vendor_imports.py does not name ollama.",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "a27671e784a2a2562985ad11b45cc392ca0ea262",
+          "test_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "pin_blob_sha": "3eb00a5a0d3eba413d54399b02142e44384ebf62",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['intergrax/m...ion_types.py'] == []",
+            "E         Left contains 2 more items, first extra item: 'intergrax/multimedia/images_loader.py'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-DEBT-02",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "unresolved transitional authority = 0: dependency-ownership gate (NT-DEBT-02-1)",
+      "reason": "01a[jsonschema], 01a[tzdata] and 01b fail at the prefix with CORE_OWNERSHIP_VIOLATION and pass at the pin, but the dependency-ownership gate was already red at that baseline (EQOA-A4-005) and the prefix commit only adds the test; MEP red-first rule: \"a gate already red\" does not count. The seeded negative case NT-RW-DEP-01c passes at the prefix, so no seeded red exists.",
+      "due_ticket": "T-IGX-051-H",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner[jsonschema]",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert 'CORE_OWNERSHIP_VIOLATION: jsonschema' not in ['CORE_OWNERSHIP_VIOLATION: jsonschema', 'CORE_OWNERSHIP_VIOLATION: tzdata']"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner[tzdata]",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert 'CORE_OWNERSHIP_VIOLATION: tzdata' not in ['CORE_OWNERSHIP_VIOLATION: jsonschema', 'CORE_OWNERSHIP_VIOLATION: tzdata']"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01b_project_reports_no_core_ownership_violation",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['CORE_OWNERS...TION: tzdata'] == []",
+            "E         Left contains 2 more items, first extra item: 'CORE_OWNERSHIP_VIOLATION: jsonschema'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-DEBT-03",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "temporary compatibility seam in frozen scope = 0 (NT-DEBT-03-1, as FRZ-DEBT-02)",
+      "reason": "01a[jsonschema], 01a[tzdata] and 01b fail at the prefix with CORE_OWNERSHIP_VIOLATION and pass at the pin, but the dependency-ownership gate was already red at that baseline (EQOA-A4-005) and the prefix commit only adds the test; MEP red-first rule: \"a gate already red\" does not count. The seeded negative case NT-RW-DEP-01c passes at the prefix, so no seeded red exists. No node inventories compatibility seams.",
+      "due_ticket": "T-IGX-051-H",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner[jsonschema]",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert 'CORE_OWNERSHIP_VIOLATION: jsonschema' not in ['CORE_OWNERSHIP_VIOLATION: jsonschema', 'CORE_OWNERSHIP_VIOLATION: tzdata']"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner[tzdata]",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert 'CORE_OWNERSHIP_VIOLATION: tzdata' not in ['CORE_OWNERSHIP_VIOLATION: jsonschema', 'CORE_OWNERSHIP_VIOLATION: tzdata']"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01b_project_reports_no_core_ownership_violation",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['CORE_OWNERS...TION: tzdata'] == []",
+            "E         Left contains 2 more items, first extra item: 'CORE_OWNERSHIP_VIOLATION: jsonschema'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+          "counted": false,
+          "prefix_sha": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "fix_commit": "6c9c8155da6227337e17c9f1f230cf78d7949f4b",
+          "test_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "pin_blob_sha": "79d975b93716f4ba3f669cb6be16ed9963923290",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "ecd370df75e2bbd512501997fea8816f37341c46e8e0c7274482ee6314b9aa5b"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-DEBT-04",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "PARTIAL inside frozen scope = 0: a PARTIAL entry without a disposition fails (NT-DEBT-04-1)",
+      "reason": "The cited node does not collect at the prefix (ImportError) and it tests the evaluation digest guard, not an inventory of PARTIAL entries.",
+      "due_ticket": "T-IGX-051-F",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_gates_eval_digest_denied.py::test_nt_debt_04_enforce_eval_run_digest_guard",
+          "counted": false,
+          "prefix_sha": "8bdb0038d7a8fe506b5490a0ec2acad227e6b938",
+          "fix_commit": "86602507054756b49dfe824d0355de69e78894ba",
+          "test_blob_sha": "f38ed9330481c1ca1a3063d912576ade549f1122",
+          "pin_blob_sha": "44c43fd572ee13ee4d807f36d1782a0a826fa3e4",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name 'enforce_eval_run_digests' from 'intergrax.contracts.evaluation_contracts' (<replay-worktree>\\intergrax\\contracts\\evaluation_contracts.py)"
+          ],
+          "prefix_log_sha256": "847eef1e2e05dd486c21096817a05f8d1bc8e4f797e144557a03c49d6cdd5c55"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-EXE-02",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "all meaningful executable work enters the canonical boundary: construction outside the registry fails (NT-EXE-02-1)",
+      "reason": "No node fails because an agent is constructed outside the registry. The agent import-rule nodes test an import boundary; the routing-posture nodes fail on a missing keyword or attribute; the construction gate fails on missing production_mode posture at router and loop sites.",
+      "due_ticket": "T-IGX-043-A",
+      "nodes": [
+        {
+          "node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
+          "counted": false,
+          "prefix_sha": "b7855b83e98e3cbf2589775dabd64d990385dc24",
+          "fix_commit": "fab086f37f3620ae546f28079982cf6ebb273e2a",
+          "test_blob_sha": "6bb73f92cb6a59e84d11c0dbbc2ee67e7f871212",
+          "pin_blob_sha": "6bb73f92cb6a59e84d11c0dbbc2ee67e7f871212",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['agents/web_...p3.factories'] == []",
+            "E         Left contains 2 more items, first extra item: 'agents/web_search_qualifier/search_provider_resolver.py:10 -> intergrax.integrations._shared.p2.factories'",
+            "E         Full diff:",
+            "E         - []"
+          ],
+          "prefix_log_sha256": "624c04a6ec2a80037556eff46635307fe38edc89ac5ce894f7a3320852e263ea"
+        },
+        {
+          "node": "tests/unit/runtime/execution/test_fc1_host_task_routing_posture.py::test_host_task_execution_uses_the_loops_router",
+          "counted": false,
+          "prefix_sha": "b7855b83e98e3cbf2589775dabd64d990385dc24",
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "6aeb19344ac4e3607858ac5e46796846ff4d2b8f",
+          "pin_blob_sha": "e08ed3d5e7f94e3a129420be6aeccec41a7edb91",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E           AttributeError: 'NexusLoop' object has no attribute 'agent_router'"
+          ],
+          "prefix_log_sha256": "624c04a6ec2a80037556eff46635307fe38edc89ac5ce894f7a3320852e263ea"
+        },
+        {
+          "node": "tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py::test_no_product_construction_without_explicit_posture",
+          "counted": false,
+          "prefix_sha": "b7855b83e98e3cbf2589775dabd64d990385dc24",
+          "fix_commit": "d81f21a0c78a0ff04473459a67764adde2e5e7d8",
+          "test_blob_sha": "67a97368c3823eb6beb6069693abea6551c8680d",
+          "pin_blob_sha": "e85e856b458d2beedb698f54202279b82fc4f6f0",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: intergrax/runtime/execution/debug_lab_nexus_loop.py:26: NexusLoop without production_mode",
+            "E         intergrax/runtime/execution/debug_lab_nexus_loop.py:40: NexusLoop without production_mode",
+            "E         intergrax/runtime/execution/nexus_host_execution.py:57: AgentRouter without production_mode",
+            "E         intergrax/runtime/execution/nexus_host_execution.py:57: AgentRouter outside the sanctioned sites"
+          ],
+          "prefix_log_sha256": "624c04a6ec2a80037556eff46635307fe38edc89ac5ce894f7a3320852e263ea"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-OWN-05",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "no duplicated semantic mechanism: one host LLM resolver (NT-OWN-05-1, finding A4-016)",
+      "reason": "Behavioural failure on two host LLM resolver modules at the prefix; passes at the pin. Coverage not shown: the node covers one of the five listed responsibilities (plugin discovery, context-window tables, tool-input guard and evaluator contract have no red-first evidence here).",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py::test_nt_own_05_1_one_host_llm_resolver",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "83896a79cc7161f9144b709c75936065ee05ecc7",
+          "test_blob_sha": "182c5f1e18ad658d40efed729392ec4eed14a503",
+          "pin_blob_sha": "182c5f1e18ad658d40efed729392ec4eed14a503",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert ['intergrax/a..._resolver.py'] == ['intergrax/r..._resolver.py']",
+            "E         At index 0 diff: 'intergrax/applications/_shared/llm_resolver.py' != 'intergrax/runtime/wiring/llm_resolver.py'",
+            "E         Left contains one more item: 'intergrax/runtime/wiring/llm_resolver.py'",
+            "E         Full diff:"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-PLG-05",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "activation/admission explicit: an unsigned or digest-mismatched plugin entry point is refused at admission (NT-PLG-05-1)",
+      "reason": "The nodes that fail at the prefix fail on a missing digest function, attribute or parameter. The unsigned and tampered-digest rejection nodes already pass at the prefix.",
+      "due_ticket": "T-IGX-043-A",
+      "nodes": [
+        {
+          "node": "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py::test_sup_06a_altered_installed_file_refused",
+          "counted": false,
+          "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+          "fix_commit": "2cd836a0c4a7e9aa7c82223a8b3f77474dd7c7cf",
+          "test_blob_sha": "45f49aef1f6c4b52a5f78674ffd36930d29e823e",
+          "pin_blob_sha": "9ec7c957f4ecb92ca1c104cf7202ea6e83b0a9d1",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: no installed-tree digest function exists (EX-D6-03)",
+            "E       assert None is not None"
+          ],
+          "prefix_log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c"
+        },
+        {
+          "node": "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py::test_d6_r016_bootstrap_rejects_unsigned_plugin_before_it_is_imported",
+          "counted": false,
+          "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+          "fix_commit": "adaaa374e465bcc1634273b667e51765296eef11",
+          "test_blob_sha": "5a8148d245c9996a2b07caded6e90bd29a59376c",
+          "pin_blob_sha": "3bb34a6b17e1328a9dc5f79e3194942efc62fb97",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AttributeError: <module 'intergrax.core.catalog_bootstrap' from '<replay-worktree>\\\\intergrax\\\\core\\\\catalog_bootstrap.py'> has no attribute 'iter_entry_point_specs'"
+          ],
+          "prefix_log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c"
+        },
+        {
+          "node": "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py::test_d6_r016_unsigned_plugin_is_rejected_in_strict_profile",
+          "counted": false,
+          "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+          "fix_commit": "adaaa374e465bcc1634273b667e51765296eef11",
+          "test_blob_sha": "5a8148d245c9996a2b07caded6e90bd29a59376c",
+          "pin_blob_sha": "3bb34a6b17e1328a9dc5f79e3194942efc62fb97",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c"
+        },
+        {
+          "node": "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py::test_d6_r016_tampered_digest_is_rejected",
+          "counted": false,
+          "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+          "fix_commit": "adaaa374e465bcc1634273b667e51765296eef11",
+          "test_blob_sha": "5a8148d245c9996a2b07caded6e90bd29a59376c",
+          "pin_blob_sha": "3bb34a6b17e1328a9dc5f79e3194942efc62fb97",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-PRD-05",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "shutdown/resource cleanup qualified: a Tier-3 production entrypoint serves through the hosting lifecycle engine (NT-PRD-05)",
+      "reason": "Both nodes fail on their assertion at the prefix and pass at the pin. Coverage not shown: NT-PRD-05 is a source-text check of one serving command and NT-WB-15 covers one reference application; the declared entrypoint census gate does not exist, and direct uvicorn.run calls remain in other applications at the pin.",
+      "red_first_prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_05_entrypoint_uses_hosting_lifecycle_engine",
+          "counted": true,
+          "prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+          "fix_commit": "dff5449c97bf9a637c59e09e41c1177be420a730",
+          "test_blob_sha": "ab4ba59fb2acf76f8dd14bd75109d97d8e3abab3",
+          "pin_blob_sha": "a5c0b2732f5da8345fe259e90023946a1ec96bd6",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: NT-PRD-05 missing hosting lifecycle entry: run_governed_contractor_hosted_strict_production_application",
+            "E       assert 'run_governed_contractor_hosted_strict_production_application' in '# � Artur Czarnecki. All rights reserved.\\n\\n\"\"\"Sanctioned Package B strict production serve command (profile v1 + D4 uvicorn factory).\"\"\"\\n\\nfrom __future__ import annotations\\n\\nimport os\\nimport sys\\n\\nfrom governed_contractor_application.host.settings import GovernedContractorBackendSettings\\nfrom governed_contractor_application.host.single_node_profile_v1_strict_startup import (\\n    open_gca_strict_production_serving_session_from_single_node_production_profile_v1,\\n)\\nfrom governed_contractor_application.host.strict_production_serving import (\\n    build_governed_contractor_strict_production_uvicorn_factory,\\n)\\nfrom intergrax.agent_distribution.venv_bundle_colocated_runtime_deployment_adapter import (\\n    VenvBundleColocatedRuntimeDeploymentAdapter,\\n)\\nfrom intergrax.applications._shared.package_b_operator_production_governance_configuration import (\\n    PackageBOperatorProductionGovernanceConfigurationError,\\n    load_package_b_operator_production_control_plane_governance_from_env,\\n)\\nfrom intergrax.applications._shared.package_b_strict_production_serving_environment import (\\n    PackageBStrictProductionServingEnvironmentError,\\n    load_strict_production_serving_en...xc:\\n        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)\\n        _reraise_with_command_owned_close_failure(exc, close_exc)\\n    except BaseException as exc:\\n        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)\\n        wrapped = PackageBStrictProductionServingCommandError(str(exc))\\n        if close_exc is None:\\n            raise wrapped from exc\\n        raise_primary_with_cleanup_errors(\\n            wrapped,\\n            [close_exc],\\n            message=(\\n                \"package B strict production serving command failed; \"\\n                \"errors during command-owned session close\"\\n            ),\\n        )\\n    else:\\n        close_exc = _close_strict_session_when_command_still_owns_shutdown(session)\\n        if close_exc is not None:\\n            raise PackageBStrictProductionServingCommandError(str(close_exc)) from close_exc\\n\\n\\ndef main() -> None:\\n    try:\\n        run_package_b_strict_production_serving_command()\\n    except PackageBStrictProductionServingCommandError as exc:\\n        print(str(exc), file=sys.stderr)\\n        raise SystemExit(2) from exc\\n\\n\\nif __name__ == \"__main__\":\\n    main()\\n'"
+          ],
+          "prefix_log_sha256": "0e402073e427fddaaaff7c24a9807ffb69b7edbded715e1914d708bf833c9faf"
+        },
+        {
+          "node": "tests/unit/applications/test_wb_serving_bind_defaults.py::test_nt_wb_15_lkw_reference_production_has_no_uvicorn_run",
+          "counted": true,
+          "prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+          "fix_commit": "923c80addf8e330cf8d9e0a3aa2e370e94a54c2c",
+          "test_blob_sha": "805f5cf4bd681ea833f8c447fc2f3f41797d3922",
+          "pin_blob_sha": "7cd654dad46cf7bf420b86a99a06667ee1c20298",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       assert not True",
+            "E        +  where True = any(<generator object test_nt_wb_15_lkw_reference_production_has_no_uvicorn_run.<locals>.<genexpr> at 0x000001D7AB775A40>)"
+          ],
+          "prefix_log_sha256": "0e402073e427fddaaaff7c24a9807ffb69b7edbded715e1914d708bf833c9faf"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-SEC-04",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "production auth bypass = 0: unset or invalid inbound verification mode, or a mode without its secret, refuses to build (NT-SEC-04-1, A4-026)",
+      "reason": "The counted nodes fail with DID NOT RAISE SecurityConfigurationError at the prefix and pass at the pin. Coverage not shown: INT7 and the STRICT/PRODUCT host wiring nodes INT9 to INT12 fail at the prefix with TypeError on a keyword argument that did not exist and are not counted.",
+      "red_first_prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+      "nodes": [
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+          "counted": true,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       Failed: DID NOT RAISE <class 'intergrax.core.security.security_configuration.SecurityConfigurationError'>"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        },
+        {
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config",
+          "counted": false,
+          "prefix_sha": "ccc7287c40670b421cc36cf3fc2eb331cdba310c",
+          "fix_commit": "00bcb13f3a220010c44b10e4905bfaa5a852d3e3",
+          "test_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "pin_blob_sha": "b3e8e63adfe12c798b9ff02b30eb9b36f3cf6e35",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E           TypeError: wire_interaction_intake_service() got an unexpected keyword argument 'env'"
+          ],
+          "prefix_log_sha256": "78625ba0f1aad2aa7b5fe9024f52a0ae0aee741e4253fc8809be635c9f873a23"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-SEC-06",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "provider/plugin trust qualified: a strict root refuses unattested defence plugins (NT-SEC-06-1)",
+      "reason": "The node fails at the prefix because the require_provenance setting did not exist, not because an unattested defence plugin was admitted.",
+      "due_ticket": "T-IGX-051-B",
+      "nodes": [
+        {
+          "node": "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py::test_sec_06_1_strict_root_refuses_unattested_defense_plugins",
+          "counted": false,
+          "prefix_sha": "459dfebc712f54eef6d9e025557930f1171c40d8",
+          "fix_commit": "2cd836a0c4a7e9aa7c82223a8b3f77474dd7c7cf",
+          "test_blob_sha": "811a35adf21b928ac7bfe69d89e523593a915c00",
+          "pin_blob_sha": "811a35adf21b928ac7bfe69d89e523593a915c00",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: a strict root cannot require provenance for security-defense plugins (FRZ-SEC-06)",
+            "E       assert 'require_provenance' in {'ep_name_conflict', 'on_load_failure', 'plugin_id_conflict', 'provenance', 'shipped_id_override'}"
+          ],
+          "prefix_log_sha256": "5a8b4986ad835da87b665fcc5a1087b03987d147182ebab6940a0b8bbd62e23c"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-TEN-02",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "end-to-end tenant propagation across semantic and runtime boundaries",
+      "reason": "The failing node asserts the production_mode posture of a strict host, not tenant propagation. No end-to-end tenant propagation node exists.",
+      "due_ticket": "T-IGX-078-D",
+      "nodes": [
+        {
+          "node": "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py::test_nt02_strict_host_injection_sets_production_mode",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "6fdc2b5c22b809b98a5fd078abc43217ae1f2f8f",
+          "test_blob_sha": "ca647a4091646db0e970dc6c7687c82ac3313b3e",
+          "pin_blob_sha": "d29232e3a5e4cfb5d319443f452b42e9efb807b7",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "NOT_PRESENT_UNDER_THIS_NAME",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: assert False is True",
+            "E        +  where False = RuntimeConfig(llm_adapter=<external_contractor_adapter.external_contractor_adapter_agent._ExternalContractorAdapterStubLLM object at 0x00000239B8376ED0>, embedding_manager=None, vectorstore_manager=None, retriever_manager=None, reranker_manager=None, rag_profile=None, retrieval_service=None, enable_rag=False, enable_websearch=True, tenant_id='t1', workspace_id=None, llm_routing_context=None, llm_routing_snapshot=None, max_docs_per_query=8, max_rag_tokens=4096, rag_score_threshold=None, max_longterm_entries_per_query=8, max_longterm_tokens=4096, longterm_score_threshold=None, websearch_executor=None, websearch_config=None, tool_planner=None, tools_mode='auto', tool_planner_prompt_id='tools_agent_planner', engine_planner_prompt_id='planner_default', tool_selection_mode=<ToolSelectionMode.STATIC: 'static'>, tool_selection_top_k=20, tool_selection_max_hierarchy_passes=2, tool_selection_hierarchical_llm_pass=False, tool_selection_strategy=None, tool_selection_strategy_id=None, execution_authority_policy=None, execution_authority_policy_id=None, execution_budget_allocation_policy=None, execution_budget_allocation_policy_id=None, tools_context_scope=<ToolsContextScope.CURRENT_MESSAGE_ON...text_budget_policy=None, task_context_assembly_options=None, context_decision_profile=None, metadata={}, execution_boundary_export=None, boundary_event_buffer=None, enable_llm_usage_collection=True, llm_usage_tracker=None, runtime_timeout_ms=None, max_run_retries=0, retry_run_on=frozenset({<RuntimeErrorCode.LLM_ERROR: 'llm_error'>, <RuntimeErrorCode.TOOL_ERROR: 'tool_error'>}), runtime_policies=RuntimePolicies(timeout=TimeoutPolicy(llm_seconds=30.0, tool_seconds=30.0, retrieval_seconds=10.0, storage_seconds=5.0), retry=RetryPolicy(max_attempts=3, backoff_seconds=0.0), fallback=FallbackPolicy(escalate_to_hitl=True), hitl=HitlPolicy(enabled=True, stop_reason='needs_user_input'), data_compliance=DataCompliancePolicy(api_trace_export='redacted', redact_tool_calls_in_api=True)), execution_slot_warn_threshold_ms=None, hitl_default_message=None, run_budget=None, budget_policy=None, trace_db_path=None, integration_profile=None, runtime_event_bus=None, context_engine=None, policy_bundle=None, production_mode=False, security_profile=None, evaluation_profile=None, evaluation_registry=None, signal_collector=None, adaptive_profile=None, resolved_profile_versions=None, prompt_catalog_path=None).production_mode",
+            "E        +    where RuntimeConfig(llm_adapter=<external_contractor_adapter.external_contractor_adapter_agent._ExternalContractorAdapterStubLLM object at 0x00000239B8376ED0>, embedding_manager=None, vectorstore_manager=None, retriever_manager=None, reranker_manager=None, rag_profile=None, retrieval_service=None, enable_rag=False, enable_websearch=True, tenant_id='t1', workspace_id=None, llm_routing_context=None, llm_routing_snapshot=None, max_docs_per_query=8, max_rag_tokens=4096, rag_score_threshold=None, max_longterm_entries_per_query=8, max_longterm_tokens=4096, longterm_score_threshold=None, websearch_executor=None, websearch_config=None, tool_planner=None, tools_mode='auto', tool_planner_prompt_id='tools_agent_planner', engine_planner_prompt_id='planner_default', tool_selection_mode=<ToolSelectionMode.STATIC: 'static'>, tool_selection_top_k=20, tool_selection_max_hierarchy_passes=2, tool_selection_hierarchical_llm_pass=False, tool_selection_strategy=None, tool_selection_strategy_id=None, execution_authority_policy=None, execution_authority_policy_id=None, execution_budget_allocation_policy=None, execution_budget_allocation_policy_id=None, tools_context_scope=<ToolsContextScope.CURRENT_MESSAGE_ON...text_budget_policy=None, task_context_assembly_options=None, context_decision_profile=None, metadata={}, execution_boundary_export=None, boundary_event_buffer=None, enable_llm_usage_collection=True, llm_usage_tracker=None, runtime_timeout_ms=None, max_run_retries=0, retry_run_on=frozenset({<RuntimeErrorCode.LLM_ERROR: 'llm_error'>, <RuntimeErrorCode.TOOL_ERROR: 'tool_error'>}), runtime_policies=RuntimePolicies(timeout=TimeoutPolicy(llm_seconds=30.0, tool_seconds=30.0, retrieval_seconds=10.0, storage_seconds=5.0), retry=RetryPolicy(max_attempts=3, backoff_seconds=0.0), fallback=FallbackPolicy(escalate_to_hitl=True), hitl=HitlPolicy(enabled=True, stop_reason='needs_user_input'), data_compliance=DataCompliancePolicy(api_trace_export='redacted', redact_tool_calls_in_api=True)), execution_slot_warn_threshold_ms=None, hitl_default_message=None, run_budget=None, budget_policy=None, trace_db_path=None, integration_profile=None, runtime_event_bus=None, context_engine=None, policy_bundle=None, production_mode=False, security_profile=None, evaluation_profile=None, evaluation_registry=None, signal_collector=None, adaptive_profile=None, resolved_profile_versions=None, prompt_catalog_path=None) = RuntimeContext(config=RuntimeConfig(llm_adapter=<external_contractor_adapter.external_contractor_adapter_agent._ExternalContractorAdapterStubLLM object at 0x00000239B8376ED0>, embedding_manager=None, vectorstore_manager=None, retriever_manager=None, reranker_manager=None, rag_profile=None, retrieval_service=None, enable_rag=False, enable_websearch=True, tenant_id='t1', workspace_id=None, llm_routing_context=None, llm_routing_snapshot=None, max_docs_per_query=8, max_rag_tokens=4096, rag_score_threshold=None, max_longterm_entries_per_query=8, max_longterm_tokens=4096, longterm_score_threshold=None, websearch_executor=None, websearch_config=None, tool_planner=None, tools_mode='auto', tool_planner_prompt_id='tools_agent_planner', engine_planner_prompt_id='planner_default', tool_selection_mode=<ToolSelectionMode.STATIC: 'static'>, tool_selection_top_k=20, tool_selection_max_hierarchy_passes=2, tool_selection_hierarchical_llm_pass=False, tool_selection_strategy=None, tool_selection_strategy_id=None, execution_authority_policy=None, execution_authority_policy_id=None, execution_budget_allocation_policy=None, execution_budget_allocation_policy_id=None, tools_context_scope=<ToolsContextSc...sion_manager=<intergrax.runtime.nexus.session.session_manager.SessionManager object at 0x00000239B67F9F40>, replay_service=None, ingestion_service=None, context_builder=None, rag_prompt_builder=<intergrax.runtime.nexus.prompts.rag_prompt_builder.DefaultRagPromptBuilder object at 0x00000239B32B9370>, user_longterm_memory_prompt_builder=<intergrax.runtime.nexus.prompts.user_longterm_memory_prompt_builder.DefaultUserLongTermMemoryPromptBuilder object at 0x00000239B32138F0>, websearch_executor=None, websearch_prompt_builder=<intergrax.runtime.nexus.prompts.websearch_prompt_builder.DefaultWebSearchPromptBuilder object at 0x00000239B83CD220>, history_layer=<intergrax.runtime.nexus.context.engine_history_layer.HistoryLayer object at 0x00000239B83CC3B0>, llm_usage_run_seq=0, llm_usage_runs=[], llm_usage_lock=<asyncio.locks.Lock object at 0x00000239B32917F0 [unlocked]>, trace_writer=None, governance_service=None, governance_evidence_recorder=None, prompt_registry=<intergrax.prompts.registry.yaml_registry.YamlPromptRegistry object at 0x00000239B32915B0>, artifact_store=None, execution_semaphore=None, policy_bundle=None, max_parallel_per_tenant=None, tool_invoker_close_on_context_close=True).config"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-TEN-07",
+      "status": "RED_AT_PREFIX",
+      "mechanism": "evidence and diagnostics preserve tenant identity and cannot establish truth for another tenant: MCP client-asserted tenant fails closed",
+      "reason": "Behavioural failure at the prefix (a client-asserted tenant was accepted); passes at the pin. Coverage not shown: only the MCP ingress half of the row; tenant preservation in events, traces and diagnostics has no red-first evidence (the event-id persistence file does not collect at its prefix, ImportError).",
+      "red_first_prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+      "nodes": [
+        {
+          "node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_07_mcp_client_asserted_tenant_identity_must_fail_closed",
+          "counted": true,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "ce0b63fab74f92e6179f71febcb91149d66a280d",
+          "test_blob_sha": "0e03f805961a1e7052990c0838409c5c6ec984f4",
+          "pin_blob_sha": "2ce906e162746ad8db5a0d2a2ea4bbc322be3bcc",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E           AssertionError: NT-TEN-07 MCP client-asserted tenant identity must fail closed: client-asserted tenant must not establish truth without verified harness principal",
+            "E           assert 'victim' != 'victim'",
+            "E            +  where 'victim' = McpRunAgentIdentityResolution(tenant_id='victim', user_id='mcp-user', principal=None, request_identity=None).tenant_id"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/runtime/events/test_event_id_persistence_semantics.py",
+          "counted": false,
+          "prefix_sha": "5fe00c793c5e1f04cb7cebd729ab0eae8f2519d4",
+          "fix_commit": "6d1670b230fee23d6d54e1648085d5ce8c483b3d",
+          "test_blob_sha": "0a09a36eb44be475d47b3057eb7942e74a5fd38c",
+          "pin_blob_sha": "8fc7f1929df990e44e96329fff07fa1bab494540",
+          "prefix_result": "COLLECTION_ERROR",
+          "prefix_run_exit": 1,
+          "pin_result": "62 nodes: 62 PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E   ImportError: cannot import name '_global_event_id_partition' from 'intergrax.runtime.events.stores.document_backed_runtime_event_store' (<replay-worktree>\\intergrax\\runtime\\events\\stores\\document_backed_runtime_event_store.py)"
+          ],
+          "prefix_log_sha256": "fc074dc01df388e1f08eda4005bfd89f56b65b95c2debbc061b230519dbba33c"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-TYP-01",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "semantic boundaries strongly typed (NT-WF-B01..B06 are the planned negative tests)",
+      "reason": "The typed-ratchet nodes fail at the prefix because the baseline file or the checker script does not exist (FileNotFoundError, missing script). That is not a behavioural failure on the declared mechanism. No node seeds Any or object on a semantic boundary.",
+      "due_ticket": "T-IGX-078-C",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py::test_rw_typ_ratchet_new_any_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "pin_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py::test_rw_typ_ratchet_new_object_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "pin_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py::test_rw_typ_ratchet_baseline_unchanged_passes",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "4060193d4fe9bb95cfb3f12773dad7da511f9fc0",
+          "test_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "pin_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: <user-home>\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe: can't open file '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory",
+            "E       assert 2 == 0",
+            "E        +  where 2 = CompletedProcess(args=['<replay-worktree>\\\\.venv\\\\Scripts\\\\python.exe', '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py'], returncode=2, stdout='', stderr=\"<user-home>\\\\AppData\\\\Roaming\\\\uv\\\\python\\\\cpython-3.12-windows-x86_64-none\\\\python.exe: can't open file '<replay-worktree>\\\\\\\\scripts\\\\\\\\maintenance\\\\\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory\\n\").returncode"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-TYP-03",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "typed semantic payloads instead of object (NT-WF-B01..B06 are the planned negative tests)",
+      "reason": "The typed-ratchet nodes fail at the prefix because the baseline file or the checker script does not exist (FileNotFoundError, missing script). That is not a behavioural failure on the declared mechanism. No node seeds Any or object on a semantic boundary.",
+      "due_ticket": "T-IGX-078-C",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py::test_rw_typ_ratchet_new_any_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "pin_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py::test_rw_typ_ratchet_new_object_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "pin_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py::test_rw_typ_ratchet_baseline_unchanged_passes",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "4060193d4fe9bb95cfb3f12773dad7da511f9fc0",
+          "test_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "pin_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: <user-home>\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe: can't open file '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory",
+            "E       assert 2 == 0",
+            "E        +  where 2 = CompletedProcess(args=['<replay-worktree>\\\\.venv\\\\Scripts\\\\python.exe', '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py'], returncode=2, stdout='', stderr=\"<user-home>\\\\AppData\\\\Roaming\\\\uv\\\\python\\\\cpython-3.12-windows-x86_64-none\\\\python.exe: can't open file '<replay-worktree>\\\\\\\\scripts\\\\\\\\maintenance\\\\\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory\\n\").returncode"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    },
+    {
+      "frz_id": "FRZ-TYP-05",
+      "status": "EVIDENCE_MISSING",
+      "mechanism": "string-dispatch substitute for typed contract = 0: ratchet on new string-keyed dispatch (NT-TYP-05-1)",
+      "reason": "The typed-ratchet nodes fail at the prefix because the baseline file or the checker script does not exist (FileNotFoundError, missing script). That is not a behavioural failure on the declared mechanism.",
+      "due_ticket": "T-IGX-051-G",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py::test_rw_typ_ratchet_new_any_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "pin_blob_sha": "56856d8a41daa1689148aa90278ba678d4f1a9cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py::test_rw_typ_ratchet_new_object_fails",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "12ca63a7e3a2d81afab1ee98772a4767c028aab2",
+          "test_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "pin_blob_sha": "14bb2d620d6c6376d1e49140456da0fb10d940cf",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       FileNotFoundError: [Errno 2] No such file or directory: '<replay-worktree>\\\\governance\\\\qualification\\\\typ_ratchet_baseline.v1.json'"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        },
+        {
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py::test_rw_typ_ratchet_baseline_unchanged_passes",
+          "counted": false,
+          "prefix_sha": "0cee41a88274a53d14bb3558752d55bdde0d0b01",
+          "fix_commit": "4060193d4fe9bb95cfb3f12773dad7da511f9fc0",
+          "test_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "pin_blob_sha": "5a675e1974e0fff6e1360fece61990b29c282ada",
+          "prefix_result": "FAILED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [
+            "E       AssertionError: <user-home>\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe: can't open file '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory",
+            "E       assert 2 == 0",
+            "E        +  where 2 = CompletedProcess(args=['<replay-worktree>\\\\.venv\\\\Scripts\\\\python.exe', '<replay-worktree>\\\\scripts\\\\maintenance\\\\check_frozen_contract_typ_ratchet.py'], returncode=2, stdout='', stderr=\"<user-home>\\\\AppData\\\\Roaming\\\\uv\\\\python\\\\cpython-3.12-windows-x86_64-none\\\\python.exe: can't open file '<replay-worktree>\\\\\\\\scripts\\\\\\\\maintenance\\\\\\\\check_frozen_contract_typ_ratchet.py': [Errno 2] No such file or directory\\n\").returncode"
+          ],
+          "prefix_log_sha256": "aa48380e8a550661cc3b986b4a3298879bf3513aacf344229f0431a7edf83a65"
+        }
+      ]
+    }
+  ],
+  "unchanged_operator_dispositions": [
+    {
+      "frz_id": "FRZ-RPL-04",
+      "status": "RED_FIRST_OUT",
+      "note": "Operator disposition unchanged (RED-CLASSES). Replayed for information only: the probe node passes at the prefix, so it gives no red.",
+      "nodes": [
+        {
+          "node": "tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
+          "counted": false,
+          "prefix_sha": "754ee000675d71c1734656702beb0aef8ba58fd8",
+          "fix_commit": "1bc28033cf0fdf95b169ec3b16b3ea5d930c0f09",
+          "test_blob_sha": "d3d664359e600e4dda70b1a73284428e8b57d24c",
+          "pin_blob_sha": "d3d664359e600e4dda70b1a73284428e8b57d24c",
+          "prefix_result": "PASSED",
+          "prefix_run_exit": 1,
+          "pin_result": "PASSED",
+          "pin_run_exit": 1,
+          "assertion_lines": [],
+          "prefix_log_sha256": "0e402073e427fddaaaff7c24a9807ffb69b7edbded715e1914d708bf833c9faf"
+        }
+      ]
+    }
+  ]
+}

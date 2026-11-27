@@ -1,0 +1,2508 @@
+{
+  "schema": "rw_plan_bindings.v1",
+  "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
+  "md_notes": [
+    "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
+    "**Landed:** a ticket is `landed` only when its ticket record or merge commit records its write set as merged into `development` complete; code commits alone do not set it. At the read pin this holds for T-IGX-051-D (PR #670) and T-IGX-051-E (PR #674, part D ec89a1df8). T-IGX-056-A (EQO ticket, approved by the Operator on 2026-11-23) and T-IGX-065-A (PT-T01 Campaign B, NT-01..NT-16, owner AF-CLOSE under D-2) are not train tickets.",
+    "**Ordering choice:** the edge T-IGX-078-C before T-IGX-051-A follows WORKLIST section 5 (TENANT merges last, shared nexus_loop.py). It makes T-IGX-051-G a transitive predecessor of T-IGX-051-A and makes TENANT wait on an unplanned ticket whose typed-seam part depends on an Operator item (Q-WF-04). PLAN_T-IGX-051-A allows, but does not require, parallel work with RW-TYP; the orchestrator may revisit this order.",
+    "**Planned tests:** a negative test marked `planned; not authored at the read pin` takes its file name from the row table of the versioned plan v21 or from the owner plan; owners follow the current matrix inventory. An id ending in `-P` is an existing probe that covers a narrower case than the defined test of that row.",
+    "**Red-first column:** statuses come from the previous plan JSON, then the red-first record, then the listed record corrections. Earlier hand-written notes in this file are no longer kept here."
+  ],
+  "status_semantics": [
+    "RED_AT_PREFIX: a named node was recorded red at the stated prefix SHA for the row mechanism; the evidence reference is the record. It is the only positive red-first status.",
+    "EVIDENCE_MISSING: no accepted red-first evidence. It is not a waiver; the due ticket owes it.",
+    "RED_FIRST_OUT and RED_FIRST_LATER_WAVE: earlier Operator dispositions, carried unchanged.",
+    "Matrix status PASS on a CODE_FIX row (for example EXE-02, CFG-06, TEN-02, TEN-07) is the historical matrix verdict. The open CODE_FIX gap means the row has to be requalified (matrix PASS requalification note) by the owner ticket; this plan does not assert that the PASS still holds."
+  ],
+  "red_first_record": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json",
+  "record_corrections": {
+    "FRZ-CFG-02": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-CFG-02",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-CFG-08": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-CFG-08",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-OWN-02": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-OWN-02",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-OWN-03": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-OWN-03",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-PLG-01": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-01",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-PLG-06": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PLG-06",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-PRD-03": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-PRD-03",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-REL-09": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-REL-09",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-REL-10": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_DISPOSITION.md#FRZ-REL-10",
+      "why": "GA.2 L3: the reference pointed at a test node; it now points at the record that holds the red result (promotion table row for this FRZ id). Status and prefix SHA are unchanged."
+    },
+    "FRZ-TEN-01": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-TEN-01",
+      "why": "Same defect as GA.2 L3 (reference pointed at a test node). The V5 result record holds the red measurement for this row. Status and prefix SHA are unchanged."
+    },
+    "FRZ-TEN-10": {
+      "red_first_evidence_ref": "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_V5_RESULT.json#FRZ-TEN-10",
+      "why": "Same defect as GA.2 L3 (reference pointed at a test node). The V5 result record holds the red measurement for this row. Status and prefix SHA are unchanged."
+    },
+    "FRZ-PRD-08": {
+      "red_first_reason": "Historical non-evidence: the P0 inventory run at prefix 754ee000675d ended with pytest exit 2 (collection ERROR) in RED_FIRST_REST_RESULT#FRZ-PRD-08; RED_FIRST_V5_DISPOSITION.md line 63 describes the same prefix as exit 0 with the bypass count already 0. Neither is a red result for the row mechanism.",
+      "why": "GA.2 L4: the stated exit code did not match the REST result record. The status stays RED_FIRST_OUT."
+    }
+  },
+  "code_fix_rows": {
+    "FRZ-BND-04": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-BND-04-1",
+          "node": "tests/unit/architecture/test_wa_integrations_shared_leakage.py::test_nt_rw_wa_01_production_modules_do_not_import_integrations_shared",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). A production module under agents/ or applications/ that imports integrations._shared turns the leakage gate red.",
+          "owner_ticket": "T-IGX-043-G"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_wa_integrations_shared_leakage.py",
+        "tests/unit/agents/test_wa_agent_import_rule.py",
+        "tests/unit/runtime/architecture/test_wa_boundary_inversion_gate.py"
+      ]
+    },
+    "FRZ-BND-05": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-BND-05-1",
+          "node": "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py::test_scan_flags_a_rogue_agent",
+          "mechanism": "A Tier-2 agent that constructs RuntimeContext is reported by the construction scan (seeded rogue agent).",
+          "owner_ticket": "T-IGX-043-H"
+        },
+        {
+          "nt_id": "NT-BND-05-2",
+          "node": "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py::test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list",
+          "mechanism": "An enum or string provider switch outside the closed provider-import list turns the registry-bypass gate red. This node is RED at the read pin.",
+          "owner_ticket": "T-IGX-043-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+        "tests/unit/architecture/test_rw_bnd05_provider_switch_gate.py",
+        "tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py"
+      ],
+      "note": "Static reading at the read pin: RuntimeContext.build in agents/boundary_demo/boundary_demo_agent.py:96, the external contractor adapter (:112) and the organization worker (:118); a string provider switch at intergrax/integrations/_shared/p6/factories.py:43. test_nt_bnd_05_2_provider_imports_stay_on_the_closed_list is red at the read pin (queue_worker_wiring.py imports the Celery provider config), so the regression command is not green at the pin."
+    },
+    "FRZ-BND-06": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-BND-06-1",
+          "node": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+          "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py",
+        "tests/unit/applications/local_workspace_application/test_lkw_background_worker_queue_dependencies.py",
+        "tests/unit/applications/test_fastapi_mcp.py",
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py",
+        "tests/unit/applications/test_host_queue_execution_wiring.py",
+        "tests/unit/applications/test_http_canonical_execution.py",
+        "tests/unit/applications/test_mcp_cancel_a_transport_governed_cancel.py",
+        "tests/unit/applications/test_mcp_canonical_execution.py",
+        "tests/unit/applications/test_mcp_catalog_child_execution_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_cross_loop_ingress_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_discovery_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_e2e_hung_server_qualification.py",
+        "tests/unit/applications/test_mcp_catalog_f3_cross_loop_cancel_c_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_f3_streamable_http_physical_l3.py",
+        "tests/unit/applications/test_mcp_catalog_gate_b_cancel_c_qualification.py",
+        "tests/unit/applications/test_mcp_deadline_and_resilience.py",
+        "tests/unit/applications/test_mcp_engine_concurrency.py",
+        "tests/unit/applications/test_mcp_fails_closed_posture_wiring.py",
+        "tests/unit/applications/test_mcp_host_mount.py",
+        "tests/unit/applications/test_mcp_identity_mode_fail_closed.py",
+        "tests/unit/applications/test_mcp_invocation_id.py",
+        "tests/unit/applications/test_mcp_public_api_surface.py",
+        "tests/unit/applications/test_mcp_rc_audit_corrections.py",
+        "tests/unit/applications/test_mcp_result_bounds_and_error_contract.py",
+        "tests/unit/applications/test_mcp_server_engine.py",
+        "tests/unit/applications/test_mcp_server_engine_architecture_gates.py",
+        "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+        "tests/unit/applications/test_mcp_surface_opt_in.py",
+        "tests/unit/applications/test_mcp_surface_opt_in_runtime.py",
+        "tests/unit/applications/test_mcp_trust_a_principal_binding.py",
+        "tests/unit/applications/test_reference_apps_mcp.py",
+        "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py",
+        "tests/unit/applications/test_strict_production_serving_http_caller_authorization.py",
+        "tests/unit/applications/test_strict_production_serving_http_caller_principal_admission.py",
+        "tests/unit/hosting/architecture/test_one_spine_hosting_diagnostics_gate.py",
+        "tests/unit/hosting/architecture/test_process_bootstrap_import_boundaries.py",
+        "tests/unit/hosting/control/test_control_coordinator.py",
+        "tests/unit/hosting/engine/test_component_coordinator.py",
+        "tests/unit/hosting/engine/test_definition_resolution.py",
+        "tests/unit/hosting/engine/test_diagnostics.py",
+        "tests/unit/hosting/engine/test_engine_before_ready_health_refresh.py",
+        "tests/unit/hosting/engine/test_engine_failures.py",
+        "tests/unit/hosting/engine/test_engine_import_boundaries.py",
+        "tests/unit/hosting/engine/test_engine_shutdown.py",
+        "tests/unit/hosting/engine/test_engine_startup.py",
+        "tests/unit/hosting/engine/test_engine_w2_invariants.py",
+        "tests/unit/hosting/engine/test_event_dispatcher.py",
+        "tests/unit/hosting/engine/test_health_readiness.py",
+        "tests/unit/hosting/engine/test_hook_coordinator.py",
+        "tests/unit/hosting/engine/test_hosting_observability_export.py",
+        "tests/unit/hosting/engine/test_lifecycle_controller.py",
+        "tests/unit/hosting/engine/test_runtime_factory.py",
+        "tests/unit/hosting/engine/test_w3_engine_shutdown_integration.py",
+        "tests/unit/hosting/instance/test_file_guard.py",
+        "tests/unit/hosting/instance/test_w3_file_guard_regression.py",
+        "tests/unit/hosting/shutdown/test_shutdown_executor.py",
+        "tests/unit/hosting/shutdown/test_w3_shutdown_regression.py",
+        "tests/unit/hosting/signals/test_signal_adapter.py",
+        "tests/unit/hosting/supervisor/test_supervisor.py",
+        "tests/unit/hosting/supervisor/test_supervisor_host_diag_3_conformance.py",
+        "tests/unit/hosting/supervisor/test_supervisor_pre_engine_failure.py",
+        "tests/unit/hosting/supervisor/test_w3_supervisor_regression.py",
+        "tests/unit/hosting/test_bootstrap_failure_record.py",
+        "tests/unit/hosting/test_guarded_process_bootstrap.py",
+        "tests/unit/hosting/test_hosted_application_callback_typing.py",
+        "tests/unit/hosting/test_hosted_application_components.py",
+        "tests/unit/hosting/test_hosted_application_context.py",
+        "tests/unit/hosting/test_hosted_application_events.py",
+        "tests/unit/hosting/test_hosted_application_hooks.py",
+        "tests/unit/hosting/test_hosted_application_lifecycle.py",
+        "tests/unit/hosting/test_hosted_application_policies.py",
+        "tests/unit/hosting/test_hosted_application_profile.py",
+        "tests/unit/hosting/test_hosted_application_profile_core.py",
+        "tests/unit/hosting/test_hosted_application_profile_core_schema.py",
+        "tests/unit/hosting/test_hosted_application_profile_schema.py",
+        "tests/unit/hosting/test_hosted_application_services.py",
+        "tests/unit/hosting/test_hosted_default_host_diag_3_qualification.py",
+        "tests/unit/hosting/test_hosting_import_boundaries.py",
+        "tests/unit/hosting/test_runner.py",
+        "tests/unit/hosting/test_rw_recovery_drain_wait_for_idle.py",
+        "tests/unit/hosting/test_w3_import_boundaries.py",
+        "tests/unit/integrations/providers/message_bus/test_celery.py",
+        "tests/unit/integrations/providers/message_bus/test_kafka.py",
+        "tests/unit/integrations/providers/message_bus/test_kafka_task_queue.py",
+        "tests/unit/integrations/providers/message_bus/test_rabbitmq.py",
+        "tests/unit/queueing/providers/test_broker_worker_base.py",
+        "tests/unit/queueing/providers/test_celery_task_queue.py",
+        "tests/unit/queueing/test_arch_freeze_076_b_celery_wake_dispatcher.py",
+        "tests/unit/queueing/test_arch_freeze_076_b_out_of_process_queue.py",
+        "tests/unit/queueing/test_arch_freeze_076_f_worker_idempotency_topology.py",
+        "tests/unit/queueing/test_arch_freeze_076_g_queue_events.py",
+        "tests/unit/queueing/test_celery_task_queue_purge.py",
+        "tests/unit/queueing/test_document_store_task_queue.py",
+        "tests/unit/queueing/test_rw_recovery_no_double_execution.py",
+        "tests/unit/queueing/test_rw_recovery_producer_identity.py",
+        "tests/unit/queueing/test_task_index.py",
+        "tests/unit/queueing/test_task_priority.py",
+        "tests/unit/queueing/test_worker_bootstrap.py",
+        "tests/unit/queueing/worker/test_dispatcher_handler_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_identity_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_rate_limit.py",
+        "tests/unit/queueing/worker/test_dispatcher_retry.py",
+        "tests/unit/queueing/worker/test_dispatcher_retry_hook.py",
+        "tests/unit/queueing/worker/test_execution.py",
+        "tests/unit/queueing/worker/test_result_codec.py",
+        "tests/unit/queueing/worker/test_retry_backoff.py"
+      ],
+      "note": "Adapter unit tests enumerated by this plan as matrix Appendix C requires. Selection at the read pin: every test_*.py under tests/unit/hosting/, tests/unit/queueing/ and tests/unit/integrations/providers/message_bus/, and every test_*.py under tests/unit/applications/ whose file name contains mcp, http or queue."
+    },
+    "FRZ-CFG-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CFG-02-1",
+          "node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_02_missing_embedding_config_must_not_silently_select_vendor",
+          "mechanism": "A missing embedding configuration must not silently select a vendor.",
+          "owner_ticket": "T-IGX-043-C"
+        },
+        {
+          "nt_id": "NT-CFG-02-2",
+          "node": "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py::test_nt_fc3_e3_create_default_embedding_manager_env_unset",
+          "mechanism": "With the environment unset and no profile, the default embedding manager is not created from a vendor default.",
+          "owner_ticket": "T-IGX-043-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py",
+        "tests/unit/model_inference/test_fc3_vision_fail_closed.py",
+        "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py"
+      ]
+    },
+    "FRZ-CFG-06": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CFG-06-1",
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). An import of the ollama SDK outside the provider boundary fails the scan.",
+          "owner_ticket": "T-IGX-043-C"
+        },
+        {
+          "nt_id": "NT-CFG-06-2",
+          "node": "tests/unit/model_inference/test_fc3_vision_fail_closed.py::test_nt_fc3_vis8_as_extended_adapter_raises_for_non_extended",
+          "mechanism": "A vision adapter without the extended capability is refused with an error instead of being substituted.",
+          "owner_ticket": "T-IGX-043-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/model_inference/test_fc3_vision_fail_closed.py",
+        "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py",
+        "tests/unit/rag/vectorstore/test_fc3_vectorstore_selector_fail_closed.py",
+        "tests/unit/runtime/notifications/test_fc3_notification_selector_fail_closed.py"
+      ]
+    },
+    "FRZ-CFG-08": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CFG-08-1",
+          "node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default",
+          "mechanism": "An ambient os.environ read with a vendor-slug default turns the configuration gate red.",
+          "owner_ticket": "T-IGX-043-F"
+        },
+        {
+          "nt_id": "NT-FC3-CX1",
+          "node": "tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py",
+          "mechanism": "NT-FC3-CX1..12: a vendor-slug default on one of the eight FC-3 paths turns the CONFIG-X gate red; other hits are recorded, not failed. (planned; not authored at the read pin)",
+          "owner_ticket": "T-IGX-043-F"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py"
+      ]
+    },
+    "FRZ-CTR-01": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CTR-01-1",
+          "node": "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py::test_streaming_flag_matches_the_stream_messages_method",
+          "mechanism": "Every shipped adapter's streaming flag matches the stream_messages method (parametrized parity).",
+          "owner_ticket": "T-IGX-051-D"
+        },
+        {
+          "nt_id": "NT-CTR-01-2",
+          "node": "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py::test_tool_streaming_flag_matches_the_stream_with_tools_method",
+          "mechanism": "Every shipped adapter's tool-streaming flag matches the stream_with_tools method.",
+          "owner_ticket": "T-IGX-051-D"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py",
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ]
+    },
+    "FRZ-CTR-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CTR-02-1",
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). An import of the ollama SDK outside the provider boundary fails the scan.",
+          "owner_ticket": "T-IGX-051-D"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py",
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "note": "Static reading at the read pin: applications/local_workspace_application/benchmarks/local_model_qualification/environment.py:108; the VENDOR_MODULES list in scripts/maintenance/check_integration_vendor_imports.py does not name ollama."
+    },
+    "FRZ-CTR-06": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-CTR-06-1",
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). An import of the ollama SDK outside the provider boundary fails the scan.",
+          "owner_ticket": "T-IGX-051-D"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/llm_adapters/test_rw_runtime_capability_flag_parity.py",
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ]
+    },
+    "FRZ-DEBT-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-DEBT-02-1",
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01c_gate_reports_seeded_undeclared_core_requirement",
+          "mechanism": "Seeded negative case (NT-RW-DEP-01c): a temporary copy of pyproject.toml gets one extra undeclared core requirement and the dependency-ownership gate has to report it. The node passes at the test-only prefix, so it is not red-first evidence for the row. The requirement itself is held by test_rw_dep_01a_core_requirement_has_declared_owner: every core requirement has a declared owner.",
+          "owner_ticket": "T-IGX-051-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/test_dependency_governance.py",
+        "tests/unit/architecture/test_rw_deps_core_ownership_declared.py"
+      ],
+      "note": "Static reading at the read pin: the dependency step is at .github/workflows/unit-tests.yml:106."
+    },
+    "FRZ-DEBT-03": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-DEBT-03-1",
+          "node": "tests/unit/architecture/test_rw_deps_core_ownership_declared.py::test_rw_dep_01a_core_requirement_has_declared_owner",
+          "mechanism": "Dependency-ownership gate. No seeded negative node specific to DEBT-03 exists at the read pin, so this node is not red-first evidence for the row. A seeded case for DEBT-03 has to add a temporary compatibility seam and see a gate report it; no node inventories such seams (Operator items packet, item 2).",
+          "owner_ticket": "T-IGX-051-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/test_dependency_governance.py",
+        "tests/unit/architecture/test_rw_deps_core_ownership_declared.py"
+      ]
+    },
+    "FRZ-DEBT-04": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-DEBT-04-1",
+          "node": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
+          "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-051-F"
+        },
+        {
+          "nt_id": "NT-DEBT-04-2",
+          "node": "tests/unit/architecture/test_rw_gates_eval_digest_denied.py::test_nt_debt_04_enforce_eval_run_digest_guard",
+          "mechanism": "A tampered evaluation-run digest is refused. This is the digest guard only, not the PARTIAL-entry mechanism of NT-DEBT-04-1.",
+          "owner_ticket": "T-IGX-051-F"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_gates_eval_digest_denied.py"
+      ]
+    },
+    "FRZ-EXE-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-EXE-02-1",
+          "node": "tests/unit/agents/test_wa_agent_import_rule.py::test_wa_13_agents_tree_uses_only_integration_contract_leaves",
+          "mechanism": "Import-boundary part only. It does not by itself prove that a Tier-2 agent constructed outside the registry fails the registry-bypass gate.",
+          "owner_ticket": "T-IGX-043-A"
+        },
+        {
+          "nt_id": "NT-EXE-02-2",
+          "node": "tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py::test_gate_flags_a_rogue_construction",
+          "mechanism": "A router or loop constructed outside the sanctioned owner is reported (seeded rogue construction).",
+          "owner_ticket": "T-IGX-043-A"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/execution/test_fc1_host_task_routing_posture.py",
+        "tests/unit/architecture/test_fc1_router_and_loop_construction_gate.py"
+      ]
+    },
+    "FRZ-FRZ-10": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-FRZ-10-1",
+          "node": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
+          "owner_ticket": "T-IGX-052-I",
+          "mechanism": "After activation, a change to a frozen path without an exception record fails the policy gate. (planned; not authored at the read pin)"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/governance/test_arch_freeze_plan_traceability.py"
+      ]
+    },
+    "FRZ-OWN-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-OWN-02-P",
+          "node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_02_application_artifact_ref_has_one_canonical_definition",
+          "mechanism": "One contract case only: the application artifact reference has one canonical definition.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-OWN-02-1",
+          "node": "tests/unit/architecture/test_rw_gates_contract_census.py",
+          "mechanism": "A second contract with the same field set and responsibility as a canonical one fails the census unless it has a ratification entry. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py"
+      ]
+    },
+    "FRZ-OWN-03": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-OWN-03-1",
+          "node": "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_own_03_one_sanctioned_llm_adapter_composition_owner",
+          "mechanism": "A second host LLM resolver or composition owner fails the single-owner gate.",
+          "owner_ticket": "T-IGX-043-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_ent_iso_red_first_probes.py",
+        "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py",
+        "tests/unit/applications/test_wb_llm_resolver_canonical.py"
+      ]
+    },
+    "FRZ-OWN-05": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-OWN-05-1",
+          "node": "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py::test_nt_own_05_1_one_host_llm_resolver",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). A duplicate host LLM resolver fails the duplicate-mechanism scan.",
+          "owner_ticket": "T-IGX-043-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py"
+      ]
+    },
+    "FRZ-PLG-01": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PLG-01-P",
+          "node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_01_evaluation_wiring_exposes_tenant_scoped_registry_contract",
+          "mechanism": "Wiring part only: evaluation wiring exposes the tenant-scoped registry contract.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PLG-01-1",
+          "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
+          "mechanism": "An evaluator registered outside the single evaluator contract fails registration. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
+      ]
+    },
+    "FRZ-PLG-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PLG-02-P",
+          "node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_02_external_structural_plugin_registers_without_core_patch",
+          "mechanism": "An external structural plugin registers without a core patch.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PLG-02-1",
+          "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
+          "mechanism": "An external chunker registered through the public plugin entry point is used without a core patch. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PLG-02-2",
+          "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
+          "mechanism": "No provider-plugin registration path exists outside LLMAdapterRegistry. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
+      ]
+    },
+    "FRZ-PLG-05": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PLG-05-1",
+          "node": "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py::test_sup_06a_altered_installed_file_refused",
+          "mechanism": "A plugin whose installed file no longer matches the attested digest is refused. Product composition does not bind the admission policy at the read pin.",
+          "owner_ticket": "T-IGX-043-A"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py",
+        "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py",
+        "tests/qualification/pdc_x/d6/test_d6_plugin_provenance.py"
+      ],
+      "note": "Static reading at the read pin: no product composition passes PluginProvenanceAdmission or installed_digest_resolver=."
+    },
+    "FRZ-PLG-06": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PLG-06-P",
+          "node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_06_strict_manifest_gate_must_not_downgrade_product_to_lab",
+          "mechanism": "Posture part only: the strict manifest gate must not downgrade a PRODUCT host to LAB.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PLG-06-1",
+          "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
+          "mechanism": "Every tool, skill, MCP and integration package is in the package inventory; a missing one fails. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
+      ]
+    },
+    "FRZ-PLG-07": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PLG-07-P",
+          "node": "tests/unit/applications/test_nt_plg_red_first_probes.py::test_nt_plg_07_capability_payload_must_not_exceed_declared_contract_after_policy",
+          "mechanism": "A capability payload must not exceed the declared contract after policy.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PLG-07-1",
+          "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
+          "mechanism": "A package that adds a capability beyond its manifest is refused. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_plg_red_first_probes.py"
+      ]
+    },
+    "FRZ-PRD-03": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PRD-03-1",
+          "node": "tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_03_unsupported_queue_backend_must_not_fall_back_to_eager_celery",
+          "mechanism": "An unsupported STRICT queue configuration raises instead of falling back to eager Celery.",
+          "owner_ticket": "T-IGX-043-B"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_prd_red_first_probes.py",
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py"
+      ]
+    },
+    "FRZ-PRD-05": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PRD-05-1",
+          "node": "tests/unit/architecture/test_nt_prd_red_first_probes.py::test_nt_prd_05_entrypoint_uses_hosting_lifecycle_engine",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). A Tier-3 entrypoint that serves outside the hosting lifecycle engine fails.",
+          "owner_ticket": "T-IGX-043-H"
+        },
+        {
+          "nt_id": "NT-PRD-05-2",
+          "node": "tests/unit/applications/test_wb_serving_bind_defaults.py::test_nt_wb_15_lkw_reference_production_has_no_uvicorn_run",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). The reference production host calls no uvicorn.run directly. A census over all Tier-3 entrypoints is not authored.",
+          "owner_ticket": "T-IGX-043-H"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_prd_red_first_probes.py",
+        "tests/unit/applications/test_wb_serving_bind_defaults.py"
+      ],
+      "note": "Static reading at the read pin: uvicorn.run remains in the host/main.py of attestation_demo, intergrax_assistant_application, lab_application, poc_template_application and research_application (:98)."
+    },
+    "FRZ-PRD-08": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-PRD-08-P",
+          "node": "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+          "mechanism": "Existing acceptance file. It is not red-first evidence for the bypass gate.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PRD-08-1",
+          "node": "tests/unit/architecture/test_rw_gates_production_only_bypass.py",
+          "mechanism": "A code path active only in production mode that skips a control fails the gate. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-PRD-08-2",
+          "node": "tests/unit/architecture/test_rw_gates_production_only_bypass.py",
+          "mechanism": "A PIS-only CREATE without provenance fails the inventory. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_01.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_02.py",
+        "tests/qualification/ent_audit_x/acceptance/test_ent_a_ent_a_prd_03.py"
+      ]
+    },
+    "FRZ-REG-09": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-REG-09-1",
+          "node": "tests/unit/architecture/test_rw_gates_gate_completeness.py",
+          "mechanism": "Removing a banned entry from the gate list fails the completeness check. No evidence covers this part. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-051-F"
+        },
+        {
+          "nt_id": "NT-REG-09-2",
+          "node": "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py::test_no_module_outside_the_provider_package_imports_the_ollama_sdk",
+          "mechanism": "A banned import fails the scan.",
+          "owner_ticket": "T-IGX-051-F"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+      ],
+      "note": "The red-first evidence covers NT-REG-09-2 only. NT-REG-09-1 is uncovered."
+    },
+    "FRZ-REL-07": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-REL-07-1",
+          "node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_07_retry_engine_must_not_request_retry_past_declared_max_retries",
+          "mechanism": "The retry engine does not request a retry past the declared maximum.",
+          "owner_ticket": "T-IGX-043-B"
+        },
+        {
+          "nt_id": "NT-REL-07-2",
+          "node": "tests/unit/applications/test_fc2_otlp_composition_fail_closed.py::test_product_otlp_without_endpoint_raises_configuration_error",
+          "mechanism": "An empty OTLP endpoint raises a configuration error under a strict posture.",
+          "owner_ticket": "T-IGX-043-B"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_rel_red_first_probes.py",
+        "tests/unit/applications/test_fc2_otlp_composition_fail_closed.py",
+        "tests/unit/applications/test_fc2_sandbox_composition_fail_closed.py"
+      ]
+    },
+    "FRZ-REL-09": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-REL-09-1",
+          "node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_09_kafka_rabbitmq_must_not_be_silently_rewritten_to_eager_celery",
+          "mechanism": "Kafka and RabbitMQ are not silently rewritten to in-process eager Celery.",
+          "owner_ticket": "T-IGX-043-B"
+        },
+        {
+          "nt_id": "NT-REL-09-2",
+          "node": "tests/unit/applications/test_fc2_queue_worker_fail_closed.py::test_kafka_never_rewritten_to_celery",
+          "mechanism": "The composed wiring never rewrites a Kafka backend to Celery.",
+          "owner_ticket": "T-IGX-043-B"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_rel_red_first_probes.py",
+        "tests/unit/applications/test_fc2_queue_worker_fail_closed.py"
+      ],
+      "note": "Review note on the older evidence: \"Evidence is the source comment \"fall back to eager Celery\" at prefix ec7f1e27 in queue_worker_wiring.py. It matches the silent-rewrite clause and does not by itself prove backpressure behavior. Review annotation only; not a new measurement.\""
+    },
+    "FRZ-REL-10": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-REL-10-1",
+          "node": "tests/unit/architecture/test_nt_rel_red_first_probes.py::test_nt_rel_10_in_memory_kubernetes_scaler_must_not_substitute_when_cluster_url_unset",
+          "mechanism": "The in-memory Kubernetes scaler does not substitute when the cluster URL is unset.",
+          "owner_ticket": "T-IGX-043-B"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_rel_red_first_probes.py",
+        "tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py"
+      ]
+    },
+    "FRZ-RPL-04": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-WF-C01",
+          "node": "tests/unit/applications/test_wf_colocated_drain_protocol.py::test_nt_wf_c01_no_isinstance_check_on_colocated_adapter",
+          "mechanism": "NT-WF-C01..C05: the co-located drain path binds the typed consumer protocol. (planned node name declared by this plan; not authored at the read pin)",
+          "owner_ticket": "T-IGX-078-C"
+        },
+        {
+          "nt_id": "NT-RPL-04-P",
+          "node": "tests/unit/architecture/test_nt_rpl_red_first_probes.py::test_neg_p_rpl_04_queue_worker_call_sites_bind_message_consumer_contract",
+          "mechanism": "Queue worker call sites bind the MessageConsumer contract.",
+          "owner_ticket": "T-IGX-078-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_nt_rpl_red_first_probes.py"
+      ]
+    },
+    "FRZ-SEC-04": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-SEC-04-1",
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). An unset or invalid verification mode refuses to build the inbound verifier (int1-int6, int8).",
+          "owner_ticket": "T-IGX-043-C"
+        },
+        {
+          "nt_id": "NT-SEC-04-2",
+          "node": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). The intake service refuses a missing verifier.",
+          "owner_ticket": "T-IGX-043-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py"
+      ]
+    },
+    "FRZ-SEC-06": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-SEC-06-1",
+          "node": "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py::test_sec_06_1_strict_root_refuses_unattested_defense_plugins",
+          "mechanism": "A strict composition root refuses defense plugins without provenance attestation.",
+          "owner_ticket": "T-IGX-051-B"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/security/test_rw_supply_defense_plugin_provenance_required.py",
+        "tests/unit/core/plugins/test_rw_supply_installed_file_digest.py"
+      ],
+      "note": "Static reading at the read pin: environment_wiring.py:202 passes no admission policy."
+    },
+    "FRZ-TEN-01": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-TEN-01-1",
+          "node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_01_canonical_tenant_identity_where_tenant_scope_applies",
+          "mechanism": "Canonical tenant identity is required wherever tenant scope applies.",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-TEN-01-2",
+          "node": "tests/unit/applications/test_rw_tenant_online_evaluation_observation.py::test_ten_04d_strict_host_without_tenant_refused",
+          "mechanism": "A strict host without a tenant is refused the shared evaluation registry (shared with NT-WF-A01..A04).",
+          "owner_ticket": "T-IGX-043-J"
+        },
+        {
+          "nt_id": "NT-WF-A01",
+          "node": "tests/unit/applications/test_wf_tenant_evaluation_fail_closed.py",
+          "mechanism": "NT-WF-A01..A04: a STRICT or PRODUCT host with a None, empty or blank tenant_id refuses to wire the shared evaluation registry, and an observation without tenant_id is rejected. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-043-J"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_ten_red_first_probes.py"
+      ]
+    },
+    "FRZ-TEN-02": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-T01-A4-006",
+          "node": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py::test_nt_t01_a4_006_seeded_emitter_without_tenant_is_reported",
+          "mechanism": "Every emitter path listed by check_runtime_event_tenant_propagation.py exists, and a seeded emitter that publishes a RuntimeEvent without a tenant is reported. (planned node name declared by this plan; not authored at the read pin)",
+          "owner_ticket": "T-IGX-078-D"
+        },
+        {
+          "nt_id": "NT-TEN-02-K",
+          "node": "tests/unit/runtime/kernel/test_step_kernel.py::test_kernel_tenant_propagates_to_runtime_events",
+          "mechanism": "The kernel tenant propagates to emitted RuntimeEvents (existing positive control).",
+          "owner_ticket": "T-IGX-078-D"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/runtime/kernel/test_step_kernel.py",
+        "tests/unit/scripts/test_check_runtime_event_tenant_propagation.py"
+      ]
+    },
+    "FRZ-TEN-07": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-TEN-07",
+          "node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_07_mcp_client_asserted_tenant_identity_must_fail_closed",
+          "mechanism": "Red at the recorded prefix (RED_FIRST_GA2R_RESULT). A tenant identity asserted by an MCP client fails closed.",
+          "owner_ticket": "T-IGX-078-D"
+        },
+        {
+          "nt_id": "NT-TEN-07-EVT",
+          "node": "tests/unit/runtime/events/test_event_id_persistence_semantics.py::test_cross_tenant_same_event_id_rejected",
+          "mechanism": "The same event id under another tenant is rejected by persistence.",
+          "owner_ticket": "T-IGX-078-D"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_ten_red_first_probes.py",
+        "tests/unit/runtime/events/test_event_id_persistence_semantics.py"
+      ]
+    },
+    "FRZ-TEN-10": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-TEN-10-1",
+          "node": "tests/unit/applications/test_nt_ten_red_first_probes.py::test_nt_ten_10_missing_or_invalid_tenant_must_not_silently_become_global_scope",
+          "mechanism": "A missing or invalid tenant never silently becomes global or default scope.",
+          "owner_ticket": "T-IGX-051-A"
+        },
+        {
+          "nt_id": "NT-TEN-10-2",
+          "node": "tests/unit/applications/test_rw_tenant_mcp_client_asserted_tenant.py::test_ten_07d_assertion_branch_refused_when_fails_closed",
+          "mechanism": "A client-asserted tenant is refused.",
+          "owner_ticket": "T-IGX-051-A"
+        },
+        {
+          "nt_id": "NT-WF-A07",
+          "node": "tests/unit/applications/test_wf_serving_tenant_fail_closed.py",
+          "mechanism": "NT-WF-A07..A14 and A16: a request with a missing tenant_id is rejected and never becomes 'default'; a client-asserted tenant that differs from the context tenant is refused. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-A; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-051-A"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/applications/test_nt_ten_red_first_probes.py"
+      ],
+      "note": "Owner difference to resolve at the TENANT GO: the matrix names T-IGX-051-A, while PLAN_T-IGX-051-A line 32 says dedupe D-04 moved TEN-10 to PT-WF Part JA and keeps only the MCP client-asserted tenant in 051-A."
+    },
+    "FRZ-TYP-01": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-WF-B01",
+          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+          "mechanism": "NT-WF-B01..B06: the Nexus exposure path carries a bounded typed payload; no object-typed exposure, accepted or flow-result annotation remains. The EBH-6 Q2-D2 gate files are inverted only by the Operator (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
+          "owner_ticket": "T-IGX-078-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py"
+      ],
+      "note": "Static reading at the read pin: governance/qualification/typ_ratchet_baseline.v1.json holds any=138 and object=358."
+    },
+    "FRZ-TYP-03": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-WF-B01",
+          "node": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py::test_nt_wf_b01_no_object_typed_exposure_annotation_remains",
+          "mechanism": "NT-WF-B01..B06: same typed seam as FRZ-TYP-01, with the same Operator condition (Q-WF-04). (planned node name declared by this plan; not authored at the read pin)",
+          "owner_ticket": "T-IGX-078-C"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py"
+      ]
+    },
+    "FRZ-TYP-05": {
+      "negative_tests": [
+        {
+          "nt_id": "NT-TYP-05-2",
+          "node": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
+          "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it.",
+          "owner_ticket": "T-IGX-051-G"
+        },
+        {
+          "nt_id": "NT-TYP-05-1",
+          "node": "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+          "mechanism": "The ratchet fails on a seeded new Any. This node does not measure string dispatch.",
+          "owner_ticket": "T-IGX-051-G"
+        }
+      ],
+      "regression_tests": [
+        "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+        "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py"
+      ]
+    }
+  },
+  "audit_ids_18": {
+    "source": ".tmp/session/eqo-a-remediation/WP-12/PHASE_CHECKS.md (main checkout, check 3)",
+    "source_sha256": "b02c77a835b98a9423a6ffce2f23cb86e183ddb79ed1c7e34ca1415a339aa23b",
+    "rows": [
+      {
+        "id": "NT-ROW-001",
+        "finding": "A4-003",
+        "node": "PT-WA",
+        "owner_ticket": "T-IGX-043-G",
+        "negative_test": "test_wa_boundary_inversion_gate.py",
+        "test_paths": [
+          "tests/unit/runtime/architecture/test_wa_boundary_inversion_gate.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-002",
+        "finding": "A4-004",
+        "node": "PT-WA",
+        "owner_ticket": "T-IGX-043-G",
+        "negative_test": "test_wa_agent_import_rule.py NT-WA-13,17",
+        "test_paths": [
+          "tests/unit/agents/test_wa_agent_import_rule.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-003",
+        "finding": "A4-005",
+        "node": "T-AF2-DEPS-BATCH",
+        "owner_ticket": "T-IGX-051-H",
+        "negative_test": "NT-RW-DEP-01",
+        "test_paths": [
+          "tests/unit/architecture/test_rw_deps_core_ownership_declared.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-004",
+        "finding": "A4-011",
+        "node": "PT-G01",
+        "owner_ticket": "no train ticket at the read pin (owner node only)",
+        "negative_test": "test_g01_seam_ledger_closed_world.py",
+        "test_paths": [
+          "tests/unit/architecture/test_g01_seam_ledger_closed_world.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-005",
+        "finding": "A4-018",
+        "node": "T-AF2-RW-RUNTIME",
+        "owner_ticket": "T-IGX-051-D",
+        "negative_test": "test_rw_runtime_no_vendor_sdk_outside_providers.py",
+        "test_paths": [
+          "tests/unit/multimedia/test_rw_runtime_no_vendor_sdk_outside_providers.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-006",
+        "finding": "A2-009",
+        "node": "PT-WA",
+        "owner_ticket": "T-IGX-043-G",
+        "negative_test": "NT-RW-WA-01",
+        "test_paths": [
+          "tests/unit/architecture/test_wa_integrations_shared_leakage.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-007",
+        "finding": "A4-006",
+        "node": "PT-T01",
+        "owner_ticket": "T-IGX-078-D",
+        "negative_test": "NT-T01-A4-006",
+        "test_paths": [
+          "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-008",
+        "finding": "A6-007",
+        "node": "PT-WD",
+        "owner_ticket": "T-IGX-043-I",
+        "negative_test": "WD A01..A16",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/unit/test_wd_changed_since_default_deny.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-009",
+        "finding": "A3-008",
+        "node": "PT-G02",
+        "owner_ticket": "T-IGX-046-G",
+        "negative_test": "NT-G02-01",
+        "test_paths": [
+          "tests/qualification/test_g02_frz_row_evidence_inventory.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-010",
+        "finding": "A2-038",
+        "node": "PT-E05",
+        "owner_ticket": "T-IGX-044-F",
+        "negative_test": "NT-E05-01",
+        "test_paths": [
+          "tests/unit/governance/test_e05_role_separation_identity.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-011",
+        "finding": "A6-001",
+        "node": "PT-E03",
+        "owner_ticket": "no train ticket at the read pin (owner node only)",
+        "negative_test": "NT-E03-01",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/acceptance/test_e03_debt_gate_content.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-012",
+        "finding": "A6-002",
+        "node": "PT-E02",
+        "owner_ticket": "no train ticket at the read pin (owner node only)",
+        "negative_test": "NT-E02-01",
+        "test_paths": [
+          "tests/unit/governance/test_e02_approved_line_strict_form.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-013",
+        "finding": "A6-006",
+        "node": "PT-E03",
+        "owner_ticket": "no train ticket at the read pin (owner node only)",
+        "negative_test": "NT-E03-02",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/acceptance/test_e03_semantic_wrappers_fail_not_skip.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-014",
+        "finding": "A6-005",
+        "node": "PT-WD",
+        "owner_ticket": "T-IGX-043-I",
+        "negative_test": "WD C01..C03",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/unit/test_wd_frz_family_attribution.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-015",
+        "finding": "A5-001",
+        "node": "PT-G01",
+        "owner_ticket": "no train ticket at the read pin (owner node only)",
+        "negative_test": "NT-G01-02",
+        "test_paths": [
+          "tests/unit/architecture/test_g01_ebh3_scan_roots.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-016",
+        "finding": "A3-018",
+        "node": "PT-G02",
+        "owner_ticket": "T-IGX-046-G",
+        "negative_test": "NT-G02-02",
+        "test_paths": [
+          "tests/qualification/state_x/test_g02_citation_targets_exist.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-017",
+        "finding": "A6-003",
+        "node": "PT-WD",
+        "owner_ticket": "T-IGX-043-I",
+        "negative_test": "WD B01,B02",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/unit/test_wd_evol_x_tree_mapping.py"
+        ]
+      },
+      {
+        "id": "NT-ROW-018",
+        "finding": "A6-008",
+        "node": "PT-WD",
+        "owner_ticket": "T-IGX-043-I",
+        "negative_test": "WD D01..D06",
+        "test_paths": [
+          "tests/qualification/ent_audit_x/unit/test_wd_fast_promotion_disclosure.py"
+        ]
+      }
+    ]
+  },
+  "coverage_overrides": {
+    "FRZ-PLG-08": {
+      "owner_ticket": "T-IGX-078-E",
+      "owner_nodes": [
+        "T-B7-PROMOTE-PLG"
+      ],
+      "note": "NT-PLG-08-1 (K1-D, DP-30). Ownership ticket T-IGX-078-E, plan_pending. It reuses the NOT_COMPOSED gate NT-RW-GATES-NC-RAISE of T-IGX-051-F. DP-37 (scope) stays with the Operator and PDC-X D1."
+    }
+  },
+  "find_af2": [
+    {
+      "id": "FIND-AF2-01",
+      "in_train": true,
+      "mapping": "PT-WA, PT-G01, PT-S06"
+    },
+    {
+      "id": "FIND-AF2-02",
+      "in_train": true,
+      "mapping": "PT-WA (DP-14)"
+    },
+    {
+      "id": "FIND-AF2-03",
+      "in_train": false,
+      "mapping": "Excluded from the train: PT-D03, PT-Q08, PT-Q09, PT-Q11, PT-Q05, T-AF2-RM499-ENTRY"
+    },
+    {
+      "id": "FIND-AF2-04",
+      "in_train": false,
+      "mapping": "Excluded from the train: PT-S01..PT-S06, PT-AUD-ENF12, PT-AUD-ENFA"
+    },
+    {
+      "id": "FIND-AF2-05",
+      "in_train": false,
+      "mapping": "Excluded from the train: T-AF2-CI-HEAD-RUN, PT-Q03"
+    },
+    {
+      "id": "FIND-AF2-06",
+      "in_train": false,
+      "mapping": "Excluded from the train: PT-Q05..PT-Q07, PT-Q12, PT-Q13, T-AF2-REQUAL-HIST-PASS"
+    },
+    {
+      "id": "FIND-AF2-07",
+      "in_train": false,
+      "mapping": "Excluded from the train: PT-D10 and requalification nodes"
+    },
+    {
+      "id": "FIND-AF2-08",
+      "in_train": false,
+      "mapping": "Excluded from the train: SSOT-RECONCILE-A/B, VALIDATOR-AMEND"
+    },
+    {
+      "id": "FIND-AF2-09",
+      "in_train": true,
+      "mapping": "T-IGX-051-A and PT-WF (T-IGX-043-J)"
+    },
+    {
+      "id": "FIND-AF2-10",
+      "in_train": true,
+      "mapping": "T-IGX-051-B"
+    },
+    {
+      "id": "FIND-AF2-11",
+      "in_train": true,
+      "mapping": "T-IGX-051-C"
+    },
+    {
+      "id": "FIND-AF2-12",
+      "in_train": true,
+      "mapping": "T-IGX-051-D and T-IGX-051-E (both landed)"
+    },
+    {
+      "id": "FIND-AF2-13",
+      "in_train": true,
+      "mapping": "T-AF2-MANIFESTS and RW-GATES (T-IGX-051-F)"
+    },
+    {
+      "id": "FIND-AF2-14",
+      "in_train": false,
+      "mapping": "Excluded from the train: DS-EXC"
+    },
+    {
+      "id": "FIND-AF2-15",
+      "in_train": true,
+      "mapping": "EDER decisions mapped onto the RW train tickets"
+    },
+    {
+      "id": "FIND-AF2-16",
+      "in_train": false,
+      "mapping": "Excluded from the train: T-AF2-RED-CLASSES"
+    },
+    {
+      "id": "FIND-AF2-17",
+      "in_train": false,
+      "mapping": "Excluded from the train: T-AF2-VBN-DOSSIER, PT-Q09"
+    },
+    {
+      "id": "FIND-AF2-18",
+      "in_train": false,
+      "mapping": "Excluded from the train: MEP section K and the RW-MERGE node (no train merge under App V6)"
+    },
+    {
+      "id": "FIND-AF2-19",
+      "in_train": false,
+      "mapping": "Closed as FALSE; no work item"
+    },
+    {
+      "id": "FIND-AF2-20",
+      "in_train": false,
+      "mapping": "Excluded from the train: T-AF2-MANIFESTS (DP-40)"
+    },
+    {
+      "id": "FIND-AF2-21",
+      "in_train": false,
+      "mapping": "Excluded from the train: OD-AF-00"
+    },
+    {
+      "id": "FIND-AF2-22",
+      "in_train": true,
+      "mapping": "TYP-MEASURE and OD-AF-11 (T-IGX-051-G)"
+    },
+    {
+      "id": "FIND-AF2-23",
+      "in_train": false,
+      "mapping": "T-AF2-RW-PLAN (this plan)"
+    }
+  ],
+  "tickets": {
+    "T-IGX-043-A": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-A.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 4. Exact write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 26 (touching code, tests, CI or project files: 11). Completion is not claimed."
+    },
+    "T-IGX-043-B": {
+      "lifecycle": "quality_gate",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-B.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 5. Exact write set"
+          }
+        ],
+        "extra_paths": [
+          {
+            "path": "tests/unit/runtime/capacity/test_fc2_capacity_fail_closed.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/unit/applications/test_fc2_queue_worker_fail_closed.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/unit/applications/test_fc2_memory_org_session_admission.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/unit/applications/test_fc2_wiring_posture.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/unit/applications/architecture/test_fc2_capacity_ci_posture_not_used_by_product_code.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/fixtures/memory_durable_session_storage.py",
+            "reason": "plan section 5 prose: new test files and fixture"
+          },
+          {
+            "path": "tests/unit/runtime/capacity/test_ecp_depth_gate.py",
+            "reason": "plan section 5 prose: existing firm tests"
+          },
+          {
+            "path": "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py",
+            "reason": "plan section 5 prose: existing firm tests"
+          },
+          {
+            "path": "tests/unit/applications/test_mem_audit5a_production_provider_admission.py",
+            "reason": "plan section 5 prose: existing firm tests"
+          },
+          {
+            "path": "tests/unit/applications/test_mem_audit5a_r2_provider_identity_binding.py",
+            "reason": "plan section 5 prose: existing firm tests"
+          },
+          {
+            "path": "docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md",
+            "reason": "plan section 5 prose: documents"
+          },
+          {
+            "path": "docs/project/architecture/BACKGROUND_TASKS.md",
+            "reason": "plan section 5 prose: documents"
+          },
+          {
+            "path": "docs/project/architecture/MEMORY_ARCHITECTURE.md",
+            "reason": "plan section 5 prose: documents"
+          },
+          {
+            "path": "docs/project/technical/guides/PLATFORM_CONFIGURATION.md",
+            "reason": "plan section 5 prose: documents"
+          },
+          {
+            "path": "tests/unit/applications/architecture/test_diag_platform_adoption_gate.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_environment_llm_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_memory_plugin_discovery_unified.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_package_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_specialized_memory_composition.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/docs/test_platform_configuration_reference.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_mem_audit5a_r3_durability_evidence_admission.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_mem_final_audit_5b_sqlite_production_restart_e2e.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_mem_final_audit_5d_r_session_turn_index_production_admission.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_memory_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_environment_profile.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_plugin_qualification_authority_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_policy_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_security_plugin_adoption_wiring.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/applications/test_tool_skill_bootstrap_evidence.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/memory/test_mem_ent11_platform_boundaries.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/memory/test_mem_ent12a_entity_projection_observability.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/memory/test_memory_store_resolver.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/qualification/plug_03/test_plug_03_gates.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/integration/memory/e2e/mongo_user_profile_real_vendor_support.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/integration/memory/e2e/test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/integration/memory/e2e/test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/integration/memory/e2e/test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py",
+            "reason": "plan section 5 prose: conditional census files"
+          },
+          {
+            "path": "tests/integration/platform_plugins/test_plugin_engine_cross_flow.py",
+            "reason": "plan section 5 prose: conditional census files"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 24 (touching code, tests, CI or project files: 16). Completion is not claimed."
+    },
+    "T-IGX-043-C": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-C.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 4. Write set"
+          }
+        ],
+        "extra_paths": [
+          {
+            "path": "tests/unit/rag/embedding/test_fc3_embedding_selector_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/rag/vectorstore/test_fc3_vectorstore_selector_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/runtime/notifications/test_fc3_notification_selector_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/model_inference/test_fc3_vision_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/integrations/providers/llm_guardrail/test_fc3_guardrail_fail_closed.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/qualification/pdc_x/reg_p/test_reg_p_ollama_single_row.py",
+            "reason": "plan section 4 T prose: new tests and the named REG-P test"
+          },
+          {
+            "path": "tests/unit/model_inference/test_remote_vision_adapters.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/model_inference/test_model_inference_registry.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/rag/embedding/test_embedding_profile.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/rag/vectorstore/test_integration_vectorstore_bootstrap.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/rag/vectorstore/test_integration_vectorstore_scope.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/integrations/providers/notification_channel/test_slack.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/integrations/providers/notification_channel/test_teams.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          },
+          {
+            "path": "tests/unit/test_dep1_dependency_foundation.py",
+            "reason": "plan section 4 T: inverted or updated tests named by basename, resolved to unique paths at the pin"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "note": "The remaining default-dependent tests are found by the census in section 8 step 3 of the plan and are not enumerable here. The documents of the plan's section D are not in this write set. Commits with this Ref on development 32005c212: 54 (touching code, tests, CI or project files: 32). Completion is not claimed.",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ]
+    },
+    "T-IGX-043-D": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-D.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Exact write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 11 (touching code, tests, CI or project files: 5). Completion is not claimed."
+    },
+    "T-IGX-043-E": {
+      "lifecycle": "quality_gate",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-E.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 4. Exact write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 2 (touching code, tests, CI or project files: 1). Completion is not claimed.",
+      "regression_tests": [
+        "tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py::test_audit_ideal_30_4_production_capacity"
+      ],
+      "regression_extra_commands": [
+        "uv run python scripts/maintenance/check_production_capacity_adapters.py"
+      ],
+      "regression_source": "PLAN_T-IGX-043-E section 6, commands 1 and 2."
+    },
+    "T-IGX-043-F": {
+      "lifecycle": "draft",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-F.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 4. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 0 (touching code, tests, CI or project files: 0). Completion is not claimed."
+    },
+    "T-IGX-043-G": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-G.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 15 (touching code, tests, CI or project files: 15). Completion is not claimed."
+    },
+    "T-IGX-043-H": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-H.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 15 (touching code, tests, CI or project files: 14). Completion is not claimed."
+    },
+    "T-IGX-043-I": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-I.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 11 (touching code, tests, CI or project files: 9). Completion is not claimed."
+    },
+    "T-IGX-043-J": {
+      "lifecycle": "in_progress",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-J.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Write set (initial, to be detailed before `plan_pending`)"
+          }
+        ],
+        "rewrites": [
+          {
+            "from": "applications/_shared/harness_host_runtime.py",
+            "to": "intergrax/applications/_shared/harness_host_runtime.py",
+            "reason": "relative table path"
+          }
+        ],
+        "extra_paths": [
+          {
+            "path": "intergrax/applications/_shared/evaluation_wiring.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "intergrax/runtime/execution/runtime.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "intergrax/compat/langchain/documents.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "intergrax/experiments/store.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "intergrax/debug/router.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "intergrax/experiments/workflow.py",
+            "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          }
+        ]
+      },
+      "quality": "INDICATIVE",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 33 (touching code, tests, CI or project files: 19). Completion is not claimed."
+    },
+    "T-IGX-043-M": {
+      "lifecycle": "in_progress",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-M.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Write set (indicative — detail in rev 2)"
+          }
+        ],
+        "extra_paths": [
+          {
+            "path": "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json",
+            "reason": "named by the Part E scope as a relative or prose reference"
+          },
+          {
+            "path": "scripts/enterprise_audit/run_enterprise_audit.py",
+            "reason": "named by the Part E scope as a relative or prose reference"
+          }
+        ]
+      },
+      "quality": "INDICATIVE",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 36 (touching code, tests, CI or project files: 23). Completion is not claimed."
+    },
+    "T-IGX-043-N": {
+      "lifecycle": "quality_gate",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-043-N.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Write set (firm)"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 19 (touching code, tests, CI or project files: 8). Completion is not claimed.",
+      "regression_tests": [
+        "tests/integration/runtime/test_nexus_loop_governance.py",
+        "tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py",
+        "tests/unit/runtime/events/test_runtime_event_persistence.py",
+        "tests/unit/runtime/human/test_human_decisions.py",
+        "tests/unit/runtime/nexus/test_nexus_loop_finalization_hook_failure.py",
+        "tests/unit/runtime/nexus/test_nexus_loop_helpers.py",
+        "tests/unit/runtime/task_memory/test_task_memory_store.py"
+      ],
+      "regression_source": "PLAN_T-IGX-043-N section 4: the FC-1 slice R3 of PLAN_T-IGX-043-A (whole files) and the harness persistence file."
+    },
+    "T-IGX-044-F": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-044-F.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 7. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 17 (touching code, tests, CI or project files: 12). Completion is not claimed."
+    },
+    "T-IGX-046-D": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-046-D.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 6. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 5 (touching code, tests, CI or project files: 3). Completion is not claimed.",
+      "regression_extra_commands": [
+        "uv run python scripts/docs/check_docs_domain_pairs.py"
+      ],
+      "regression_source": "PLAN_T-IGX-046-D section 7."
+    },
+    "T-IGX-046-G": {
+      "lifecycle": "draft",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "governance/qualification/frz_evidence_surface_inventory.v1.json",
+            "reason": "no plan yet: inventory and gate delivered by the PT-G02 commit 5b100965f"
+          },
+          {
+            "path": "tests/unit/architecture/test_pt_g02_frz_evidence_surface_inventory.py",
+            "reason": "no plan yet: inventory and gate delivered by the PT-G02 commit 5b100965f"
+          },
+          {
+            "path": "tests/qualification/state_x/test_g02_citation_targets_exist.py",
+            "reason": "no plan yet: A3-018 citation-target node NT-G02-02 named by the versioned RW plan"
+          }
+        ]
+      },
+      "quality": "NO_PLAN",
+      "wave": "W2",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "A3-018 (NT-G02-02): the ticket has no plan file. An approved plan is required before implementation. Commits with this Ref on development 32005c212: 1 (touching code, tests, CI or project files: 1). Completion is not claimed."
+    },
+    "T-IGX-051-A": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-A.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 5. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G TENANT: cross-tenant read, write and install are rejected",
+        "MEP G TENANT: a client-asserted tenant is refused"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 48 (touching code, tests, CI or project files: 34). Completion is not claimed."
+    },
+    "T-IGX-051-B": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-B.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 5. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G SUPPLY: unsigned or tampered artefact is refused",
+        "MEP G SUPPLY: malformed quota is denied",
+        "MEP G SUPPLY: weak strict setting is refused"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 22 (touching code, tests, CI or project files: 21). Completion is not claimed."
+    },
+    "T-IGX-051-C": {
+      "lifecycle": "in_progress",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-C.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Indicative write set"
+          }
+        ],
+        "extra_paths": [
+          {
+            "path": "intergrax/runtime/nexus/context/graph_assembly.py",
+            "reason": "named in the plan finding table"
+          }
+        ]
+      },
+      "quality": "INDICATIVE",
+      "mandatory_tests": [
+        "MEP G TRUST: an injection fixture cannot reach the system role"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 27 (touching code, tests, CI or project files: 8). Completion is not claimed."
+    },
+    "T-IGX-051-D": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-D.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "landed": true,
+      "mandatory_tests": [
+        "MEP G RUNTIME: a stream-open failure trips the breaker; the timeout is enforced"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 17 (touching code, tests, CI or project files: 15). Landed per ticket and merge records."
+    },
+    "T-IGX-051-E": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-E.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "landed": true,
+      "mandatory_tests": [
+        "MEP G RECOVERY: no double execution across restart or stop"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 13 (touching code, tests, CI or project files: 12). Landed per ticket and merge records."
+    },
+    "T-IGX-051-F": {
+      "lifecycle": "in_progress",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-F.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Write set (exact paths — firm unless marked conditional)"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G GATES: an unrelated ticket is DENIED",
+        "MEP G GATES: composing a NOT_COMPOSED feature raises"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 22 (touching code, tests, CI or project files: 13). Completion is not claimed."
+    },
+    "T-IGX-051-G": {
+      "lifecycle": "in_progress",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-G.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 3. Write set (exact)"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G TYP: the ratchet fails on a new Any in a frozen contract"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 15 (touching code, tests, CI or project files: 7). Completion is not claimed."
+    },
+    "T-IGX-051-H": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-H.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 5. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G DEPS: uv sync --frozen succeeds in CI"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 2 (touching code, tests, CI or project files: 2). Completion is not claimed."
+    },
+    "T-IGX-051-I": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-I.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 7. Write set"
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 4 (touching code, tests, CI or project files: 3). Completion is not claimed."
+    },
+    "T-IGX-051-N": {
+      "lifecycle": "plan_approved",
+      "plan": "governance/tickets/plans/PLAN_T-IGX-051-N.md",
+      "write_set": {
+        "sections": [
+          {
+            "heading": "## 5. Write set",
+            "occurrence": 1
+          },
+          {
+            "heading": "## 5. Write set",
+            "occurrence": 2
+          }
+        ]
+      },
+      "quality": "EXPLICIT",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "note": "Commits with this Ref on development 32005c212: 18 (touching code, tests, CI or project files: 13). Completion is not claimed."
+    },
+    "T-IGX-052-I": {
+      "lifecycle": "plan_pending",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
+            "reason": "candidate: planned negative node NT-FRZ-10-1"
+          }
+        ]
+      },
+      "quality": "CANDIDATE",
+      "note": "Ownership ticket (OP-B orchestrator allocation, 2026-11-27) for FRZ-FRZ-10: the T-B7-PFP-ACTIVATE held-path guard. No approved plan.",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-FRZ-10-1 and names its regression tests in its own plan."
+    },
+    "T-IGX-078-C": {
+      "lifecycle": "plan_pending",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "intergrax/runtime/decision_exposure_mapping.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/runtime/nexus/nexus_loop.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/runtime/nexus/orchestration/graph_runner.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/runtime/nexus/orchestration/nexus_decision_exposure.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/runtime/nexus/orchestration/task_finisher.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/runtime/task/task.py",
+            "reason": "candidate: Nexus decision exposure files with the object-typed payload (FRZ-TYP-01, FRZ-TYP-03)"
+          },
+          {
+            "path": "intergrax/applications/_shared/colocated_serving_runtime_composition.py",
+            "reason": "candidate: colocated serving composition call sites (FRZ-RPL-04)"
+          },
+          {
+            "path": "intergrax/applications/_shared/production_lifecycle.py",
+            "reason": "candidate: colocated serving composition call sites (FRZ-RPL-04)"
+          },
+          {
+            "path": "intergrax/applications/_shared/strict_production_serving_launcher.py",
+            "reason": "candidate: colocated serving composition call sites (FRZ-RPL-04)"
+          },
+          {
+            "path": "intergrax/contracts/evaluation_contracts.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "scripts/maintenance/check_frozen_contract_typ_ratchet.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "governance/qualification/typ_ratchet_baseline.v1.json",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "scripts/qualification/typ_ratchet_baseline.v1.json",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "tests/unit/contracts/test_eval_scenario_step_resolution.py",
+            "reason": "candidate: WL-K1-B-02 typing ratchet files"
+          },
+          {
+            "path": "tests/unit/runtime/nexus/test_wf_exposure_payload_typed_seam.py",
+            "reason": "candidate: planned PT-WF negative nodes NT-WF-B01..B06 and C01..C05"
+          },
+          {
+            "path": "tests/unit/applications/test_wf_colocated_drain_protocol.py",
+            "reason": "candidate: planned PT-WF negative nodes NT-WF-B01..B06 and C01..C05"
+          }
+        ]
+      },
+      "quality": "CANDIDATE",
+      "note": "Ownership ticket; no approved plan. Inverting the EBH-6 Q2-D2 gate is reserved to the Operator (Q-WF-04).",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ]
+    },
+    "T-IGX-078-D": {
+      "lifecycle": "plan_pending",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "scripts/maintenance/check_runtime_event_tenant_propagation.py",
+            "reason": "candidate: emitter tenant gate and its tests (A4-006)"
+          },
+          {
+            "path": "tests/unit/scripts/test_check_runtime_event_tenant_propagation.py",
+            "reason": "candidate: emitter tenant gate and its tests (A4-006)"
+          },
+          {
+            "path": "tests/unit/scripts/test_t01_runtime_event_tenant_propagation_emitters.py",
+            "reason": "candidate: emitter tenant gate and its tests (A4-006)"
+          },
+          {
+            "path": "intergrax/runtime/nexus/uaep/uaep_executor.py",
+            "reason": "candidate: emitters bound by T-IGX-056-A"
+          },
+          {
+            "path": "intergrax/runtime/middleware/trace_middleware.py",
+            "reason": "candidate: emitters bound by T-IGX-056-A"
+          },
+          {
+            "path": "tests/unit/runtime/events/test_event_id_persistence_semantics.py",
+            "reason": "candidate: event-id persistence tenant semantics (FRZ-TEN-07)"
+          }
+        ]
+      },
+      "quality": "CANDIDATE",
+      "note": "Ownership ticket for FRZ-TEN-02, FRZ-TEN-07 and A4-006; no approved plan. T-IGX-056-A and T-IGX-065-A are evidence inputs, not train tickets.",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ]
+    },
+    "T-IGX-078-E": {
+      "lifecycle": "plan_pending",
+      "plan": null,
+      "write_set": {
+        "extra_paths": [
+          {
+            "path": "scripts/gates/check_not_composed_reachability.py",
+            "reason": "candidate: NOT_COMPOSED reachability gate shared with T-IGX-051-F"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_plg08_dynamic_registration_scope.py",
+            "reason": "candidate: planned negative node NT-PLG-08-1"
+          }
+        ]
+      },
+      "quality": "CANDIDATE",
+      "note": "Fact check of FRZ-PLG-08 under DP-37 (DP-30 exception texts stay with PT-D09 and PT-D10). T-IGX-051-F owns NT-RW-GATES-NC-RAISE; this ticket owns the FRZ-PLG-08 verdict and NT-PLG-08-1.",
+      "mandatory_tests": [
+        "MEP G: negative tests authored by the owner ticket"
+      ],
+      "regression_absent_reason": "No test file of this scope exists at the read pin. The ticket authors NT-PLG-08-1 and names its regression tests in its own plan."
+    }
+  },
+  "serialization_edges": [
+    [
+      "T-IGX-043-G",
+      "T-IGX-043-H",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-A",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-B",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-C",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-D",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-E",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-F",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-I",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-J",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-M",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-043-N",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-044-F",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-046-D",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-A",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-B",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-C",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-F",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-G",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-H",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-I",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-051-N",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-078-C",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-078-D",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-078-E",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-H",
+      "T-IGX-052-I",
+      "MEP wave table, W3: PT-WA, then PT-WB, then the other W3 tickets"
+    ],
+    [
+      "T-IGX-043-J",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-043-A",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-051-B",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-043-C",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-043-B",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-051-C",
+      "T-IGX-051-A",
+      "PLAN_T-IGX-051-A line 14: TENANT starts after this ticket merges"
+    ],
+    [
+      "T-IGX-043-B",
+      "T-IGX-043-A",
+      "FC merge order FC-2, FC-1, FC-3 stated by the approved FC plans"
+    ],
+    [
+      "T-IGX-043-A",
+      "T-IGX-043-C",
+      "FC merge order FC-2, FC-1, FC-3 stated by the approved FC plans"
+    ],
+    [
+      "T-IGX-043-B",
+      "T-IGX-043-C",
+      "PLAN_T-IGX-043-C section 4: wiring_posture.py comes from T-IGX-043-B, which merges first"
+    ],
+    [
+      "T-IGX-043-B",
+      "T-IGX-043-E",
+      "PLAN_T-IGX-043-E: gate scripts merge after the FC-2 fix"
+    ],
+    [
+      "T-IGX-043-C",
+      "T-IGX-043-F",
+      "T-IGX-043-F: merges after T-IGX-043-C (DP-10)"
+    ],
+    [
+      "T-IGX-043-C",
+      "T-IGX-043-M",
+      "T-IGX-043-M: merges after the FC-3 regression follow-up"
+    ],
+    [
+      "T-IGX-043-I",
+      "T-IGX-043-M",
+      "T-IGX-043-I: merges first, then T-IGX-043-M"
+    ],
+    [
+      "T-IGX-051-B",
+      "T-IGX-051-N",
+      "T-IGX-051-N merge order: 051-B, 051-N, 051-A"
+    ],
+    [
+      "T-IGX-051-N",
+      "T-IGX-051-A",
+      "T-IGX-051-N merge order: 051-B, 051-N, 051-A"
+    ],
+    [
+      "T-IGX-043-N",
+      "T-IGX-051-A",
+      "T-IGX-043-N plan: serialize before T-IGX-051-A"
+    ],
+    [
+      "T-IGX-051-A",
+      "T-IGX-078-D",
+      "PLAN_T-IGX-051-A: tenant propagation work (PT-T01) starts after TENANT"
+    ],
+    [
+      "T-IGX-051-G",
+      "T-IGX-078-C",
+      "WL-K1-B-02 restores the typing ratchet as the residual of T-IGX-051-G"
+    ],
+    [
+      "T-IGX-051-F",
+      "T-IGX-078-E",
+      "078-E reuses the NOT_COMPOSED gate that T-IGX-051-F owns"
+    ],
+    [
+      "T-IGX-043-A",
+      "T-IGX-043-N",
+      "PLAN_T-IGX-043-N: starts after FC-1 Part B lands (harness_host_runtime.py, tool_wiring.py)"
+    ],
+    [
+      "T-IGX-043-A",
+      "T-IGX-043-J",
+      "shared harness_host_runtime.py: the approved FC-1 plan merges before the indicative PT-WF rest"
+    ],
+    [
+      "T-IGX-043-N",
+      "T-IGX-043-J",
+      "shared harness_host_runtime.py: the firm 043-N write merges before the indicative PT-WF rest"
+    ],
+    [
+      "T-IGX-043-C",
+      "T-IGX-043-N",
+      "shared environment_wiring.py: the approved FC plans merge first"
+    ],
+    [
+      "T-IGX-043-C",
+      "T-IGX-051-C",
+      "shared tests/unit/rag/: the approved FC-3 plan merges before the indicative TRUST write set"
+    ],
+    [
+      "T-IGX-051-B",
+      "T-IGX-051-F",
+      "shared deploy_activate_pipeline.py: SUPPLY merges before the conditional GATES edit"
+    ],
+    [
+      "T-IGX-051-N",
+      "T-IGX-051-F",
+      "shared deploy_activate_pipeline.py; T-IGX-051-N allows either order, this order is chosen"
+    ],
+    [
+      "T-IGX-043-A",
+      "T-IGX-078-C",
+      "shared nexus_loop.py; WORKLIST section 5: Nexus runtime items merge first"
+    ],
+    [
+      "T-IGX-051-F",
+      "T-IGX-078-C",
+      "shared evaluation_contracts.py: the approved GATES work merges before the unplanned 078-C"
+    ],
+    [
+      "T-IGX-078-C",
+      "T-IGX-051-A",
+      "shared nexus_loop.py; WORKLIST section 5: TENANT (051-A) merges last"
+    ]
+  ],
+  "lanes": [
+    {
+      "lane": "lane_1",
+      "tickets": [
+        "T-IGX-043-G"
+      ],
+      "label": "PT-WA"
+    },
+    {
+      "lane": "lane_2",
+      "tickets": [
+        "T-IGX-043-H"
+      ],
+      "label": "PT-WB"
+    },
+    {
+      "lane": "lane_3",
+      "tickets": [
+        "T-IGX-046-G"
+      ],
+      "label": "W2 evidence gate"
+    },
+    {
+      "lane": "lane_4",
+      "tickets": [
+        "T-IGX-043-B",
+        "T-IGX-043-D",
+        "T-IGX-043-I",
+        "T-IGX-044-F",
+        "T-IGX-046-D"
+      ],
+      "label": "W3 depth 3, part 1"
+    },
+    {
+      "lane": "lane_5",
+      "tickets": [
+        "T-IGX-051-B",
+        "T-IGX-051-G",
+        "T-IGX-051-H",
+        "T-IGX-051-I",
+        "T-IGX-052-I"
+      ],
+      "label": "W3 depth 3, part 2"
+    },
+    {
+      "lane": "lane_6",
+      "tickets": [
+        "T-IGX-043-A",
+        "T-IGX-043-E",
+        "T-IGX-051-N"
+      ],
+      "label": "W3 depth 4"
+    },
+    {
+      "lane": "lane_7",
+      "tickets": [
+        "T-IGX-043-C",
+        "T-IGX-051-F"
+      ],
+      "label": "W3 depth 5"
+    },
+    {
+      "lane": "lane_8",
+      "tickets": [
+        "T-IGX-043-F",
+        "T-IGX-043-M",
+        "T-IGX-043-N",
+        "T-IGX-051-C",
+        "T-IGX-078-C"
+      ],
+      "label": "W3 depth 6, part 1"
+    },
+    {
+      "lane": "lane_9",
+      "tickets": [
+        "T-IGX-078-E"
+      ],
+      "label": "W3 depth 6, part 2"
+    },
+    {
+      "lane": "lane_10",
+      "tickets": [
+        "T-IGX-043-J"
+      ],
+      "label": "W3 depth 7"
+    },
+    {
+      "lane": "lane_11",
+      "tickets": [
+        "T-IGX-051-A"
+      ],
+      "label": "W3 depth 8"
+    },
+    {
+      "lane": "lane_12",
+      "tickets": [
+        "T-IGX-078-D"
+      ],
+      "label": "W3 depth 9"
+    }
+  ],
+  "path_b_invariants": [
+    "ReplayX path_b=B on the FRZ matrix L66 rows is non-authoritative (DP-34, FRZ_RR Path B).",
+    "Tenant isolation: cross-tenant negative tests are in the T-IGX-051-A scope."
+  ],
+  "g2_entry_conditions": [
+    "The SCOPE hard predecessors of section 18 are satisfied.",
+    "W3 runs on `development` (App V6.1, V6.4); there is no RW train branch. Every open W3 ticket of this plan is merged on `development`.",
+    "Every pre-G2 item of section 17 is merged.",
+    "CI is green except the exact expected-red set (App V6.4). ACT-N11 is expected-red until RB-2 (App V6.3, V5.1).",
+    "G2 is the `development` commit after the last product change and the wave-audited SHA (App V6.2). PT-Q02 and PT-Q03 stay in W4.",
+    "G2, R, FCS and M3 are NOT SET. The 11787a7e absorption is historical and is neither G2 nor FCS."
+  ],
+  "held_paths": [
+    "From G2 no change under intergrax/, agents/, applications/, pyproject.toml, uv.lock, scripts/, .github/ and the IIAC paths: the IIAC protocol document, the 5 IIAC scripts and the 6 material governance paths of MEP section K (App V6.3).",
+    "The CI held-path guard is a separate K3 ticket; App V6.3 does not build it.",
+    "Docs, tests/ (within the EBH-7 allowlist ordering) and governance/tickets/ stay as in MEP section K.",
+    "FRZ-10 keeps its authorised nodes: T-B7-PFP-ACTIVATE (W5, before LOCK) and T-B7-PFP-VERIFY (W8, CHANGED-SINCE M3). The matrix and App V6.3 do not name the policy-gate paths. Any gate that FRZ-10 adds under scripts/ or .github/ has to merge before G2; docs rebaselines may follow. No ticket carries FRZ-10 at the read pin."
+  ],
+  "pre_g2_order": [
+    "PT-WA (T-IGX-043-G), then PT-WB (T-IGX-043-H), then the other W3 tickets along the serialization edges.",
+    "Before G2 (App V6.3): PT-S05, PT-S06, the manifest drift gate, the held-path guard, and every scripts/ or .github/ part of ECAP-EXEC (DP-54).",
+    "EC campaign F group B keeps its SCOPE and product-path-go gates; only its branch target is `development` (App V6.5)."
+  ],
+  "dependencies": {
+    "W2": [
+      "T-AF2-FRZ-MATRIX",
+      "T-AF2-DS-EXC-PACKAGE",
+      "T-AF2-BND-CLOSURE"
+    ],
+    "W3": [
+      "SCOPE"
+    ]
+  },
+  "implementation_disposition": {
+    "train": "`development` is the train (App V6.1); remaining product work lands there.",
+    "landed_train_tickets": [
+      "T-IGX-051-D",
+      "T-IGX-051-E"
+    ],
+    "open_train_tickets": "Every other ticket of section 7.",
+    "qualified_at_head": "Not claimed. This plan holds planning and diagnostic evidence only."
+  },
+  "versioned_plan_record": "Historical binding authority, as cited by tickets and plans: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_binding_record/INDEX.md` (verbatim cited versions). Appendix V6 supersedes their train rules; the live plan is this file."
+}

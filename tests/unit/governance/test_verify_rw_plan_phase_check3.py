@@ -30,11 +30,24 @@ def _base_plan_row(frz: str = "FRZ-BND-04") -> dict:
         "summary": "s",
         "owner_ticket": "T-IGX-043-G",
         "negative_test_id": "NT-BND-04",
+        "negative_tests": _negative_tests(),
         "red_first_prefix_sha": None,
         "red_first_status": "EVIDENCE_MISSING",
         "regression_scope": "ENT-A-BND-01..03",
         "remediation_track": "CODE_FIX:",
     }
+
+
+def _negative_tests() -> list[dict]:
+    return [
+        {
+            "nt_id": "NT-BND-04",
+            "node": "tests/unit/test_x.py::test_a",
+            "mechanism": "m",
+            "owner_ticket": "T-IGX-043-G",
+            "file_state_at_pin": "exists",
+        }
+    ]
 
 
 def _minimal_plan(extra_rows: list[dict] | None = None) -> dict:
@@ -50,21 +63,32 @@ def _minimal_plan(extra_rows: list[dict] | None = None) -> dict:
             {"finding_id": "A6-005", "owner_ticket": "T-IGX-043-I", "disposition": "x"},
             {
                 "finding_id": "A4-006",
-                "owner_ticket": None,
+                "owner_ticket": "T-IGX-078-D",
                 "owner_node": "PT-T01",
                 "owner_wave": "W3",
-                "owner_source": "WP12 DAG / PT-T01 / A4-006",
+                "owner_source": "WP12 DAG / PT-T01 / A4-006; GA.2R T-IGX-078-D",
                 "disposition": "x",
             },
             {"finding_id": "A3-018", "owner_ticket": "T-IGX-046-G", "disposition": "x"},
             {"finding_id": "A4-016", "owner_ticket": "T-IGX-043-H", "disposition": "x"},
         ],
         "lane_order": [
-            ("lane_1", "T-IGX-043-G", "PT-WA"),
-            ("lane_2", "T-IGX-043-H", "PT-WB"),
+            ("lane_1", ["T-IGX-043-G"], "PT-WA"),
+            ("lane_2", ["T-IGX-043-H"], "PT-WB"),
         ],
-        "serialization_pairs": [{"first": "a", "second": "b", "reason": "c"}],
-        "overlap_hotspots": {"x": ["y"]},
+        "tickets": [
+            {
+                "ticket": ticket,
+                "lifecycle": "plan_approved",
+                "landed": False,
+                "write_set": [{"path": "tests/unit/test_x.py", "state": "exists"}],
+            }
+            for ticket in ("T-IGX-043-G", "T-IGX-043-H")
+        ],
+        "overlap_matrix": [{"a": "T-IGX-043-G", "b": "T-IGX-043-H", "paths": ["tests/unit/test_x.py"]}],
+        "serialization_edges": [{"first": "T-IGX-043-G", "second": "T-IGX-043-H", "reason": "c"}],
+        "coverage": [],
+        "find_af2": [{"id": f"FIND-AF2-{n:02d}", "mapping": "node", "in_train": False} for n in range(1, 24)],
         "dependencies": {
             "W2": [],
             "SCOPE": [
@@ -129,8 +153,8 @@ def test_reversed_pt_wa_pt_wb():
     mod = _load_verify()
     plan = _minimal_plan()
     plan["lane_order"] = [
-        ("lane_1", "T-IGX-043-H", "PT-WB"),
-        ("lane_2", "T-IGX-043-G", "PT-WA"),
+        ("lane_1", ["T-IGX-043-H"], "PT-WB"),
+        ("lane_2", ["T-IGX-043-G"], "PT-WA"),
     ]
     errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
     assert any("PT-WB precedes PT-WA" in e for e in errors)
@@ -294,6 +318,7 @@ def test_frz_frz_10_node_ownership_accepted():
         "owner_ticket_family": "T-IGX-052-*",
         "owner_provenance": "explicit_mep_wp12",
         "negative_test_id": "NT-FRZ-10",
+        "negative_tests": _negative_tests(),
         "red_first_status": "EVIDENCE_MISSING",
         "regression_scope": "ENT-A",
         "remediation_track": "CODE_FIX:",
@@ -336,9 +361,114 @@ def test_phase_check3_cli_emits_separate_dimensions():
         text=True,
         check=False,
     )
-    assert "PLAN_STRUCTURE=" in proc.stdout
-    assert "RED_FIRST_EVIDENCE=COMPLETE" in proc.stdout
+    assert "PLAN_STRUCTURE=PASS" in proc.stdout, proc.stderr
+    assert proc.returncode == 0
+    data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
+    expected = "INCOMPLETE" if _load_verify().validate_red_first_evidence(data) else "COMPLETE"
+    assert f"RED_FIRST_EVIDENCE={expected}" in proc.stdout
+    assert "NAMED_NEGATIVE_TESTS=39/39" in proc.stdout
     assert "RW_PLAN_AUDIT=NOT_PERFORMED" in proc.stdout
+
+
+@pytest.mark.parametrize("identifier", ["NEG-0", "NEG-P", "gate extension", None])
+def test_class_marker_is_not_a_negative_test_identifier(identifier):
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["negative_test_id"] = identifier
+    plan["code_fix_inventory"][0]["remediation_track"] = "CODE_FIX: gate extension"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("negative_test_id" in e for e in errors)
+
+
+@pytest.mark.parametrize("missing", ["nt_id", "node", "mechanism", "owner_ticket", "file_state_at_pin"])
+def test_negative_test_entry_must_name_node_mechanism_owner(missing: str):
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["negative_tests"][0].pop(missing)
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("negative test entry" in e and missing in e for e in errors)
+
+
+def test_row_without_negative_tests_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["code_fix_inventory"][0]["negative_tests"] = []
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("negative_tests" in e for e in errors)
+
+
+def test_named_negative_test_count():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    assert mod.count_named_negative_tests(plan) == (1, 1)
+    plan["code_fix_inventory"][0]["negative_test_id"] = "NEG-0"
+    assert mod.count_named_negative_tests(plan) == (0, 1)
+
+
+def test_evidence_missing_requires_reason_in_ga2r_record():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    row = plan["code_fix_inventory"][0]
+    row["red_first_evidence_ref"] = "docs/x/RED_FIRST_GA2R_RESULT.json#FRZ-BND-04"
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("red_first_reason" in e for e in errors)
+    row["red_first_reason"] = "node absent at pin"
+    assert mod.validate_plan_structure(plan, {"FRZ-BND-04"}) == []
+
+
+def test_overlap_pair_without_ordering_path_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["serialization_edges"] = []
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("without ordering" in e for e in errors)
+
+
+def test_stale_overlap_matrix_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["overlap_matrix"] = []
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("overlap_matrix" in e for e in errors)
+
+
+def test_lane_with_overlapping_members_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["lane_order"] = [("lane_1", ["T-IGX-043-G", "T-IGX-043-H"], "PT-WA"), ("lane_2", [], "PT-WB")]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("lane" in e and "T-IGX-043-H" in e for e in errors)
+
+
+def test_missing_find_af2_mapping_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    plan["find_af2"] = plan["find_af2"][:-1]
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"})
+    assert any("FIND-AF2" in e for e in errors)
+
+
+def test_open_row_without_coverage_rejected():
+    mod = _load_verify()
+    plan = _minimal_plan()
+    errors = mod.validate_plan_structure(plan, {"FRZ-BND-04"}, open_outside_inventory={"FRZ-DOC-06"})
+    assert any("coverage" in e and "FRZ-DOC-06" in e for e in errors)
+
+
+def test_live_plan_binds_a_regression_command_to_every_row():
+    data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
+    missing = [r["frz_id"] for r in data["code_fix_inventory"] if "tests/" not in str(r.get("regression_command"))]
+    assert not missing
+
+
+def test_live_plan_covers_every_open_matrix_row():
+    data = json.loads(_RW_JSON.read_text(encoding="utf-8"))
+    build = _import_build_mod()
+    rows = build.parse_appendix_a_all_rows()
+    inventory = {r["frz_id"] for r in data["code_fix_inventory"]}
+    open_outside = {r["frz_id"] for r in rows if r["matrix_status"] == "OPEN"} - inventory
+    assert open_outside
+    assert open_outside == {c["frz_id"] for c in data["coverage"]}
 
 
 def _import_build_mod():
@@ -361,7 +491,7 @@ def _explicit_row(frz: str, **overrides) -> dict:
         "red_first_status": "EVIDENCE_MISSING",
         "regression_scope": "ENT-A",
         "remediation_track": "CODE_FIX:",
-        "owner_provenance": "explicit_mep_wp12",
+        "negative_tests": _negative_tests(),
     }
     base.update(contract)
     base.update(overrides)

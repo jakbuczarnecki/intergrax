@@ -60,3 +60,19 @@ plan_approved
 Implementer session: local_e87d11d4-fd56-4734-a8fd-46691cb7b3f7
 
 (the PT-WA implementer session; recorded here, outside the plan text).
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-BND-04 | NT-BND-04-1 |
+
+| Audit row | Campaign A finding | Negative test named in the RW plan |
+|---|---|---|
+| NT-ROW-001 | A4-003 | test_wa_boundary_inversion_gate.py |
+| NT-ROW-002 | A4-004 | test_wa_agent_import_rule.py NT-WA-13,17 |
+| NT-ROW-006 | A2-009 | NT-RW-WA-01 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

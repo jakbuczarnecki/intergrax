@@ -29,11 +29,13 @@ CANONICAL_SCOPE_PREDECESSORS = frozenset(
 )
 
 A4_006_AUDIT_CONTRACT: dict[str, object] = {
-    "owner_ticket": None,
+    "owner_ticket": "T-IGX-078-D",
     "owner_node": "PT-T01",
     "owner_wave": "W3",
-    "owner_source": "WP12 DAG / PT-T01 / A4-006",
+    "owner_source": "WP12 DAG / PT-T01 / A4-006; GA.2R T-IGX-078-D",
 }
+
+_GA2R_RECORD_NAME = "RED_FIRST_GA2R_RESULT"
 
 EXPLICIT_OWNERSHIP_CONTRACT_KEYS = (
     "owner_ticket",
@@ -90,7 +92,7 @@ def _matrix_row_has_unauthorized_explicit_metadata(row: dict) -> bool:
 
 
 def _explicit_contract_satisfied(row: dict, contract: dict[str, object]) -> bool:
-    if row.get("owner_provenance") != "explicit_mep_wp12":
+    if row.get("owner_provenance") != contract.get("owner_provenance"):
         return False
     if "owner_ticket" not in row:
         return False
@@ -214,18 +216,92 @@ def _validate_audit_conflict(conflict: dict) -> list[str]:
     return errors
 
 
+def _is_identifier(value: object, markers: tuple[str, ...]) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value not in markers and "gate extension" not in value
+
+
+def _negative_test_errors(row: dict, build) -> list[str]:
+    errors: list[str] = []
+    frz = row.get("frz_id")
+    if not _is_identifier(row.get("negative_test_id"), build.CLASS_MARKERS):
+        errors.append(f"{frz}: negative_test_id is missing or is a class marker (strict)")
+    entries = row.get("negative_tests")
+    if not isinstance(entries, list) or not entries:
+        errors.append(f"{frz}: negative_tests must name at least one node")
+        return errors
+    required = (*build.NEGATIVE_TEST_ENTRY_KEYS, "file_state_at_pin")
+    for entry in entries:
+        missing = [key for key in required if not (isinstance(entry, dict) and entry.get(key))]
+        if missing:
+            errors.append(f"{frz}: negative test entry misses {', '.join(missing)}")
+        elif not _is_identifier(entry["nt_id"], build.CLASS_MARKERS):
+            errors.append(f"{frz}: negative test entry nt_id is a class marker")
+    return errors
+
+
+def count_named_negative_tests(data: dict[str, object]) -> tuple[int, int]:
+    build = _load_build_rw_plan()
+    inventory = data.get("code_fix_inventory") or []
+    named = sum(1 for row in inventory if isinstance(row, dict) and not _negative_test_errors(row, build))
+    return named, len(inventory)
+
+
+def _train_errors(data: dict[str, object], build) -> list[str]:
+    """Re-check overlap matrix, merge order and lanes from the payload's own write sets."""
+    tickets = data.get("tickets")
+    if not isinstance(tickets, list) or not tickets:
+        return ["tickets table empty or missing"]
+    write_sets = {t["ticket"]: [p["path"] for p in t["write_set"]] for t in tickets}
+    landed = {t["ticket"] for t in tickets if t.get("landed")}
+    open_tickets = set(write_sets) - landed
+    w3 = {t["ticket"] for t in tickets if t["ticket"] in open_tickets and t.get("wave", "W3") == "W3"}
+    edges = [(e["first"], e["second"]) for e in data.get("serialization_edges") or []]
+    errors: list[str] = []
+    recomputed = build.overlap_matrix(write_sets)
+    if data.get("overlap_matrix") != recomputed:
+        errors.append("overlap_matrix is stale or missing (does not match the ticket write sets)")
+    try:
+        build.check_merge_order(set(write_sets), landed, edges, recomputed)
+    except SystemExit as exc:
+        errors.append(str(exc))
+    lanes = [
+        {"lane": e[0], "tickets": list(e[1]), "label": e[2]}
+        for e in data.get("lane_order") or []
+        if isinstance(e, (list, tuple)) and len(e) == 3 and isinstance(e[1], list)
+    ]
+    try:
+        build.check_lanes(lanes, write_sets, edges, open_tickets, w3)
+    except SystemExit as exc:
+        errors.append(str(exc))
+    return errors
+
+
+def _coverage_errors(data: dict[str, object], open_outside_inventory: set[str]) -> list[str]:
+    entries = [c for c in data.get("coverage") or [] if isinstance(c, dict)]
+    covered = {str(c.get("frz_id")) for c in entries}
+    errors = [f"coverage missing OPEN row {frz}" for frz in sorted(open_outside_inventory - covered)]
+    errors.extend(
+        f"coverage {c.get('frz_id')} has no reason or owning node"
+        for c in entries
+        if not c.get("reason") or not c.get("owner_nodes")
+    )
+    return errors
+
+
 def validate_plan_structure(
     data: dict[str, object],
     canonical: set[str],
     *,
     matrix_owners: dict[str, str | None] | None = None,
     explicit: dict[str, dict[str, object]] | None = None,
+    open_outside_inventory: set[str] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     if matrix_owners is None:
         matrix_owners = _matrix_owners_by_frz()
     if explicit is None:
         explicit = _explicit_ownership_contracts()
+    build = _load_build_rw_plan()
 
     inventory = data.get("code_fix_inventory")
     if not isinstance(inventory, list) or not inventory:
@@ -253,9 +329,16 @@ def validate_plan_structure(
             errors.append(f"{frz}: missing required provenance for canonical ownership")
         if not _ownership_verified(row, matrix_owners, explicit):
             errors.append(f"{frz}: ownership not verified (missing ticket or canonical node contract)")
-        nt = row.get("negative_test_id")
-        if not nt and "gate extension" not in str(row.get("remediation_track", "")):
-            errors.append(f"{frz}: missing negative_test_id (strict)")
+        errors.extend(_negative_test_errors(row, build))
+        trace = row.get("traceability")
+        if isinstance(trace, dict) and not trace.get("ticket_file_names_row"):
+            errors.append(f"{frz}: owner ticket file does not name the row")
+        if (
+            row.get("red_first_status") == "EVIDENCE_MISSING"
+            and _GA2R_RECORD_NAME in str(row.get("red_first_evidence_ref") or "")
+            and not str(row.get("red_first_reason") or "").strip()
+        ):
+            errors.append(f"{frz}: EVIDENCE_MISSING in the GA.2R record needs red_first_reason")
         if row.get("regression_scope") in (None, "", "MAPPING_MISSING"):
             errors.append(f"{frz}: missing regression_scope mapping")
         status = row.get("red_first_status")
@@ -297,10 +380,10 @@ def validate_plan_structure(
     deps = data.get("dependencies")
     errors.extend(_validate_scope_dependencies(deps))
     errors.extend(_validate_lane_order(data.get("lane_order") or []))
-    if not data.get("serialization_pairs"):
-        errors.append("serialization_pairs empty")
-    if not data.get("overlap_hotspots"):
-        errors.append("overlap_hotspots empty")
+    errors.extend(_train_errors(data, build))
+    errors.extend(build.find_af2_errors(data.get("find_af2")))
+    if open_outside_inventory is not None:
+        errors.extend(_coverage_errors(data, open_outside_inventory))
     return errors
 
 
@@ -399,11 +482,13 @@ def _emit(
     *,
     ownership_verified: int,
     ownership_total: int,
+    named_negative_tests: tuple[int, int] = (0, 0),
 ) -> None:
     for e in plan_errors:
         print(f"[PLAN_STRUCTURE] {e}", file=sys.stderr)
     print(f"PLAN_STRUCTURE={plan_status}")
     print(f"CODE_FIX_OWNERSHIP={ownership_verified}/{ownership_total}")
+    print(f"NAMED_NEGATIVE_TESTS={named_negative_tests[0]}/{named_negative_tests[1]}")
     for e in red_first:
         print(f"[RED_FIRST_EVIDENCE] {e}")
     if red_first:
@@ -432,7 +517,10 @@ def main() -> int:
         return 1
 
     ownership_verified, ownership_total = count_verified_ownership(data)
-    plan_errors.extend(validate_plan_structure(data, canonical))
+    open_rows = {
+        str(r["frz_id"]) for r in _load_build_rw_plan().parse_appendix_a_all_rows() if r["matrix_status"] == "OPEN"
+    }
+    plan_errors.extend(validate_plan_structure(data, canonical, open_outside_inventory=open_rows - canonical))
     red_first_errors = validate_red_first_evidence(data)
     audit_notes = validate_rw_plan_audit(data)
     plan_status = "PASS" if not plan_errors else "FAIL"
@@ -443,6 +531,7 @@ def main() -> int:
         plan_status,
         ownership_verified=ownership_verified,
         ownership_total=ownership_total,
+        named_negative_tests=count_named_negative_tests(data),
     )
     return 0 if plan_status == "PASS" else 1
 

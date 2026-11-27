@@ -60,3 +60,16 @@ Written by the implementer outside the approval lines and outside the plan text.
 - No census file needed an edit: the 25 run files show no red beyond the registered `test_package_wiring.py::test_strict_product_package_closure_passes`.
 - Open residuals, not closed by this ticket: A4-032 leg (a) OTLP exporter with an empty endpoint; A4-032 leg (b) and WP2-OBS-02 sandbox composition guard.
 
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-PRD-03 | NT-PRD-03-1 |
+| FRZ-REL-07 | NT-REL-07-1, NT-REL-07-2 |
+| FRZ-REL-09 | NT-REL-09-1, NT-REL-09-2 |
+| FRZ-REL-10 | NT-REL-10-1 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
