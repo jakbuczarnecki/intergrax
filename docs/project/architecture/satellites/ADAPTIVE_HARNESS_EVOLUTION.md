@@ -1,6 +1,6 @@
-﻿# Adaptive Harness Evolution — Architecture
+# Adaptive Harness Evolution — Architecture
 
-**Revision:** 1.1
+**Revision:** 1.2
 **Document status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Parent architecture:** [ADAPTIVE_HARNESS_INTELLIGENCE.md](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Implementation roadmap:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
@@ -443,3 +443,502 @@ Executable agent scaffolding may be deferred until specifically authorized and r
 **Cross-program boundary status:** ARCHITECT_DEFINED / EXTERNAL_OWNER_ACCEPTANCE_PENDING
 
 Do not assert that another program has accepted this mapping.
+
+## 5.19 Minimum Adaptive Loop — W1
+
+W1 delivers a deterministic, configuration-only, sequential adaptive search.
+
+The first implementation shall consist of:
+
+1. Objective and scope validation.
+2. Immutable baseline resolution.
+3. Aggregate resource admission.
+4. Canonical baseline execution.
+5. Deterministic candidate proposal.
+6. Static candidate validation.
+7. Canonical candidate execution.
+8. Comparative evaluation.
+9. Candidate selection, baseline retention or abstention.
+10. Experimental evidence archival.
+
+W1 shall not contain:
+
+- Model-driven proposal generation.
+- Autonomous source-code generation.
+- Multiple candidate search.
+- Candidate composition.
+- Trusted experience publication.
+- Production promotion.
+- Automatic policy modification.
+- Real external business effects.
+
+The W1 deterministic strategy qualifies the adaptation mechanism and its execution composition. It does not demonstrate general intelligent harness evolution.
+
+## 5.20 Canonical implementation package
+
+All new ADAS runtime components belong to:
+
+`intergrax/runtime/adaptive/agent_design_search/`
+
+Prescribed W1 package structure:
+
+- `__init__.py`
+- `contracts.py`
+- `archive.py`
+- `sqlite_archive.py`
+- `static_gate.py`
+- `search_policy.py`
+- `strategies.py`
+- `candidate_evaluator.py`
+- `experiment_bridge.py`
+- `search_controller.py`
+
+These are planned files, not implemented files.
+
+AHE shall not create a competing top-level runtime package.
+
+Existing owner mechanisms must remain authoritative.
+
+## 5.21 W1 contract inventory
+
+Retain the canonical ADAS names.
+
+**`AdasOperationalEnvelope`**
+
+Required semantic fields:
+
+- Schema version.
+- Tenant identity.
+- Workspace identity.
+- Actor identity.
+- Correlation identity.
+- Trace identity or reference.
+- Accepted scope reference.
+- Explicit LAB-only execution posture.
+- Retention policy reference.
+
+An envelope records authority provenance. It does not grant authority.
+
+**`AgentDesignObjective`**
+
+Required semantic fields:
+
+- Objective identity.
+- Operational envelope.
+- Task class.
+- Capability reference.
+- Immutable baseline configuration reference.
+- Dataset identity and content digest.
+- Acceptance criteria reference.
+- Admitted configuration surface.
+- Allowed configuration alternatives.
+- Aggregate search limits.
+- Explicit external-effect prohibition.
+
+**`AgentDesignSearchRun`**
+
+Required semantic fields:
+
+- Search run identity.
+- Objective identity.
+- Scope binding.
+- Baseline identity.
+- Candidate identities.
+- Execution references.
+- Search lifecycle status.
+- Start and terminal timestamps.
+- Consumption and accounting references.
+- Explicit stop reason.
+
+**`AgentCandidateDraft`**
+
+Required semantic fields:
+
+- Candidate identity.
+- Objective and search-run identity.
+- Scope binding.
+- Baseline identity and digest.
+- Single admitted configuration delta.
+- Candidate configuration digest.
+- Proposal strategy reference.
+- Proposal rationale.
+
+Candidate drafts must not contain executable source code, arbitrary callable references, credentials or new permissions.
+
+**`AgentCandidateStatus`**
+
+W1 lifecycle vocabulary:
+
+- DRAFT
+- REJECTED
+- VALIDATED
+- EVALUATED
+- SELECTED
+- NOT_SELECTED
+- FAILED
+
+W1 selection is a LAB result, not production activation.
+
+Later lifecycle extensions must preserve the existing ADAS promotion architecture.
+
+**`AgentCandidateRecord`**
+
+An immutable candidate snapshot containing identity, lineage, configuration references, status, timestamps and evidence references.
+
+Status changes must produce additional immutable historical records rather than silently overwrite historical evidence.
+
+**`AgentCandidateEvaluationResult`**
+
+Contains:
+
+- Baseline and candidate execution references.
+- Canonical EvalRun references.
+- Canonical EvalComparison reference or typed result.
+- Required evidence completeness verdict.
+- Mandatory acceptance verdict.
+- Utility result when sufficient evidence exists.
+- Failure and rejection reasons.
+
+**`AgentCandidateEvidenceBundle`**
+
+Contains immutable references and digests sufficient to verify:
+
+- Accepted objective and configuration boundaries.
+- Baseline identity.
+- Candidate identity and lineage.
+- Static validation.
+- Actual execution identities.
+- Evaluation inputs and outcomes.
+- Resource evidence.
+- Selection outcome.
+
+Evidence hashes must be based on a deterministic canonical serialization.
+
+Do not treat hashes alone as authorization or correctness proof.
+
+## 5.22 Candidate archive
+
+`AgentDesignArchive` is the canonical ADAS archive protocol.
+
+Required operations:
+
+- Append immutable candidate records.
+- Retrieve candidate records within an explicit scope.
+- Retrieve candidate history.
+- List candidates by scoped objective.
+- Retrieve candidate lineage.
+- Append and retrieve sealed evidence bundles.
+
+Implementations planned for W1:
+
+- In-memory archive.
+- SQLite archive.
+
+Every public retrieval operation must require explicit tenant and workspace scope.
+
+Cross-tenant and cross-workspace retrieval must be rejected without exposing foreign record contents.
+
+Candidate identity, objective identity, scope, baseline lineage and configuration digest must remain consistent across lifecycle transitions.
+
+A duplicate identity with different immutable content must fail.
+
+An exact duplicate append may be idempotent.
+
+Both archive implementations must expose equivalent semantic behavior.
+
+SQLite persistence must survive close and reopen.
+
+Use an explicit database path in LAB tests.
+
+No production database migration or default production database initialization.
+
+The archive stores candidate-specific lineage and evidence references. It must not duplicate the general experiment, evaluation, profile-version or memory authorities.
+
+## 5.23 Scope and baseline binding
+
+The controller must obtain its accepted scope from existing authoritative admission context or a separately admitted LAB composition.
+
+A tenant or workspace string supplied by the candidate is not sufficient authority.
+
+When resolving a ProfileVersionStore reference, validate:
+
+- Exact version identity.
+- Tenant identity.
+- Task class.
+- Expected artifact type.
+- Configuration digest.
+- Accepted scope.
+
+`ProfileVersionStore.get(version_id)` is not itself a tenant-authorized retrieval proof.
+
+Reject foreign or inconsistent records before candidate execution.
+
+Do not modify the existing ProfileVersionStore in W1.
+
+## 5.24 Static candidate gate
+
+`AgentStaticGate` shall validate configuration-only candidates.
+
+The W1 gate must reject:
+
+- Foreign tenant or workspace.
+- Incorrect objective or search-run binding.
+- Incorrect baseline identity or digest.
+- Unknown configuration surface.
+- Configuration value outside the explicit allowed set.
+- Multiple configuration changes.
+- No-op configuration changes.
+- Permission expansion.
+- Model, tool, capability or policy modification outside accepted scope.
+- Generated executable code.
+- Changes to external-effect policy.
+- Missing mandatory provenance.
+
+The gate must produce a structured rejection reason.
+
+Rejected candidates must be archived.
+
+No rejected candidate may reach experimental execution.
+
+Full executable agent scaffold materialization remains outside W1.
+
+Do not declare AHI-ADAS-20 complete from configuration-only evidence.
+
+## 5.25 Search policy and resource control
+
+`AgentDesignSearchPolicy` owns bounded ADAS search coordination only.
+
+Existing platform runtime remains authoritative for resource enforcement.
+
+W1 limits:
+
+- At most one proposed candidate.
+- At most two root task executions.
+- Sequential execution.
+- Explicit bounded child work inside each root execution.
+- Finite aggregate token limit.
+- Finite aggregate monetary cost limit.
+- Finite deadline.
+- No uncontrolled retries.
+- Explicit cancellation.
+
+Reuse:
+
+- `intergrax/contracts/run_budget.py`
+- `intergrax/contracts/execution_budget_ledger_port.py`
+- `intergrax/runtime/execution/budget/ledger.py`
+- `intergrax/runtime/architecture/cost_budget.py`
+
+RunBudget and the execution ledger are per-execution mechanisms.
+
+BudgetEnvelope evaluation is not by itself proof of hard monetary enforcement.
+
+ADAS shall coordinate a fixed search envelope and canonical per-run limits without introducing a second platform budget authority.
+
+Before each execution:
+
+- Check remaining search allowance.
+- Check remaining deadline.
+- Check cancellation.
+- Obtain valid canonical resource admission.
+- Ensure the maximum admitted consumption fits the remaining allowance.
+
+After each execution:
+
+- Reconcile authoritative resource consumption.
+- Record evidence references.
+- Do not silently substitute zero for unknown consumption.
+- Do not dispatch another execution while previous consumption is unknown or unreconciled.
+
+W1 behavioral qualification shall use a deterministic offline LAB with zero external provider calls and zero external monetary charges.
+
+Do not claim qualification of non-zero-cost provider admission from this offline witness.
+
+## 5.26 Candidate generation strategy
+
+Define the canonical `AgentDesignStrategy` protocol.
+
+Its responsibility is proposal generation only.
+
+It cannot execute candidates, promote configuration, modify runtime state or grant permissions.
+
+Implement the planned `RuleBasedVariantStrategy` for W1.
+
+It receives an accepted objective, immutable baseline reference and admitted alternatives.
+
+It returns at most one candidate that differs on exactly one permitted configuration surface.
+
+The W1 strategy is deterministic.
+
+No LLM proposal call is required.
+
+## 5.27 Experimental execution and evaluation
+
+`experiment_bridge.py` shall implement the ADAS integration seam, not an execution engine.
+
+Reuse existing LAB execution and experiment authorities:
+
+- `ExperimentSession`.
+- `ExperimentPersistence`.
+- `UnifiedTaskRunner`.
+- Existing governed harness root execution port.
+- Canonical runtime budget enforcement.
+
+The eventual W1 integration must bind the actual effective configuration to the execution identity.
+
+A configuration digest attached only to metadata is insufficient evidence that the execution consumed the configuration.
+
+Use the existing host composition to materialize the approved configuration.
+
+Use isolated experiment state and equivalent task inputs.
+
+`AgentCandidateEvaluator` shall integrate:
+
+- `EvaluatorRegistry`.
+- `EvalDataset`.
+- `EvalRun`.
+- `EvalSubjectOutput`.
+- `execute_eval_run()`.
+- `compare_eval_runs()`.
+- `compute_utility()`.
+
+The existing typed evaluation executor is synchronous. Do not start nested event loops or repeat task execution merely to construct EvalRun.
+
+Capture actual asynchronous execution outcomes first, then supply those captured outcomes to the existing evaluation composition.
+
+Bind each captured outcome to its exact scenario and execution identity.
+
+Existing EvalRun telemetry and verdict types remain authoritative.
+
+Do not introduce a competing evaluation engine.
+
+The NexusEvalRunner may return zero cost or token values when telemetry is absent. ADAS must distinguish measured zero from unknown data.
+
+If a required metric or mandatory evidence is missing, the candidate cannot be accepted on the basis of that missing value.
+
+## 5.28 Selection semantics
+
+W1 supports exactly three semantic outcomes:
+
+- SELECT_CANDIDATE.
+- RETAIN_BASELINE.
+- ABSTAIN.
+
+Selection rules:
+
+1. Reject unqualified, unsafe or out-of-scope candidates.
+2. Reject comparison across different tenant, objective or dataset identities.
+3. Reject missing mandatory evidence.
+4. A candidate may be selected when it satisfies mandatory acceptance criteria and demonstrates an evidence-backed improvement over the baseline.
+5. When both configurations are acceptable and improvement is insufficient, retain baseline.
+6. When the candidate is unacceptable but baseline remains acceptable, retain baseline.
+7. When no configuration is acceptable, abstain.
+8. When mandatory evidence does not support a reliable comparison, abstain.
+
+Utility scoring cannot override mandatory safety, authority, correctness or evidence failures.
+
+Selection must never activate a configuration.
+
+## 5.29 Search controller
+
+`AgentDesignSearchController` coordinates existing ADAS and platform mechanisms.
+
+Prescribed algorithm:
+
+1. Validate admitted scope and objective.
+2. Resolve and verify baseline.
+3. Admit bounded search.
+4. Execute baseline once.
+5. Reconcile resource consumption.
+6. Generate at most one candidate.
+7. Archive candidate draft.
+8. Run static candidate gate.
+9. Archive rejection and terminate safely if validation fails.
+10. Recheck resource allowance.
+11. Execute candidate once.
+12. Reconcile resource consumption.
+13. Construct canonical evaluation evidence from actual outcomes.
+14. Compare baseline and candidate.
+15. Determine selection, baseline retention or abstention.
+16. Archive terminal candidate snapshot and evidence bundle.
+17. Return search outcome and stop reason.
+
+The controller must not directly invoke agent execution methods, provider SDKs or tool handlers.
+
+It must not invoke adaptation promotion, configuration activation or trusted memory publication.
+
+Exceptions, cancellation and accounting failures must produce explicit non-success outcomes.
+
+## 5.30 First executable behavioral witness
+
+The initial proposed W1 qualification uses an existing configuration surface:
+
+**`MergeStrategy`**
+
+Existing source:
+
+`intergrax/contracts/orchestration_enums.py`
+
+Existing consumer:
+
+`intergrax/runtime/nexus/nexus_loop.py`
+
+`intergrax/runtime/nexus/response/final_response_composer.py`
+
+Configuration pair:
+
+- Baseline: LAST_WINS.
+- Candidate: CONCAT.
+
+The synthetic deterministic task requires the final response to preserve two independently produced result markers.
+
+Both arms must use:
+
+- Identical tenant and workspace.
+- Identical task input.
+- Identical accepted objective.
+- Identical registered agents.
+- Identical capability and authority.
+- Identical dataset and evaluators.
+- Identical external-effect restrictions.
+- Identical resource limits.
+
+Only the admitted merge strategy may differ.
+
+Both arms must execute through the existing canonical LAB root execution path, with an actual bounded multi-agent graph.
+
+The existing FinalResponseComposer must consume the effective configuration.
+
+Do not replace the real composition path with mocked final answers.
+
+Test-only deterministic agents are permitted for the behavioral witness.
+
+If the reviewed execution path does not expose the selected configuration behavior, report the exact gap. Do not silently switch to another configuration surface, weaken the witness or modify protected owner components.
+
+**Required positive witness:**
+
+- Baseline and candidate receive distinct canonical execution identities.
+- Baseline loses at least one required result marker.
+- Candidate preserves both required result markers.
+- Independent deterministic evaluation distinguishes the results.
+- Candidate is selected.
+- Evidence is archived.
+- No production promotion occurs.
+- No real external effects occur.
+
+**Required negative witnesses:**
+
+- Foreign tenant rejected before dispatch.
+- Foreign workspace rejected before dispatch.
+- Invalid configuration rejected before candidate dispatch.
+- Missing mandatory evaluation evidence prevents selection.
+- Missing resource accounting prevents additional dispatch.
+- Exhausted budget prevents additional dispatch.
+- Cancellation prevents additional dispatch.
+- Unacceptable baseline and candidate produce ABSTAIN.
+- No improvement with acceptable baseline produces RETAIN_BASELINE.
+- Archive evidence survives restart.
+
+This witness qualifies deterministic configuration adaptation and canonical composition only.
+
+It is not a general benchmark of intelligent adaptation or a production readiness claim.
