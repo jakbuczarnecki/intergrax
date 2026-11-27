@@ -2,11 +2,11 @@
 
 ## Scope
 
-Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C R3.1 corrective scope is closed with formal G6 `II-W0-R31-FORMAL-G6-01`. Identifier T-IGX-079-D checked unallocated at preparation remote SHA `89f0aed35ae7cbc199f981d329daf38cd61c136e`. No II-W0-05, II-W0-06, executable W1, product code, gate opening or normative D1/D2 edits.
+Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C records formal scoped G6 `II-W0-R31-FORMAL-G6-01` with documented non-blocking limitations; ticket lifecycle `ready_for_audit` until separate Operator closure sign-off (closure authority pending in this preparation batch). Identifier T-IGX-079-D checked unallocated at preparation remote SHA `89f0aed35ae7cbc199f981d329daf38cd61c136e`. No II-W0-05, II-W0-06, executable W1, product code, gate opening or normative D1/D2 edits.
 
 ## Plan digest
 
-Plan digest: 3206fefb3c1b5bdf99c9ba41c3428d283a0d39169648396acdcb2b3b5b3fe3f8
+Plan digest: ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81
 
 ## Approved
 
@@ -14,7 +14,7 @@ _(pending formal review and Operator or commissioned eligible delegate; no appro
 
 ## Test contract
 
-See linked plan Test contract; execute actual validators sequentially in authorized workspace after plan approval only; preserve command, exit code and evidence.
+See linked plan Qualification contract (Q01–Q08); execute actual validators sequentially in authorized workspace after plan approval only; preserve command, exit code and evidence.
 
 ## Out of scope
 
@@ -27,3 +27,5 @@ plan_pending
 ## Checkpoint
 
 **II-W0-A-PREP-01 (2026-11-27):** Ticket and plan prepared at `plan_pending`; digest computed; no `Approved:` line; no W0-A deliverable execution; terminal preparation state `W0_A_PLAN_PREPARED_PENDING_OPERATOR_APPROVAL`.
+
+**II-W0-A-PREP-FINAL-01 (2026-11-27):** Exact execution write-set, Package D positive oracle, Q01–Q08 qualification contract and lifecycle sequencing bound in plan; F-W0A-04 Operator ticket closure authority pending (no closure decision supplied with this batch); lifecycle remains `plan_pending`; no W0-A deliverable execution.
