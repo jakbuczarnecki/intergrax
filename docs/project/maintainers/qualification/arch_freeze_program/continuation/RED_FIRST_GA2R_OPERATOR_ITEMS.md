@@ -1,8 +1,8 @@
 # GA.2R Operator items (ready packet)
 
-Ticket: `T-IGX-078-B`. Prepared 2026-11-27. Status: **not decided, not applied**.
+Ticket: `T-IGX-078-B`. Prepared 2026-11-27. Status: **decided 2026-11-27** (Operator chat answer "Accept all (Recommended)" to the OP-B packet; every recommendation accepted). Recorded in the decision register rows OD-AF-CLOSE-B1..B5 and in the addendum of `RED_FIRST_V5_RED_CLASSES_DECISION.md` (ticket T-IGX-078-F). The text below is the packet as prepared.
 
-This packet changes no disposition, signs no card and edits no decision record. The orchestrator takes it to the Operator before RW-PLAN-AUDIT round 2. Evidence: [`RED_FIRST_GA2R_RESULT.md`](RED_FIRST_GA2R_RESULT.md).
+When prepared, this packet changed no disposition, signed no card and edited no decision record. The orchestrator takes it to the Operator before RW-PLAN-AUDIT round 2. Evidence: [`RED_FIRST_GA2R_RESULT.md`](RED_FIRST_GA2R_RESULT.md).
 
 ## Item 1: quote or relay reference for the six existing dispositions (audit M5)
 
@@ -59,3 +59,9 @@ This packet changes no disposition, signs no card and edits no decision record. 
 | C | Defer the decision. | `T-IGX-078-C` may be planned, but the part that needs the inversion cannot merge; both rows stay open. |
 
 **Recommendation:** A, decided no later than the plan approval of `T-IGX-078-C`.
+
+## Decisions recorded 2026-11-27 (T-IGX-078-F)
+
+- **Item 1:** option B. The six dispositions are re-confirmed as a new decision dated 2026-11-27 (register row OD-AF-CLOSE-B1). The 2026-11-26 record is unchanged; the confirmation is later than the application and also covers the checker change in `a61eeaedf`.
+- **Item 2:** option A (register row OD-AF-CLOSE-B2; addendum in the RED-CLASSES record). Red-first is due at the listed owner tickets; no evidence is claimed now. Sub-question: FRZ-DEBT-02 and FRZ-DEBT-03 stay `EVIDENCE_MISSING` until a seeded red case is shown.
+- **Item 3:** option A (register row OD-AF-CLOSE-B3). The inversion of the two EBH-6 Q2-D2 test files lands with the `T-IGX-078-C` product fix after independent review. Record only; those files are not edited by T-IGX-078-F.
