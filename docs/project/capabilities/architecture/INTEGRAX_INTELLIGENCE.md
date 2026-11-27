@@ -25,6 +25,7 @@ Use, modification, or distribution without written permission is prohibited.
 | Evidence level | Canonical documentation and selected source inspection; no fresh executable qualification |
 | R1 preparation baseline | `32005c212ed4debca91f607ee30b3abfab79ce6c` (not an audited qualification SHA) |
 | R2 documentation review baseline | `7d2cc3d28640df4823fa04e07abdc8f98451ccc6` (target blobs unchanged; not a qualified Foundation pin) |
+| R3 corrective proposal | R2 independent document audit at `3190a448707b9ca0835ba354d4cbd18c23565408`; preparation comparison `69cb5844285f8f65153818fc8d471b0b5edb1ac2`. Proposed delta only, independent delta review and formal ratification pending. |
 | Historical v1.0 blob | `3ffd8de71737a3b606a72e89e439854eabaf9ef2` |
 | Canonical roadmap | [`INTELLIGENCE-X-MASTER-PLAN.md`](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md) |
 | Execution register | [`plan/INTEGRAX_INTELLIGENCE.md`](../plan/INTEGRAX_INTELLIGENCE.md) |
@@ -43,7 +44,7 @@ Use, modification, or distribution without written permission is prohibited.
 8. [Detailed implementation design](#8-detailed-implementation-design)
 9. [Enterprise safety and operations](#9-enterprise-safety-and-operations)
    - [Cross-cutting operational requirements (II-OPR-01..07)](#ii-opr)
-10. [Canonical roadmap pointer](#10-implementation-roadmap-w0w9)
+10. [Canonical roadmap pointer](#10-canonical-roadmap-pointer)
 11. [Behavioral benchmark](#11-behavioral-benchmark)
 12. [Gates and definition of done](#12-gates-and-definition-of-done)
 13. [Program dependencies and product adoption](#13-program-dependencies-and-product-adoption)
@@ -399,7 +400,7 @@ flowchart TD
 
 **Purpose:** optimize verified outcomes against cost, time, model capability, context, concurrency and available compute.
 
-**Reuse:** Model Routing, Execution budgets, worker budget admission, token/context budgets, capacity, elastic scaling, background tasks and AHI.
+**Reuse:** Model Routing, canonical Budget (RunBudget ledger and enforcement), Execution coordination, worker budget admission, token/context budgets, capacity, elastic scaling, background tasks and AHI.
 
 **Target:** allocate bounded child budgets, enforce aggregate limits/deadlines, choose permitted models by complexity, track committed/actual costs, avoid redundant work, detect non-productive loops, qualify distributed admission/backpressure through existing capacity services. No hardcoded production provider selection.
 
@@ -469,7 +470,7 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-These labels are a proposed semantic projection, not a new lifecycle, persisted state machine or enum. Map them to actual Execution, Task, WorkItem, Decision and Autonomous Work state contracts before implementation. Terminalization, cancellation, retries and resume belong to canonical owners. Waiting must have a durable reason, event or deadline and a validated resume condition. Escalation is not success. Partial outcomes must be explicitly classified.
+These labels are a proposed semantic projection, not a new lifecycle, persisted state machine or enum. Map them to actual Execution, Task, WorkItem, Decision and Autonomous Work state contracts before implementation. Terminalization, cancellation, retries and resume belong to canonical owners. Under UEA retry semantics, local provider/tool/step and same-logical-Execution retries preserve Task/Run/Attempt/Execution identity; record local retry metadata or execution retry generation, not a new AttemptId. Whole-Run retry alone creates a new Attempt and new Execution instances under authorized UER policy. Pause/resume and redelivery of the same work preserve identity; reconcile uncertain effects before repetition. Waiting must have a durable reason, event or deadline and a validated resume condition. Escalation is not success. Partial outcomes must be explicitly classified.
 
 ### 6.3 Failure and continuation matrix
 
@@ -504,7 +505,9 @@ These labels are a proposed semantic projection, not a new lifecycle, persisted 
 | Inter-agent coordination | Orchestration/Nexus shared context and handoff; exact owner for message extension resolved in W1 |
 | Tool selection and invocation | Existing tool cognition; ToolRuntime owns execution of tools |
 | Context assembly, retrieval and retention | Context Engineering, UCL, Memory and RAG under their existing owners |
-| Policy, identity, approval and admission | Governance and canonical security boundaries |
+| Principal and policy authority, permission and approval decisions | Governance and canonical security boundaries; Execution applies admission/lifecycle consequences through the mandatory configured child-authority checkpoint (UEA-INV-022). |
+| RunBudget accounting, reservations, consumption, release/reconciliation and enforcement | Budget subsystem; Execution coordinates access, Nexus requests work under reservation, Agent/Tool consume through canonical budget contracts. No competing ledger. |
+| Capacity admission and workload allocation | Capacity; coordinate with Execution and Budget without taking over accounting. Autonomous Work owns its worker envelope; Context Engineering owns input-context budget. |
 | Semantic decisions and deliberation | Decision System / Decision Deliberation |
 | Semantic verification | Decision Verification; outcome criteria remain domain/product-owned |
 | Retry, recovery, uncertainty and compensation | Execution / ERL / Self-Healing; Worker-level recovery remains Autonomous Work |
@@ -738,7 +741,7 @@ Every product that needs goal realization uses one consumption contract. The con
 
 Consumers are Scenario Factory, SEF-X, Autonomous Work, CodeCraft, domain agents, and future applications. Products do not build their own general goal loop. No new public API or class is introduced before W1 reconciles existing types. The contract does not replace Execution admission or Governance permissions.
 
-Owners: Execution, Cognition, Governance, and the existing host contracts. Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-01, II-AC-02, II-AC-12.
+Owners: Execution, Cognition, Governance, Budget (accounting/enforcement), and the existing host contracts. Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-01, II-AC-02, II-AC-12.
 
 ### II-OPR-02 — Composition and Reuse
 
@@ -756,7 +759,7 @@ Implementation and qualification mapping: [master roadmap §8](../../../../gover
 
 ### II-OPR-04 — Scalability and Isolation
 
-The capability must scale and isolate inside existing capacity, scheduling, persistence, and execution mechanisms. Required properties: horizontal scaling; real multi-worker execution; distributed admission; workload-aware allocation; aggregate budgets; tenant isolation; workload isolation; bounded fan-out and fan-in; fairness and starvation prevention; backpressure; overload protection; provider-quota respect; controlled degradation; cancellation propagation; and retry-amplification protection.
+The capability must scale and isolate inside existing capacity, scheduling, persistence, and execution mechanisms. Budget owns RunBudget accounting/enforcement; distributed implementations must preserve this single semantic authority. Required properties: horizontal scaling; real multi-worker execution; distributed admission; workload-aware allocation; aggregate budgets; tenant isolation; workload isolation; bounded fan-out and fan-in; fairness and starvation prevention; backpressure; overload protection; provider-quota respect; controlled degradation; cancellation propagation; and retry-amplification protection.
 
 There is no global mutable Intelligence state and no central Intelligence queue outside existing mechanisms. Process-local concurrency is not distributed evidence. Qualification profiles are LOAD, STRESS, SPIKE, SOAK, RECOVERY, and MIXED-TENANT. W1 defines the concrete conditions for each profile. W8 shows real concurrent multi-consumer, multi-tenant load on the same consumption contract.
 
@@ -787,7 +790,7 @@ Each failure class below has a detection signal, a canonical owner, a permitted 
 | Contradictory evidence | Two admissible artifacts disagree on a material fact | Decision Verification / Decision Deliberation | Resolve from evidence or escalate explicitly | Both artifacts and the verdict or escalation | Escalate or stop rather than guess | Choose the convenient result without a recorded reason |
 | Uncertain external effect | The platform cannot tell whether an external effect occurred | ERL | Reconcile the canonical effect identity before any retry; compensate only under its own authorized contract | Uncertainty record and reconciliation result | Wait or stop while the effect is unknown | Blind retry or a new identity that avoids deduplication |
 | Unavailable permitted capability | An allowed capability cannot be bound | Tool and capability owners | Defer, or use an independently permitted alternative | Capability reference and denial or deferral reason | Stop or wait inside the autonomy envelope | Import or activate an unqualified implementation |
-| Exhausted budget | Time, token, cost, attempt, depth, or capacity budget is spent | Execution | Checkpoint and record an explicit disposition | Budget ledger and remaining-zero cause | Stop; do not continue the goal | Raise the budget or reset counters through delegation |
+| Exhausted budget | Time, token, cost, attempt, depth, or capacity budget is spent | Budget (RunBudget enforcement and accounting); Execution (checkpoint/disposition); Capacity and other envelope owners within their own scopes | Checkpoint and record an explicit disposition | Budget ledger and remaining-zero cause | Stop; do not continue the goal | Raise the budget or reset counters through delegation |
 | Stalled workflow | Repeated attempts show no change in verified progress | Execution / diagnostics / Cognition | Bounded strategy change, or stop | Attempt history and progress projection | Stop when the bounded alternatives are exhausted | Infinite identical retries or endless replanning |
 | Provider throttling | Provider quota or rate signal | Routing / capacity | Back off through existing quota and backpressure controls | Quota signal and delay decision | Wait until the quota window or stop at the deadline | Unbounded retry that amplifies load |
 | Workload overload | Admission or queue pressure exceeds the qualified envelope | Capacity / Execution | Backpressure, controlled degradation, or rejection of new work | Pressure signal and shed or delay decision | Refuse new admission rather than collapse admitted work | Bypass admission to keep throughput |
@@ -833,7 +836,7 @@ These are qualification workloads, not six commercial applications. Use existing
 ### 11.2 Measurement protocol
 
 1. Define objective and acceptance oracle for every task. Record expected failure/recovery classification before the trial. Include irrecoverable, unauthorized and ambiguous cases so the system is rewarded for safe stopping when appropriate.
-2. Separate development tasks, tuning tasks and sealed held-out qualification tasks. Do not feed held-out outcomes into planning experience or evaluator training before certification.
+2. Separate four populations: development, tuning, wave qualification (including wave-specific held-out tasks), and final sealed W9 held-out qualification. The final population, answers, oracles and task-level outputs are isolated from W2–W8 implementation, tuning, strategy selection, experience, evaluator training and model/profile choice. W1 binds versioned manifests, custody, access/reveal authority, overlap checks (including materially equivalent tasks), contamination negatives and failure disposition in the roadmap §9. A matched W1 final-population baseline, if required, is run blind under independent custody; only predeclared safe aggregate evidence is released before W9. No post-failure threshold or population retuning without authorized requalification.
 3. Capture the W1 baseline with the exact implementation SHA, model versions/profiles, tools, datasets, seeds where supported, authority envelope, concurrency, budgets and environment. Save reproducible commands, raw outputs and per-run receipts.
 4. Use matched conditions for baseline-versus-target comparison. For external harness comparisons, match task, accessible tools, model profile where possible, permission and budget; report differences and inability to isolate the harness effect. Do not claim parity with Claude Code, Antigravity or another product without controlled evidence.
 5. Measure multiple independent trials for non-deterministic workloads; report sample counts, observed proportions and uncertainty intervals. Determine sample sizes and acceptance rules in W1 before target trials. Do not claim statistical confidence from one successful demonstration.
@@ -917,13 +920,13 @@ Close the program against a finite approved consumer-readiness contract. Do not 
 
 ### 13.1 Proposed strategic dependency graph
 
-The strategic dependency diagram from revision 1.0 is preserved in the master roadmap. It is a roadmap diagram, so it is not repeated here. The prose below remains the architectural reading of product adoption.
+The corrected strategic dependency diagram is in the master roadmap; its normative predicates and external adoption obligations are in that roadmap §4–6 and §12. It is a roadmap diagram, so it is not repeated here. The prose below remains the architectural reading of product adoption.
 
 This is a proposed strategic graph, not the current approved DAG. Existing detailed conditions remain mandatory unless formally amended. SEF-X non-conflicting preparatory or engineering-specific tasks may proceed under their existing authorization and technical dependencies; the full SEF product must not become a prerequisite of Intelligence qualification. The graph deliberately separates SEF-specific engineering work from adoption of Intelligence to avoid cycles.
 
-The current SFX roadmap places SFX-P5+ after ARCH-FREEZE and `GATE-SFX-ENTRY`. The agreed strategic direction requires a later authorized amendment to add scoped `GATE-INTELLIGENCE-CONSUME` after formal adoption of that dependency. This candidate does not edit the SFX plan. Preserve existing SFX-P0..P4 documentation, design and proposal-only exceptions. Do not delete previous approvals or reclassify already valid research. Existing `GATE-SEF-CONSUME` and `GATE-SFX-FULL` remain separate. Existing SFX product closure does not admit generated scenarios to production.
+The current SFX roadmap places SFX-P5+ after ARCH-FREEZE and `GATE-SFX-ENTRY`. The agreed strategic direction requires a later authorized amendment to add scoped `GATE-INTELLIGENCE-CONSUME` after formal adoption of that dependency. This candidate does not edit the SFX plan. Preserve existing SFX-P0..P4 documentation, design and proposal-only exceptions. Do not delete previous approvals or reclassify already valid research. Existing `GATE-SEF-CONSUME` is the SFX consumption of qualified SEF mechanisms (agentic engineering); it is not the SEF adoption of Intelligence. `GATE-SEF-FULL` retains its existing SEF qualification meaning; `GATE-SFX-FULL` stays separate. Shared Intelligence adoption by SEF is scoped by `GATE-INTELLIGENCE-CONSUME` after formal amendment, without adding a predecessor to existing SEF gates. Existing SFX product closure does not admit generated scenarios to production.
 
-**Important roadmap consistency rule:** INTELLIGENCE-X is proposed as a mandatory *post-freeze* stage. The canonical roadmap's general language about all mandatory stages preceding ARCH-FREEZE and SCENARIO-GATE must be amended explicitly to avoid a dependency cycle. Preserve the current ARCH-FREEZE baseline scope and historical certificates. The strategic direction accepted in chat is scoped consumer adoption, not expansion of general SCENARIO-READINESS-X/SCENARIO-GATE. Formal repository ratification remains pending; W0-06 must explicitly exclude INTELLIGENCE-X from both general mandatory-stage predecessor quantifiers and reconcile all consumer entry references. Preserve OD-SEF-02 Option 3 except for explicitly approved technical dependency changes; analyze the current R2 SFX/SEF amendment records before editing approved plans or digests.
+**Important roadmap consistency rule:** INTELLIGENCE-X is proposed as a mandatory *post-freeze* stage. The canonical roadmap's general language about all mandatory stages preceding ARCH-FREEZE and SCENARIO-GATE must be amended explicitly to avoid a dependency cycle. Preserve the current ARCH-FREEZE baseline scope and historical certificates. The strategic direction accepted in chat is scoped consumer adoption, not expansion of general SCENARIO-READINESS-X/SCENARIO-GATE. Formal repository ratification remains pending; W0-06 must define and obtain approval of the finite Foundation acceptance binding specified in master roadmap §4.1 (definition before W1; actual acceptance evidence before GATE-II-ENTRY). W0-06 must explicitly exclude INTELLIGENCE-X from both general mandatory-stage predecessor quantifiers and reconcile all consumer entry references. Preserve OD-SEF-02 Option 3 except for explicitly approved technical dependency changes; analyze the current R2 SFX/SEF amendment records before editing approved plans or digests.
 
 ### 13.2 Consumer responsibilities
 
@@ -1135,4 +1138,4 @@ Candidate tests identified by tree inspection for W1 replay include `tests/accep
 
 **Status of this file:** FINAL DRAFT — PENDING INDEPENDENT REVIEW AND FORMAL RATIFICATION.
 
-This candidate is ready for architecture review. It does not ratify the program, does not qualify behavior, and does not authorize implementation. The next eligible action is independent review of this candidate together with the master roadmap and the execution register. Executable W1 still requires GATE-II-ENTRY. Do not restart or expand active Enterprise Campaign implementation on the basis of this document.
+This R3 documentation proposal incorporates the independent R2 findings for review; acceptance of the corrective delta and formal ratification remain pending. It does not ratify the program, does not qualify behavior, and does not authorize implementation. The next eligible action is independent review of this candidate together with the master roadmap and the execution register. Executable W1 still requires GATE-II-ENTRY. Do not restart or expand active Enterprise Campaign implementation on the basis of this document.

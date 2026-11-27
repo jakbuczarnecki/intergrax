@@ -12,6 +12,7 @@ Use, modification, or distribution without written permission is prohibited.
 |---|---|
 | Document | Canonical work breakdown for Integrax Intelligence |
 | Revision | 1.0 |
+| Corrective candidate | R3 proposal — independent R2 review CHANGES_REQUIRED; R3 plan approval, delta review and formal ratification pending |
 | Status | **FINAL DRAFT — PENDING INDEPENDENT REVIEW AND FORMAL RATIFICATION** |
 | Architecture | [Revision 1.1](../../../docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md) |
 | Program | `INTELLIGENCE-X` |
@@ -100,8 +101,16 @@ At review baseline `7d2cc3d28640df4823fa04e07abdc8f98451ccc6`, [SFX wave entry d
 - SFX R1, in [`SFX-MASTER-PLAN.md`](SFX-MASTER-PLAN.md), authorizes a bounded pre-freeze scope and stops before SFX-P5. `GATE-SFX-ENTRY` still requires ARCH-FREEZE closure, the accepted SFX ADRs, the signed SFX operator decisions named in that plan, a re-pinned inventory, and a sealed generalization set.
 - The adopted R2 overlay does not by itself authorize bounded autonomous multi-submit. HO-2 remains binding until OD-SEF-R2 and SEF acceptance. OD-SEF-R2 is still pending authority. CON-N-01 remains the human-submit contract until that authority exists.
 - After formal adoption of the dependency, SFX-P5+ requires `GATE-INTELLIGENCE-CONSUME`. That adoption has not been made. Existing SFX ADR and operator-decision prerequisites stay.
-- SEF-X keeps independent engineering work under OD-SEF-02 Option 3. `GATE-SEF-CONSUME` and `GATE-SEF-FULL` remain SEF gates. Scoped B6 stays a SEF concern. Intelligence-dependent SEF adoption needs consumer qualification. SEF does not become a prerequisite of Intelligence qualification.
+- SEF-X keeps independent engineering work under OD-SEF-02 Option 3. `GATE-SEF-CONSUME` is SFX admission to AGENTIC_ENGINEERING using qualified SEF mechanisms, with existing SFX §3.3 predicates unchanged. `GATE-SEF-FULL` is SEF qualification. Neither gate gains a new Intelligence-adoption predecessor. Scoped B6 stays a SEF concern. Intelligence-dependent SEF adoption needs consumer qualification. SEF does not become a prerequisite of Intelligence qualification.
 - Product-specific production admission is unchanged.
+
+### 4.1 Foundation acceptance binding (W0-06 definition; GATE-II-ENTRY evidence)
+
+W0-06 must obtain a finite, versioned, Operator- and affected AF/EC-owner-approved binding of the required Foundation scope against the canonical global roadmap, MEP-AF2, AF ledger and EQO closure matrix/authority records at pinned SHAs. For each mandatory criterion record canonical ID, source path and SHA, owner, required verdict, scope and accepted limitations, evidence locator and exact evidence SHA (or explicit pending evidence), and the decision authority. Enumerate the required EQO criteria or scoped subcriteria and justify inclusion/exclusion of every candidate concern against the Intelligence Foundation contract; do not assume all EQO C01–C25 or none are mandatory. Preserve existing mandatory AF scope and Path B live exceptions; no new waiver, promotion or closure. Approval of the binding fixes the predicate, not its satisfaction. The binding is a W0-06 deliverable and may be approved before AF/EC actual closure; actual evidence and authorized acceptance of every bound criterion at compatible exact baseline are required to open GATE-II-ENTRY. Zero undefined mandatory criteria and zero unresolved required verdicts at gate opening. If the set is not agreed, W0-06 and executable W1 remain blocked; never wait for an unspecified campaign outcome or infer acceptance from historical PASS_SCOPED. Review scope and evidence drift at entry without weakening the predicate.
+
+### 4.2 External reconciliation before adoption (not corrective R3 writes)
+
+W0-06 requires a source-pinned amendment matrix: global roadmap registration and explicit AF/SCENARIO-GATE quantifier exclusions; versioned SFX/SEF scoped overlays preserving historical plan digest/decision records; SFX W3/P4-B/P5 entry and fast-start handoff reconciliation; independent SEF work and READINESS-X unchanged; evidence-backed before/after predecessor sets and independent cycle check. W0-05 covers canonical Intelligence/navigation adoption, not changes to external program predicates. Resolve II-FIND-11 with SFX/governance authority: the T-IGX-070-C ticket at R2 audit SHA was plan_pending, lacked approval, and had digest 5b15f41e141c81c2de980d8e4312f3d3039c483a0a1c316e0e7c491a5928f19f while the G2 delegation expected 7c039ad2c00db38b6a1e0ac8f0feca204cfd39c4805efc584c4aaa92752e9925. Preserve signed OD-SFX-R2; reconcile actual approval history, exact digest, authority and lifecycle without backdating, before adopting the affected dependency amendment. Resolve II-FIND-12 with global-roadmap and SFX owners: compare the global SCENARIO-GATE mandatory-stage quantifier and SFX Wave 6 decision packet's sole-predecessor language; obtain an authoritative scoped predecessor set before/after amendment with zero unauthorized changes. No change to those external documents in R3; unresolved reconciliation blocks the relevant W0-06 adoption, not independent documentation preparation.
 
 ## 5. Gates
 
@@ -109,7 +118,7 @@ These gates are not G2 and not other DevOS ticket gates. Current statuses are ma
 
 | Gate | Required state before it can be used | What it means |
 |---|---|---|
-| `GATE-II-ENTRY` | ARCH-FREEZE formally closed; required Enterprise Campaign Foundation scope accepted; exact baseline recorded; required execution authority recorded | Executable W1 baseline work may start after W0 completion inside an approved scope; W2 also requires GATE-II-ARCH and qualified execution environment. Pre-freeze W0 proposals use their own authority. |
+| `GATE-II-ENTRY` | ARCH-FREEZE formally closed; every criterion in the W0-06 approved Foundation acceptance binding (§4.1) accepted with exact evidence; compatible baseline and required execution authority recorded | Executable W1 baseline work may start after W0 completion inside an approved scope; W2 also requires GATE-II-ARCH and qualified execution environment. Pre-freeze W0 proposals use their own authority. |
 | `GATE-II-ARCH` | W0 and W1 complete, including executable package scopes, canonical ownership, and the locked benchmark and acceptance method | Architecture eligibility for W2. Not capability certification. |
 | `GATE-II-CORE` | W2–W4 qualified | Goal execution, cognition, and team collaboration are integrated. |
 | `GATE-II-ADAPTIVE` | W5–W7 qualified | Tools, context, resources, recovery, verification, and experience behaviors are proved. |
@@ -148,7 +157,7 @@ The wave exit gate is never a prerequisite of a package producing that gate. An 
 
 ## 6. Dependency graph
 
-Package-to-package edges are the **Explicit dependencies** field of each package. Each package additionally depends on its wave entry as specified in §12. The diagram below is the conservative wave ordering; the full procedural graph is in §12. The v1.0 strategic product diagram is preserved unchanged after it.
+Package-to-package edges are the **Explicit dependencies** field of each package. Each package additionally depends on its wave entry as specified in §12. The diagram below is the conservative wave ordering; the full procedural graph is in §12. The corrected strategic product diagram follows; §4 and §5 govern its predicates.
 
 ```mermaid
 flowchart TD
@@ -171,24 +180,31 @@ flowchart TD
   W5 --> W6 --> W7 --> W8 --> W9
 ```
 
-### 6.1 Preserved strategic product diagram
+### 6.1 Corrected strategic product diagram (proposed after W0-06 adoption)
 
-Meaning is unchanged from architecture revision 1.0 §13.1. It is not a claim that any box is already true.
+External predicates are not altered by this diagram. W0 defines the Foundation binding, but does not depend on its actual satisfaction. GATE-SEF-CONSUME retains its existing SFX §3.3 requirements and receives no SEF-to-Intelligence adoption edge. W9 formal closure follows the gate decision and record as in §5.1.
 
 ```mermaid
 flowchart TD
-    AF[ARCH-FREEZE accepted] --> EF[Enterprise Foundation acceptance]
-    EQ[Required Enterprise Campaign closure] --> EF
-    W0[Authorized Intelligence architecture proposals] --> II[INTELLIGENCE-X W0-W9]
-    EF --> II
-    II --> G[GATE-INTELLIGENCE-CONSUME]
-    G --> SFX[Scenario Factory implementation SFX-P5+]
-    G --> SEFA[SEF-X adoption of shared intelligence]
-    SEF[SEF-X engineering-specific prerequisites] --> SEFA
-    SEFA --> SG[GATE-SEF-CONSUME]
-    SG --> SFXA[SFX agentic engineering modes and full closure]
+    W0["Authorized W0 documentation and dependency adoption"] --> B["Approved Foundation acceptance binding"]
+    AF["ARCH-FREEZE formally closed"] --> EF["Bound Foundation criteria accepted"]
+    B --> EF
+    EQ["Required EC/EQO evidence per binding"] --> EF
+    EF --> E["GATE-II-ENTRY plus W1 authority"]
+    W0 --> II["W1-W8 and W9-01..07"]
+    E --> II
+    II --> AC["AC-01..13 and independent AC-14 accepted"]
+    AC --> G["Authorized GATE-INTELLIGENCE-CONSUME decision"]
+    G --> R["Gate record, AC-14 and W9-08 completion"]
+    R --> X["Formal EXIT-W9"]
+    G --> SFX["SFX-P5+ after adopted additional gate"]
+    SFXE["Existing SFX entry conditions"] --> SFX
+    G --> SEFA["Scoped SEF adoption of Intelligence"]
+    SEF["Independent SEF engineering work and authority"] --> SEFA
+    SEF --> SG["Existing SFX GATE-SEF-CONSUME predicates"]
+    SG --> SFXA["SFX agentic engineering modes / full closure prerequisites"]
     SFX --> SFXA
-    G --> P[Future domain applications / Autonomous Workforce]
+    G --> P["Future domain applications / Autonomous Workforce within scope"]
 ```
 
 ### 6.2 Structural critical path
@@ -389,7 +405,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Implementation scope:** Prepare and formally adopt the architecture, roadmap and navigation through authorized tickets; reconcile original chapter 14 and T-IGX-079-A findings, including README scope and EOL drift; produce environment qualification plan.
 
-**Explicit exclusions:** No runtime/product changes or self-approval; only authorized document scope.
+**Explicit exclusions:** No runtime/product changes or self-approval; only authorized document scope. No semantic edits to external program plans/predicates; W0-06 owns authorized dependency amendments.
 
 **Required outputs:** Reviewed document set, adoption register, link/anchor results, digest approval and authorized publication records; environment trial specification.
 
@@ -429,25 +445,25 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Reuse strategy / prerequisite availability:** Existing canonical docs, applicable governance and owner authority; use document evidence only. No executable W1 dependency. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Prepare and obtain authorized adoption of the cross-program amendments in section 4, including every mandatory-stage quantifier and SFX fast-start reference.
+**Implementation scope:** Prepare and obtain authorized adoption of the cross-program amendments in section 4, including every mandatory-stage quantifier and SFX fast-start reference. Define and obtain approval of §4.1 binding and §4.2 amendment/reconciliation matrix; record external authority decisions. Actual AF/EC satisfaction is NOT required to approve the definition.
 
 **Explicit exclusions:** No unilateral edit of protected roadmap or approved plans; formally authorized amendment is in scope. No historical approval rewrite, no change to Foundation acceptance or live admission.
 
-**Required outputs:** Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests.
+**Required outputs:** Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests. Approved Foundation binding with ID/owner/source/verdict/evidence locator and pending evidence status; external reconciliation records and exact before/after predecessor sets.
 
 **Original acceptance criteria:** ARCH-FREEZE, EQO, SFX and SEF dependency changes explicitly ratified; no cycle
 
-**Mandatory positive behavior:** INTELLIGENCE-X follows Foundation; SFX-P5+ requires both entry conditions after adoption, with independent SEF work preserved.
+**Mandatory positive behavior:** INTELLIGENCE-X follows Foundation; SFX-P5+ requires both entry conditions after adoption, with independent SEF work preserved. Approved finite criteria manifest; affected owners reconcile II-FIND-11/12; authorized overlays preserve historical predicates and digests.
 
-**Mandatory negative behavior:** Reject dependency cycles, silent digest changes, expansion of ARCH-FREEZE/SCENARIO-GATE or bypass of HO-2.
+**Mandatory negative behavior:** Reject dependency cycles, silent digest changes, expansion of ARCH-FREEZE/SCENARIO-GATE or bypass of HO-2. Reject undefined criteria, inferred acceptance, missing authority, or using actual GATE-II-ENTRY as a prerequisite to W0-06.
 
-**Qualification scope:** Document/decision review: compare against cited canonical sources and independently verify the required record. Oracle: INTELLIGENCE-X follows Foundation; SFX-P5+ requires both entry conditions after adoption, with independent SEF work preserved. Negative: Reject dependency cycles, silent digest changes, expansion of ARCH-FREEZE/SCENARIO-GATE or bypass of HO-2.
+**Qualification scope:** Document/decision review: compare against cited canonical sources and independently verify the required record. Oracle: INTELLIGENCE-X follows Foundation; SFX-P5+ requires both entry conditions after adoption, with independent SEF work preserved. Negative: Reject dependency cycles, silent digest changes, expansion of ARCH-FREEZE/SCENARIO-GATE or bypass of HO-2. Additional mandatory oracle: Approved finite criteria manifest; affected owners reconcile II-FIND-11/12; authorized overlays preserve historical predicates and digests. Negative: Reject undefined criteria, inferred acceptance, missing authority, or using actual GATE-II-ENTRY as a prerequisite to W0-06.
 
 **Regression scope:** Global roadmap, AF/EQO, SFX R1/R2 and SEF authority records.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** A missing amendment can trigger premature product work; do not activate the new stage until formally adopted.
 
-**Required evidence:** Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Approved Foundation binding with ID/owner/source/verdict/evidence locator and pending evidence status; external reconciliation records and exact before/after predecessor sets.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -629,7 +645,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Design and seal six reference families with independent oracles, failure taxonomy, datasets, repeated-trial methodology and workload profiles..
 
-**Architecture requirement refs:** II-OPR-03, II-OPR-04, II-AC-11; final acceptance: II-AC-11
+**Architecture requirement refs:** II-OPR-03, II-OPR-04, II-AC-11, II-OPR-07; final acceptance: II-AC-11
 
 **Primary semantic owner:** Evaluation / domain adopters
 
@@ -639,25 +655,25 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Reuse strategy / prerequisite availability:** Accepted Foundation SHA and authorized W1; use the predeclared W1 method in §9, not the output of W1-07 as its own input. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Design and seal six reference families with independent oracles, failure taxonomy, datasets, repeated-trial methodology and workload profiles.
+**Implementation scope:** Design and seal six reference families with independent oracles, failure taxonomy, datasets, repeated-trial methodology and workload profiles. Seal the four populations and custody contract in §9, including wave-specific held-out fixtures disjoint from final W9.
 
 **Explicit exclusions:** No unapproved code changes; no invented qualification or live production admission.
 
-**Required outputs:** Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles.
+**Required outputs:** Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles. Versioned four-population manifests, disjointness and custody protocol, blind baseline/reveal authority and contamination-negative procedure.
 
 **Original acceptance criteria:** Reproducible task sets, seeds, oracles, failure taxonomy and held-out split
 
-**Mandatory positive behavior:** Independent runner can reproduce a task and classify safe stop versus false completion.
+**Mandatory positive behavior:** Independent runner can reproduce a task and classify safe stop versus false completion. Independent reviewer can verify versioned split manifests, access/reveal policy and reproduce allowed fixtures without exposing final content.
 
-**Mandatory negative behavior:** Reject leaked held-out outcomes, unbounded resources, unsafe live effects or ambiguous oracle.
+**Mandatory negative behavior:** Reject leaked held-out outcomes, unbounded resources, unsafe live effects or ambiguous oracle. Reject overlap/material equivalents, final leakage, untracked reveal or exposure to adaptation; test contamination detection.
 
-**Qualification scope:** Baseline qualification: independently reproduce the inventory, trace or trial using the W1 method in §9. Oracle: Independent runner can reproduce a task and classify safe stop versus false completion. Negative: Reject leaked held-out outcomes, unbounded resources, unsafe live effects or ambiguous oracle.
+**Qualification scope:** Baseline qualification: independently reproduce the inventory, trace or trial using the W1 method in §9. Oracle: Independent runner can reproduce a task and classify safe stop versus false completion. Negative: Reject leaked held-out outcomes, unbounded resources, unsafe live effects or ambiguous oracle. Additional mandatory oracle: Independent reviewer can verify versioned split manifests, access/reveal policy and reproduce allowed fixtures without exposing final content. Negative: Reject overlap/material equivalents, final leakage, untracked reveal or exposure to adaptation; test contamination detection.
 
 **Regression scope:** Existing qualified test harnesses and sandbox policies.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Biased workload or oracle can inflate success; re-seal before target trials and record changes.
 
-**Required evidence:** Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Versioned four-population manifests, disjointness and custody protocol, blind baseline/reveal authority and contamination-negative procedure.
 
 **Atomic obligations (implementation or qualification):** II-OPR-03.01, II-OPR-07.03
 
@@ -681,25 +697,25 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Reuse strategy / prerequisite availability:** Accepted Foundation SHA and authorized W1; use the predeclared W1 method in §9, not the output of W1-07 as its own input. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Execute baseline through existing admitted runtime on approved reference workloads; record failures, interventions, cost, latency and resource metrics.
+**Implementation scope:** Execute baseline through existing admitted runtime on approved reference workloads; record failures, interventions, cost, latency and resource metrics. Use the §9 blind final-population baseline only if required for matched comparison and under independent custody.
 
 **Explicit exclusions:** No unapproved code changes; no invented qualification or live production admission.
 
-**Required outputs:** Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths.
+**Required outputs:** Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths. Custody log, manifest IDs and matched baseline linkage, disclosure record.
 
 **Original acceptance criteria:** Baseline raw trials, outcome, cost, latency, interventions and uncertainty
 
-**Mandatory positive behavior:** Baseline can be independently reproduced or its bounded nondeterminism quantified.
+**Mandatory positive behavior:** Baseline can be independently reproduced or its bounded nondeterminism quantified. Raw baseline retained by independent custody; only allowed aggregate feedback is released.
 
-**Mandatory negative behavior:** Reject synthetic PASS, omitted failed attempts, unmatched model claims or unapproved production calls.
+**Mandatory negative behavior:** Reject synthetic PASS, omitted failed attempts, unmatched model claims or unapproved production calls. Reject leakage of final tasks, oracles or task-level baseline results to implementers.
 
-**Qualification scope:** Baseline qualification: independently reproduce the inventory, trace or trial using the W1 method in §9. Oracle: Baseline can be independently reproduced or its bounded nondeterminism quantified. Negative: Reject synthetic PASS, omitted failed attempts, unmatched model claims or unapproved production calls.
+**Qualification scope:** Baseline qualification: independently reproduce the inventory, trace or trial using the W1 method in §9. Oracle: Baseline can be independently reproduced or its bounded nondeterminism quantified. Negative: Reject synthetic PASS, omitted failed attempts, unmatched model claims or unapproved production calls. Additional mandatory oracle: Raw baseline retained by independent custody; only allowed aggregate feedback is released. Negative: Reject leakage of final tasks, oracles or task-level baseline results to implementers.
 
 **Regression scope:** Existing qualification and observability.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Incomparable measurements invalidate uplift; repeat matched baseline or report non-comparability.
 
-**Required evidence:** Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Custody log, manifest IDs and matched baseline linkage, disclosure record.
 
 **Atomic obligations (implementation or qualification):** II-OPR-03.16
 
@@ -727,7 +743,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Explicit exclusions:** No unapproved code changes; no invented qualification or live production admission.
 
-**Required outputs:** Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan.
+**Required outputs:** Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan. Lock four-population manifests, custody, blind baseline comparison and contamination acceptance before W2; §9 applies.
 
 **Original acceptance criteria:** REUSE/WIRING/EXTEND/NEW dispositions; exact tickets, dependencies, tests, write-sets and acceptance; thresholds locked
 
@@ -741,7 +757,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Bad refinement can strand downstream work; reopen only affected packages and reapprove changed plan before delegation.
 
-**Required evidence:** Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Approved locked four-population manifests, custody and contamination protocol.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -755,7 +771,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Map bounded goal, accepted revision, domain criteria and scope onto existing Execution/Cognition types.
 
-**Architecture requirement refs:** II-01, II-OPR-01, II-AC-02, II-INV-01; final acceptance: II-AC-02, II-AC-12
+**Architecture requirement refs:** II-01, II-OPR-01, II-AC-02, II-INV-01, II-OPR-07; final acceptance: II-AC-02, II-AC-12
 
 **Primary semantic owner:** Execution/Cognition + AW
 
@@ -801,31 +817,31 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Primary semantic owner:** Execution
 
-**Supporting owners and affected mechanisms:** UEA, Nexus, UAEP and host execution.
+**Supporting owners and affected mechanisms:** UEA, Nexus, UAEP and host execution. ExecutionAuthorityPolicy and Governance, with Execution as admission owner.
 
 **Explicit dependencies:** II-W2-01
 
 **Reuse strategy / prerequisite availability:** W1 proves existing admission, goal/plan, execution, tool, evidence, verification and recovery paths required for the slice; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Bind accepted goal to canonical Execution admission, parent/child identity and lifecycle; resolve host port composition.
+**Implementation scope:** Bind accepted goal to canonical Execution admission, parent/child identity and lifecycle; resolve host port composition. Each child request passes the non-disableable configured ExecutionAuthorityPolicy checkpoint before admission; Governance decisions remain separate; default strict strategy when none explicitly configured.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Admitted execution trace with identity and parent/child evidence.
+**Required outputs:** Admitted execution trace with identity and parent/child evidence. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.
 
 **Original acceptance criteria:** One admitted root; correct identity and child lineage
 
-**Mandatory positive behavior:** One root admits children with correct correlation and no direct execution path.
+**Mandatory positive behavior:** One root admits children with correct correlation and no direct execution path. Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission.
 
-**Mandatory negative behavior:** Reject unadmitted child, mismatched parent and competing execution identity.
+**Mandatory negative behavior:** Reject unadmitted child, mismatched parent and competing execution identity. Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: One root admits children with correct correlation and no direct execution path. Negative: Reject unadmitted child, mismatched parent and competing execution identity.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: One root admits children with correct correlation and no direct execution path. Negative: Reject unadmitted child, mismatched parent and competing execution identity. Additional mandatory oracle: Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission. Negative: Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy.
 
 **Regression scope:** UEA, Nexus, UAEP and host execution.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Identity fork may duplicate effects; disable new binding and retain canonical execution path.
 
-**Required evidence:** Admitted execution trace with identity and parent/child evidence.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Admitted execution trace with identity and parent/child evidence.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.
 
 **Atomic obligations (implementation or qualification):** II-OPR-01.08
 
@@ -839,35 +855,35 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Bind authorization, autonomy envelope, budget and deadline at admission.
 
-**Architecture requirement refs:** II-OPR-01, II-INV-04; final acceptance: II-AC-05, II-AC-09, II-AC-10
+**Architecture requirement refs:** II-OPR-01, II-INV-04, II-OPR-02; final acceptance: II-AC-05, II-AC-09, II-AC-10
 
 **Primary semantic owner:** Governance / Execution
 
-**Supporting owners and affected mechanisms:** Governance, security, Execution and accounting.
+**Supporting owners and affected mechanisms:** Governance, security, Execution and accounting. ExecutionAuthorityPolicy and Governance, with Execution as admission owner. Budget as canonical accounting and enforcement owner; Execution coordinates; Capacity and AW retain scoped envelopes.
 
 **Explicit dependencies:** II-W2-01
 
 **Reuse strategy / prerequisite availability:** W1 proves existing admission, goal/plan, execution, tool, evidence, verification and recovery paths required for the slice; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Bind authorization, autonomy envelope, budget and deadline at admission; propagate restrictions to children and tools.
+**Implementation scope:** Bind authorization, autonomy envelope, budget and deadline at admission; propagate restrictions to children and tools. Each child request passes the non-disableable configured ExecutionAuthorityPolicy checkpoint before admission; Governance decisions remain separate; default strict strategy when none explicitly configured. Reuse canonical Budget subsystem for RunBudget enforcement, reservations, accounting, consumption, release and reconciliation; Execution coordinates, Capacity owns infrastructure admission and AW owns worker envelope.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Positive/negative policy and budget receipts including required HITL.
+**Required outputs:** Positive/negative policy and budget receipts including required HITL. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Original acceptance criteria:** Negative tests for denied scope and budget; no silent grants
 
-**Mandatory positive behavior:** Permitted goal and bounded child work execute; budget/permission checked again for new effects.
+**Mandatory positive behavior:** Permitted goal and bounded child work execute; budget/permission checked again for new effects. Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission. Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope.
 
-**Mandatory negative behavior:** Reject scope expansion, caller-supplied identity conflicts, denied actions through delegation and exhausted budget.
+**Mandatory negative behavior:** Reject unauthorized scope expansion, caller-supplied identity conflicts, denied actions through delegation and exhausted budget. Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy. Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Permitted goal and bounded child work execute; budget/permission checked again for new effects. Negative: Reject scope expansion, caller-supplied identity conflicts, denied actions through delegation and exhausted budget.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Permitted goal and bounded child work execute; budget/permission checked again for new effects. Negative: Reject unauthorized scope expansion, caller-supplied identity conflicts, denied actions through delegation and exhausted budget. Additional mandatory oracle: Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission. Negative: Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy. Additional mandatory oracle: Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope. Negative: Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
 **Regression scope:** Governance, security, Execution and accounting.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Privilege or budget amplification; fail closed and revert changed binding.
 
-**Required evidence:** Positive/negative policy and budget receipts including required HITL.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Positive/negative policy and budget receipts including required HITL.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Atomic obligations (implementation or qualification):** II-OPR-01.03, II-OPR-01.05, II-OPR-01.06, II-OPR-01.07, II-OPR-02.02
 
@@ -1105,21 +1121,21 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Held-out decomposition proposals, independent rubric and dependency validation.
+**Required outputs:** Wave-held-out decomposition proposals disjoint from final W9 population, independent rubric and dependency validation.
 
 **Original acceptance criteria:** Unseen goal decomposed without complete manual graph
 
 **Mandatory positive behavior:** Novel goal covers all required work and valid order with reasonable resource estimates.
 
-**Mandatory negative behavior:** Reject missing criterion, invented capability, cyclic dependency or unjustified decomposition.
+**Mandatory negative behavior:** Reject missing criterion, invented capability, cyclic dependency or unjustified decomposition. Reject final W9 population exposure or equivalent task reuse.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Novel goal covers all required work and valid order with reasonable resource estimates. Negative: Reject missing criterion, invented capability, cyclic dependency or unjustified decomposition.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Novel goal covers all required work and valid order with reasonable resource estimates. Negative: Reject missing criterion, invented capability, cyclic dependency or unjustified decomposition. Use wave qualification only under §9; verify disjointness and no final reveal.
 
 **Regression scope:** NexusPlan, catalog and planner.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Over-decomposition increases cost or loses scope; retain validated previous plan method.
 
-**Required evidence:** Held-out decomposition proposals, independent rubric and dependency validation.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Wave-held-out decomposition proposals disjoint from final W9 population, independent rubric and dependency validation.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -1133,7 +1149,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Version accepted/proposed topology and dependency revisions.
 
-**Architecture requirement refs:** II-02, II-OPR-02, II-OPR-06, II-AC-03, II-INV-03; final acceptance: II-AC-03, II-AC-07
+**Architecture requirement refs:** II-02, II-OPR-02, II-OPR-06, II-AC-03, II-INV-03, II-OPR-05; final acceptance: II-AC-03, II-AC-07
 
 **Primary semantic owner:** Orchestration / Execution
 
@@ -1175,7 +1191,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Bind strategic, agent-step and tool cognition feedback via existing typed carriers.
 
-**Architecture requirement refs:** II-03, II-OPR-02, II-OPR-06; final acceptance: II-AC-07
+**Architecture requirement refs:** II-03, II-OPR-02, II-OPR-06, II-OPR-05; final acceptance: II-AC-07
 
 **Primary semantic owner:** Cognition / UAEP / tools
 
@@ -1259,7 +1275,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Select heterogeneous eligible agent definitions by capability, role, trust, permissions, availability and profile..
 
-**Architecture requirement refs:** II-04, II-OPR-02, II-AC-04; final acceptance: II-AC-04, II-AC-09
+**Architecture requirement refs:** II-04, II-OPR-02, II-AC-04, II-OPR-05; final acceptance: II-AC-04, II-AC-09
 
 **Primary semantic owner:** Agent assembly/catalog
 
@@ -1273,7 +1289,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Selection fixture with catalog candidates, selected roles and rejected alternatives.
+**Required outputs:** Selection fixture with catalog candidates, selected roles and rejected alternatives. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.
 
 **Original acceptance criteria:** Eligible heterogeneous roles selected; unqualified agent refused
 
@@ -1287,7 +1303,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Bad selection creates privilege or competence gaps; retain configured qualified team.
 
-**Required evidence:** Selection fixture with catalog candidates, selected roles and rejected alternatives.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Selection fixture with catalog candidates, selected roles and rejected alternatives.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Chosen/rejected candidate and actual admission trace for its own domain, correlated to goal/plan.
 
 **Atomic obligations (implementation or qualification):** II-OPR-05.04
 
@@ -1305,31 +1321,31 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Primary semantic owner:** Orchestration / Execution
 
-**Supporting owners and affected mechanisms:** Orchestration, Execution and Governance.
+**Supporting owners and affected mechanisms:** Orchestration, Execution and Governance. ExecutionAuthorityPolicy and Governance, with Execution as admission owner.
 
 **Explicit dependencies:** II-W4-01
 
 **Reuse strategy / prerequisite availability:** W1 verifies catalog, assembly, topology, context, decision and minimum aggregate resource controls; W3 revision proof precedes W4; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Map delegation to accepted topology, canonical child admission, scope, task and execution identities.
+**Implementation scope:** Map delegation to accepted topology, canonical child admission, scope, task and execution identities. Each child request passes the non-disableable configured ExecutionAuthorityPolicy checkpoint before admission; Governance decisions remain separate; default strict strategy when none explicitly configured.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Parent/child admission records and delegation graph with denied cases.
+**Required outputs:** Parent/child admission records and delegation graph with denied cases. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.
 
 **Original acceptance criteria:** Canonical child admission, scope and identity tests
 
-**Mandatory positive behavior:** Child receives only delegated scope and budget with causal identity.
+**Mandatory positive behavior:** Child receives authority resolved by the configured policy (strict narrowing by default), with bounded budget and causal identity. Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission.
 
-**Mandatory negative behavior:** Reject direct agent invocation, forged parent, excess scope or authority propagation.
+**Mandatory negative behavior:** Reject direct agent invocation, forged parent, scope or authority propagation outside the resolved authorization. Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Child receives only delegated scope and budget with causal identity. Negative: Reject direct agent invocation, forged parent, excess scope or authority propagation.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Child receives authority resolved by the configured policy (strict narrowing by default), with bounded budget and causal identity. Negative: Reject direct agent invocation, forged parent, scope or authority propagation outside the resolved authorization. Additional mandatory oracle: Exercise implicit DefaultStrictAuthorityPolicy (including None versus empty scopes and immediate-parent comparison), allow and deny under configured policy; prove actual ChildAuthorityResolution is causally bound to admission. Negative: Reject missing/bypassed checkpoint, invalid or unresolvable configured policy, forged resolution, and unauthorized effects; do not treat lack of explicit configuration as denial or require new custom strategy.
 
 **Regression scope:** Orchestration, Execution and Governance.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Delegation bypass; remove new topology route and preserve canonical child admission.
 
-**Required evidence:** Parent/child admission records and delegation graph with denied cases.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Parent/child admission records and delegation graph with denied cases.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -1427,7 +1443,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Use Decision Deliberation and Verification to reconcile competing admissible evidence, preserving disagreement and evidence..
 
-**Architecture requirement refs:** II-05, II-OPR-02, II-OPR-05, II-AC-04; final acceptance: II-AC-04, II-AC-07
+**Architecture requirement refs:** II-05, II-OPR-02, II-OPR-05, II-AC-04, II-OPR-06; final acceptance: II-AC-04, II-AC-07
 
 **Primary semantic owner:** Decision Deliberation / verification
 
@@ -1515,31 +1531,31 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Primary semantic owner:** Nexus / Execution / capacity
 
-**Supporting owners and affected mechanisms:** Nexus, Execution, capacity and existing budget mechanisms.
+**Supporting owners and affected mechanisms:** Nexus, Execution, capacity and existing budget mechanisms. Budget as canonical accounting and enforcement owner; Execution coordinates; Capacity and AW retain scoped envelopes.
 
 **Explicit dependencies:** II-W3-04, II-W4-02
 
 **Reuse strategy / prerequisite availability:** W1 verifies catalog, assembly, topology, context, decision and minimum aggregate resource controls; W3 revision proof precedes W4; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Isolate blocked branches and schedule independent work with bounded fan-out/fan-in, cancellation, dependency and existing aggregate limits.
+**Implementation scope:** Isolate blocked branches and schedule independent work with bounded fan-out/fan-in, cancellation, dependency and existing aggregate limits. Reuse canonical Budget subsystem for RunBudget enforcement, reservations, accounting, consumption, release and reconciliation; Execution coordinates, Capacity owns infrastructure admission and AW owns worker envelope.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement.
+**Required outputs:** Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Original acceptance criteria:** Unrelated work continues; dependencies, cancellation and aggregate limits respected
 
-**Mandatory positive behavior:** Unrelated branch continues, dependent branch waits, shared limits remain enforced and results merge by criteria.
+**Mandatory positive behavior:** Unrelated branch continues, dependent branch waits, shared limits remain enforced and results merge by criteria. Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope.
 
-**Mandatory negative behavior:** Reject dependency violation, unbounded fan-out, starvation, leaked reservations and duplicate merge effects.
+**Mandatory negative behavior:** Reject dependency violation, unbounded fan-out, starvation, leaked reservations and duplicate merge effects. Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Unrelated branch continues, dependent branch waits, shared limits remain enforced and results merge by criteria. Negative: Reject dependency violation, unbounded fan-out, starvation, leaked reservations and duplicate merge effects.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Unrelated branch continues, dependent branch waits, shared limits remain enforced and results merge by criteria. Negative: Reject dependency violation, unbounded fan-out, starvation, leaked reservations and duplicate merge effects. Additional mandatory oracle: Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope. Negative: Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
 **Regression scope:** Nexus, Execution, capacity and existing budget mechanisms.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Race and overcommit; revert affected scheduling policy and drain/reconcile admitted work safely.
 
-**Required evidence:** Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Atomic obligations (implementation or qualification):** II-OPR-02.03, II-OPR-03.05, II-OPR-03.13, II-OPR-04.07
 
@@ -1553,7 +1569,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Rank goal-relevant permitted tools using qualified catalog/profile criteria and existing tool cognition..
 
-**Architecture requirement refs:** II-03, II-06, II-OPR-02, II-AC-05; final acceptance: II-AC-05, II-AC-07
+**Architecture requirement refs:** II-03, II-06, II-OPR-02, II-AC-05, II-OPR-03, II-OPR-05, II-OPR-06; final acceptance: II-AC-05, II-AC-07
 
 **Primary semantic owner:** Tool cognition
 
@@ -1567,7 +1583,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Adjudicated selection trials with distractors, refusal and abstention counts.
+**Required outputs:** Adjudicated selection trials with distractors, refusal and abstention counts. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.
 
 **Original acceptance criteria:** Accuracy and permitted-candidate measurements
 
@@ -1581,9 +1597,9 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Selection bias can enable unsafe tools; retain qualified selector configuration.
 
-**Required evidence:** Adjudicated selection trials with distractors, refusal and abstention counts.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Adjudicated selection trials with distractors, refusal and abstention counts.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Chosen/rejected candidate and actual admission trace for its own domain, correlated to goal/plan. Canonical model/tool invocation counts for the relevant domain, including retry/repair/verification, with workload denominator; II-OPR-03.11.
 
-**Atomic obligations (implementation or qualification):** II-OPR-06.11
+**Atomic obligations (implementation or qualification):** II-OPR-06.11, II-OPR-03.11, II-OPR-05.04
 
 **Closure prerequisites:** Entry: GATE-II-CORE. All explicit package prerequisites accepted; original and expanded acceptance satisfied and evidence reviewed by proper authority. Wave exit gate is not an input.
 
@@ -1595,7 +1611,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Compose dependency-valid tool sequences and safe batches with preconditions, deadlines, idempotency and individual admission..
 
-**Architecture requirement refs:** II-06, II-OPR-02, II-AC-05; final acceptance: II-AC-05
+**Architecture requirement refs:** II-06, II-OPR-02, II-AC-05, II-OPR-03; final acceptance: II-AC-05
 
 **Primary semantic owner:** Tools / UAEP
 
@@ -1623,9 +1639,9 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Batch partial failure may obscure effects; settle individual receipts and revert composition policy.
 
-**Required evidence:** Sequence graph, per-invocation receipts and bounded concurrency trace.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Sequence graph, per-invocation receipts and bounded concurrency trace.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Canonical model/tool invocation counts for the relevant domain, including retry/repair/verification, with workload denominator; II-OPR-03.11.
 
-**Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
+**Atomic obligations (implementation or qualification):** II-OPR-03.11
 
 **Closure prerequisites:** Entry: GATE-II-CORE. All explicit package prerequisites accepted; original and expanded acceptance satisfied and evidence reviewed by proper authority. Wave exit gate is not an input.
 
@@ -1637,7 +1653,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Verify results with schema, deterministic invariants, sources or receipts.
 
-**Architecture requirement refs:** II-06, II-OPR-02, II-OPR-05, II-OPR-06, II-AC-05; final acceptance: II-AC-05, II-AC-07
+**Architecture requirement refs:** II-06, II-OPR-02, II-OPR-05, II-OPR-06, II-AC-05, II-OPR-03; final acceptance: II-AC-05, II-AC-07
 
 **Primary semantic owner:** Tools / verification
 
@@ -1665,9 +1681,9 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** False result acceptance propagates downstream; fail closed and restore prior validator.
 
-**Required evidence:** Malformed-result fixtures, validation decisions and alternative invocation receipts.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Malformed-result fixtures, validation decisions and alternative invocation receipts.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Canonical model/tool invocation counts for the relevant domain, including retry/repair/verification, with workload denominator; II-OPR-03.11.
 
-**Atomic obligations (implementation or qualification):** II-OPR-06.08
+**Atomic obligations (implementation or qualification):** II-OPR-06.08, II-OPR-03.11
 
 **Closure prerequisites:** Entry: GATE-II-CORE. All explicit package prerequisites accepted; original and expanded acceptance satisfied and evidence reviewed by proper authority. Wave exit gate is not an input.
 
@@ -1679,7 +1695,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Distribute goal and task context per agent with scoped retrieval, references, freshness and token constraints..
 
-**Architecture requirement refs:** II-07, II-OPR-02, II-OPR-05, II-AC-06; final acceptance: II-AC-06
+**Architecture requirement refs:** II-07, II-OPR-02, II-OPR-05, II-AC-06, II-OPR-01; final acceptance: II-AC-06
 
 **Primary semantic owner:** Context Engineering / UCL
 
@@ -1763,7 +1779,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Route models by eligible profile, task complexity, quality, availability and cost.
 
-**Architecture requirement refs:** II-12, II-OPR-02, II-OPR-03, II-OPR-05, II-INV-11; final acceptance: II-AC-07, II-AC-11
+**Architecture requirement refs:** II-12, II-OPR-02, II-OPR-03, II-OPR-05, II-INV-11, II-OPR-06; final acceptance: II-AC-07, II-AC-11
 
 **Primary semantic owner:** Model routing / AHI
 
@@ -1791,7 +1807,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Routing may change cost or accuracy; roll back versioned profile.
 
-**Required evidence:** Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Canonical model/tool invocation counts for the relevant domain, including retry/repair/verification, with workload denominator; II-OPR-03.11.
 
 **Atomic obligations (implementation or qualification):** II-OPR-03.11, II-OPR-06.01
 
@@ -1805,35 +1821,35 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Enforce shared parent cost/time/token/attempt allocations across concurrent children.
 
-**Architecture requirement refs:** II-12, II-OPR-02, II-OPR-03, II-OPR-04, II-OPR-05, II-INV-09; final acceptance: II-AC-07, II-AC-10, II-AC-11
+**Architecture requirement refs:** II-12, II-OPR-02, II-OPR-03, II-OPR-04, II-OPR-05, II-INV-09, II-OPR-06; final acceptance: II-AC-07, II-AC-10, II-AC-11
 
 **Primary semantic owner:** Execution / capacity / Worker budgets
 
-**Supporting owners and affected mechanisms:** Execution, capacity, AW budgets and accounting.
+**Supporting owners and affected mechanisms:** Execution, capacity, AW budgets and accounting. Budget as canonical accounting and enforcement owner; Execution coordinates; Capacity and AW retain scoped envelopes.
 
 **Explicit dependencies:** II-W5-01
 
 **Reuse strategy / prerequisite availability:** W1 verifies tool/runtime, UCL, Memory, routing and aggregate accounting paths; qualified W3/W4 contracts; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Enforce shared parent cost/time/token/attempt allocations across concurrent children; reserve, settle and reconcile through existing owners.
+**Implementation scope:** Enforce shared parent cost/time/token/attempt allocations across concurrent children; reserve, settle and reconcile through existing owners. Reuse canonical Budget subsystem for RunBudget enforcement, reservations, accounting, consumption, release and reconciliation; Execution coordinates, Capacity owns infrastructure admission and AW owns worker envelope.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases.
+**Required outputs:** Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Original acceptance criteria:** Concurrent reservations enforce parent limits and deadlines
 
-**Mandatory positive behavior:** Conservation holds; unused allocation releases once; no work beyond remaining budget or deadline.
+**Mandatory positive behavior:** Conservation holds; unused allocation releases once; no work beyond remaining budget or deadline. Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope.
 
-**Mandatory negative behavior:** Reject double release, race overcommit, counter reset on delegation and late work after cancellation.
+**Mandatory negative behavior:** Reject double release, race overcommit, counter reset on delegation and late work after cancellation. Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Conservation holds; unused allocation releases once; no work beyond remaining budget or deadline. Negative: Reject double release, race overcommit, counter reset on delegation and late work after cancellation.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Conservation holds; unused allocation releases once; no work beyond remaining budget or deadline. Negative: Reject double release, race overcommit, counter reset on delegation and late work after cancellation. Additional mandatory oracle: Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope. Negative: Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
 **Regression scope:** Execution, capacity, AW budgets and accounting.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Accounting inconsistency can overspend; deny new reservations, reconcile ledger and restore safe policy.
 
-**Required evidence:** Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Atomic obligations (implementation or qualification):** II-OPR-03.12, II-OPR-04.12, II-OPR-05.08, II-OPR-06.12
 
@@ -1889,7 +1905,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Select authorized recovery strategies by failure class, remaining budget, effect uncertainty and prerequisites..
 
-**Architecture requirement refs:** II-08, II-OPR-05, II-OPR-06, II-AC-07, II-INV-08; final acceptance: II-AC-07
+**Architecture requirement refs:** II-08, II-OPR-05, II-OPR-06, II-AC-07, II-INV-08, II-OPR-04; final acceptance: II-AC-07
 
 **Primary semantic owner:** Recovery / Self-Healing
 
@@ -1935,31 +1951,31 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Primary semantic owner:** UAEP / Execution
 
-**Supporting owners and affected mechanisms:** UAEP, Execution, verification and persistence.
+**Supporting owners and affected mechanisms:** UAEP, Execution, verification and persistence. UER and Reliability retry identity contracts.
 
 **Explicit dependencies:** II-W6-02
 
 **Reuse strategy / prerequisite availability:** W1 verifies ERL, Self-Healing, Decision Verification and canonical lifecycle paths; qualified W2–W5; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Repair failed local step while retaining unaffected accepted outputs and effect history; re-admit changed operations.
+**Implementation scope:** Repair failed local step while retaining unaffected accepted outputs and effect history; re-admit changed operations. Local provider/tool/step or same-logical-Execution retry preserves canonical identity; whole-Run retry alone creates a new Attempt and new Execution instances under UER policy. Pause/resume and redelivery preserve identity.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Before/after task evidence, unaffected artifact identities and new attempt receipts.
+**Required outputs:** Before/after task evidence, unaffected artifact identities and local retry metadata/events or execution retry generation receipts with preserved Task/Run/Attempt/Execution identity. Before/after identity tuples, retry metadata, effect reconciliation and unchanged unaffected artifacts; whole-Run retry contrast under authorized policy.
 
 **Original acceptance criteria:** Repair failed step without repeating unrelated work
 
-**Mandatory positive behavior:** Recoverable step corrected without rerunning independent verified work.
+**Mandatory positive behavior:** Recoverable step corrected without rerunning independent verified work. Correct local step with unchanged Task/Run/Attempt/Execution IDs and retained unaffected work; record local retry metadata or execution retry generation.
 
-**Mandatory negative behavior:** Reject reuse of invalidated output or re-execution of settled side effect.
+**Mandatory negative behavior:** Reject reuse of invalidated output or re-execution of settled side effect. Reject minting new AttemptId or ExecutionId for local retry, duplicate unaffected work, or repetition of uncertain effects without reconciliation.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Recoverable step corrected without rerunning independent verified work. Negative: Reject reuse of invalidated output or re-execution of settled side effect.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Recoverable step corrected without rerunning independent verified work. Negative: Reject reuse of invalidated output or re-execution of settled side effect. Additional mandatory oracle: Correct local step with unchanged Task/Run/Attempt/Execution IDs and retained unaffected work; record local retry metadata or execution retry generation. Negative: Reject minting new AttemptId or ExecutionId for local retry, duplicate unaffected work, or repetition of uncertain effects without reconciliation.
 
 **Regression scope:** UAEP, Execution, verification and persistence.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Local correction can corrupt valid state; restore prior valid artifacts and reconcile attempts.
 
-**Required evidence:** Before/after task evidence, unaffected artifact identities and new attempt receipts.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Before/after task evidence, unaffected artifact identities and local retry metadata/events or execution retry generation receipts with preserved Task/Run/Attempt/Execution identity.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Before/after identity tuples, retry metadata, effect reconciliation and unchanged unaffected artifacts; whole-Run retry contrast under authorized policy.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -2057,7 +2073,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Evaluate completeness of accepted goal by criterion, artifact validity, domain oracle and current plan revision..
 
-**Architecture requirement refs:** II-09, II-OPR-05, II-OPR-06, II-AC-07; final acceptance: II-AC-02, II-AC-07, II-AC-12
+**Architecture requirement refs:** II-09, II-OPR-05, II-OPR-06, II-AC-07, II-OPR-01; final acceptance: II-AC-02, II-AC-07, II-AC-12
 
 **Primary semantic owner:** Decision Verification / domain owner
 
@@ -2145,31 +2161,31 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Primary semantic owner:** Execution / Governance
 
-**Supporting owners and affected mechanisms:** Execution lifecycle, Governance, recovery and AW.
+**Supporting owners and affected mechanisms:** Execution lifecycle, Governance, recovery and AW. Diagnostics and ERI (read-only interpretation).
 
 **Explicit dependencies:** II-W6-02
 
 **Reuse strategy / prerequisite availability:** W1 verifies ERL, Self-Healing, Decision Verification and canonical lifecycle paths; qualified W2–W5; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Implement explicit bounded stop, wait, cancellation and reserved escalation using canonical owners; expose genuine blockers.
+**Implementation scope:** Implement explicit bounded stop, wait, cancellation and reserved escalation using canonical owners; expose genuine blockers. Use Diagnostics/ERI read-only interpretation and canonical records for supported diagnostic replay, not execution control.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence.
+**Required outputs:** Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence. Diagnostic reconstruction trace, read-only boundary checks and unsupported-mode limitations.
 
 **Original acceptance criteria:** Genuine exhaustion, cancellation, wait and reserved decision paths reconstructable
 
-**Mandatory positive behavior:** Correct safe stop for impossible/denied/exhausted goal; feasible authorized alternatives attempted first.
+**Mandatory positive behavior:** Correct safe stop for impossible/denied/exhausted goal; feasible authorized alternatives attempted first. Reconstruct causal chain, cause and disposition from canonical evidence; declare unsupported replay.
 
-**Mandatory negative behavior:** Reject indefinite wait without trigger/deadline, budget reset and false success on escalation.
+**Mandatory negative behavior:** Reject indefinite wait without trigger/deadline, budget reset and false success on escalation. Reject replay changing lifecycle or granting authority.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Correct safe stop for impossible/denied/exhausted goal; feasible authorized alternatives attempted first. Negative: Reject indefinite wait without trigger/deadline, budget reset and false success on escalation.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Correct safe stop for impossible/denied/exhausted goal; feasible authorized alternatives attempted first. Negative: Reject indefinite wait without trigger/deadline, budget reset and false success on escalation. Additional mandatory oracle: Reconstruct causal chain, cause and disposition from canonical evidence; declare unsupported replay. Negative: Reject replay changing lifecycle or granting authority.
 
 **Regression scope:** Execution lifecycle, Governance, recovery and AW.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Wrong terminalization may lose work; preserve checkpoints and use authorized resume only.
 
-**Required evidence:** Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Diagnostic reconstruction trace, read-only boundary checks and unsupported-mode limitations.
 
 **Atomic obligations (implementation or qualification):** II-OPR-05.10
 
@@ -2267,7 +2283,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Retrieve scoped validated experience for future planning.
 
-**Architecture requirement refs:** II-11, II-OPR-07, II-AC-08, II-INV-10; final acceptance: II-AC-08, II-AC-09
+**Architecture requirement refs:** II-11, II-OPR-07, II-AC-08, II-INV-10, II-OPR-06; final acceptance: II-AC-08, II-AC-09
 
 **Primary semantic owner:** Memory / Cognition
 
@@ -2289,7 +2305,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Mandatory negative behavior:** Reject stale/poisoned experience, cross-tenant retrieval and held-out contamination.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Relevant experience measurably improves declared outcomes without leakage or authority transfer. Negative: Reject stale/poisoned experience, cross-tenant retrieval and held-out contamination.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Relevant experience measurably improves declared outcomes without leakage or authority transfer. Negative: Reject stale/poisoned experience, cross-tenant retrieval and held-out contamination. Verify §9 final-population isolation from experience, tuning and adaptation; no final W9 task-level feedback.
 
 **Regression scope:** Memory, Cognition, AHI and retention rules.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
@@ -2393,7 +2409,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Evaluate scoped shadow/canary experiments, independent approval, versioned promotion and rollback through AHI owners..
 
-**Architecture requirement refs:** II-10, II-OPR-03, II-OPR-07, II-AC-08; final acceptance: II-AC-08
+**Architecture requirement refs:** II-10, II-OPR-03, II-OPR-07, II-AC-08, II-OPR-02; final acceptance: II-AC-08
 
 **Primary semantic owner:** AHI / Experimentation
 
@@ -2415,7 +2431,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Mandatory negative behavior:** Reject silent production mutation, contaminated held-out set and promotion after failed quality gate.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Only qualified approved change applies; failed experiment restores prior accepted behavior. Negative: Reject silent production mutation, contaminated held-out set and promotion after failed quality gate.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Only qualified approved change applies; failed experiment restores prior accepted behavior. Negative: Reject silent production mutation, contaminated held-out set and promotion after failed quality gate. Verify §9 final-population isolation from experience, tuning and adaptation; no final W9 task-level feedback.
 
 **Regression scope:** AHI, EVOL-X, compatibility and observability.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
@@ -2435,7 +2451,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Qualify actual distributed execution topology, independent workers, bounded fan-out, admission, queue and overload behavior under declared profiles..
 
-**Architecture requirement refs:** II-12, II-OPR-03, II-OPR-04, II-OPR-05, II-AC-10; final acceptance: II-AC-07, II-AC-10, II-AC-11
+**Architecture requirement refs:** II-12, II-OPR-03, II-OPR-04, II-OPR-05, II-AC-10, II-OPR-06; final acceptance: II-AC-07, II-AC-10, II-AC-11
 
 **Primary semantic owner:** Capacity / Execution
 
@@ -2477,35 +2493,35 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Qualify distributed aggregate budgets across workers, contention, provider quotas, cancellation and process failure..
 
-**Architecture requirement refs:** II-12, II-OPR-03, II-OPR-04, II-OPR-05, II-OPR-06, II-AC-10; final acceptance: II-AC-07, II-AC-10
+**Architecture requirement refs:** II-12, II-OPR-03, II-OPR-04, II-OPR-05, II-OPR-06, II-AC-10, II-OPR-01; final acceptance: II-AC-07, II-AC-10
 
 **Primary semantic owner:** Execution / capacity
 
-**Supporting owners and affected mechanisms:** W5-07, capacity, persistence and ERL.
+**Supporting owners and affected mechanisms:** W5-07, capacity, persistence and ERL. Budget as canonical accounting and enforcement owner; Execution coordinates; Capacity and AW retain scoped envelopes.
 
 **Explicit dependencies:** II-W8-01
 
 **Reuse strategy / prerequisite availability:** W1 verifies actual capacity, distributed claim/fencing, persistence, security, host and AW composition; qualified W2–W7; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Qualify distributed aggregate budgets across workers, contention, provider quotas, cancellation and process failure.
+**Implementation scope:** Qualify distributed aggregate budgets across workers, contention, provider quotas, cancellation and process failure. Reuse canonical Budget subsystem for RunBudget enforcement, reservations, accounting, consumption, release and reconciliation; Execution coordinates, Capacity owns infrastructure admission and AW owns worker envelope.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Cross-worker reservation/settlement traces and retry/load measurements.
+**Required outputs:** Cross-worker reservation/settlement traces and retry/load measurements. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Original acceptance criteria:** Aggregate accounting across workers, failure and cancellation
 
-**Mandatory positive behavior:** Parent limits conserved across concurrent workers and recovery, quota pressure handled without amplification.
+**Mandatory positive behavior:** Parent limits conserved across concurrent workers and recovery, quota pressure handled without amplification. Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope.
 
-**Mandatory negative behavior:** Reject double debit/release, overcommit, counter reset and late work after cancellation.
+**Mandatory negative behavior:** Reject double debit/release, overcommit, counter reset and late work after cancellation. Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Parent limits conserved across concurrent workers and recovery, quota pressure handled without amplification. Negative: Reject double debit/release, overcommit, counter reset and late work after cancellation.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Parent limits conserved across concurrent workers and recovery, quota pressure handled without amplification. Negative: Reject double debit/release, overcommit, counter reset and late work after cancellation. Additional mandatory oracle: Required reservation is authorized before child admission; authoritative Budget receipts conserve parent allocation and settlement across admitted work under declared scope. Negative: Reject admission without bounded reservation, competing ledger or inconsistent worker/context counters used as canonical accounting.
 
 **Regression scope:** W5-07, capacity, persistence and ERL.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Distributed accounting split-brain; deny admission, reconcile and rollback scoped change.
 
-**Required evidence:** Cross-worker reservation/settlement traces and retry/load measurements.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Cross-worker reservation/settlement traces and retry/load measurements.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.
 
 **Atomic obligations (implementation or qualification):** II-OPR-01.07, II-OPR-04.04, II-OPR-04.10, II-OPR-04.12, II-OPR-04.13, II-OPR-06.12, II-OPR-06.14
 
@@ -2519,7 +2535,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Inject worker/process loss, duplicate delivery, uncertain external effect and claim loss under load.
 
-**Architecture requirement refs:** II-08, II-OPR-03, II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09; final acceptance: II-AC-07, II-AC-09, II-AC-10
+**Architecture requirement refs:** II-08, II-OPR-03, II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09, II-OPR-01; final acceptance: II-AC-07, II-AC-09, II-AC-10
 
 **Primary semantic owner:** Persistence / ERL
 
@@ -2561,7 +2577,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Exercise tenant and principal isolation across goal, child, context, message, artifact, tool, evidence and experience paths under mixed load..
 
-**Architecture requirement refs:** II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09; final acceptance: II-AC-08, II-AC-09, II-AC-10
+**Architecture requirement refs:** II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09, II-OPR-01, II-OPR-07; final acceptance: II-AC-08, II-AC-09, II-AC-10
 
 **Primary semantic owner:** Security / Governance / context
 
@@ -2603,35 +2619,35 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Adversarially exercise prompt injection, poisoned experience, forged receipts, malformed tools, unsafe generated code and policy boundaries..
 
-**Architecture requirement refs:** II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09; final acceptance: II-AC-05, II-AC-09
+**Architecture requirement refs:** II-OPR-04, II-OPR-05, II-OPR-06, II-AC-09, II-OPR-01; final acceptance: II-AC-05, II-AC-09
 
 **Primary semantic owner:** Security / domain owners
 
-**Supporting owners and affected mechanisms:** Security, CodeCraft, Tools, Memory, Governance and Diagnostics.
+**Supporting owners and affected mechanisms:** Security, CodeCraft, Tools, Memory, Governance and Diagnostics. Observability, Security and Governance.
 
 **Explicit dependencies:** II-W8-03, II-W8-04
 
 **Reuse strategy / prerequisite availability:** W1 verifies actual capacity, distributed claim/fencing, persistence, security, host and AW composition; qualified W2–W7; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Adversarially exercise prompt injection, poisoned experience, forged receipts, malformed tools, unsafe generated code and policy boundaries.
+**Implementation scope:** Adversarially exercise prompt injection, poisoned experience, forged receipts, malformed tools, unsafe generated code and policy boundaries. Use Observability as canonical telemetry owner with Security/Governance for access, retention and redaction.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope.
+**Required outputs:** Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope. Access/denial fixtures, retention/deletion receipts and redaction evidence.
 
 **Original acceptance criteria:** Injection, forged evidence, unsafe tools, sandbox and authorization failures
 
-**Mandatory positive behavior:** Untrusted inputs remain data; unauthorized effects denied and legitimate recovery contained.
+**Mandatory positive behavior:** Untrusted inputs remain data; unauthorized effects denied and legitimate recovery contained. Authorized trace access and retention/deletion work under scoped policy; redaction preserves permitted diagnostic utility.
 
-**Mandatory negative behavior:** Reject sandbox escape, fabricated evidence acceptance, secret/private reasoning telemetry and permission laundering.
+**Mandatory negative behavior:** Reject sandbox escape, fabricated evidence acceptance, secret/private reasoning telemetry and permission laundering. Reject unauthorized trace read, secret/private reasoning/foreign-tenant leakage or retention-policy bypass.
 
-**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Untrusted inputs remain data; unauthorized effects denied and legitimate recovery contained. Negative: Reject sandbox escape, fabricated evidence acceptance, secret/private reasoning telemetry and permission laundering.
+**Qualification scope:** Execute positive and negative fixtures for the stated behavior using W1-bound commands and oracles; preserve raw results. Oracle: Untrusted inputs remain data; unauthorized effects denied and legitimate recovery contained. Negative: Reject sandbox escape, fabricated evidence acceptance, secret/private reasoning telemetry and permission laundering. Additional mandatory oracle: Authorized trace access and retention/deletion work under scoped policy; redaction preserves permitted diagnostic utility. Negative: Reject unauthorized trace read, secret/private reasoning/foreign-tenant leakage or retention-policy bypass.
 
 **Regression scope:** Security, CodeCraft, Tools, Memory, Governance and Diagnostics.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Security regression blocks gate; contain affected capability and restore known safe profile.
 
-**Required evidence:** Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Access/denial fixtures, retention/deletion receipts and redaction evidence.
 
 **Atomic obligations (implementation or qualification):** II-OPR-01.05, II-OPR-05.12, II-OPR-06.16
 
@@ -2645,7 +2661,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Integrate persistent goals through AW-owned responsibility, cadence, dispatch, recovery episode and continuity services..
 
-**Architecture requirement refs:** II-01, II-OPR-06; final acceptance: II-AC-07
+**Architecture requirement refs:** II-01, II-OPR-06, II-OPR-02; final acceptance: II-AC-07
 
 **Primary semantic owner:** AW / Execution
 
@@ -2771,7 +2787,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Run sealed held-out behavioral suite with approved profiles, oracles and repeated trials at exact candidate..
 
-**Architecture requirement refs:** II-OPR-03, II-AC-02, II-AC-11; final acceptance: II-AC-02, II-AC-11
+**Architecture requirement refs:** II-OPR-03, II-AC-02, II-AC-11, II-OPR-07; final acceptance: II-AC-02, II-AC-11
 
 **Primary semantic owner:** Qualification
 
@@ -2781,25 +2797,25 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Reuse strategy / prerequisite availability:** W1 fixes the evaluation method and applicable existing qualification authorities; qualified W8 and immutable evidence; §3.1 applies. Reuse and verify the existing mechanisms identified in this package; no new owner by default.
 
-**Implementation scope:** Run sealed held-out behavioral suite with approved profiles, oracles and repeated trials at exact candidate.
+**Implementation scope:** Run sealed held-out behavioral suite with approved profiles, oracles and repeated trials at exact candidate. Before final trial, independently check §9 manifests, custody, overlap and contamination negatives; reveal only under authorized independent evaluation.
 
 **Explicit exclusions:** No competing owner/runtime, unauthorized side effect, unapproved frozen-contract change or premature certification.
 
-**Required outputs:** Raw per-family trials, failures, metrics, uncertainty and reproducible commands.
+**Required outputs:** Raw per-family trials, failures, metrics, uncertainty and reproducible commands. Final manifest/digest, disjointness and access audit, contamination-negative result, independent reveal record and raw trial evidence.
 
 **Original acceptance criteria:** Held-out repeatable trials against locked criteria
 
-**Mandatory positive behavior:** Locked mandatory behavior thresholds met, including safe abstention where required.
+**Mandatory positive behavior:** Locked mandatory behavior thresholds met, including safe abstention where required. Sealed final set and locked oracles remain isolated, all trials recorded; contamination-negative fixture detects exposure.
 
-**Mandatory negative behavior:** Reject selective reruns, hidden interventions, data leakage and threshold retuning.
+**Mandatory negative behavior:** Reject selective reruns, hidden interventions, data leakage and threshold retuning. Reject contamination, task overlap, unauthorized reveal, selective rerun or retuning; preserve invalidated evidence and require authorized requalification.
 
-**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Locked mandatory behavior thresholds met, including safe abstention where required. Negative: Reject selective reruns, hidden interventions, data leakage and threshold retuning.
+**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Locked mandatory behavior thresholds met, including safe abstention where required. Negative: Reject selective reruns, hidden interventions, data leakage and threshold retuning. Additional mandatory oracle: Sealed final set and locked oracles remain isolated, all trials recorded; contamination-negative fixture detects exposure. Negative: Reject contamination, task overlap, unauthorized reveal, selective rerun or retuning; preserve invalidated evidence and require authorized requalification.
 
 **Regression scope:** W1 protocol and all affected W2–W8 evidence.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
 **Risk and evolution / rollback:** Unreproducible benchmark invalidates claim; preserve failed runs and requalify after authorized correction.
 
-**Required evidence:** Raw per-family trials, failures, metrics, uncertainty and reproducible commands.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Raw per-family trials, failures, metrics, uncertainty and reproducible commands.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations. Final manifest/digest, disjointness and access audit, contamination-negative result, independent reveal record and raw trial evidence.
 
 **Atomic obligations (implementation or qualification):** II-OPR-07.03
 
@@ -2813,7 +2829,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Compare W9 target and W1 baseline under matched model, tools, budget, task and quality.
 
-**Architecture requirement refs:** II-OPR-03, II-AC-11; final acceptance: II-AC-11
+**Architecture requirement refs:** II-OPR-03, II-AC-11, II-OPR-07; final acceptance: II-AC-11
 
 **Primary semantic owner:** Evaluation
 
@@ -2835,7 +2851,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Mandatory negative behavior:** Reject attributing model upgrade to harness, cherry-picked results or invalid denominator.
 
-**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Measured improvement supports required locked claims without safety or quality loss. Negative: Reject attributing model upgrade to harness, cherry-picked results or invalid denominator.
+**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Measured improvement supports required locked claims without safety or quality loss. Negative: Reject attributing model upgrade to harness, cherry-picked results or invalid denominator. Compare against §9 matched blind W1 baseline if available; independently reconcile manifest IDs, conditions and access history. Report unmatched limits without claiming matched comparison.
 
 **Regression scope:** Evaluation, baseline and W7 experiments.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
@@ -2855,7 +2871,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Independently reconcile all six reference families, 17 fault classes and operational obligation evidence to required oracles..
 
-**Architecture requirement refs:** II-OPR-03, II-OPR-05; final acceptance: II-AC-02, II-AC-07, II-AC-08, II-AC-09, II-AC-10, II-AC-12
+**Architecture requirement refs:** II-OPR-03, II-OPR-05, II-OPR-01, II-OPR-02, II-OPR-04, II-OPR-06, II-OPR-07; final acceptance: II-AC-02, II-AC-07, II-AC-08, II-AC-09, II-AC-10, II-AC-12
 
 **Primary semantic owner:** Domain owners / certifier
 
@@ -2877,7 +2893,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Mandatory negative behavior:** Reject aggregate score hiding critical failure, missing case or unexecuted proof as PASS.
 
-**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: All mandatory families and failure cases have reproducible accepted evidence. Negative: Reject aggregate score hiding critical failure, missing case or unexecuted proof as PASS.
+**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: All mandatory families and failure cases have reproducible accepted evidence. Negative: Reject aggregate score hiding critical failure, missing case or unexecuted proof as PASS. II-OPR-05.04 requires both W4-01 agent and W5-01 tool selection and admission evidence, not either alone.
 
 **Regression scope:** Domain owners, W6/W8 tests and qualification scope.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
@@ -2897,7 +2913,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Objective:** Independently verify all II-OPR-03 metrics and scale/overhead claims against locked workload envelope and full accounting..
 
-**Architecture requirement refs:** II-OPR-03, II-OPR-04, II-OPR-05, II-AC-10, II-AC-11; final acceptance: II-AC-07, II-AC-10, II-AC-11
+**Architecture requirement refs:** II-OPR-03, II-OPR-04, II-OPR-05, II-AC-10, II-AC-11, II-OPR-06; final acceptance: II-AC-07, II-AC-10, II-AC-11
 
 **Primary semantic owner:** Evaluation / observability
 
@@ -2919,7 +2935,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Mandatory negative behavior:** Reject omitted queue time, retries, interventions, missing p99 or unsupported scale claim.
 
-**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Quality-constrained cost, latency and throughput meet approved thresholds with all failed attempts counted. Negative: Reject omitted queue time, retries, interventions, missing p99 or unsupported scale claim.
+**Qualification scope:** Independent qualification/authorized decision using exact candidate and locked W1 protocol; do not substitute implementer self-assessment. Oracle: Quality-constrained cost, latency and throughput meet approved thresholds with all failed attempts counted. Negative: Reject omitted queue time, retries, interventions, missing p99 or unsupported scale claim. II-OPR-03.11 reconciles all model and tool calls including retries, verification and repair from W5-01/02/03/06 against matched denominator.
 
 **Regression scope:** Evaluation, Observability, capacity and W1 thresholds.. Select adjacent and affected-domain checks under existing EVOL-X/ENT-AUDIT-X rules.
 
@@ -3077,9 +3093,9 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Implementation scope:** Execute only the final authorized decision sequence in section 5.1; bind consumer scope to exact certified candidate and accepted criteria.
 
-**Explicit exclusions:** No unilateral gate decision, live admission, global FRZ promotion or rewrite of historical evidence.
+**Explicit exclusions:** No unilateral gate decision, live admission, global FRZ promotion or rewrite of historical evidence. No requirement for an EXIT-W9 record to accept this package.
 
-**Required outputs:** Operator/authorized certifier gate record, AC-14 completion and formal W9 closure record.
+**Required outputs:** Operator/authorized certifier gate record, AC-14 completion and W9-08 acceptance record (formal W9 closure belongs only to EXIT-W9, not this package).
 
 **Original acceptance criteria:** All mandatory acceptance rows met and recorded at exact SHA
 
@@ -3093,7 +3109,7 @@ Common controls in §3.1 and §9 apply to every package. Original acceptance is 
 
 **Risk and evolution / rollback:** Premature gate exposes every consumer; withhold/revoke adoption via authorized decision, never rewrite historical evidence.
 
-**Required evidence:** Operator/authorized certifier gate record, AC-14 completion and formal W9 closure record.; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
+**Required evidence:** Operator/authorized certifier gate record, AC-14 completion and W9-08 acceptance record (formal W9 closure belongs only to EXIT-W9, not this package).; record exact reviewed source/candidate identity, actual review or test procedure, result and limitations.
 
 **Atomic obligations (implementation or qualification):** No direct II-OPR sub-obligation; original acceptance and architecture references remain mandatory.
 
@@ -3107,84 +3123,84 @@ Architecture requirement to semantic owner, work package, required evidence, and
 
 | Requirement | Scope | Semantic owner | Work packages | Required evidence | Final acceptance |
 |---|---|---|---|---|---|
-| II-01 | Interpret an objective into an accepted goal with criteria, constraints, and evidence, without a second goal store. | Execution / Cognition | II-W0-02, II-W2-01, II-W2-02, II-W2-04, II-W2-06, II-W8-06, II-W8-07 | II-W0-02: Reviewed contract inventory and consumer responsibility matrix, with current versus proposed fields.; II-W2-01: Contract mapping, version compatibility and validation fixtures.; II-W2-02: Admitted execution trace with identity and parent/child evidence.; II-W2-04: Reconstructed trace and criterion coverage records for complete and incomplete goals.; II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W8-06: Durable multi-execution goal trace across wake-up, interruption, recovery and resume.; II-W8-07: Consumer contract and compatibility matrix, six real oracle-backed adoption runs, old-revision replay and boundary audit. | II-AC-01, II-AC-02, II-AC-04, II-AC-06, II-AC-07, II-AC-09, II-AC-10, II-AC-11, II-AC-12 |
-| II-02 | Decompose, validate, repair, and revise plans while preserving valid work. | Cognition | II-W2-06, II-W3-01, II-W3-02, II-W3-03, II-W3-04, II-W3-06 | II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W3-01: Matched plan-quality trials, proposed/accepted plan records, latency and fallback counts.; II-W3-02: Invalid-plan fixtures, repair attempt history, validation and fallback verdicts.; II-W3-03: Held-out decomposition proposals, independent rubric and dependency validation.; II-W3-04: Before/after graph, invalidation map, version/authorization checks and receipts.; II-W3-06: Controlled stagnation and slow-success traces, attempt budgets and planning overhead measurements. | II-AC-02, II-AC-03, II-AC-07, II-AC-10, II-AC-11, II-AC-12 |
-| II-03 | Coordinate strategic, agent-step, and tool cognition through typed decisions without collapsing owners. | Cognition / UAEP | II-W1-03, II-W3-05, II-W5-01 | II-W1-03: Reachability and call-path map with admitted runtime probes, identity and receipt references.; II-W3-05: Three-plane trace of structured proposals, feedback, reasons and accepted revisions.; II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts. | II-AC-01, II-AC-05, II-AC-07 |
-| II-04 | Select and replace heterogeneous authorized participants by capability. | Agent assembly | II-W4-01, II-W4-02, II-W4-06 | II-W4-01: Selection fixture with catalog candidates, selected roles and rejected alternatives.; II-W4-02: Parent/child admission records and delegation graph with denied cases.; II-W4-06: Failure and replacement trace, unchanged scope and attempt ownership receipts. | II-AC-04, II-AC-07, II-AC-09 |
-| II-05 | Exchange scoped questions, answers, evidence, critique, and handoffs without agent-to-agent execution. | Orchestration | II-W4-03, II-W4-04, II-W4-05, II-W4-07 | II-W4-03: Producer/consumer artifact trace and tenant/ACL fixtures.; II-W4-04: Message lifecycle and replay/ordering trace with recipient scope checks.; II-W4-05: Conflict fixture, adjudication record, final accepted or unresolved verdict.; II-W4-07: Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. | II-AC-04, II-AC-07, II-AC-10, II-AC-11 |
-| II-06 | Select permitted tools, compose bounded operations, and check results separately from invocation. | ToolRuntime | II-W5-01, II-W5-02, II-W5-03 | II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts.; II-W5-02: Sequence graph, per-invocation receipts and bounded concurrency trace.; II-W5-03: Malformed-result fixtures, validation decisions and alternative invocation receipts. | II-AC-05, II-AC-07 |
+| II-01 | Interpret an objective into an accepted goal with criteria, constraints, and evidence, without a second goal store. | Execution / Cognition | II-W0-02, II-W2-01, II-W2-02, II-W2-04, II-W2-06, II-W8-06, II-W8-07 | II-W0-02: Reviewed contract inventory and consumer responsibility matrix, with current versus proposed fields.; II-W2-01: Contract mapping, version compatibility and validation fixtures.; II-W2-02: Admitted execution trace with identity and parent/child evidence. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.; II-W2-04: Reconstructed trace and criterion coverage records for complete and incomplete goals.; II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W8-06: Durable multi-execution goal trace across wake-up, interruption, recovery and resume.; II-W8-07: Consumer contract and compatibility matrix, six real oracle-backed adoption runs, old-revision replay and boundary audit. | II-AC-01, II-AC-02, II-AC-04, II-AC-06, II-AC-07, II-AC-09, II-AC-10, II-AC-11, II-AC-12 |
+| II-02 | Decompose, validate, repair, and revise plans while preserving valid work. | Cognition | II-W2-06, II-W3-01, II-W3-02, II-W3-03, II-W3-04, II-W3-06 | II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W3-01: Matched plan-quality trials, proposed/accepted plan records, latency and fallback counts.; II-W3-02: Invalid-plan fixtures, repair attempt history, validation and fallback verdicts.; II-W3-03: Wave-held-out decomposition proposals disjoint from final W9 population, independent rubric and dependency validation.; II-W3-04: Before/after graph, invalidation map, version/authorization checks and receipts.; II-W3-06: Controlled stagnation and slow-success traces, attempt budgets and planning overhead measurements. | II-AC-02, II-AC-03, II-AC-07, II-AC-10, II-AC-11, II-AC-12 |
+| II-03 | Coordinate strategic, agent-step, and tool cognition through typed decisions without collapsing owners. | Cognition / UAEP | II-W1-03, II-W3-05, II-W5-01 | II-W1-03: Reachability and call-path map with admitted runtime probes, identity and receipt references.; II-W3-05: Three-plane trace of structured proposals, feedback, reasons and accepted revisions.; II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification. | II-AC-01, II-AC-05, II-AC-07 |
+| II-04 | Select and replace heterogeneous authorized participants by capability. | Agent assembly | II-W4-01, II-W4-02, II-W4-06 | II-W4-01: Selection fixture with catalog candidates, selected roles and rejected alternatives. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.; II-W4-02: Parent/child admission records and delegation graph with denied cases. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.; II-W4-06: Failure and replacement trace, unchanged scope and attempt ownership receipts. | II-AC-04, II-AC-07, II-AC-09 |
+| II-05 | Exchange scoped questions, answers, evidence, critique, and handoffs without agent-to-agent execution. | Orchestration | II-W4-03, II-W4-04, II-W4-05, II-W4-07 | II-W4-03: Producer/consumer artifact trace and tenant/ACL fixtures.; II-W4-04: Message lifecycle and replay/ordering trace with recipient scope checks.; II-W4-05: Conflict fixture, adjudication record, final accepted or unresolved verdict.; II-W4-07: Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-04, II-AC-07, II-AC-10, II-AC-11 |
+| II-06 | Select permitted tools, compose bounded operations, and check results separately from invocation. | ToolRuntime | II-W5-01, II-W5-02, II-W5-03 | II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.; II-W5-02: Sequence graph, per-invocation receipts and bounded concurrency trace.; II-W5-03: Malformed-result fixtures, validation decisions and alternative invocation receipts. | II-AC-05, II-AC-07 |
 | II-07 | Deliver relevant scoped context and compact it without dropping required evidence. | Context Engineering | II-W5-04, II-W5-05 | II-W5-04: Context assembly manifests and scoped retrieval/denial traces.; II-W5-05: Matched compact/uncompacted trials, token counts, source recovery and oracle comparisons. | II-AC-06, II-AC-11 |
-| II-08 | Classify obstacles and recover or stop inside authority, keeping independent work alive. | ERL / Execution | II-W2-05, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-08, II-W8-03 | II-W2-05: Before/after restart records, durable checkpoint and resumed attempt lineage.; II-W6-01: Failure taxonomy crosswalk, fault fixtures and classification traces.; II-W6-02: Recovery decision records, candidate alternatives, reconciliation receipts and denied cases.; II-W6-03: Before/after task evidence, unaffected artifact identities and new attempt receipts.; II-W6-04: Original assumption, revised graph, dependency and authority checks, oracle results.; II-W6-05: Faulted branch trace with independent completions and blocked dependent nodes.; II-W6-08: Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence.; II-W8-03: Restart, claim, checkpoint, reconciliation and effect receipt records across processes. | II-AC-07, II-AC-09, II-AC-10 |
+| II-08 | Classify obstacles and recover or stop inside authority, keeping independent work alive. | ERL / Execution | II-W2-05, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-08, II-W8-03 | II-W2-05: Before/after restart records, durable checkpoint and resumed attempt lineage.; II-W6-01: Failure taxonomy crosswalk, fault fixtures and classification traces.; II-W6-02: Recovery decision records, candidate alternatives, reconciliation receipts and denied cases.; II-W6-03: Before/after task evidence, unaffected artifact identities and local retry metadata/events or execution retry generation receipts with preserved Task/Run/Attempt/Execution identity. Before/after identity tuples, retry metadata, effect reconciliation and unchanged unaffected artifacts; whole-Run retry contrast under authorized policy.; II-W6-04: Original assumption, revised graph, dependency and authority checks, oracle results.; II-W6-05: Faulted branch trace with independent completions and blocked dependent nodes.; II-W6-08: Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence. Diagnostic reconstruction trace, read-only boundary checks and unsupported-mode limitations.; II-W8-03: Restart, claim, checkpoint, reconciliation and effect receipt records across processes. | II-AC-07, II-AC-09, II-AC-10 |
 | II-09 | Verify outcomes from acceptance evidence rather than executor declaration. | Decision Verification | II-W2-04, II-W6-06, II-W6-07, II-W9-05 | II-W2-04: Reconstructed trace and criterion coverage records for complete and incomplete goals.; II-W6-06: Criterion-to-evidence matrix with pass/fail/incomplete and provenance.; II-W6-07: Positive and deceptive-output trials, evaluator identities, disagreements and oracle verdicts.; II-W9-05: Independent scoped findings and reproducible checks, exact SHA and role provenance. | II-AC-01, II-AC-02, II-AC-07, II-AC-09, II-AC-12, II-AC-14 |
 | II-10 | Adapt run strategy and durable configuration only through governed proposals, promotion, and rollback. | AHI | II-W7-01, II-W7-04, II-W7-05, II-W7-06 | II-W7-01: Signal mapping, provenance, scope and accepted/rejected input examples.; II-W7-04: Versioned proposals and independent recommendation evaluation including failures.; II-W7-05: Durable approval and restart records, rejected stale or unauthorized proposal cases.; II-W7-06: Controlled experiment results, promotion authority and induced-regression rollback trace. | II-AC-08, II-AC-11 |
 | II-11 | Reuse validated scoped experience without treating it as permission or contaminating held-out work. | Memory | II-W7-02, II-W7-03 | II-W7-02: Pattern records and validation trials with counterexamples.; II-W7-03: Randomized comparable trials, retrieval provenance, quality/cost and freshness measurements. | II-AC-08, II-AC-09 |
-| II-12 | Account for aggregate cost, time, tokens, attempts, and capacity across children. | Execution / capacity | II-W5-06, II-W5-07, II-W8-01, II-W8-02 | II-W5-06: Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison.; II-W5-07: Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases.; II-W8-01: Infrastructure manifest, worker/claim traces, load curves, saturation and latency data; fairness and backpressure trials.; II-W8-02: Cross-worker reservation/settlement traces and retry/load measurements. | II-AC-07, II-AC-10, II-AC-11 |
+| II-12 | Account for aggregate cost, time, tokens, attempts, and capacity across children. | Budget (accounting/enforcement), Execution (coordination), Capacity (resource admission) | II-W5-06, II-W5-07, II-W8-01, II-W8-02 | II-W5-06: Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison.; II-W5-07: Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.; II-W8-01: Infrastructure manifest, worker/claim traces, load curves, saturation and latency data; fairness and backpressure trials.; II-W8-02: Cross-worker reservation/settlement traces and retry/load measurements. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-07, II-AC-10, II-AC-11 |
 | II-INV-01 | Accepted objective and criteria govern execution; plans remain revisable means. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-01 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-01: Contract mapping, version compatibility and validation fixtures. | II-AC-01, II-AC-02, II-AC-12 |
-| II-INV-02 | Every effectful operation and child execution passes canonical admission. One semantic authority, not one process. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-02 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-02: Admitted execution trace with identity and parent/child evidence. | II-AC-01 |
+| II-INV-02 | Every effectful operation and child execution passes canonical admission. One semantic authority, not one process. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-02 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-02: Admitted execution trace with identity and parent/child evidence. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. | II-AC-01 |
 | II-INV-03 | Revisions are typed, validated, versioned, and evidence-bound, and they preserve valid work. | Platform Architecture with the cited runtime owner | II-W0-03, II-W3-04 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W3-04: Before/after graph, invalidation map, version/authorization checks and receipts. | II-AC-01, II-AC-03, II-AC-07 |
-| II-INV-04 | No inferred authorization, privilege escalation, or human-approval bypass. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-03 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-03: Positive/negative policy and budget receipts including required HITL. | II-AC-01, II-AC-05, II-AC-09, II-AC-10 |
+| II-INV-04 | No inferred authorization, privilege escalation, or human-approval bypass. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-03 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-03: Positive/negative policy and budget receipts including required HITL. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-01, II-AC-05, II-AC-09, II-AC-10 |
 | II-INV-05 | Teams adapt only through canonical topology and scoped communication. | Platform Architecture with the cited runtime owner | II-W0-03, II-W4-04 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W4-04: Message lifecycle and replay/ordering trace with recipient scope checks. | II-AC-01, II-AC-04 |
 | II-INV-06 | Structured decisions, references, and reasons are recorded. Untrusted text is not authority. | Platform Architecture with the cited runtime owner | II-W0-03, II-W2-04 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W2-04: Reconstructed trace and criterion coverage records for complete and incomplete goals. | II-AC-01, II-AC-02, II-AC-09 |
 | II-INV-07 | Success requires acceptance evidence beyond the executor's declaration. | Platform Architecture with the cited runtime owner | II-W0-03, II-W6-07 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W6-07: Positive and deceptive-output trials, evaluator identities, disagreements and oracle verdicts. | II-AC-01, II-AC-07 |
 | II-INV-08 | Authorized alternatives are attempted before escalation. Uncertain effects are not blindly repeated. | Platform Architecture with the cited runtime owner | II-W0-03, II-W6-02 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W6-02: Recovery decision records, candidate alternatives, reconciliation receipts and denied cases. | II-AC-01, II-AC-07 |
-| II-INV-09 | Time, token, cost, attempt, depth, and resource budgets bind parent and children. | Platform Architecture with the cited runtime owner | II-W0-03, II-W5-07 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W5-07: Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. | II-AC-01, II-AC-07, II-AC-10, II-AC-11 |
+| II-INV-09 | Time, token, cost, attempt, depth, and resource budgets bind parent and children. | Platform Architecture with the cited runtime owner | II-W0-03, II-W5-07 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W5-07: Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-01, II-AC-07, II-AC-10, II-AC-11 |
 | II-INV-10 | Experience is validated, scoped, versioned, and measured. | Platform Architecture with the cited runtime owner | II-W0-03, II-W7-03 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W7-03: Randomized comparable trials, retrieval provenance, quality/cost and freshness measurements. | II-AC-01, II-AC-08, II-AC-09 |
 | II-INV-11 | Model and backend selection is profile-driven, replaceable, and qualified. | Platform Architecture with the cited runtime owner | II-W0-03, II-W5-06 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W5-06: Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison. | II-AC-01, II-AC-07, II-AC-11 |
 | II-INV-12 | Existing owners are extended. Contracts, stores, validators, and control planes are not duplicated. | Platform Architecture with the cited runtime owner | II-W0-03, II-W0-04, II-W1-04 | II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W0-04: Concern-level ownership and overlap matrix with provisional W1 checks.; II-W1-04: Overlap/conflict matrix with source evidence and one owner per concern. | II-AC-01 |
-| II-OPR-01 | One consumption contract for accepted goal, domain acceptance, identity, scope, budgets, canonical invocation, progress, and explicit non-success. | Owners named in the architecture OPR section | II-W0-02, II-W1-01, II-W1-03, II-W1-07, II-W2-01, II-W2-02, II-W2-03, II-W2-04, II-W2-05, II-W2-06, II-W8-07 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-01, II-AC-02, II-AC-05, II-AC-06, II-AC-07, II-AC-09, II-AC-10, II-AC-12 |
-| II-OPR-02 | Simplest effective realization. Behavior classes are properties and may coexist. Deterministic authorized paths stay available. | Owners named in the architecture OPR section | II-W2-06, II-W3-01, II-W3-02, II-W3-03, II-W3-04, II-W3-05, II-W3-06, II-W4-01, II-W4-02, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07, II-W5-01, II-W5-02, II-W5-03, II-W5-04, II-W5-05, II-W5-06, II-W5-07, II-W7-04, II-W8-07 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-04, II-AC-07, II-AC-08, II-AC-09, II-AC-11, II-AC-12 |
-| II-OPR-03 | Measure verified-goal throughput, latency, amplification, cost including failures, and quality variance. No production SLO numbers in this revision. | Owners named in the architecture OPR section | II-W1-05, II-W1-06, II-W1-07, II-W2-06, II-W3-06, II-W4-07, II-W5-05, II-W5-06, II-W5-07, II-W7-04, II-W7-05, II-W7-06, II-W8-01, II-W8-02, II-W8-03, II-W9-01, II-W9-02, II-W9-03, II-W9-04 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-10, II-AC-11 |
-| II-OPR-04 | Horizontal scale, multi-worker admission, isolation, backpressure, and the six load profiles on the shared contract. | Owners named in the architecture OPR section | II-W1-05, II-W1-06, II-W1-07, II-W4-07, II-W5-07, II-W8-01, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W8-07, II-W9-04 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-07, II-AC-09, II-AC-10 |
-| II-OPR-05 | Reconstruct goal through verified outcome with existing observability. Diagnostics do not change execution state. | Owners named in the architecture OPR section | II-W2-04, II-W2-05, II-W2-06, II-W3-06, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07, II-W5-03, II-W5-04, II-W5-05, II-W5-06, II-W5-07, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08, II-W8-01, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W9-03, II-W9-04, II-W9-05 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-02, II-AC-07, II-AC-09, II-AC-10, II-AC-11 |
-| II-OPR-06 | Seventeen failure classes each have detection, owner, permitted recovery, evidence, safe stop, and forbidden behavior. | Owners named in the architecture OPR section | II-W2-05, II-W3-02, II-W3-03, II-W3-04, II-W3-05, II-W3-06, II-W4-06, II-W4-07, II-W5-03, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W8-06 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-07, II-AC-09 |
-| II-OPR-07 | Versioned contracts, regression, scoped experience, rollback, and affected-domain recertification inside existing authorities. | Owners named in the architecture OPR section | II-W1-04, II-W1-07, II-W7-01, II-W7-02, II-W7-03, II-W7-04, II-W7-05, II-W7-06, II-W8-07, II-W8-08, II-W9-05, II-W9-06, II-W9-07, II-W9-08 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-08, II-AC-09, II-AC-11, II-AC-12, II-AC-13 |
+| II-OPR-01 | One consumption contract for accepted goal, domain acceptance, identity, scope, budgets, canonical invocation, progress, and explicit non-success. | Owners named in the architecture OPR section | II-W0-02, II-W1-01, II-W1-03, II-W1-07, II-W2-01, II-W2-02, II-W2-03, II-W2-04, II-W2-05, II-W2-06, II-W5-04, II-W6-06, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W8-07, II-W9-03 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-01, II-AC-02, II-AC-05, II-AC-06, II-AC-07, II-AC-09, II-AC-10, II-AC-12 |
+| II-OPR-02 | Simplest effective realization. Behavior classes are properties and may coexist. Deterministic authorized paths stay available. | Owners named in the architecture OPR section | II-W2-03, II-W2-06, II-W3-01, II-W3-02, II-W3-03, II-W3-04, II-W3-05, II-W3-06, II-W4-01, II-W4-02, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07, II-W5-01, II-W5-02, II-W5-03, II-W5-04, II-W5-05, II-W5-06, II-W5-07, II-W7-04, II-W7-06, II-W8-06, II-W8-07, II-W9-03 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-04, II-AC-07, II-AC-08, II-AC-09, II-AC-11, II-AC-12 |
+| II-OPR-03 | Measure verified-goal throughput, latency, amplification, cost including failures, and quality variance. No production SLO numbers in this revision. | Owners named in the architecture OPR section | II-W1-05, II-W1-06, II-W1-07, II-W2-06, II-W3-06, II-W4-07, II-W5-01, II-W5-02, II-W5-03, II-W5-05, II-W5-06, II-W5-07, II-W7-04, II-W7-05, II-W7-06, II-W8-01, II-W8-02, II-W8-03, II-W9-01, II-W9-02, II-W9-03, II-W9-04 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-10, II-AC-11 |
+| II-OPR-04 | Horizontal scale, multi-worker admission, isolation, backpressure, and the six load profiles on the shared contract. | Owners named in the architecture OPR section | II-W1-05, II-W1-06, II-W1-07, II-W4-07, II-W5-07, II-W6-02, II-W8-01, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W8-07, II-W9-03, II-W9-04 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-07, II-AC-09, II-AC-10 |
+| II-OPR-05 | Reconstruct goal through verified outcome with existing observability. Diagnostics do not change execution state. | Owners named in the architecture OPR section | II-W2-04, II-W2-05, II-W2-06, II-W3-04, II-W3-05, II-W3-06, II-W4-01, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07, II-W5-01, II-W5-03, II-W5-04, II-W5-05, II-W5-06, II-W5-07, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08, II-W8-01, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W9-03, II-W9-04, II-W9-05 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-02, II-AC-07, II-AC-09, II-AC-10, II-AC-11 |
+| II-OPR-06 | Seventeen failure classes each have detection, owner, permitted recovery, evidence, safe stop, and forbidden behavior. | Owners named in the architecture OPR section | II-W2-05, II-W3-02, II-W3-03, II-W3-04, II-W3-05, II-W3-06, II-W4-05, II-W4-06, II-W4-07, II-W5-01, II-W5-03, II-W5-06, II-W5-07, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08, II-W7-03, II-W8-01, II-W8-02, II-W8-03, II-W8-04, II-W8-05, II-W8-06, II-W9-03, II-W9-04 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-07, II-AC-09 |
+| II-OPR-07 | Versioned contracts, regression, scoped experience, rollback, and affected-domain recertification inside existing authorities. | Owners named in the architecture OPR section | II-W1-04, II-W1-05, II-W1-07, II-W2-01, II-W7-01, II-W7-02, II-W7-03, II-W7-04, II-W7-05, II-W7-06, II-W8-04, II-W8-07, II-W8-08, II-W9-01, II-W9-02, II-W9-03, II-W9-05, II-W9-06, II-W9-07, II-W9-08 | Mandatory sub-obligation records in §8.1; package-specific evidence and raw oracles. | II-AC-08, II-AC-09, II-AC-11, II-AC-12, II-AC-13 |
 | II-W0-01 | Layer diagram and classification; Tier-0–Tier-3 unchanged | Platform Architecture | II-W0-01 | Reviewed architecture diagram and tier/authority boundary comparison. | II-AC-01 |
 | II-W0-02 | Definition, scope, non-goals and adoption contract accepted | Platform Architecture / Execution | II-W0-02 | Reviewed contract inventory and consumer responsibility matrix, with current versus proposed fields. | II-AC-12 |
 | II-W0-03 | Traceability to existing invariants; no conflicting authority | Platform Architecture / Governance | II-W0-03 | Twelve-row invariant traceability review with exact source revisions and conflict dispositions. | II-AC-01 |
 | II-W0-04 | Single owner per concern; overlap and conflict matrix | All affected owners | II-W0-04 | Concern-level ownership and overlap matrix with provisional W1 checks. | II-AC-01 |
 | II-W0-05 | Canonical cross-links and approved status; no duplicate semantics | Documentation / architecture owners | II-W0-05 | Reviewed document set, adoption register, link/anchor results, digest approval and authorized publication records; environment trial specification. | II-AC-13 |
-| II-W0-06 | ARCH-FREEZE, EQO, SFX and SEF dependency changes explicitly ratified; no cycle | Operator / program owners | II-W0-06 | Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests. | II-AC-13 |
+| II-W0-06 | ARCH-FREEZE, EQO, SFX and SEF dependency changes explicitly ratified; no cycle | Operator / program owners | II-W0-06 | Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests. Approved Foundation binding with ID/owner/source/verdict/evidence locator and pending evidence status; external reconciliation records and exact before/after predecessor sets. | II-AC-13 |
 | II-W1-01 | Code, contracts, host consumers, tests and existing tickets mapped | Domain owners; post-freeze SHA | II-W1-01 | Path- and symbol-level inventory, reachability hypotheses, owner and test references, explicit missing evidence. | II-AC-01 |
 | II-W1-02 | II-AUD-01 and other stale claims resolved with evidence | Domain owners | II-W1-02 | Finding-by-finding historical/current comparison and proposed owner-specific corrections. | II-AC-01 |
 | II-W1-03 | Trace admission-to-outcome, identify unbound ports and bypass risks | Execution, Nexus, UAEP, Tools, AW | II-W1-03 | Reachability and call-path map with admitted runtime probes, identity and receipt references. | II-AC-01 |
 | II-W1-04 | Overlap matrix; no second owner or runtime planned | Architecture / EVOL-X | II-W1-04 | Overlap/conflict matrix with source evidence and one owner per concern. | II-AC-01 |
-| II-W1-05 | Reproducible task sets, seeds, oracles, failure taxonomy and held-out split | Evaluation / domain adopters | II-W1-05 | Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles. | II-AC-11 |
-| II-W1-06 | Baseline raw trials, outcome, cost, latency, interventions and uncertainty | Qualification | II-W1-06 | Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths. | II-AC-11 |
-| II-W1-07 | REUSE/WIRING/EXTEND/NEW dispositions; exact tickets, dependencies, tests, write-sets and acceptance; thresholds locked | Program owner | II-W1-07 | Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan. | II-AC-01 |
+| II-W1-05 | Reproducible task sets, seeds, oracles, failure taxonomy and held-out split | Evaluation / domain adopters | II-W1-05 | Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles. Versioned four-population manifests, disjointness and custody protocol, blind baseline/reveal authority and contamination-negative procedure. | II-AC-11 |
+| II-W1-06 | Baseline raw trials, outcome, cost, latency, interventions and uncertainty | Qualification | II-W1-06 | Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths. Custody log, manifest IDs and matched baseline linkage, disclosure record. | II-AC-11 |
+| II-W1-07 | REUSE/WIRING/EXTEND/NEW dispositions; exact tickets, dependencies, tests, write-sets and acceptance; thresholds locked | Program owner | II-W1-07 | Approved per-package refinement records, updated dependency graph, SLO/threshold ledger and gap resolution plan. Lock four-population manifests, custody, blind baseline comparison and contamination acceptance before W2; §9 applies. | II-AC-01 |
 | II-W2-01 | Reuse existing types; accepted objective/criteria/version/scope mapped | Execution/Cognition + AW | II-W2-01 | Contract mapping, version compatibility and validation fixtures. | II-AC-02, II-AC-12 |
-| II-W2-02 | One admitted root; correct identity and child lineage | Execution | II-W2-02 | Admitted execution trace with identity and parent/child evidence. | II-AC-01 |
-| II-W2-03 | Negative tests for denied scope and budget; no silent grants | Governance / Execution | II-W2-03 | Positive/negative policy and budget receipts including required HITL. | II-AC-05, II-AC-09, II-AC-10 |
+| II-W2-02 | One admitted root; correct identity and child lineage | Execution | II-W2-02 | Admitted execution trace with identity and parent/child evidence. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. | II-AC-01 |
+| II-W2-03 | Negative tests for denied scope and budget; no silent grants | Governance / Execution | II-W2-03 | Positive/negative policy and budget receipts including required HITL. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-05, II-AC-09, II-AC-10 |
 | II-W2-04 | Reconstruct criteria coverage and explicit incomplete result | Execution / evidence owners | II-W2-04 | Reconstructed trace and criterion coverage records for complete and incomplete goals. | II-AC-02, II-AC-09 |
 | II-W2-05 | Restart preserves accepted state, identity and evidence | Existing persistence/recovery | II-W2-05 | Before/after restart records, durable checkpoint and resumed attempt lineage. | II-AC-07 |
 | II-W2-06 | End-to-end accepted goal, plan, execution, evidence and verified result | Reference host / verification | II-W2-06 | Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results. | II-AC-02, II-AC-10, II-AC-11, II-AC-12 |
 | II-W3-01 | Measurable improvement on baseline plan cases | Cognition | II-W3-01 | Matched plan-quality trials, proposed/accepted plan records, latency and fallback counts. | II-AC-03 |
 | II-W3-02 | Invalid plan rejected; bounded repair and valid fallback behavior | Cognition / validators | II-W3-02 | Invalid-plan fixtures, repair attempt history, validation and fallback verdicts. | II-AC-03, II-AC-07 |
-| II-W3-03 | Unseen goal decomposed without complete manual graph | Cognition | II-W3-03 | Held-out decomposition proposals, independent rubric and dependency validation. | II-AC-03 |
+| II-W3-03 | Unseen goal decomposed without complete manual graph | Cognition | II-W3-03 | Wave-held-out decomposition proposals disjoint from final W9 population, independent rubric and dependency validation. | II-AC-03 |
 | II-W3-04 | Valid revision preserves unaffected work; stale/cyclic revision denied | Orchestration / Execution | II-W3-04 | Before/after graph, invalidation map, version/authorization checks and receipts. | II-AC-03, II-AC-07 |
 | II-W3-05 | Typed cross-plane feedback and evidence, no owner conflation | Cognition / UAEP / tools | II-W3-05 | Three-plane trace of structured proposals, feedback, reasons and accepted revisions. | II-AC-07 |
 | II-W3-06 | Repeated unproductive strategy detected; bounded alternative or stop | Execution / diagnostics / Cognition | II-W3-06 | Controlled stagnation and slow-success traces, attempt budgets and planning overhead measurements. | II-AC-07, II-AC-11 |
-| II-W4-01 | Eligible heterogeneous roles selected; unqualified agent refused | Agent assembly/catalog | II-W4-01 | Selection fixture with catalog candidates, selected roles and rejected alternatives. | II-AC-04, II-AC-09 |
-| II-W4-02 | Canonical child admission, scope and identity tests | Orchestration / Execution | II-W4-02 | Parent/child admission records and delegation graph with denied cases. | II-AC-04 |
+| II-W4-01 | Eligible heterogeneous roles selected; unqualified agent refused | Agent assembly/catalog | II-W4-01 | Selection fixture with catalog candidates, selected roles and rejected alternatives. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification. | II-AC-04, II-AC-09 |
+| II-W4-02 | Canonical child admission, scope and identity tests | Orchestration / Execution | II-W4-02 | Parent/child admission records and delegation graph with denied cases. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence. | II-AC-04 |
 | II-W4-03 | Scoped artifact reuse without cross-tenant leakage | Nexus / Context / evidence | II-W4-03 | Producer/consumer artifact trace and tenant/ACL fixtures. | II-AC-04 |
 | II-W4-04 | Causal, scoped communication; replay/stale message negative tests | Orchestration/Nexus owner | II-W4-04 | Message lifecycle and replay/ordering trace with recipient scope checks. | II-AC-04 |
 | II-W4-05 | Conflicting evidence resolved or explicitly escalated | Decision Deliberation / verification | II-W4-05 | Conflict fixture, adjudication record, final accepted or unresolved verdict. | II-AC-04, II-AC-07 |
 | II-W4-06 | Qualified substitute, unchanged authority, no duplicate running work | Assembly / Orchestration | II-W4-06 | Failure and replacement trace, unchanged scope and attempt ownership receipts. | II-AC-04, II-AC-07 |
-| II-W4-07 | Unrelated work continues; dependencies, cancellation and aggregate limits respected | Nexus / Execution / capacity | II-W4-07 | Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. | II-AC-04, II-AC-10, II-AC-11 |
-| II-W5-01 | Accuracy and permitted-candidate measurements | Tool cognition | II-W5-01 | Adjudicated selection trials with distractors, refusal and abstention counts. | II-AC-05, II-AC-07 |
+| II-W4-07 | Unrelated work continues; dependencies, cancellation and aggregate limits respected | Nexus / Execution / capacity | II-W4-07 | Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-04, II-AC-10, II-AC-11 |
+| II-W5-01 | Accuracy and permitted-candidate measurements | Tool cognition | II-W5-01 | Adjudicated selection trials with distractors, refusal and abstention counts. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification. | II-AC-05, II-AC-07 |
 | II-W5-02 | Dependency-valid, bounded sequences and batches | Tools / UAEP | II-W5-02 | Sequence graph, per-invocation receipts and bounded concurrency trace. | II-AC-05 |
 | II-W5-03 | Incorrect results rejected; permitted alternative recovers | Tools / verification | II-W5-03 | Malformed-result fixtures, validation decisions and alternative invocation receipts. | II-AC-05, II-AC-07 |
 | II-W5-04 | Relevant, scoped per-agent context and references | Context Engineering / UCL | II-W5-04 | Context assembly manifests and scoped retrieval/denial traces. | II-AC-06 |
 | II-W5-05 | Lower token cost without required evidence loss | Context / Memory | II-W5-05 | Matched compact/uncompacted trials, token counts, source recovery and oracle comparisons. | II-AC-06, II-AC-11 |
 | II-W5-06 | Profile-driven model selection; replaceability and cost/quality evidence | Model routing / AHI | II-W5-06 | Profile-matched trials, routing decisions, quota/failure traces and cost-quality comparison. | II-AC-07, II-AC-11 |
-| II-W5-07 | Concurrent reservations enforce parent limits and deadlines | Execution / capacity / Worker budgets | II-W5-07 | Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. | II-AC-07, II-AC-10, II-AC-11 |
+| II-W5-07 | Concurrent reservations enforce parent limits and deadlines | Execution / capacity / Worker budgets | II-W5-07 | Concurrent ledger traces, reservations and actuals, failure/cancel/deadline and restart cases. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-07, II-AC-10, II-AC-11 |
 | II-W6-01 | Map existing typed failures; distinguish unknown effects | Execution / ERL / Self-Healing | II-W6-01 | Failure taxonomy crosswalk, fault fixtures and classification traces. | II-AC-07 |
 | II-W6-02 | Authorized alternatives selected; denial stays denied | Recovery / Self-Healing | II-W6-02 | Recovery decision records, candidate alternatives, reconciliation receipts and denied cases. | II-AC-07 |
-| II-W6-03 | Repair failed step without repeating unrelated work | UAEP / Execution | II-W6-03 | Before/after task evidence, unaffected artifact identities and new attempt receipts. | II-AC-07 |
+| II-W6-03 | Repair failed step without repeating unrelated work | UAEP / Execution | II-W6-03 | Before/after task evidence, unaffected artifact identities and local retry metadata/events or execution retry generation receipts with preserved Task/Run/Attempt/Execution identity. Before/after identity tuples, retry metadata, effect reconciliation and unchanged unaffected artifacts; whole-Run retry contrast under authorized policy. | II-AC-07 |
 | II-W6-04 | Replan after design defect; invalidate affected evidence | Cognition / Orchestration | II-W6-04 | Original assumption, revised graph, dependency and authority checks, oracle results. | II-AC-07 |
 | II-W6-05 | Local blocker does not stop eligible independent tasks | Nexus / Execution | II-W6-05 | Faulted branch trace with independent completions and blocked dependent nodes. | II-AC-07 |
 | II-W6-06 | All required criteria mapped to valid current evidence | Decision Verification / domain owner | II-W6-06 | Criterion-to-evidence matrix with pass/fail/incomplete and provenance. | II-AC-02, II-AC-07, II-AC-12 |
 | II-W6-07 | False-positive success and fabricated evidence refused | Verification | II-W6-07 | Positive and deceptive-output trials, evaluator identities, disagreements and oracle verdicts. | II-AC-07 |
-| II-W6-08 | Genuine exhaustion, cancellation, wait and reserved decision paths reconstructable | Execution / Governance | II-W6-08 | Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence. | II-AC-07 |
+| II-W6-08 | Genuine exhaustion, cancellation, wait and reserved decision paths reconstructable | Execution / Governance | II-W6-08 | Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence. Diagnostic reconstruction trace, read-only boundary checks and unsupported-mode limitations. | II-AC-07 |
 | II-W7-01 | Scoped canonical signals and outcome references | AHI / evidence | II-W7-01 | Signal mapping, provenance, scope and accepted/rejected input examples. | II-AC-08 |
 | II-W7-02 | Validated patterns and conditions, no competing store | AHI / Self-Healing | II-W7-02 | Pattern records and validation trials with counterexamples. | II-AC-08 |
 | II-W7-03 | Relevant retrieval with freshness, provenance and isolation | Memory / Cognition | II-W7-03 | Randomized comparable trials, retrieval provenance, quality/cost and freshness measurements. | II-AC-08, II-AC-09 |
@@ -3192,47 +3208,47 @@ Architecture requirement to semantic owner, work package, required evidence, and
 | II-W7-05 | Approval, proposal, version and rollback survive restart in qualified scope | AHI / Governance | II-W7-05 | Durable approval and restart records, rejected stale or unauthorized proposal cases. | II-AC-08 |
 | II-W7-06 | Shadow/canary evaluation, reject unauthorized promotion, rollback proven | AHI / Experimentation | II-W7-06 | Controlled experiment results, promotion authority and induced-regression rollback trace. | II-AC-08 |
 | II-W8-01 | Declared distribution topology and real bounded parallelism proof | Capacity / Execution | II-W8-01 | Infrastructure manifest, worker/claim traces, load curves, saturation and latency data; fairness and backpressure trials. | II-AC-07, II-AC-10, II-AC-11 |
-| II-W8-02 | Aggregate accounting across workers, failure and cancellation | Execution / capacity | II-W8-02 | Cross-worker reservation/settlement traces and retry/load measurements. | II-AC-07, II-AC-10 |
+| II-W8-02 | Aggregate accounting across workers, failure and cancellation | Execution / capacity | II-W8-02 | Cross-worker reservation/settlement traces and retry/load measurements. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope. | II-AC-07, II-AC-10 |
 | II-W8-03 | Restart, duplicate delivery, claim loss, no duplicate external effects | Persistence / ERL | II-W8-03 | Restart, claim, checkpoint, reconciliation and effect receipt records across processes. | II-AC-07, II-AC-09, II-AC-10 |
 | II-W8-04 | Cross-tenant negative tests across all new paths | Security / Governance / context | II-W8-04 | Cross-tenant negative matrix and per-tenant resource/trace observations. | II-AC-08, II-AC-09, II-AC-10 |
-| II-W8-05 | Injection, forged evidence, unsafe tools, sandbox and authorization failures | Security / domain owners | II-W8-05 | Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope. | II-AC-05, II-AC-09 |
+| II-W8-05 | Injection, forged evidence, unsafe tools, sandbox and authorization failures | Security / domain owners | II-W8-05 | Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope. Access/denial fixtures, retention/deletion receipts and redaction evidence. | II-AC-05, II-AC-09 |
 | II-W8-06 | Durable goals, dispatch, recovery and resume via canonical services | AW / Execution | II-W8-06 | Durable multi-execution goal trace across wake-up, interruption, recovery and resume. | II-AC-07 |
 | II-W8-07 | Stable neutral contracts, reference adopter proof; no product implementation dependency | Platform / SFX / SEF owners | II-W8-07 | Consumer contract and compatibility matrix, six real oracle-backed adoption runs, old-revision replay and boundary audit. | II-AC-01, II-AC-02, II-AC-04, II-AC-06, II-AC-09, II-AC-11, II-AC-12 |
 | II-W8-08 | Exact-SHA affected-domain recertification and preserved invariants | EVOL-X / ENT-AUDIT-X / qualification | II-W8-08 | Impact manifest, selected regression rationale, raw test results and existing certification references. | II-AC-09, II-AC-13 |
-| II-W9-01 | Held-out repeatable trials against locked criteria | Qualification | II-W9-01 | Raw per-family trials, failures, metrics, uncertainty and reproducible commands. | II-AC-02, II-AC-11 |
+| II-W9-01 | Held-out repeatable trials against locked criteria | Qualification | II-W9-01 | Raw per-family trials, failures, metrics, uncertainty and reproducible commands. Final manifest/digest, disjointness and access audit, contamination-negative result, independent reveal record and raw trial evidence. | II-AC-02, II-AC-11 |
 | II-W9-02 | Matched model/tool/budget comparison and uncertainty reported | Evaluation | II-W9-02 | Paired or controlled comparison with per-family outcomes, cost/time and limitations. | II-AC-11 |
 | II-W9-03 | All mandatory reference families and failure cases covered | Domain owners / certifier | II-W9-03 | Coverage matrix with case IDs, exact candidate, results and unresolved findings. | II-AC-02, II-AC-07, II-AC-08, II-AC-09, II-AC-10, II-AC-12 |
 | II-W9-04 | Cost/time per verified goal, no hidden intervention or uncounted retries | Evaluation / observability | II-W9-04 | Per-metric measured results, percentile distributions, telemetry overhead, cost denominator and workload manifests. | II-AC-07, II-AC-10, II-AC-11 |
 | II-W9-05 | Exact candidate SHA, no duplicate owners or boundary regression | Separate qualified reviewer | II-W9-05 | Independent scoped findings and reproducible checks, exact SHA and role provenance. | II-AC-01, II-AC-14 |
 | II-W9-06 | Required affected FRZ/EVOL/ENT/IIAC evidence, no false global promotion | Existing certification authority | II-W9-06 | Independent certification record, affected-domain dispositions and explicit limitations. | II-AC-08, II-AC-09, II-AC-13, II-AC-14 |
 | II-W9-07 | Immutable evidence and canonical links; authorized publication | Program owner / authorized publisher | II-W9-07 | Publication SHA and evidence manifest, links, digests and review provenance. | II-AC-13 |
-| II-W9-08 | All mandatory acceptance rows met and recorded at exact SHA | Operator / authorized certifier | II-W9-08 | Operator/authorized certifier gate record, AC-14 completion and formal W9 closure record. | II-AC-14 |
+| II-W9-08 | All mandatory acceptance rows met and recorded at exact SHA | Operator / authorized certifier | II-W9-08 | Operator/authorized certifier gate record, AC-14 completion and W9-08 acceptance record (formal W9 closure belongs only to EXIT-W9, not this package). | II-AC-14 |
 | REF-II-01 | Engineering defect analysis, sandboxed change, regression discovery, strategy revision, and independent tests. | Evaluation with the domain owner of the fixture | II-W1-05, II-W2-06, II-W5-01, II-W8-05, II-W9-01 | Sealed trials and oracle results | II-AC-11 |
 | REF-II-02 | Multi-source research, contradiction handling, and a cited report against a sealed set. | Evaluation with the domain owner of the fixture | II-W1-05, II-W3-03, II-W5-03, II-W9-03 | Sealed trials and oracle results | II-AC-11 |
 | REF-II-03 | Synthetic business reconciliation against a deterministic oracle. | Evaluation with the domain owner of the fixture | II-W1-05, II-W2-06, II-W6-06, II-W9-03 | Sealed trials and oracle results | II-AC-11 |
 | REF-II-04 | Injected tool, plan, agent, duplicate-delivery, and uncertain-effect failures. | Evaluation with the domain owner of the fixture | II-W1-05, II-W6-01, II-W8-03, II-W9-01 | Sealed trials and oracle results | II-AC-11 |
 | REF-II-05 | Heterogeneous cooperation judged by correctness and causal evidence. | Evaluation with the domain owner of the fixture | II-W1-05, II-W4-04, II-W4-05, II-W9-03 | Sealed trials and oracle results | II-AC-11 |
 | REF-II-06 | Interruption, process loss, resume, and later use of verified experience. | Evaluation with the domain owner of the fixture | II-W1-05, II-W2-05, II-W7-03, II-W8-03, II-W8-06, II-W9-01 | Sealed trials and oracle results | II-AC-11 |
-| GATE-II-ENTRY | Formal ARCH-FREEZE closure, accepted required Enterprise Campaign Foundation scope, exact baseline, and required execution authority. | Program authority | II-W0-05, II-W1-01 | Recorded baseline and authority. Not produced by this candidate. | Allows executable W1. Does not certify capability. |
+| GATE-II-ENTRY | Formal ARCH-FREEZE closure and actual acceptance against the approved finite §4.1 binding, exact baseline, and required execution authority. | Program authority | II-W0-06, II-W1-01 | Approved binding and accepted exact evidence, baseline and authority. Not produced by this candidate. | Allows executable W1. Does not certify capability. |
 | GATE-II-ARCH | W0 and W1 complete, including executable scopes, canonical ownership, and locked benchmark and acceptance. | Platform Architecture | II-W0-05, II-W1-07 | Locked method and package scopes. | Allows W2. Not a capability certificate. |
 | GATE-II-CORE | W2, W3, and W4 qualified. | Execution / Cognition / Orchestration | II-W2-06, II-W3-06, II-W4-07 | Integrated goal, plan, and team evidence. | II-AC-02, II-AC-03, II-AC-04 |
 | GATE-II-ADAPTIVE | W5, W6, and W7 qualified. | Tools / Verification / AHI | II-W5-07, II-W6-08, II-W7-06 | Tool, recovery, verification, and adaptation evidence. | II-AC-05 through II-AC-08 |
 | GATE-II-ENTERPRISE | W8 qualified. | Capacity / Security / Execution | II-W8-08 | Distributed, isolation, durability, and regression evidence. | II-AC-09, II-AC-10 |
 | GATE-INTELLIGENCE-CONSUME | Opened only by the W9 closure order after W9-01..07, II-AC-01..13, and the independent certification component. | Operator / authorized certifier | II-W9-08 | The gate record itself. | Completes the remainder of II-AC-14. Not a precondition of II-W9-08. |
 | II-AC-01 | One Execution Engine, original tiers, and canonical owners, with an approved boundary audit. | Program acceptance owner | II-W0-01, II-W0-03, II-W0-04, II-W1-04, II-W9-05 | II-W0-01: Reviewed architecture diagram and tier/authority boundary comparison.; II-W0-03: Twelve-row invariant traceability review with exact source revisions and conflict dispositions.; II-W0-04: Concern-level ownership and overlap matrix with provisional W1 checks.; II-W1-04: Overlap/conflict matrix with source evidence and one owner per concern.; II-W9-05: Independent scoped findings and reproducible checks, exact SHA and role provenance.; mandatory operational sub-obligations: II-OPR-01.08 | II-AC-01 |
-| II-AC-02 | Accepted objectives achieved and verified in the declared workloads. | Program acceptance owner | II-W2-01, II-W2-06, II-W9-01 | II-W2-01: Contract mapping, version compatibility and validation fixtures.; II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W9-01: Raw per-family trials, failures, metrics, uncertainty and reproducible commands.; mandatory operational sub-obligations: II-OPR-01.01, II-OPR-01.09, II-OPR-01.11, II-OPR-05.09 | II-AC-02 |
-| II-AC-03 | Dynamic decomposition, valid revisions, and plan repair demonstrated. | Program acceptance owner | II-W3-01, II-W3-02, II-W3-03, II-W3-04 | II-W3-01: Matched plan-quality trials, proposed/accepted plan records, latency and fallback counts.; II-W3-02: Invalid-plan fixtures, repair attempt history, validation and fallback verdicts.; II-W3-03: Held-out decomposition proposals, independent rubric and dependency validation.; II-W3-04: Before/after graph, invalidation map, version/authorization checks and receipts. | II-AC-03 |
-| II-AC-04 | Real heterogeneous cooperation, handoff, and result integration. | Program acceptance owner | II-W4-01, II-W4-02, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07 | II-W4-01: Selection fixture with catalog candidates, selected roles and rejected alternatives.; II-W4-02: Parent/child admission records and delegation graph with denied cases.; II-W4-03: Producer/consumer artifact trace and tenant/ACL fixtures.; II-W4-04: Message lifecycle and replay/ordering trace with recipient scope checks.; II-W4-05: Conflict fixture, adjudication record, final accepted or unresolved verdict.; II-W4-06: Failure and replacement trace, unchanged scope and attempt ownership receipts.; II-W4-07: Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement.; mandatory operational sub-obligations: II-OPR-02.03 | II-AC-04 |
-| II-AC-05 | Qualified tool selection, invocation, and result verification. Denied operations stay denied. | Program acceptance owner | II-W5-01, II-W5-02, II-W5-03 | II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts.; II-W5-02: Sequence graph, per-invocation receipts and bounded concurrency trace.; II-W5-03: Malformed-result fixtures, validation decisions and alternative invocation receipts.; mandatory operational sub-obligations: II-OPR-01.05 | II-AC-05 |
+| II-AC-02 | Accepted objectives achieved and verified in the declared workloads. | Program acceptance owner | II-W2-01, II-W2-06, II-W9-01 | II-W2-01: Contract mapping, version compatibility and validation fixtures.; II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W9-01: Raw per-family trials, failures, metrics, uncertainty and reproducible commands. Final manifest/digest, disjointness and access audit, contamination-negative result, independent reveal record and raw trial evidence.; mandatory operational sub-obligations: II-OPR-01.01, II-OPR-01.09, II-OPR-01.11, II-OPR-05.09 | II-AC-02 |
+| II-AC-03 | Dynamic decomposition, valid revisions, and plan repair demonstrated. | Program acceptance owner | II-W3-01, II-W3-02, II-W3-03, II-W3-04 | II-W3-01: Matched plan-quality trials, proposed/accepted plan records, latency and fallback counts.; II-W3-02: Invalid-plan fixtures, repair attempt history, validation and fallback verdicts.; II-W3-03: Wave-held-out decomposition proposals disjoint from final W9 population, independent rubric and dependency validation.; II-W3-04: Before/after graph, invalidation map, version/authorization checks and receipts. | II-AC-03 |
+| II-AC-04 | Real heterogeneous cooperation, handoff, and result integration. | Program acceptance owner | II-W4-01, II-W4-02, II-W4-03, II-W4-04, II-W4-05, II-W4-06, II-W4-07 | II-W4-01: Selection fixture with catalog candidates, selected roles and rejected alternatives. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.; II-W4-02: Parent/child admission records and delegation graph with denied cases. Exact policy identity/configuration/default, request and resolution, admit/deny and checkpoint invocation traces with negative bypass evidence.; II-W4-03: Producer/consumer artifact trace and tenant/ACL fixtures.; II-W4-04: Message lifecycle and replay/ordering trace with recipient scope checks.; II-W4-05: Conflict fixture, adjudication record, final accepted or unresolved verdict.; II-W4-06: Failure and replacement trace, unchanged scope and attempt ownership receipts.; II-W4-07: Concurrent graph traces, independent completion, cancellation and parent allocation observations; communication overhead and duplicate-work measurement. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.; mandatory operational sub-obligations: II-OPR-02.03 | II-AC-04 |
+| II-AC-05 | Qualified tool selection, invocation, and result verification. Denied operations stay denied. | Program acceptance owner | II-W5-01, II-W5-02, II-W5-03 | II-W5-01: Adjudicated selection trials with distractors, refusal and abstention counts. Chosen/rejected agent or tool candidates respectively with eligibility, selection reason and distinct admission evidence (II-OPR-05.04); combine only at qualification.; II-W5-02: Sequence graph, per-invocation receipts and bounded concurrency trace.; II-W5-03: Malformed-result fixtures, validation decisions and alternative invocation receipts.; mandatory operational sub-obligations: II-OPR-01.05 | II-AC-05 |
 | II-AC-06 | Scoped information transfer, provenance, and resource-aware compaction. | Program acceptance owner | II-W5-04, II-W5-05 | II-W5-04: Context assembly manifests and scoped retrieval/denial traces.; II-W5-05: Matched compact/uncompacted trials, token counts, source recovery and oracle comparisons.; mandatory operational sub-obligations: II-OPR-01.04 | II-AC-06 |
-| II-AC-07 | Feasible authorized recovery, independent branch continuation, and correct stops. | Program acceptance owner | II-W3-06, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08 | II-W3-06: Controlled stagnation and slow-success traces, attempt budgets and planning overhead measurements.; II-W6-01: Failure taxonomy crosswalk, fault fixtures and classification traces.; II-W6-02: Recovery decision records, candidate alternatives, reconciliation receipts and denied cases.; II-W6-03: Before/after task evidence, unaffected artifact identities and new attempt receipts.; II-W6-04: Original assumption, revised graph, dependency and authority checks, oracle results.; II-W6-05: Faulted branch trace with independent completions and blocked dependent nodes.; II-W6-06: Criterion-to-evidence matrix with pass/fail/incomplete and provenance.; II-W6-07: Positive and deceptive-output trials, evaluator identities, disagreements and oracle verdicts.; II-W6-08: Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence.; mandatory operational sub-obligations: II-OPR-01.10, II-OPR-02.04, II-OPR-04.13, II-OPR-05.02, II-OPR-05.03, II-OPR-05.05, II-OPR-05.10, II-OPR-06.01, II-OPR-06.02, II-OPR-06.03, II-OPR-06.04, II-OPR-06.05, II-OPR-06.06, II-OPR-06.07, II-OPR-06.08, II-OPR-06.09, II-OPR-06.10, II-OPR-06.11, II-OPR-06.12, II-OPR-06.13, II-OPR-06.14, II-OPR-06.15 | II-AC-07 |
+| II-AC-07 | Feasible authorized recovery, independent branch continuation, and correct stops. | Program acceptance owner | II-W3-06, II-W6-01, II-W6-02, II-W6-03, II-W6-04, II-W6-05, II-W6-06, II-W6-07, II-W6-08 | II-W3-06: Controlled stagnation and slow-success traces, attempt budgets and planning overhead measurements.; II-W6-01: Failure taxonomy crosswalk, fault fixtures and classification traces.; II-W6-02: Recovery decision records, candidate alternatives, reconciliation receipts and denied cases.; II-W6-03: Before/after task evidence, unaffected artifact identities and local retry metadata/events or execution retry generation receipts with preserved Task/Run/Attempt/Execution identity. Before/after identity tuples, retry metadata, effect reconciliation and unchanged unaffected artifacts; whole-Run retry contrast under authorized policy.; II-W6-04: Original assumption, revised graph, dependency and authority checks, oracle results.; II-W6-05: Faulted branch trace with independent completions and blocked dependent nodes.; II-W6-06: Criterion-to-evidence matrix with pass/fail/incomplete and provenance.; II-W6-07: Positive and deceptive-output trials, evaluator identities, disagreements and oracle verdicts.; II-W6-08: Terminal/wait disposition traces, reason, budget, resume trigger and authority evidence. Diagnostic reconstruction trace, read-only boundary checks and unsupported-mode limitations.; mandatory operational sub-obligations: II-OPR-01.10, II-OPR-02.04, II-OPR-04.13, II-OPR-05.02, II-OPR-05.03, II-OPR-05.05, II-OPR-05.10, II-OPR-06.01, II-OPR-06.02, II-OPR-06.03, II-OPR-06.04, II-OPR-06.05, II-OPR-06.06, II-OPR-06.07, II-OPR-06.08, II-OPR-06.09, II-OPR-06.10, II-OPR-06.11, II-OPR-06.12, II-OPR-06.13, II-OPR-06.14, II-OPR-06.15 | II-AC-07 |
 | II-AC-08 | Validated experience reuse, governed promotion, and rollback. | Program acceptance owner | II-W7-01, II-W7-02, II-W7-03, II-W7-04, II-W7-05, II-W7-06 | II-W7-01: Signal mapping, provenance, scope and accepted/rejected input examples.; II-W7-02: Pattern records and validation trials with counterexamples.; II-W7-03: Randomized comparable trials, retrieval provenance, quality/cost and freshness measurements.; II-W7-04: Versioned proposals and independent recommendation evaluation including failures.; II-W7-05: Durable approval and restart records, rejected stale or unauthorized proposal cases.; II-W7-06: Controlled experiment results, promotion authority and induced-regression rollback trace.; mandatory operational sub-obligations: II-OPR-02.05, II-OPR-07.05, II-OPR-07.06, II-OPR-07.07 | II-AC-08 |
-| II-AC-09 | No unresolved mandatory safety, durability, security, or isolation regression. | Program acceptance owner | II-W8-03, II-W8-04, II-W8-05, II-W8-08 | II-W8-03: Restart, claim, checkpoint, reconciliation and effect receipt records across processes.; II-W8-04: Cross-tenant negative matrix and per-tenant resource/trace observations.; II-W8-05: Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope.; II-W8-08: Impact manifest, selected regression rationale, raw test results and existing certification references.; mandatory operational sub-obligations: II-OPR-01.03, II-OPR-01.06, II-OPR-02.02, II-OPR-04.05, II-OPR-05.01, II-OPR-05.04, II-OPR-05.12, II-OPR-06.16, II-OPR-06.17, II-OPR-07.09 | II-AC-09 |
-| II-AC-10 | Declared operating scope, capacity, budget, and recovery proved on the required infrastructure. | Program acceptance owner | II-W8-01, II-W8-02, II-W9-04 | II-W8-01: Infrastructure manifest, worker/claim traces, load curves, saturation and latency data; fairness and backpressure trials.; II-W8-02: Cross-worker reservation/settlement traces and retry/load measurements.; II-W9-04: Per-metric measured results, percentile distributions, telemetry overhead, cost denominator and workload manifests.; mandatory operational sub-obligations: II-OPR-01.07, II-OPR-03.02, II-OPR-03.03, II-OPR-03.06, II-OPR-03.09, II-OPR-03.14, II-OPR-03.15, II-OPR-04.01, II-OPR-04.02, II-OPR-04.03, II-OPR-04.04, II-OPR-04.06, II-OPR-04.07, II-OPR-04.08, II-OPR-04.09, II-OPR-04.10, II-OPR-04.11, II-OPR-04.12, II-OPR-04.14, II-OPR-05.06, II-OPR-05.07 | II-AC-10 |
-| II-AC-11 | Locked behavioral and quality/cost targets met with raw reproducible evidence. | Program acceptance owner | II-W1-05, II-W1-06, II-W9-01, II-W9-02, II-W9-04 | II-W1-05: Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles.; II-W1-06: Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths.; II-W9-01: Raw per-family trials, failures, metrics, uncertainty and reproducible commands.; II-W9-02: Paired or controlled comparison with per-family outcomes, cost/time and limitations.; II-W9-04: Per-metric measured results, percentile distributions, telemetry overhead, cost denominator and workload manifests.; mandatory operational sub-obligations: II-OPR-02.01, II-OPR-03.01, II-OPR-03.04, II-OPR-03.05, II-OPR-03.07, II-OPR-03.08, II-OPR-03.10, II-OPR-03.11, II-OPR-03.12, II-OPR-03.13, II-OPR-03.16, II-OPR-05.08, II-OPR-05.11, II-OPR-07.03, II-OPR-07.08 | II-AC-11 |
+| II-AC-09 | No unresolved mandatory safety, durability, security, or isolation regression. | Program acceptance owner | II-W8-03, II-W8-04, II-W8-05, II-W8-08 | II-W8-03: Restart, claim, checkpoint, reconciliation and effect receipt records across processes.; II-W8-04: Cross-tenant negative matrix and per-tenant resource/trace observations.; II-W8-05: Attack fixtures, denial receipts, sandbox and telemetry redaction tests under declared scope. Access/denial fixtures, retention/deletion receipts and redaction evidence.; II-W8-08: Impact manifest, selected regression rationale, raw test results and existing certification references.; mandatory operational sub-obligations: II-OPR-01.03, II-OPR-01.06, II-OPR-02.02, II-OPR-04.05, II-OPR-05.01, II-OPR-05.04, II-OPR-05.12, II-OPR-06.16, II-OPR-06.17, II-OPR-07.09 | II-AC-09 |
+| II-AC-10 | Declared operating scope, capacity, budget, and recovery proved on the required infrastructure. | Program acceptance owner | II-W8-01, II-W8-02, II-W9-04 | II-W8-01: Infrastructure manifest, worker/claim traces, load curves, saturation and latency data; fairness and backpressure trials.; II-W8-02: Cross-worker reservation/settlement traces and retry/load measurements. Budget-owned reservation/consumption/settlement receipts and Execution admission correlation under actual concurrency scope.; II-W9-04: Per-metric measured results, percentile distributions, telemetry overhead, cost denominator and workload manifests.; mandatory operational sub-obligations: II-OPR-01.07, II-OPR-03.02, II-OPR-03.03, II-OPR-03.06, II-OPR-03.09, II-OPR-03.14, II-OPR-03.15, II-OPR-04.01, II-OPR-04.02, II-OPR-04.03, II-OPR-04.04, II-OPR-04.06, II-OPR-04.07, II-OPR-04.08, II-OPR-04.09, II-OPR-04.10, II-OPR-04.11, II-OPR-04.12, II-OPR-04.14, II-OPR-05.06, II-OPR-05.07 | II-AC-10 |
+| II-AC-11 | Locked behavioral and quality/cost targets met with raw reproducible evidence. | Program acceptance owner | II-W1-05, II-W1-06, II-W9-01, II-W9-02, II-W9-04 | II-W1-05: Versioned fixture manifest, development/tuning/held-out separation, sample rules, metric definitions and negative oracles. Versioned four-population manifests, disjointness and custody protocol, blind baseline/reveal authority and contamination-negative procedure.; II-W1-06: Raw run receipts, exact environment/profile, per-family statistics and uncertainty; explicit unavailable paths. Custody log, manifest IDs and matched baseline linkage, disclosure record.; II-W9-01: Raw per-family trials, failures, metrics, uncertainty and reproducible commands. Final manifest/digest, disjointness and access audit, contamination-negative result, independent reveal record and raw trial evidence.; II-W9-02: Paired or controlled comparison with per-family outcomes, cost/time and limitations.; II-W9-04: Per-metric measured results, percentile distributions, telemetry overhead, cost denominator and workload manifests.; mandatory operational sub-obligations: II-OPR-02.01, II-OPR-03.01, II-OPR-03.04, II-OPR-03.05, II-OPR-03.07, II-OPR-03.08, II-OPR-03.10, II-OPR-03.11, II-OPR-03.12, II-OPR-03.13, II-OPR-03.16, II-OPR-05.08, II-OPR-05.11, II-OPR-07.03, II-OPR-07.08 | II-AC-11 |
 | II-AC-12 | Stable consumer contract and reference adoption proof. | Program acceptance owner | II-W0-02, II-W2-06, II-W8-07 | II-W0-02: Reviewed contract inventory and consumer responsibility matrix, with current versus proposed fields.; II-W2-06: Reproducible two-case run bundle, plan/goal/receipt lineage, timings, model-call count, oracle and incomplete/denied case results.; II-W8-07: Consumer contract and compatibility matrix, six real oracle-backed adoption runs, old-revision replay and boundary audit.; mandatory operational sub-obligations: II-OPR-01.02, II-OPR-02.06, II-OPR-07.01, II-OPR-07.04 | II-AC-12 |
-| II-AC-13 | Canonical documents, dependency records, architecture, and plans are consistent. | Program acceptance owner | II-W0-05, II-W0-06, II-W9-07 | II-W0-05: Reviewed document set, adoption register, link/anchor results, digest approval and authorized publication records; environment trial specification.; II-W0-06: Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests.; II-W9-07: Publication SHA and evidence manifest, links, digests and review provenance.; mandatory operational sub-obligations: II-OPR-07.02 | II-AC-13 |
-| II-AC-14 | Independent scoped exact-SHA certification plus the consumer-gate record produced by the W9 closure order. | Program acceptance owner | II-W9-05, II-W9-06, II-W9-08 | II-W9-05: Independent scoped findings and reproducible checks, exact SHA and role provenance.; II-W9-06: Independent certification record, affected-domain dispositions and explicit limitations.; II-W9-08: Operator/authorized certifier gate record, AC-14 completion and formal W9 closure record. | II-AC-14 |
+| II-AC-13 | Canonical documents, dependency records, architecture, and plans are consistent. | Program acceptance owner | II-W0-05, II-W0-06, II-W9-07 | II-W0-05: Reviewed document set, adoption register, link/anchor results, digest approval and authorized publication records; environment trial specification.; II-W0-06: Owner-approved dependency overlay or versioned amendments, before/after DAG and preserved historical digests. Approved Foundation binding with ID/owner/source/verdict/evidence locator and pending evidence status; external reconciliation records and exact before/after predecessor sets.; II-W9-07: Publication SHA and evidence manifest, links, digests and review provenance.; mandatory operational sub-obligations: II-OPR-07.02 | II-AC-13 |
+| II-AC-14 | Independent scoped exact-SHA certification plus the consumer-gate record produced by the W9 closure order. | Program acceptance owner | II-W9-05, II-W9-06, II-W9-08 | II-W9-05: Independent scoped findings and reproducible checks, exact SHA and role provenance.; II-W9-06: Independent certification record, affected-domain dispositions and explicit limitations.; II-W9-08: Operator/authorized certifier gate record, AC-14 completion and W9-08 acceptance record (formal W9 closure belongs only to EXIT-W9, not this package). | II-AC-14 |
 | II-AUD-01 | Historical: Autonomous Work docs and code disagree; neither absence nor complete product runtime is established. | W1 reconciliation | II-W1-02 | Re-pinned source evidence. Historical until replayed. | Input to II-W1-02, not a current PASS |
 | II-AUD-02 | Historical: Execution remains sole legal authority; child-execution wiring is still to be verified. | W1 reconciliation | II-W1-02 | Re-pinned source evidence. Historical until replayed. | Input to II-W1-02, not a current PASS |
 | II-AUD-03 | Historical: planning runner, LLM plan builder, and shared task context need failure and budget inspection before extension. | W1 reconciliation | II-W1-02 | Re-pinned source evidence. Historical until replayed. | Input to II-W1-02, not a current PASS |
@@ -3254,7 +3270,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-01.04 | Input and context refs | Context Engineering | II-W5-04 | II-W8-07 | II-AC-06 | Resolve authorized versioned inputs; stale/foreign ref rejected | Context manifests |
 | II-OPR-01.05 | Capability restrictions | Governance | II-W2-03 | II-W8-05 | II-AC-05 | Only admitted capabilities effect operations; reject unqualified choice and delegation laundering | Capability and effect receipts |
 | II-OPR-01.06 | Autonomy envelope | Governance | II-W2-03 | II-W8-07 | II-AC-09 | Require reserved HITL when applicable; no silent expansion | Approval and denial trace |
-| II-OPR-01.07 | Cost, time, resource budgets | Execution | II-W2-03 | II-W8-02 | II-AC-10 | Parent and child accounting remain bounded; reject exhausted budget | Budget ledger |
+| II-OPR-01.07 | Cost, time, resource budgets | Budget (accounting/enforcement); Execution (coordination/lifecycle) | II-W2-03 | II-W8-02 | II-AC-10 | Parent and child accounting remain bounded; reject exhausted budget | Budget ledger |
 | II-OPR-01.08 | Canonical invocation | Execution | II-W2-02 | II-W8-07 | II-AC-01 | One admitted root per bounded execution; reject private entrypoint | Execution identity trace |
 | II-OPR-01.09 | Progress and evidence access | Execution/evidence | II-W2-04 | II-W8-07 | II-AC-02 | Reconstruct current criterion status for authorized caller; missing or foreign evidence denied | Progress and access records |
 | II-OPR-01.10 | Wait, cancel and resume | Execution | II-W2-05 | II-W8-03 | II-AC-07 | Durable authorized trigger and cancellation; reject stale/unauthorized resume | Checkpoint and lifecycle receipts |
@@ -3275,7 +3291,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-03.08 | Time to verified goal | Evaluation | II-W2-06 | II-W9-04 | II-AC-11 | Measure admission to verified completion, with timeout/failure dispositions | Outcome and elapsed records |
 | II-OPR-03.09 | p50/p95/p99 latency | Observability | II-W8-01 | II-W9-04 | II-AC-10 | Report sample counts and quantiles for declared cohorts; avoid unsupported tail claim | Raw latency samples and quantile method |
 | II-OPR-03.10 | Token consumption/amplification | Context Engineering | II-W5-05 | II-W9-04 | II-AC-11 | Count total input/output and retries versus matched workload; no hidden context costs | Token ledger |
-| II-OPR-03.11 | Model/tool call amplification | Tools/routing | II-W5-06 | II-W9-04 | II-AC-11 | Count all calls including repair and verification relative to baseline; flag waste | Invocation counts and reference denominator |
+| II-OPR-03.11 | Model/tool call amplification | Tools/routing | II-W5-06 | II-W9-04 | II-AC-11 | Count all calls including repair and verification relative to baseline; flag waste; reconcile model and tool counts across W5-01/02/03/06 | Canonical model/tool invocation counts and matched reference denominator |
 | II-OPR-03.12 | Cost per verified goal | Execution/accounting | II-W5-07 | II-W9-04 | II-AC-11 | Include all attempts and recovery, report zero-success denominator explicitly | Cost ledger and verified count |
 | II-OPR-03.13 | Duplicate work | Orchestration | II-W4-07 | II-W9-04 | II-AC-11 | Identify repeated logical task/effect and classify authorized retry versus waste | Task lineage and duplicate counts |
 | II-OPR-03.14 | Resource saturation | Capacity | II-W8-01 | II-W9-04 | II-AC-10 | Track queue pressure, worker/resource usage and limit signals; reject ungrounded bottleneck claim | Resource time series |
@@ -3284,7 +3300,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-04.01 | Horizontal scaling and real multi-worker | Capacity | II-W8-01 | II-W9-04 | II-AC-10 | Vary worker capacity and offered load; independent workers and declared scaling thresholds proven; reject process-local proxy | Topology, utilization and throughput curves |
 | II-OPR-04.02 | Distributed admission | Execution/Capacity | II-W8-01 | II-W9-03 | II-AC-10 | Competing workers respect canonical admission and claims; reject duplicate ownership | Admission and claim receipts |
 | II-OPR-04.03 | Workload-aware allocation | Capacity | II-W8-01 | II-W9-04 | II-AC-10 | Run mixed workloads with differentiated limits; allocation respects policy and budget | Allocation and queue records |
-| II-OPR-04.04 | Aggregate budgets | Execution | II-W8-02 | II-W9-04 | II-AC-10 | Concurrent workers conserve parent reservations/actuals despite crash and cancel; reject overspend | Distributed ledger |
+| II-OPR-04.04 | Aggregate budgets | Budget (accounting/enforcement); Execution (coordination/lifecycle); Capacity (resource envelope) | II-W8-02 | II-W9-04 | II-AC-10 | Concurrent workers conserve parent reservations/actuals despite crash and cancel; reject overspend | Distributed ledger |
 | II-OPR-04.05 | Tenant isolation | Security | II-W8-04 | II-W9-03 | II-AC-09 | Negative attempts across all paths denied; no foreign data or grants | Isolation case matrix |
 | II-OPR-04.06 | Workload isolation | Capacity | II-W8-04 | II-W9-04 | II-AC-10 | Overload one consumer/tenant while others progress within locked SLO; no shared collapse | Per-workload SLO series |
 | II-OPR-04.07 | Bounded fan-out/fan-in | Orchestration | II-W4-07 | II-W8-01 | II-AC-10 | Respect concurrency cap, dependencies and result merge; no duplicate effects | Concurrent graph trace |
@@ -3298,7 +3314,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-05.01 | Correlation and causal lineage | Execution/Observability | II-W2-04 | II-W9-03 | II-AC-09 | Reconstruct goal, revision, child, tool, evidence and outcome by canonical identity; reject missing/foreign link | Reconstruction trace |
 | II-OPR-05.02 | Structured decision summaries | Decision System | II-W3-05 | II-W9-03 | II-AC-07 | Record typed choice and reasons, not private reasoning; reject untrusted instruction as authority | Decision record and negative trace |
 | II-OPR-05.03 | Plan and strategy revisions | Cognition | II-W3-04 | II-W9-03 | II-AC-07 | Correlate accepted/rejected revisions and invalidation; no overwrite of history | Revision lineage |
-| II-OPR-05.04 | Capability selection evidence | Agent assembly/Tools | II-W4-01 | II-W9-03 | II-AC-09 | Identify chosen and rejected candidates with qualification and reason; no implicit grant | Selection and admission record |
+| II-OPR-05.04 | Capability selection evidence | Agent assembly/Tools | II-W4-01 | II-W9-03 | II-AC-09 | Identify chosen and rejected candidates with qualification and reason; no implicit grant; require both W4-01 agent and W5-01 tool evidence | Correlated agent and tool selection/admission records |
 | II-OPR-05.05 | Typed obstacles and recovery decisions | Diagnostics/ERL | II-W6-01 | II-W9-03 | II-AC-07 | Link failure class to permitted recovery or stop, reject unsupported cause | Obstacle and recovery trace |
 | II-OPR-05.06 | Latency attribution and bottlenecks | Observability | II-W8-01 | II-W9-04 | II-AC-10 | Attribute planning, coordination, model, context, tool, storage, queue, worker, verification and recovery; report overlapping/unknown spans rather than double count | Critical-path attribution with injected slow component |
 | II-OPR-05.07 | Queue and resource pressure | Capacity | II-W8-01 | II-W9-04 | II-AC-10 | Correlate saturation signals with admission decisions; no invented metrics | Pressure time series |
@@ -3318,7 +3334,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-06.09 | Contradictory evidence | Decision Verification / Decision Deliberation | II-W4-05 | II-W9-03 | II-AC-07 | Inject contradictory evidence; detect: Two admissible artifacts disagree on a material fact; recover: Resolve from evidence or escalate explicitly; stop: Escalate or stop rather than guess; reject: Choose the convenient result without a recorded reason. | Both artifacts and the verdict or escalation |
 | II-OPR-06.10 | Uncertain external effect | ERL | II-W6-02 | II-W8-03 | II-AC-07 | Inject uncertain external effect; detect: The platform cannot tell whether an external effect occurred; recover: Reconcile the canonical effect identity before any retry; compensate only under its own authorized contract; stop: Wait or stop while the effect is unknown; reject: Blind retry or a new identity that avoids deduplication. | Uncertainty record and reconciliation result |
 | II-OPR-06.11 | Unavailable permitted capability | Tool and capability owners | II-W5-01 | II-W9-03 | II-AC-07 | Inject unavailable permitted capability; detect: An allowed capability cannot be bound; recover: Defer, or use an independently permitted alternative; stop: Stop or wait inside the autonomy envelope; reject: Import or activate an unqualified implementation. | Capability reference and denial or deferral reason |
-| II-OPR-06.12 | Exhausted budget | Execution | II-W5-07 | II-W8-02 | II-AC-07 | Inject exhausted budget; detect: Time, token, cost, attempt, depth, or capacity budget is spent; recover: Checkpoint and record an explicit disposition; stop: Stop; do not continue the goal; reject: Raise the budget or reset counters through delegation. | Budget ledger and remaining-zero cause |
+| II-OPR-06.12 | Exhausted budget | Budget (accounting/enforcement); Execution (coordination/lifecycle) | II-W5-07 | II-W8-02 | II-AC-07 | Inject exhausted budget; detect: Time, token, cost, attempt, depth, or capacity budget is spent; recover: Checkpoint and record an explicit disposition; stop: Stop; do not continue the goal; reject: Raise the budget or reset counters through delegation. | Budget ledger and remaining-zero cause |
 | II-OPR-06.13 | Stalled workflow | Execution / diagnostics / Cognition | II-W3-06 | II-W9-03 | II-AC-07 | Inject stalled workflow; detect: Repeated attempts show no change in verified progress; recover: Bounded strategy change, or stop; stop: Stop when the bounded alternatives are exhausted; reject: Infinite identical retries or endless replanning. | Attempt history and progress projection |
 | II-OPR-06.14 | Provider throttling | Routing / capacity | II-W8-02 | II-W9-04 | II-AC-07 | Inject provider throttling; detect: Provider quota or rate signal; recover: Back off through existing quota and backpressure controls; stop: Wait until the quota window or stop at the deadline; reject: Unbounded retry that amplifies load. | Quota signal and delay decision |
 | II-OPR-06.15 | Workload overload | Capacity / Execution | II-W8-01 | II-W9-04 | II-AC-07 | Inject workload overload; detect: Admission or queue pressure exceeds the qualified envelope; recover: Backpressure, controlled degradation, or rejection of new work; stop: Refuse new admission rather than collapse admitted work; reject: Bypass admission to keep throughput. | Pressure signal and shed or delay decision |
@@ -3326,7 +3342,7 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-06.17 | Tenant isolation attempt | Security / Governance | II-W8-04 | II-W9-03 | II-AC-09 | Inject tenant isolation attempt; detect: A reference, message, retrieval, or tool call names another tenant or a conflicting caller tenant; recover: Deny the reference; stop: Stop that path; reject: Accept a caller-supplied tenant override. | Principal, tenant, and denied reference |
 | II-OPR-07.01 | Versioned contract and backward compatibility | Execution/contract owners | II-W2-01 | II-W8-07 | II-AC-12 | Replay previous accepted consumer revision; compatible evolution maintains semantics | Versioned contract and compatibility results |
 | II-OPR-07.02 | Explicit incompatible change | EVOL-X/contract owners | II-W8-08 | II-W9-06 | II-AC-13 | Require approved version/migration and affected consumers; reject silent breaking change | Impact and migration approval |
-| II-OPR-07.03 | Behavioral regression suite | Evaluation | II-W1-05 | II-W9-01 | II-AC-11 | Replay earlier qualified behavior plus negative cases; reject weakening baseline | Versioned regression results |
+| II-OPR-07.03 | Behavioral regression suite | Evaluation | II-W1-05 | II-W9-01 | II-AC-11 | Replay earlier qualified behavior plus negative cases; reject weakening baseline; enforce four populations, independent custody and contamination negatives per §9 | Versioned regression results |
 | II-OPR-07.04 | Consumer compatibility | Platform/consumer owners | II-W8-07 | II-W9-03 | II-AC-12 | Same semantic contract across six families; no product-private runtime | Adopter and prior-revision matrix |
 | II-OPR-07.05 | Controlled shadow/canary experiments | AHI | II-W7-06 | II-W9-03 | II-AC-08 | Compare authorized scoped strategy variants, no hidden live mutation | Experiment and promotion record |
 | II-OPR-07.06 | Scoped experience and held-out isolation | Memory | II-W7-03 | II-W8-04 | II-AC-08 | Reject stale, poisoned or foreign experience; no cross-product influence absent policy | Retrieval and held-out separation proof |
@@ -3334,11 +3350,17 @@ Each row is mandatory. The implementation package establishes or reuses the mech
 | II-OPR-07.08 | Quality and performance impact | Evaluation | II-W7-04 | II-W9-02 | II-AC-11 | Measure full matched cost/quality including failures; reject cost-only uplift | Comparison and uncertainty |
 | II-OPR-07.09 | Affected-domain recertification | EVOL-X/ENT-AUDIT-X | II-W8-08 | II-W9-06 | II-AC-09 | Exact candidate and impact-selected tests, accepted authority; no global promotion | Impact and certificate record |
 
+The atomic table identifies the primary implementation and qualification packages. Supplementary mandatory evidence producers for II-OPR-05.04: II-W5-01 (tools) together with II-W4-01 (agents). For II-OPR-03.11: II-W5-01/02/03 (tool selection/composition/verification invocation evidence) together with II-W5-06 (models); II-W9-04 reconciles all calls. Both primary and supporting producers carry the parent II-OPR and atomic ID in their package references; the parent RTM includes the union of all mapped packages. A single producer cannot satisfy these composite oracles.
+
 ## 9. Qualification strategy
 
 ### W0 independent documentation contract
 
 Before W0 execution, bind its authorized document scope, baseline blobs, actual review steps and publication authority. Review architecture against frozen boundaries; reconcile all original package IDs, owners and acceptance obligations; check link/anchor resolution, DAG including procedural milestones, dependency adoption and traceability. Document candidate digest, actual review result, finding dispositions, independent reviewer and authorized publication. W0 does not use a runtime benchmark or wait for W1. A proposal alone cannot close W0-05 or W0-06.
+
+### Benchmark population custody and contamination contract
+
+W1-05 seals four distinct, versioned populations (development, tuning, wave qualification, final W9 held-out). Bind fixture identity/digest and semantic-equivalence checks, dataset and oracle versions, scope, sample size, split provenance, access/reveal authority and custody logs. Wave hold-out and final hold-out are not interchangeable. W2–W8 use only permitted development/tuning/wave populations; no final tasks, answers, oracle details or task-level outcomes enter implementer context, experience, adaptation, evaluator training or profile/strategy selection. Independent evaluation custody may run a blind W1 baseline on the final population for matched comparison; implementation receives only predeclared safe aggregates, no task-level feedback, no per-task tuning. W1-07 locks rules and manifests before judged implementation. W9-01 verifies integrity, disjointness including material variants, access history and negative contamination injection before opening final trials; W9-02 compares matched blind baseline or explicitly records unmatched comparison limitations. Leak or overlap invalidates affected final evidence: preserve failure, stop claim, require authorized independently re-sealed disjoint set and rerun matched qualification, not selective retuning. No result-based threshold changes. This is a future qualification contract, not evidence that workloads already exist.
 
 ### W1 independent baseline contract
 
@@ -3393,12 +3415,12 @@ No additional normative package is proposed. Atomic II-OPR obligations map onto 
 
 ## 12. Procedural graph and integrity rules
 
-The package edges in §7 and the non-package edges below jointly define the acyclic procedural order. Every package additionally depends on its wave entry. Each wave exit depends on all of that wave's packages, and W9 exit additionally depends on the AC-14 record. Nodes are logical milestones, not new tickets or governance states. All accepted prerequisites require actual evidence and authority. An external predecessor is not claimed complete by this graph.
+The package edges in §7 and the non-package edges below jointly define the acyclic procedural order. Every package additionally depends on its wave entry. Each wave exit depends on all of that wave's packages, and W9 exit additionally depends on the AC-14 record. Nodes are logical milestones, not new tickets or governance states. All accepted prerequisites require actual evidence and authority. An external predecessor is not claimed complete by this graph. FOUNDATION-ACCEPTED also requires actual external AF/EC evidence and authority under §4.1; II-W0-06 supplies the approved predicate only. EXIT-W9 alone owns the later formal W9 closure record.
 
 | Procedural node | Prerequisites |
 |---|---|
 | AUTH-W0 | External authorized input |
-| FOUNDATION-ACCEPTED | External authorized input |
+| FOUNDATION-ACCEPTED | II-W0-06 |
 | AUTH-W1 | External authorized input |
 | GATE-II-ENTRY | AUTH-W1, FOUNDATION-ACCEPTED |
 | ENTRY-W0 | AUTH-W0 |
@@ -3436,6 +3458,6 @@ II-W9-08 additionally requires AC-14-RECORD; that record follows the authorized 
 
 Longest structural procedural path (unit node weights, not duration):
 
-AUTH-W0 → ENTRY-W0 → II-W0-01 → II-W0-03 → II-W0-04 → II-W0-05 → II-W0-06 → EXIT-W0 → ENTRY-W1 → II-W1-01 → II-W1-03 → II-W1-06 → II-W1-07 → EXIT-W1 → ENV-QUALIFIED → ENTRY-W2 → II-W2-01 → II-W2-02 → II-W2-04 → II-W2-06 → EXIT-W2 → ENTRY-W3 → II-W3-01 → II-W3-02 → II-W3-03 → II-W3-04 → EXIT-W3 → ENTRY-W4 → II-W4-01 → II-W4-02 → II-W4-03 → II-W4-04 → II-W4-05 → EXIT-W4 → GATE-II-CORE → ENTRY-W5 → II-W5-01 → II-W5-04 → II-W5-05 → EXIT-W5 → ENTRY-W6 → II-W6-01 → II-W6-02 → II-W6-03 → EXIT-W6 → ENTRY-W7 → II-W7-01 → II-W7-02 → II-W7-03 → EXIT-W7 → GATE-II-ADAPTIVE → ENTRY-W8 → II-W8-01 → II-W8-02 → II-W8-03 → II-W8-05 → II-W8-07 → II-W8-08 → EXIT-W8 → GATE-II-ENTERPRISE → ENTRY-W9 → II-W9-01 → II-W9-05 → II-W9-06 → II-W9-07 → AC-01..13-ACCEPTED → GATE-DECISION → GATE-INTELLIGENCE-CONSUME → AC-14-RECORD → II-W9-08 → EXIT-W9
+AUTH-W0 → ENTRY-W0 → II-W0-01 → II-W0-03 → II-W0-04 → II-W0-05 → II-W0-06 → FOUNDATION-ACCEPTED → GATE-II-ENTRY → ENTRY-W1 → II-W1-01 → II-W1-03 → II-W1-06 → II-W1-07 → EXIT-W1 → ENV-QUALIFIED → ENTRY-W2 → II-W2-01 → II-W2-02 → II-W2-04 → II-W2-06 → EXIT-W2 → ENTRY-W3 → II-W3-01 → II-W3-02 → II-W3-03 → II-W3-04 → EXIT-W3 → ENTRY-W4 → II-W4-01 → II-W4-02 → II-W4-03 → II-W4-04 → II-W4-05 → EXIT-W4 → GATE-II-CORE → ENTRY-W5 → II-W5-01 → II-W5-04 → II-W5-05 → EXIT-W5 → ENTRY-W6 → II-W6-01 → II-W6-02 → II-W6-03 → EXIT-W6 → ENTRY-W7 → II-W7-01 → II-W7-02 → II-W7-03 → EXIT-W7 → GATE-II-ADAPTIVE → ENTRY-W8 → II-W8-01 → II-W8-02 → II-W8-03 → II-W8-05 → II-W8-07 → II-W8-08 → EXIT-W8 → GATE-II-ENTERPRISE → ENTRY-W9 → II-W9-01 → II-W9-05 → II-W9-06 → II-W9-07 → AC-01..13-ACCEPTED → GATE-DECISION → GATE-INTELLIGENCE-CONSUME → AC-14-RECORD → II-W9-08 → EXIT-W9
 
 All references must resolve; no self-dependency, cycles, missing mandatory predecessor or duplicate owner. Changes to package or procedural graph require impact review and revalidation.
