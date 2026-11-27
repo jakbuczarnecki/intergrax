@@ -38,4 +38,8 @@ Product code, tests, scripts, CI, AF/EC, global roadmap, SFX/SEF, FRZ/IIAC, role
 
 ## Lifecycle state
 
-in_progress
+quality_gate
+
+## Checkpoint
+
+**II-W0-R31-PUBLICATION-01 — quality_gate (2026-11-27):** Independently reviewed candidate `6bd2c62760ba5e91e9f05d3ae3b8df235540b5e5` on branch `intelligence-x/r3-079-c-validation`; approval commit `3d80d50803755c3fbae6a77979ee50eb8651c665` is ancestor; plan digest `1ef9fb848ab3dc979f637b6f355bcabbcb8968f4fe485b3cb1b376d83ae97f31` unchanged. Candidate validation evidence: `D:\Projekty\intergrax\.tmp\proof\II-W0-R31-FINAL-VALIDATION-02\` (manifest SHA-256 `96151d3102f52c89824f288831320a749b11910f39fd023d230841714faf18e1` under `.tmp/proof/II-W0-R31-PUBLICATION-01/evidence_manifest.txt`). Results: four normalized digests match; plan approval PASS; lifecycle PASS; strict approval grammar PASS; docs domain pairs PASS; PDC inventory PASS (361 items); governance smoke exit 0; pytest smoke 1894 passed, 45 deselected, 1 warning; default diff-check commands exit 0; architecture ignore-EOL comparison exit 0; CRLF 1141→0; semantic delta 0. Independent delta audit `II-W0-R31-INDEPENDENT-DELTA-AUDIT-01`, verdict `R31_DELTA_ACCEPTED_WITH_LIMITATIONS`; procedural DAG independently reconstructed (103 nodes, 344 edges, zero cycles). **C11** remains external W0-06 obligation. **Mermaid syntax validation:** NOT_EXECUTED; independent reviewer disposition non-blocking for this exact documentation scope. Formal G6 not performed. Formal ratification not performed. Integration base `245d47177c7814234a8d98fc062ed1afce3b735d` (`origin/development` at publication preflight). No ready_for_audit or closed claim.
