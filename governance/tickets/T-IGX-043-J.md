@@ -70,7 +70,7 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-PRD-08 | NT-PRD-08-P, NT-PRD-08-1, NT-PRD-08-2 |
 | FRZ-TEN-01 | NT-TEN-01-1, NT-TEN-01-2, NT-WF-A01 |
 
-Planned test files that the write set extracted from this ticket's plan does not contain: `tests/unit/applications/test_wf_tenant_evaluation_fail_closed.py`, `tests/unit/architecture/test_rw_gates_contract_census.py`, `tests/unit/architecture/test_rw_gates_plugin_contracts.py`, `tests/unit/architecture/test_rw_gates_production_only_bypass.py`, `tests/unit/architecture/test_rw_gates_transport_semantics.py`. The plan does not cover them yet.
+Planned test files still outside the extracted write set: `tests/unit/applications/test_wf_tenant_evaluation_fail_closed.py`, `tests/unit/architecture/test_rw_gates_contract_census.py`, `tests/unit/architecture/test_rw_gates_plugin_contracts.py`, `tests/unit/architecture/test_rw_gates_production_only_bypass.py`. **AF-W2-CLOSURE-03:** `tests/unit/architecture/test_rw_gates_transport_semantics.py` (NT-BND-06-1) is now declared in `PLAN_T-IGX-043-J.md` §3.1 and the RW plan write set.
 
 FIND-AF2 mapping that names this ticket: FIND-AF2-09.
 

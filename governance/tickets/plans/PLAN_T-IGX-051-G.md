@@ -47,6 +47,7 @@
 | `tests/unit/architecture/test_rw_typ_ratchet_new_any_fails.py` | `NT-RW-TYP-RATCHET-ANY` |
 | `tests/unit/architecture/test_rw_typ_ratchet_new_object_fails.py` | `NT-RW-TYP-RATCHET-OBJECT` |
 | `tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py` | steady-state pass at baseline |
+| `tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py` | `NT-TYP-05-2` (string-keyed dispatch tables; not general Any ratchet) |
 
 ### 3c. Out of write set
 

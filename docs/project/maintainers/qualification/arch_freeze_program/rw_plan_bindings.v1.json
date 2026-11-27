@@ -1622,6 +1622,10 @@
           {
             "path": "intergrax/experiments/workflow.py",
             "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+            "reason": "AF-W2-CLOSURE-03 FRZ-BND-06 NT-BND-06-1 owner test declared in PLAN_T-IGX-043-J"
           }
         ]
       },

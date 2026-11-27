@@ -1,9 +1,9 @@
 {
   "schema": "rw_plan.v1",
-  "generated_at": "2026-11-27T09:14:40.019678+00:00",
-  "execution_sha": "58ccf54e7e7c9a1a4bba2e3ef9f8a0b3dbdad66c",
+  "generated_at": "2026-11-27T09:25:02.934112+00:00",
+  "execution_sha": "f0cc4cf6e5c3a439762ccd7e17c96f2f2474c0df",
   "read_pin": "aabd3925c48bce40bfa5357f39e81bdc7858f8cc",
-  "bindings_sha256": "4a5a798dc49af838613e2b4237c1783e97e936a1baedb4caecf6d9a74f99ff8c",
+  "bindings_sha256": "2883bd1129fe87d95dbb51d7ef4d6c60ebdae67ce57d6dedbf6d0835a0dfd0b0",
   "node": "T-AF2-RW-PLAN",
   "notes": [
     "**Authority:** this file is the live RW plan. Older versioned RW plans cited by tickets are kept verbatim in `rw_plan_binding_record/` as historical binding authority; MEP-AF2 Appendix V6 supersedes their train rules.",
@@ -293,7 +293,7 @@
         "ticket_file": "governance/tickets/T-IGX-043-J.md",
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-043-J.md",
-        "plan_names_row": false
+        "plan_names_row": true
       },
       "note": "Adapter unit tests enumerated by this plan as matrix Appendix C requires. Selection at the read pin: every test_*.py under tests/unit/hosting/, tests/unit/queueing/ and tests/unit/integrations/providers/message_bus/, and every test_*.py under tests/unit/applications/ whose file name contains mcp, http or queue.",
       "operator_decision_id": "OD-AF-CLOSE-B2",
@@ -759,7 +759,7 @@
         "ticket_file": "governance/tickets/T-IGX-051-F.md",
         "ticket_file_names_row": true,
         "plan_file": "governance/tickets/plans/PLAN_T-IGX-051-F.md",
-        "plan_names_row": false
+        "plan_names_row": true
       },
       "operator_decision_id": "OD-AF-CLOSE-B2",
       "operator_decision_ref": "docs/project/maintainers/qualification/ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md#OD-AF-CLOSE-B2",
@@ -6948,6 +6948,10 @@
         {
           "path": "intergrax/runtime/execution/runtime.py",
           "state": "exists"
+        },
+        {
+          "path": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+          "state": "new"
         }
       ],
       "prose_mentions_not_in_write_set": [],
@@ -6983,6 +6987,10 @@
           {
             "path": "intergrax/experiments/workflow.py",
             "reason": "named in the PT-WF initial write set or its notes in a form the extractor does not count"
+          },
+          {
+            "path": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
+            "reason": "AF-W2-CLOSURE-03 FRZ-BND-06 NT-BND-06-1 owner test declared in PLAN_T-IGX-043-J"
           }
         ]
       },
@@ -7743,6 +7751,10 @@
           "state": "exists"
         },
         {
+          "path": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
+          "state": "new"
+        },
+        {
           "path": "tests/unit/architecture/test_rw_typ_ratchet_baseline_unchanged_passes.py",
           "state": "exists"
         },
@@ -8037,6 +8049,10 @@
         {
           "path": "tests/unit/architecture/test_rw_gates_not_composed_raises.py",
           "state": "exists"
+        },
+        {
+          "path": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
+          "state": "new"
         },
         {
           "path": "tests/unit/architecture/test_rw_gates_promotion_unrelated_ticket_denied.py",

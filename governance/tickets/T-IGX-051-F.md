@@ -55,7 +55,7 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-DEBT-04 | NT-DEBT-04-1, NT-DEBT-04-2 |
 | FRZ-REG-09 | NT-REG-09-1, NT-REG-09-2 |
 
-Planned test files that the write set extracted from this ticket's plan does not contain: `tests/unit/architecture/test_rw_gates_gate_completeness.py`, `tests/unit/architecture/test_rw_gates_partial_inventory.py`. The plan does not cover them yet.
+Planned test files still outside the extracted write set: `tests/unit/architecture/test_rw_gates_gate_completeness.py`. **AF-W2-CLOSURE-03:** `tests/unit/architecture/test_rw_gates_partial_inventory.py` (NT-DEBT-04-1) is declared in `PLAN_T-IGX-051-F.md` §3c and the RW plan write set (distinct from eval-digest guard).
 
 FIND-AF2 mapping that names this ticket: FIND-AF2-13.
 

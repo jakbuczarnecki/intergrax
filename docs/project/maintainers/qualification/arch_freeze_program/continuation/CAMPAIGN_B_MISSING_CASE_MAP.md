@@ -48,4 +48,4 @@ Recoveries (R06, R10) and targeted closure (R04, R24, S03): see [`CAMPAIGN_B_V5_
 | R24 | AB-10 | `scripts/qualification/campaign_b_w2_alpha/probes/pp_nt19.py` | `python -m pytest .tmp/campaign-b-overlay/probes/pp_nt19.py -q --tb=line` |
 | R25 | AB-10 | `scripts/qualification/campaign_b_w2_alpha/scripts/r25_impact12.py` | `python -I .tmp/campaign-b-overlay/scripts/r25_impact12.py .tmp/campaign-b-overlay/r25-out` |
 
-**Coverage summary:** B-1 **19/19** accounted; B-2 **9/9** accounted. Historical defects remain mapped per [`CAMPAIGN_B_V5_DEFECT_MAP.md`](CAMPAIGN_B_V5_DEFECT_MAP.md); baseline B tree **unchanged**.
+**Coverage summary:** B-1 **19/19** accounted; B-2 **9/9** accounted. Historical defects remain mapped per [`CAMPAIGN_B_V5_DEFECT_MAP.md`](CAMPAIGN_B_V5_DEFECT_MAP.md); baseline B tree **unchanged**. **AF-W2-CLOSURE-03:** R04/R24/S03 digests in [`CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md`](CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md); does not imply green baseline @ B.

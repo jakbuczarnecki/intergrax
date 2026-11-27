@@ -58,4 +58,8 @@ This defect map is **planning input only**. It does **not** close **PT-B01**, **
 - No product path changes from this document.
 - Does **not** set **G2**, **FCS**, **M3**, **ENTRY**, or **ARCH-FREEZE CLOSED**.
 
-**Recorded:** 2026-11-26 · Campaign B V5 defect map (`af-v5/residual-docs`).
+## AF-W2-CLOSURE-03 disposition (post closure-02)
+
+Historical @ B unchanged. R04 **8** tenant probe failures accounted; R24 **1** `DID NOT RAISE` (not missing-dep); R06/R10 recovered on extras; S03 **127** PASS exit 0 on nodes (runner kill historical); R01a/R02/R05/R20 **NOT_EXECUTABLE_AT_B** with HEAD diagnostic supplementary only. See [`CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md`](CAMPAIGN_B_W2_CLOSURE_02_TARGETED.md).
+
+**Recorded:** 2026-11-26 · Campaign B V5 defect map (`af-v5/residual-docs`); disposition note AF-W2-CLOSURE-03.

@@ -1,3 +1,5 @@
+
+> **AF-W2-CLOSURE-03 @ `009dec215409d6b89c46e9f355449983f03567e5`:** Campaign B evidence digests + OP-B progressive red-first completeness for future promotions; **PT-B01/PT-B02** remain `AWAITING_INDEPENDENT_ACCEPTANCE`; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**.
 # T-AF2-RW-PLAN-AUDIT — status raportu (RC-1)
 
 > **Obowiązujący stan (AF-W2-CLOSURE-01, `development` @ `f4e8444551994d9033c00fd6884d5e6f822d3ed7`, GA.2R + OP-B):** inventory **39**; `CODE_FIX_OWNERSHIP=39/39`; `NAMED_NEGATIVE_TESTS=39/39`; `RED_AT_PREFIX=21`; `EVIDENCE_MISSING=12` (OD-AF-CLOSE-B2); `RED_FIRST_OUT=5`; `RED_FIRST_LATER_WAVE=1`; **`RED_FIRST_EVIDENCE=INCOMPLETE`**; **`RW_PLAN_AUDIT=NOT_PERFORMED`**; **SCOPE=OPEN**. Wpis **2026-11-26** z `RED_FIRST_EVIDENCE=COMPLETE` jest **historyczny** (zastąpiony przez GA.2R / OP-B).

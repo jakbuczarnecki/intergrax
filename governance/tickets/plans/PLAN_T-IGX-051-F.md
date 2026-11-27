@@ -64,6 +64,7 @@ Paths align with MEP T-AF2-RW-GATES scope string and gap inventory. Conditional 
 | `tests/unit/architecture/test_rw_gates_promotion_unrelated_ticket_denied.py` | `NT-RW-GATES-PROMO-DENY` |
 | `tests/unit/architecture/test_rw_gates_eval_digest_denied.py` | `NT-RW-GATES-DIGEST-DENY` |
 | `tests/unit/architecture/test_rw_gates_not_composed_raises.py` | `NT-RW-GATES-NC-RAISE` |
+| `tests/unit/architecture/test_rw_gates_partial_inventory.py` | `NT-DEBT-04-1` (PARTIAL register inventory; not eval-digest guard) |
 | Existing tests under `tests/unit/runtime/observability/test_qualification_runtime_observability_o*.py` | regression only (edited only if schema reconciliation requires) |
 
 ### 3d. Explicitly out of write set

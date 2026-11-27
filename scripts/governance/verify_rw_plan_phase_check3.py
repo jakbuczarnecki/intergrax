@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -36,6 +37,21 @@ A4_006_AUDIT_CONTRACT: dict[str, object] = {
 }
 
 _GA2R_RECORD_NAME = "RED_FIRST_GA2R_RESULT"
+_GA2R_JSON = (
+    _REPO / "docs/project/maintainers/qualification/arch_freeze_program/continuation/RED_FIRST_GA2R_RESULT.json"
+)
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+_INVALID_PREFIX_FAILURE_MARKERS = (
+    "ModuleNotFoundError",
+    "ImportError",
+    "ERROR collecting",
+    "errors during collection",
+    "No module named",
+    "timed out",
+    "TimeoutError",
+    "installation error",
+    "Could not install",
+)
 
 EXPLICIT_OWNERSHIP_CONTRACT_KEYS = (
     "owner_ticket",
@@ -513,6 +529,138 @@ _AUTHORIZED_LATER_WAVE = {
 }
 
 
+def _valid_sha40(value: object) -> bool:
+    return isinstance(value, str) and bool(_SHA40.match(value))
+
+
+def _valid_sha64(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(ch in "0123456789abcdef" for ch in value)
+
+
+def _parse_tracked_evidence_ref(ref: object) -> tuple[Path | None, str | None]:
+    if not ref or not isinstance(ref, str):
+        return None, None
+    text = ref.strip()
+    if "#" not in text:
+        return None, None
+    path_part, anchor = text.split("#", 1)
+    if not path_part or not anchor:
+        return None, None
+    candidate = (_REPO / path_part).resolve()
+    try:
+        candidate.relative_to(_REPO.resolve())
+    except ValueError:
+        return None, None
+    if not candidate.is_file():
+        return None, None
+    return candidate, anchor
+
+
+def _load_ga2r_index(path: Path | None = None) -> dict[str, dict[str, object]]:
+    target = path or _GA2R_JSON
+    if not target.is_file():
+        return {}
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    rows = payload.get("rows") if isinstance(payload, dict) else payload
+    if not isinstance(rows, list):
+        return {}
+    index: dict[str, dict[str, object]] = {}
+    for row in rows:
+        if isinstance(row, dict) and row.get("frz_id"):
+            index[str(row["frz_id"])] = row
+    return index
+
+
+def _node_matches_binding(node: str, binding: str) -> bool:
+    if node == binding:
+        return True
+    if "::" not in binding and node.startswith(binding.rstrip("/")):
+        return True
+    return False
+
+
+def _bound_ga2r_node(record: dict[str, object], binding: str) -> dict[str, object] | None:
+    nodes = record.get("nodes")
+    if not isinstance(nodes, list):
+        return None
+    for item in nodes:
+        if not isinstance(item, dict):
+            continue
+        node = str(item.get("node") or "")
+        if _node_matches_binding(node, binding):
+            return item
+    return None
+
+
+def _assertion_is_mechanism_failure(assertion_lines: object) -> bool:
+    if not isinstance(assertion_lines, list) or not assertion_lines:
+        return False
+    joined = "\n".join(str(line) for line in assertion_lines)
+    if any(marker in joined for marker in _INVALID_PREFIX_FAILURE_MARKERS):
+        return False
+    lowered = joined.lower()
+    if "assertionerror" in lowered or "failed:" in lowered:
+        return True
+    return joined.strip().startswith("E ")
+
+
+def _validate_op_b_red_at_prefix_completeness(
+    frz: str,
+    row: dict[str, object],
+    ga2r_index: dict[str, dict[str, object]],
+) -> list[str]:
+    """Progressive OP-B contract (AF-W2-CLOSURE-03): structure-only SHA+ref is insufficient."""
+    errors: list[str] = []
+    sha = row.get("red_first_prefix_sha")
+    ref = row.get("red_first_evidence_ref")
+    if not _valid_sha40(sha):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX requires full 40-char lowercase prefix SHA")
+        return errors
+    evidence_path, anchor = _parse_tracked_evidence_ref(ref)
+    if evidence_path is None or anchor != frz:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX evidence ref must name an existing tracked record for this FRZ")
+        return errors
+    record = ga2r_index.get(frz)
+    if record is None:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX without GA2R inventory row for this FRZ")
+        return errors
+    if str(record.get("frz_id")) != frz:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX GA2R frz_id mismatch")
+    binding = str(row.get("evidence_negative_test") or "").strip()
+    if not binding:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing negative test binding")
+        return errors
+    node = _bound_ga2r_node(record, binding)
+    if node is None:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing GA2R node for binding {binding!r}")
+        return errors
+    if not node.get("counted"):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX node is not counted for red-first replay")
+    prefix_sha = node.get("prefix_sha")
+    if prefix_sha != sha:
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX inventory SHA must match bound node prefix_sha")
+    fix_commit = node.get("fix_commit")
+    if not _valid_sha40(fix_commit):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing green-after-fix commit SHA")
+    if node.get("prefix_result") != "FAILED":
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX requires FAILED at prefix (not collection/import noise)")
+    if node.get("pin_result") != "PASSED":
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX requires PASSED after fix")
+    if node.get("prefix_result") == "PASSED" and node.get("pin_result") == "PASSED":
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX cannot be both green at prefix and after fix")
+    if not _assertion_is_mechanism_failure(node.get("assertion_lines")):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX lacks mechanism-aligned assertion failure at prefix")
+    if not _valid_sha40(node.get("test_blob_sha")):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing executed test version digest (test_blob_sha)")
+    if not _valid_sha64(node.get("prefix_log_sha256")):
+        errors.append(f"{frz}: OP-B RED_AT_PREFIX missing pinned measurement log digest (prefix_log_sha256)")
+    if frz in _SEEDED_RED_REQUIRED and row.get("evidence_seeded_red_required"):
+        seeded_ok = bool(node.get("seeded_red")) or "seeded" in binding.lower()
+        if not seeded_ok:
+            errors.append(f"{frz}: OP-B RED_AT_PREFIX requires explicit seeded-red evidence (OD-AF-CLOSE-B2)")
+    return errors
+
+
 def _cited_operator_disposition(row: dict[str, object]) -> bool:
     return (
         row.get("operator_citation") == _OPERATOR_CITATION
@@ -521,8 +669,11 @@ def _cited_operator_disposition(row: dict[str, object]) -> bool:
     )
 
 
-def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
+def validate_red_first_evidence(
+    data: dict[str, object], *, ga2r_index: dict[str, dict[str, object]] | None = None
+) -> list[str]:
     errors: list[str] = []
+    loaded_ga2r = ga2r_index if ga2r_index is not None else _load_ga2r_index()
     for row in data.get("code_fix_inventory") or []:
         if not isinstance(row, dict):
             continue
@@ -546,10 +697,14 @@ def validate_red_first_evidence(data: dict[str, object]) -> list[str]:
             if not reason or not str(reason).strip():
                 errors.append(f"{frz}: RED_FIRST_UNREPRODUCIBLE without red_first_reason")
         if status == "RED_AT_PREFIX":
-            if not sha or not isinstance(sha, str) or len(sha) != 40:
+            if not _valid_sha40(sha):
                 errors.append(f"{frz}: RED_AT_PREFIX without valid historical prefix SHA")
             if not ref:
                 errors.append(f"{frz}: RED_AT_PREFIX without evidence reference")
+            elif sha and not _SHA40.match(str(sha)):
+                errors.append(f"{frz}: RED_AT_PREFIX prefix SHA has invalid characters")
+            elif frz in _EVIDENCE_MISSING_OP_B and _valid_sha40(sha) and ref:
+                errors.extend(_validate_op_b_red_at_prefix_completeness(frz, row, loaded_ga2r))
         if status in ("RED_FIRST_OUT", "RED_FIRST_LATER_WAVE"):
             if not sha or not isinstance(sha, str) or len(sha) != 40:
                 errors.append(f"{frz}: {status} without valid historical prefix SHA")

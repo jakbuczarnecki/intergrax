@@ -21,6 +21,12 @@ Close PT-WF prerequisites before RW milestone: G-09 tenant-scoped evaluation reg
 | E3 | `compat/langchain/documents.py` |
 | E4 | `experiments/store.py`, `debug/router.py`, `experiments/workflow.py` |
 
+### 3.1 RW gate test (FRZ-BND-06 / NT-BND-06-1)
+
+| Path | Marker |
+| --- | --- |
+| `tests/unit/architecture/test_rw_gates_transport_semantics.py` | NT-BND-06-1 — transport adapter must not construct or interpret `RuntimeEvent` semantics |
+
 ## 4. Test contract (placeholder)
 
 - Red-first tests to be named in plan revision 2 (NT-WF-*).

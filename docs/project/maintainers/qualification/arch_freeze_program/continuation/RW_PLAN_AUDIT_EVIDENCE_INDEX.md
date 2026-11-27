@@ -1,6 +1,6 @@
 # T-AF2-RW-PLAN-AUDIT — evidence index (AR-12-07)
 
-> **Obowiązujący stan (AF-W2-CLOSURE-02, development @ c94745b11b35a3be55e4e9cb6502befc60262e26):** RED_FIRST_EVIDENCE=INCOMPLETE; inventory **39** rows — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12** (OP-B / OD-AF-CLOSE-B2), **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**.
+> **Obowiązujący stan (AF-W2-CLOSURE-03, development @ `009dec215409d6b89c46e9f355449983f03567e5`):** `PLAN_STRUCTURE=PASS`; **RED_FIRST_EVIDENCE=INCOMPLETE**; inventory **39** rows — **RED_AT_PREFIX=21**, **EVIDENCE_MISSING=12** (OP-B / OD-AF-CLOSE-B2), **RED_FIRST_OUT=5**, **RED_FIRST_LATER_WAVE=1**; **PT-B01=AWAITING_INDEPENDENT_ACCEPTANCE**; **PT-B02=AWAITING_INDEPENDENT_ACCEPTANCE**; **RW_PLAN_AUDIT=NOT_PERFORMED**; **SCOPE=OPEN**. Campaign B matrix **28/28** accounted (diagnostic; not green baseline @ B).
 > **Historyczne (superseded):** wpis COMPLETE (T-IGX-078-A @ 646e63953); starszy fragment poniżej o **36×** EVIDENCE_MISSING i uznanych DEBT-02/03 @ RED_AT_PREFIX — **nie obowiązuje** po GA.2R + OP-B.
 
 | Artifact | Role |
@@ -22,12 +22,10 @@
 | .tmp/session/arch-freeze/pt-q02_gh_pr_checks_811.log | gh pr checks 811 @ merge **876af7e5d** |
 | .tmp/session/arch-freeze/pt-q02_gh_pr_checks_812.log | gh pr checks 812 @ train tip **e9bebe0ac** |
 | .tmp/session/arch-freeze/pt-q02_pin_verify_2026-11-24.log | git rev-parse origin/development + origin/arch-freeze/rw-train |
-| [TRAIN_CI_REPLAY_PLAYBOOK.md](TRAIN_CI_REPLAY_PLAYBOOK.md) Runda 3 | Cited job URLs for ci-smoke /
-ag-gate / governance-fast |
+| [TRAIN_CI_REPLAY_PLAYBOOK.md](TRAIN_CI_REPLAY_PLAYBOOK.md) Runda 3 | Cited job URLs for ci-smoke / rag-gate / governance-fast |
 
 **Not** RED_FIRST_EVIDENCE and not green governance-fast.
 
 ## RED_FIRST_EVIDENCE (INCOMPLETE)
 
-Mechanical rule (
-alidate_red_first_evidence): **RED_FIRST_EVIDENCE=INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay. **12** OP-B rows remain **EVIDENCE_MISSING** (progressive delivery allowed; structure retains OD-AF-CLOSE-B2 metadata). **FRZ-DEBT-02** and **FRZ-DEBT-03** stay **EVIDENCE_MISSING** with **seeded-red** obligation (not satisfied by mechanical PASS). **SCOPE not closed.**
+Mechanical rule (`validate_red_first_evidence` + OP-B progressive completeness for future `RED_AT_PREFIX` transitions): **RED_FIRST_EVIDENCE=INCOMPLETE** until every owed row records accepted RED_AT_PREFIX replay. **12** OP-B rows remain **EVIDENCE_MISSING** (progressive delivery allowed; structure retains OD-AF-CLOSE-B2 metadata). **FRZ-DEBT-02** and **FRZ-DEBT-03** stay **EVIDENCE_MISSING** with **seeded-red** obligation (not satisfied by mechanical PASS). Validator **does not** claim independent historical replay — it checks pinned records only. **SCOPE not closed.**
