@@ -273,7 +273,7 @@
       "frz_id": "FRZ-BND-05",
       "status": "EVIDENCE_MISSING",
       "mechanism": "cross-layer construction only through sanctioned composition (NT-BND-05-1, NT-BND-05-2)",
-      "reason": "The Tier-2 node fails on the production_mode posture literal, not on direct RuntimeContext construction (NT-BND-05-1). The provider-switch node (NT-BND-05-2) passes at the prefix and fails at the pin.",
+      "reason": "Canonical node test_scan_flags_a_rogue_agent now implements the RuntimeContext construction scan, but no mechanism-aligned prefix FAILED to pin PASSED record exists for that node at identical test_blob_sha (self-test passes at prefix and pin; historical overlay measured posture on a different node).",
       "due_ticket": "T-IGX-043-H",
       "nodes": [
         {

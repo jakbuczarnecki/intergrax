@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from enum import Enum, StrEnum
+
+_DEFAULT_CELERY_BACKEND_URL = "redis://localhost:6379/2"
 
 
 class ProductionQueueBackend(str, Enum):  # noqa: UP042
@@ -58,6 +61,38 @@ _REFUSED_BROKER_PREFIXES = ("memory://", "cache+memory://")
 def broker_url_refused_in_strict_posture(broker_url: str) -> bool:
     normalized = broker_url.strip().lower()
     return not normalized or any(normalized.startswith(prefix) for prefix in _REFUSED_BROKER_PREFIXES)
+
+
+@dataclass(frozen=True, slots=True)
+class CeleryQueueEnvConfig:
+    """Celery broker settings resolved from the environment (Tier-3 composition boundary)."""
+
+    app_name: str
+    broker_url: str
+    backend_url: str
+
+
+def resolve_celery_queue_env_config(
+    *,
+    app_name: str | None = None,
+) -> CeleryQueueEnvConfig:
+    """Resolve Celery queue wiring from env vars without importing provider packages."""
+    broker_raw = os.environ.get("INTERGRAX_CELERY_BROKER_URL")
+    if broker_raw is None:
+        broker = ""
+    else:
+        broker = broker_raw.strip()
+    backend = (
+        os.environ.get("INTERGRAX_CELERY_BACKEND_URL", _DEFAULT_CELERY_BACKEND_URL).strip()
+        or _DEFAULT_CELERY_BACKEND_URL
+    )
+    default_app_name = app_name or "tier3_host_task_worker"
+    resolved_app_name = os.environ.get("INTERGRAX_CELERY_APP_NAME", default_app_name).strip() or default_app_name
+    return CeleryQueueEnvConfig(
+        app_name=resolved_app_name,
+        broker_url=broker,
+        backend_url=backend,
+    )
 
 
 def require_celery_broker_url_for_strict(*, broker_url: str) -> None:

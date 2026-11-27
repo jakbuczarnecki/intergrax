@@ -1,4 +1,4 @@
-# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
+﻿# T-IGX-043-H — EQO-A remediation code wave, package W-B: one LLM resolver, explicit profile projections, closed provider composition roots, serving defaults, importlib prefix allowlist
 
 ## Scope
 
@@ -12,7 +12,7 @@ Prerequisites before implementation starts: master-plan nodes `SCOPE` and `DS-2`
 
 ## Plan digest
 
-Plan digest: f5f0d6304c8b8f270dd7b74981027c6d829d6112a3788328021ce0d00dc5ccc9
+Plan digest: 33b428e5c010a9d33061ba2f6b3a55e06cd48c68ab2f46ac1ed68a785e39f7e4
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-H.md`](plans/PLAN_T-IGX-043-H.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -76,3 +76,91 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-PRD-05 | NT-PRD-05-1, NT-PRD-05-2 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+## AF-W3-PT-WB-01 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | T-IGX-043-H`. Authorization: AR-40 / OD-AF-PKT1. Base and execution SHA: `245d47177c7814234a8d98fc062ed1afce3b735d` (`origin/development`); PT-WA and SCOPE closure ancestors confirmed. No firm write-set product edits in this session (Parts A–E already on `development`); this pass is verification, OP-B evidence accounting, and ticket settlement.
+
+**Implementation verdict:** `IMPLEMENTED_FIRM_SCOPE_WITH_EXACT_RESIDUALS` (not full ticket DONE: FRZ-BND-05 OP-B remains `EVIDENCE_MISSING`).
+
+| Area | Status |
+|---|---|
+| Part A canonical LLM resolver + tenant-scoped routing | `ALREADY_IMPLEMENTED`; V1 green (37); NT-OWN-03 green at execution SHA |
+| Part B explicit profile projections | `ALREADY_IMPLEMENTED`; V1 registry/projection tests green |
+| Part C closed provider roots | `ALREADY_IMPLEMENTED` (data/gate); **NT-BND-05-2 FAIL** — `intergrax/applications/_shared/queue_worker_wiring.py` import outside `CLOSED_PROVIDER_ROOTS` (cross-ticket residual; file not in T-IGX-043-H write set; Q-WB-13 does not authorize A4-020 bypass edits) |
+| Part D serving lifecycle | `ALREADY_IMPLEMENTED`; NT-PRD-05 / NT-WB-15 nodes green in targeted run; V4 local failures (LKW bootstrap / hosted foreground) match prior checkpoint (memory provider admission in this environment) |
+| Part E importlib allowlist | `ALREADY_IMPLEMENTED`; NT-WB-20/21 green in V1; **b1/b2 caller threading** residual → PT-FC2 per prior checkpoint |
+| Part G | `CONDITIONAL_NOT_AUTHORIZED` (Q-WB-12); not executed |
+| FRZ-BND-05 OP-B (NT-BND-05-1) | `EVIDENCE_MISSING`; `BLOCKER=CANONICAL_NEGATIVE_TEST_WRITE_SET_MISSING` — `test_rw_bnd05_runtime_context_construction.py` not in firm write set; test still asserts `RuntimeConfig.production_mode` posture, not RuntimeContext construction scan |
+| FRZ-OWN-05 | Historical `RED_AT_PREFIX` preserved; **NT-OWN-05-1 FAIL** at execution SHA: AST census includes `applications/*/docker/runtime-context/**/llm_resolver.py` mirrors (not firm implementation); host-resolver duplication guard otherwise satisfied at pin for canonical + façade only |
+
+**Qualification (this session, one pytest process):** V1 PASS (37/37). V2 90 passed, 1 failed (`test_environment_llm_wiring_without_llm_selection_does_not_materialize_adapter`, `ConfigurationError` — out of firm WB write set). V3 89 passed, 3 failed (ACP session host / LKW profile closure — harness/enterprise coupling). V4 15 passed, 4 failed (LKW production bootstrap / hosted foreground — same class as prior LKW admission note). V5 68 passed, 1 xfail (known TRANSFERRED), 1 failed (`test_mcp_public_api_surface` import surface — outside Part E claim). Ruff (core write-set sample): PASS. Pyright (llm_resolver + profile_projection): 0 errors. V7 `igx_gov ticket`: NOT PASS locally (`FileNotFoundError`: `uv` not on PATH for regression-gate subprocess).
+
+**OP-B / progressive evidence:** `OP_B_PENDING=12`; no `af2.red_first_ga2r.v1` publication (TASK-08 skipped). `FRZ_PROMOTION: NONE`.
+
+**PT-WA handoff preserved:** NT-WA-23 roster isolation; harness.policy_smoke ×2 → T-IGX-043-A; OTLP ×2 → T-IGX-043-B; Pyright PT-WA not claimed full PASS; dynamic-import census not published as evidence.
+
+**Lifecycle:** remains `plan_approved`; semantic close `IMPLEMENTED_FIRM_SCOPE_WITH_EXACT_RESIDUALS`; G2 OPEN; RB2 NOT_PERFORMED; independent PT-Q02 audit still required.
+
+## AF-W3-PT-WB-02 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | AF-W3-PT-WB-02`. Authorization: AR-40 / OD-AF-PKT1 / OD-AF-W3-BND05-01 variant A.
+Baseline: `c74d42f11c1806de418363ad31572ee9b8005364`; SCOPE closure ancestor `0a4755281f46653a8b741a26c8e26b0af4555775` confirmed at preflight.
+
+**Implementation verdict:** `BND05_DETECTOR_AND_OWN05_MIRROR_DELIVERED`; FRZ-BND-05 OP-B remains `EVIDENCE_MISSING` (no mechanism-aligned `test_scan_flags_a_rogue_agent` prefix FAIL → pin PASS at identical `test_blob_sha`).
+
+| Deliverable | Result |
+|---|---|
+| OD-AF-W3-BND05-01 | `DECIDED` variant A in operator register |
+| Write-set amendment | `tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py` on T-IGX-043-H; preserved on T-IGX-043-A |
+| FRZ-BND-05 detector | `scan_runtime_context_construction` + seeded `test_scan_flags_a_rogue_agent`; posture scan preserved |
+| FRZ-BND-05 red-first | `EVIDENCE_MISSING` — self-test PASS at prefix overlay and at HEAD |
+| FRZ-OWN-05 mirror fix | `applications/*/docker/runtime-context/**` excluded from resolver census; NT-OWN-05-1 green |
+| V6 census | @ execution SHA: 2 canonical resolver definitions; 4 Tier-2 `RuntimeContext.build` unauthorized residuals (T-IGX-043-A) |
+| V7 `igx_gov ticket` | PASS with `uv` on PATH |
+| Cross-ticket | `queue_worker_wiring.py` closed-root violation preserved for PT-FC2 |
+| OP-B settlement | `OP_B_PENDING=12`; `RED_AT_PREFIX=21`; `EVIDENCE_MISSING=12` |
+
+**Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; FRZ promotion none; PT-Q02 PENDING.
+
+**Evidence SHA reconciliation (WB-01 vs WB-02):** WB-01 cited `245d47177c7814234a8d98fc062ed1afce3b735d` (EC-W3-07 merge) while published package commit was `c74d42f11` (parent `1d0181051fa034b5f45101755002e48f5dc35715`).
+
+## AF-W3-PT-WB-03 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | AF-W3-PT-WB-03`. Authorization: AR-40; OD-AF-PKT1 (historical); OD-AF-W3-BND05-01 variant A; OD-AF-CLOSE-B2; OD-AF-CLOSE-B6.
+Verified baseline ancestor: `3eb76b5ebafd69f4696db5be57f7085b3802e22f` on `origin/development`.
+
+**Implementation verdict:** `BND05_PRODUCT_GATE_AND_PRE_FIX_RED_BASELINE`; FRZ-BND-05 OP-B remains `EVIDENCE_MISSING` (pre-fix RED captured; not `RED_AT_PREFIX` promotion).
+
+| Deliverable | Result |
+|---|---|
+| Detector | Canonical symbol identity for `RuntimeContext` construction (`import`, alias, module alias, qualified reference); local same-name class excluded |
+| Product gate | `test_scan_flags_a_rogue_agent` enforces Tier-2 scan; **RED** on four real `RuntimeContext.build` sites |
+| Synthetic controls | `test_detector_synthetic_runtime_context_construction_controls` — PASS independent of product |
+| Documented census (non-asserting) | `_DOCUMENTED_UNAUTHORIZED_CENSUS_SITES` — four paths; `boundary_demo_agent.py` **not** in T-IGX-043-A write set |
+| OWN-05 | Mirror exclusion via `_resolver_definitions`; synthetic tests use the real census helper |
+| Plan digest | Recomputed after section 13 amendment (OD-AF-W3-BND05-01 variant A) |
+
+**Authority census (Tier-2 `RuntimeContext.build`, unauthorized):**
+
+| Path | Line | Owner |
+|---|---|---|
+| `agents/boundary_demo/boundary_demo_agent.py` | 96 | unresolved product authority (outside T-043-A write set) |
+| `agents/external_contractor_adapter/external_contractor_adapter_agent.py` | 112 | T-IGX-043-A / PT-FC1 |
+| `agents/organization_worker/organization_worker_agent.py` | 118 | T-IGX-043-A / PT-FC1 |
+| `intergrax/agents/authoring/acp_stub_reflex.py` | 69 | T-IGX-043-A / PT-FC1 |
+
+**AF-W3-PT-WB-01 V2–V5 residual accounting (nine failures, execution SHA `245d47177c7814234a8d98fc062ed1afce3b735d`):**
+
+| Node bucket | Count | Representative failure | Owner / remedy |
+|---|---|---|---|
+| V2 | 1 | `test_environment_llm_wiring_without_llm_selection_does_not_materialize_adapter` | out of firm WB write set |
+| V3 | 3 | ACP session host / LKW profile closure harness | enterprise coupling; not WB firm claim |
+| V4 | 4 | LKW production bootstrap / hosted foreground (memory provider admission) | environment admission |
+| V5 | 2 | `test_mcp_public_api_surface` FAIL; one xfail TRANSFERRED | outside Part E surface claim |
+
+Preserved handoffs: `queue_worker_wiring.py` → PT-FC2; importlib b1/b2 → PT-FC2; Part G `CONDITIONAL_NOT_AUTHORIZED`.
+
+**Pre-fix RED baseline (canonical node):** see `.tmp/proof/af-w3-pt-wb-03/` after commit (log SHA256, test blob SHA, execution SHA). `RED_FIRST_EVIDENCE=INCOMPLETE`; `OP_B_PENDING=12`; `FRZ-BND-05` not promoted.
+
+**Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; PT-FC1 product fixes required for GREEN on canonical node; PT-Q02 PENDING.
