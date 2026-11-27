@@ -2,7 +2,7 @@
   "schema": "eqo.pre_g2_mapped_qualification_batch_manifest.v1",
   "batch_id": "EC-W3-MAPPED-QUALIFICATION-05",
   "execution_sha": "f0cc4cf6e5c3a439762ccd7e17c96f2f2474c0df",
-  "recorded_utc": "2026-11-27T09:37:02Z",
+  "recorded_utc": "2026-11-27T09:38:14Z",
   "evidence_artifacts": {
     "CORRECTIVE_SETTLEMENT.md": "1b528f7ffb50bbf361a37a7a771e1965753d48b65b57483efccc5598df659dbb",
     "DES_PREREG.json": "201b86773869e75552b44b53b360a0e8b832059611853287e5a7096e7c87c281",
@@ -20,8 +20,8 @@
     "logs/d05_skills.log": "2eb65df9d107bf3755ed8f81d597c8b6f9d68cae2373a79107599a99f18f50f2",
     "logs/environment_sync.log": "b86c71837e9e415ff1d68af169b7ea1f51bfcc7e08d7c598a9ff0cacba29f911",
     "MAPPED_TEST_EXECUTION_QUEUE.json": "1d1fb821263ee96fb2083abe354e7cdfcefa704218f3856cf60ef668a55a0fd1",
-    "OBLIGATION_EXECUTION_MATRIX.json": "6e5d5751d097aec3face8dc27a9a6757961597b0bf44759daa0f5805d95af75a",
-    "REMAINING_QUALIFICATION_QUEUE.json": "7285d5dfc1b9980f2d0c5a359780f5a24757ac852205525d9a5801709f5680ec",
+    "OBLIGATION_EXECUTION_MATRIX.json": "57488328775892550a02954ab6a4408ee9689615f1e6b888929f6d43ba0f9697",
+    "REMAINING_QUALIFICATION_QUEUE.json": "8df36d6094d41f28933c566bfeabf53683bca66f1c3e08ff9b2e1dae6d1b742d",
     "RUN_MANIFEST.json": "190d89d0e4a0854e4beb0753b52e252466d51751bfc959123737ad7a00b3b01e"
   },
   "formal_certification_status": "NOT_ESTABLISHED"
