@@ -1,6 +1,6 @@
 # Adaptive Harness Evolution — Implementation Roadmap
 
-**Revision:** 1.0
+**Revision:** 1.1
 **Status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Architecture reference:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../../architecture/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
@@ -12,11 +12,90 @@ Execution register and implementation work breakdown remain in this document.
 
 | Item | Status |
 |---|---|
-| **AHE-W0-01** | IN_PROGRESS |
-| All remaining packages | PLANNED |
 | Closed waves | 0 |
+| Formally closed packages | 0 |
 
 **Cross-program coordination:** Explicit. AHE roadmap dependencies do not themselves authorize changes to other programs.
+
+## ADAS traceability matrix
+
+| AHE scope | ADAS source scope |
+|---|---|
+| AHE-W0 | Existing AHI-ADAS-00 documentation foundation |
+| AHE-W1-01 | AHI-ADAS-10 |
+| AHE-W1-02 | Selected AHI-ADAS-40 strategy and objective obligations |
+| AHE-W1-03 | Selected AHI-ADAS-20 and AHI-ADAS-30 execution obligations |
+| AHE-W1-04 | Selected AHI-ADAS-30 and AHI-ADAS-40 selection obligations |
+| AHE-W1-05 | Integrated W1 behavioral qualification |
+| AHE-W2 | AHI-ADAS-20 and AHI-ADAS-40 extensions |
+| AHE-W3 | AHI-ADAS-30 extensions |
+| AHE-W4 | AHI-ADAS-10, 30, 40, 50 and 90 extensions |
+| AHE-W5 | AHI-ADAS-30 and AHI-ADAS-40 resource extensions |
+| AHE-W6 | AHI-ADAS-50, 70 and 90 |
+| AHE-W7 | Cross-phase behavioral qualification |
+| AHE-W8 | Consumer integration and final acceptance |
+
+Clarifications:
+
+- Mapping is obligation-level traceability.
+- Mapping does not automatically complete a referenced ADAS phase.
+- AHI-ADAS-60 optional Tier-2 agents are not mandatory AHE scope.
+- AHI-ADAS-80 optional Tier-3 application is not mandatory AHE scope.
+- Unimplemented obligations remain explicitly tracked.
+- The existing ADAS plan remains authoritative for its original obligations.
+
+## W1 execution boundary
+
+The first executable wave shall implement a minimal configuration-only search loop:
+
+1. Resolve accepted objective and baseline.
+2. Admit a bounded search.
+3. Execute baseline through canonical runtime.
+4. Generate one configuration candidate.
+5. Validate its identity, scope, configuration delta and authority.
+6. Execute candidate through canonical runtime.
+7. Compare actual results using existing Evaluation mechanisms.
+8. Select candidate, retain baseline or abstain.
+9. Archive candidate lineage and evidence references.
+
+Constraints:
+
+- W1 must use an existing admitted execution path.
+- W1 shall initially use a deterministic candidate strategy to qualify orchestration and evidence behavior.
+- Model-driven proposal generation and multiple candidate composition shall be introduced under the relevant subsequent authorized scope.
+- The deterministic W1 qualification does not prove general intelligent adaptation.
+- No production promotion.
+- No trusted cross-task experience publication.
+- No external business effects.
+- No new independent execution or governance authority.
+
+## Dependency and gate register
+
+| Gate | Requirement | Initial status |
+|---|---|---|
+| AHE-G0 | Architecture and roadmap acceptance | PENDING |
+| AHE-G1 | Exact W1 implementation contract, approved ticket and scope authorization | PENDING |
+| AHE-G2 | Executable bounded LAB adaptive loop | PLANNED |
+| AHE-G3 | Propose–Probe–Compose and selection qualification | PLANNED |
+| AHE-G4 | Trusted experience and resource optimization qualification | PLANNED |
+| AHE-G5 | Enterprise governed evolution qualification | PLANNED |
+| AHE-G6 | Independent behavioral qualification | PLANNED |
+| AHE-G7 | Consumer adoption and final independent acceptance | PLANNED |
+
+These are AHE program milestone names, not substitutes for DevOS G0–G6, IIAC, FRZ or existing admission controls.
+
+W1 execution requires AHE-G0, AHE-G1 and all applicable existing governance authorizations.
+
+No roadmap row or gate may be declared accepted solely by the implementer.
+
+## Execution register
+
+| Package | Implementation | Review / acceptance | Notes |
+|---|---|---|---|
+| AHE-W0-01 | PUBLISHED | Architect review: ACCEPTED_SCOPED; Independent acceptance: PENDING | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. Process finding: AI-tool attribution in commit metadata. Historical commit shall remain unchanged. |
+| AHE-W0-02 | IN_PROGRESS | Architect-defined ownership and reuse mapping: supplied; Independent acceptance: PENDING; External owner acceptance: PENDING | — |
+| AHE-W0-03 | PLANNED | Await architect-issued implementation contract | — |
+| W1–W8 | PLANNED | No executable wave authorization inferred | — |
 
 ---
 

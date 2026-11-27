@@ -1,6 +1,6 @@
-# Adaptive Harness Evolution — Architecture
+﻿# Adaptive Harness Evolution — Architecture
 
-**Revision:** 1.0
+**Revision:** 1.1
 **Document status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Parent architecture:** [ADAPTIVE_HARNESS_INTELLIGENCE.md](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Implementation roadmap:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../maintainers/plans/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
@@ -70,12 +70,13 @@ Baseline resolution
   → Candidate validation
   → Experimental execution
   → Evaluation
-  → Candidate composition
-  → Composite re-evaluation
-  → Selection
-  → Experience retention
-  → Governed qualification
-  → Optional promotion
+  → Candidate composition, when applicable
+  → Composite re-evaluation, when applicable
+  → Selection or abstention
+  → Experimental evidence archival
+  → Experience qualification
+  → Authorized experience publication
+  → Optional governed configuration promotion
   → Verification and rollback
 ```
 
@@ -89,6 +90,17 @@ Rules:
 - The system must retain the baseline or return no accepted candidate when evidence is insufficient.
 - A candidate selection decision does not authorize production promotion.
 - A research or LAB outcome does not establish production readiness.
+
+Normative distinctions:
+
+- Experimental evidence archival records successful, unsuccessful and rejected experiments.
+- Experimental evidence archival is not experience acceptance.
+- Candidate selection is not production promotion authority.
+- Experience qualification is required before an experience may influence future proposals as trusted knowledge.
+- Rejected and failed candidates may contribute qualified negative lessons but cannot be represented as successful strategies.
+- Raw experimental evidence, trusted reusable experience and promoted configuration remain separate lifecycle concepts.
+- The minimum W1 scope ends at experimental evidence archival.
+- W1 does not perform trusted experience publication or production promotion.
 
 ---
 
@@ -114,6 +126,14 @@ Rules:
 - Tenant ownership and access boundaries.
 
 New executable skills, scripts, tools or plugins must enter their existing engineering, security and admission lifecycle.
+
+W1 execution boundaries:
+
+- The complete admitted-surface inventory is a target architecture, not blanket authorization for W1.
+- W1 shall initially evaluate one bounded change to an already admitted execution configuration.
+- Prefer existing prompt/instruction references or an existing execution-strategy choice.
+- Keep model, tools, tenant, objective, dataset, permissions and external-effect policy unchanged between baseline and candidate.
+- No generated executable code, newly installed skills, new plugins, new capability registration or security-policy mutation is permitted in W1.
 
 ---
 
@@ -194,6 +214,28 @@ All experiment sessions require finite limits for:
 Resource reservations and accounting must use existing platform owners. The adaptive budget policy may recommend additional experimentation only within an existing authorized aggregate budget.
 
 Early stopping must support exhausted budget, insufficient expected improvement, invalid candidates, safety failures and achievement of the defined objective.
+
+`RunBudget` is an existing per-execution budget carrier. It must not be represented as proof of aggregate search-budget enforcement.
+
+From W1, every ADAS search must operate under:
+
+- Finite candidate count.
+- Finite total execution count.
+- Finite aggregate token allowance.
+- Finite aggregate cost allowance.
+- Finite wall-clock deadline.
+- Explicit cancellation and stop conditions.
+- Canonical per-execution resource enforcement.
+
+W1 is sequential and uses at most one candidate and two task executions: baseline and candidate.
+
+Any additional model call used to produce, diagnose or evaluate a proposal must be included in the applicable aggregate budget.
+
+Do not dispatch work when required resource admission or accounting is unavailable.
+
+Do not introduce a competing platform-wide budget authority.
+
+Dynamic budget allocation, expected-value experimentation and optimized stopping remain W5 scope.
 
 ---
 
@@ -303,3 +345,101 @@ AHE completion is not an additional ARCH-FREEZE gate or an automatically mandato
 - Evidence-driven continual improvement
 
 Distinguish implemented Harness² mechanisms from AHE-specific extensions such as dynamic resource allocation. No unsupported superiority claim is permitted.
+
+## 5.16 Exact-SHA ownership and reuse baseline
+
+**Baseline:** `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`
+
+Architecture decisions are supplied by ChatGPT.
+
+| ID | Mechanism | Existing source | Disposition | Scope |
+|---|---|---|---|---|
+| AHE-R01 | Execution outcome collection | `intergrax/runtime/adaptive/signal_emission.py` | REUSE/WIRING | W1+ |
+| AHE-R02 | Adaptation proposal engine | `intergrax/runtime/adaptive/adaptation_engine.py` | REUSE | W1+ |
+| AHE-R03 | Profile versions | `intergrax/runtime/adaptive/profile_version_store.py` | REUSE | W1+ |
+| AHE-R04 | Existing profile contracts | `intergrax/runtime/adaptive/contracts.py` | REUSE | W1+ |
+| AHE-R05 | Experiment lifecycle | `intergrax/experiments/workflow.py` | REUSE/WIRING | W1+ |
+| AHE-R06 | Experiment identity and persistence | `intergrax/experiments/models.py`, `persistence_contract.py`, `store.py` | REUSE | W1+ |
+| AHE-R07 | Canonical task execution | `intergrax/runtime/task/unified_task_runner.py` | REUSE | W1+ |
+| AHE-R08 | Runtime evaluation | `intergrax/eval/nexus_eval_runner.py` | REUSE/WIRING | W1+ |
+| AHE-R09 | Typed evaluation runs | `intergrax/eval/typed_run.py` | REUSE/WIRING | W1+ |
+| AHE-R10 | Comparative evaluation | `intergrax/eval/eval_comparison.py` | REUSE | W1+ |
+| AHE-R11 | Existing utility calculation | `intergrax/runtime/adaptive/utility.py` | REUSE | W1+ |
+| AHE-R12 | Per-run resource limits | `intergrax/contracts/run_budget.py` | REUSE | W1+ |
+| AHE-R13 | Sandbox and isolation | `intergrax/runtime/sandbox/` | REUSE/WIRING | W1+ |
+| AHE-R14 | Candidate contracts and archive | AHI-ADAS-10 | IMPLEMENT EXISTING PLANNED SCOPE | W1 |
+| AHE-R15 | Candidate static validation | AHI-ADAS-20 | IMPLEMENT/WIRING | W1/W2 |
+| AHE-R16 | Candidate evaluation facade | AHI-ADAS-30 | IMPLEMENT/WIRING | W1/W3 |
+| AHE-R17 | Search controller and strategies | AHI-ADAS-40 | IMPLEMENT/WIRING | W1/W2/W5 |
+| AHE-R18 | Procedural knowledge | `intergrax/memory/procedural_memory_service.py` | REUSE/WIRING | W4 |
+| AHE-R19 | Process pattern evidence | `intergrax/runtime/adaptive/process_pattern_miner.py` | REUSE/WIRING | W4 |
+| AHE-R20 | Recovery-specific experience | `intergrax/runtime/self_healing/knowledge_evolution/` | REUSE/WIRING | W4 |
+| AHE-R21 | Promotion lifecycle | `intergrax/runtime/adaptive/adaptation_executor.py` | REUSE/QUALIFY | W6 |
+| AHE-R22 | Adaptation governance | `intergrax/runtime/adaptive/governance_pipeline.py` | REUSE/QUALIFY | W6 |
+| AHE-R23 | Verification and rollback | `intergrax/runtime/adaptive/verification_loop.py` | REUSE/QUALIFY | W6 |
+
+Evidence limitations:
+
+- **REUSE** means the existing mechanism is the selected owner and implementation anchor. It does not assert that every required integration path is already qualified.
+- **WIRING** means an existing mechanism must be connected and its behavior verified within the AHE composition.
+- **IMPLEMENT EXISTING PLANNED SCOPE** means the missing capability belongs to the existing ADAS architecture, rather than a new AHE runtime subsystem.
+- **QUALIFY** means the selected existing mechanism must demonstrate the required behavior in the new composition.
+- A source-code path is not by itself proof of production readiness.
+
+## 5.17 ADAS canonical contract ownership
+
+The implementation shall retain the existing ADAS contract and component vocabulary:
+
+- AdasOperationalEnvelope
+- AgentDesignObjective
+- AgentDesignSearchRun
+- AgentCandidateDraft
+- AgentCandidateRecord
+- AgentCandidateStatus
+- AgentCandidateEvaluationResult
+- AgentCandidateEvidenceBundle
+- AgentDesignArchive
+- AgentScaffoldBridge
+- AgentStaticGate
+- AgentCandidateEvaluator
+- AgentDesignSearchController
+- AgentDesignContext
+- AgentDesignSearchPolicy
+- AgentDesignStrategy
+- RuleBasedVariantStrategy
+
+The canonical runtime package location remains:
+
+`intergrax/runtime/adaptive/agent_design_search/`
+
+AHE is not a new runtime package.
+
+No competing AHE candidate, archive, evaluator or search-controller contract shall be created.
+
+Use existing canonical references and contracts wherever they satisfy the required semantics.
+
+`ProfileVersionStore` remains the owner of existing AHI profile versions.
+
+`AgentDesignArchive` owns ADAS candidate lineage and candidate-specific evidence references as already prescribed by ADAS.
+
+It is not a second profile-version store, general experiment store, general evaluation store or experience-memory system.
+
+The W1 candidate is configuration-only.
+
+Executable agent scaffolding may be deferred until specifically authorized and required. Do not mark the entire AHI-ADAS-20 phase complete from configuration-only validation evidence.
+
+## 5.18 Cross-program implementation boundaries
+
+- ARCH-FREEZE remains unchanged.
+- HARNESS-W6 certification is scoped to its accepted baseline and does not automatically certify ADAS or AHE.
+- Existing AHI remediation obligations remain under their canonical owners.
+- AHE supplies reusable adaptive capability and evidence to Intelligence W7.
+- Intelligence retains its consumer and program-level acceptance responsibilities.
+- AHE shall not implement competing versions of Intelligence W7 mechanisms.
+- Changes to protected or shared mechanisms require explicit authorization from the relevant authority.
+- Parallel development is allowed only within the authorized non-conflicting scope.
+- Product admission and production promotion remain separately governed.
+
+**Cross-program boundary status:** ARCHITECT_DEFINED / EXTERNAL_OWNER_ACCEPTANCE_PENDING
+
+Do not assert that another program has accepted this mapping.
