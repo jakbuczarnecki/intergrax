@@ -17,7 +17,7 @@ Use, modification, or distribution without written permission is prohibited.
 | Roadmap revision and path | 1.0 — `governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md` |
 | Actual evidence baseline | Historical v1.0 audit context SHA `aabd3925c48bce40bfa5357f39e81bdc7858f8cc` as recorded in architecture v1.0. Preparation baseline `32005c212ed4debca91f607ee30b3abfab79ce6c`. R2 review baseline `7d2cc3d28640df4823fa04e07abdc8f98451ccc6`; target blobs unchanged. Neither preparation nor review baseline is an audited qualification SHA. |
 | Active wave | W0 documentation candidates |
-| Active batch | II-DOC-FINALIZATION-R2 |
+| Active batch | II-DOC-R3-CORRECTIVE-01 — proposed; approval and corrective delta review required |
 | GATE-II-ENTRY | not reached on verified evidence |
 | GATE-II-ARCH | not reached |
 | GATE-II-CORE | not reached |
@@ -25,13 +25,13 @@ Use, modification, or distribution without written permission is prohibited.
 | GATE-II-ENTERPRISE | not reached |
 | GATE-INTELLIGENCE-CONSUME | not reached |
 | Blockers | Formal repository ratification is pending. Executable W1 is not authorized. Product implementation is not authorized. Chapter-14 canonical integration has not been performed by this batch. |
-| Next eligible action | Review exact R2 digests, obtain independent document review and formal W0 adoption authority. Do not open a gate. Do not start product implementation. |
-| Ticket refs | `governance/tickets/T-IGX-079-A.md` is `in_progress` and is not executed by this batch. No package below has its own ticket. |
-| Evidence refs | Architecture v1.0 blob `3ffd8de71737a3b606a72e89e439854eabaf9ef2`. Plan index blob `71329af63765c5c4e671880a8921de4103c4b6f2`. R2 local candidate package; no published candidate commit. |
-| Audited candidate SHA | Architecture Authority corrective preparation; independent review pending |
-| Authorized publication SHA | none |
+| Next eligible action | Obtain proper R3 plan approval and Operator disposition of the R2 publication exception; exact corrective validation and independent delta audit; authorized publication then separate ratification and W0 adoption. No gate or product implementation. |
+| Ticket refs | `governance/tickets/T-IGX-079-A.md` is `in_progress` and is not executed by this batch. T-IGX-079-B was published as plan_pending and its historical plan/digest remain unchanged. Proposed corrective ticket T-IGX-079-C is not a package closure or an approval. No package below has its own accepted implementation ticket. |
+| Evidence refs | Architecture v1.0 blob `3ffd8de71737a3b606a72e89e439854eabaf9ef2`. Plan index blob `71329af63765c5c4e671880a8921de4103c4b6f2`. R2 candidate published at `3190a448707b9ca0835ba354d4cbd18c23565408`; independent pre-ratification audits 01A/01B/01C reviewed this SHA, consolidated CHANGES_REQUIRED (12 findings, no formal G6). Reports are Operator-supplied audit evidence; no claim of repository dossier publication. |
+| Audited candidate SHA | `3190a448707b9ca0835ba354d4cbd18c23565408` — independent document review CHANGES_REQUIRED. R3 delta review pending. |
+| Authorized publication SHA | `3190a448707b9ca0835ba354d4cbd18c23565408` — R2 candidate publication only (one-time Operator authorization). R3 publication evidence must be separately recorded after actual publication; no self-referential SHA. |
 
-**Status of the program direction:** the Operator accepted the strategic direction in chat. Formal repository ratification is pending. Architecture v1.0 is a published proposal. The v1.1 architecture and v1.0 roadmap are R2 candidates prepared for independent review and formal ratification. W0 formal closures: 0. W1 executable qualification is not authorized.
+**Status of the program direction:** the Operator accepted the strategic direction in chat. Formal repository ratification is pending. Architecture v1.0 is a published proposal. The v1.1 architecture and v1.0 roadmap were published as R2 candidates and independently reviewed; this R3 proposal addresses findings, without approval or ratification. Current preparation comparison baseline `69cb5844285f8f65153818fc8d471b0b5edb1ac2`; EQO source drift requires fresh evidence for entry, not inferred Foundation acceptance. II-FIND-11/12 remain external W0-06 reconciliation obligations. R2 publication preceded formal plan approval; Operator disposition is pending. W0 formal closures: 0. W1 executable qualification is not authorized.
 
 DevOS ticket lifecycle uses the existing vocabulary: `draft`, `plan_pending`, `plan_approved`, `in_progress`, `quality_gate`, `ready_for_audit`, `closed`. A dash is absence of a bound record, not a new lifecycle state. Candidate documents are not implementation or formal qualification evidence. No package is formally closed. Reuse dispositions for runtime packages remain unassessed until W1; W0 is document work and does not depend on W1. For a completed row, bind actual ticket, evidence and SHA rather than merely changing a status cell.
 
