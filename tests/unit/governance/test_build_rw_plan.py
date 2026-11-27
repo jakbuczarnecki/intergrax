@@ -748,3 +748,9 @@ def test_live_bindings_put_pt_wa_before_pt_wb():
     labels = [lane["label"] for lane in bindings["lanes"]]
     assert labels.index("PT-WA") < labels.index("PT-WB")
     assert len({lane["lane"] for lane in bindings["lanes"]}) == len(labels)
+
+
+def test_live_wave_dependencies_have_no_wave_self_dependency():
+    mod = _import_build()
+    bindings = mod.load_bindings()
+    assert "PT-WA" not in bindings["dependencies"]["W3"]
