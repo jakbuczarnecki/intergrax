@@ -324,7 +324,7 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 | **7** | Task-scoped lease ownership | `task_scoped_agents.py` | **CLOSED** |
 | **8** | Delegated subtask orchestration + child execution | `delegated_subtasks.py`, `active_execution_task_scope.py`, `active_task_registry.py`, `delegated_subtask_child_port.py` | **CLOSED** |
 | **9** | Production composition wiring | `production_agent_capability_runtime.py`, `production_process_composition.py`, `production_delegated_subtask_plans.py`, `catalog_discovery.py` | **CLOSED** |
-| **10** | Architecture documentation freeze | `architecture/AGENT_DISTRIBUTION.md` §35, this section | **READY_FOR_INDEPENDENT_AUDIT** |
+| **10** | Architecture documentation freeze | `architecture/AGENT_DISTRIBUTION.md` §35, this section | **RECONCILED (historical label: READY_FOR_INDEPENDENT_AUDIT)** — architecture §35 synced; `PDC-D1-R009` / `F-D1-15` dispositioned as documented debt in `PDC_DEBT_REGISTER.md` §13 per signed `OD-PDC-X-CLOSE.md` (2026-11-16; no new PASS claimed) |
 
 ### AC-4 gate summary
 
