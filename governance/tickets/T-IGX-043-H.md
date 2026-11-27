@@ -76,3 +76,28 @@ Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section g
 | FRZ-PRD-05 | NT-PRD-05-1, NT-PRD-05-2 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+## AF-W3-PT-WB-01 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | T-IGX-043-H`. Authorization: AR-40 / OD-AF-PKT1. Base and execution SHA: `245d47177c7814234a8d98fc062ed1afce3b735d` (`origin/development`); PT-WA and SCOPE closure ancestors confirmed. No firm write-set product edits in this session (Parts A–E already on `development`); this pass is verification, OP-B evidence accounting, and ticket settlement.
+
+**Implementation verdict:** `IMPLEMENTED_FIRM_SCOPE_WITH_EXACT_RESIDUALS` (not full ticket DONE: FRZ-BND-05 OP-B remains `EVIDENCE_MISSING`).
+
+| Area | Status |
+|---|---|
+| Part A canonical LLM resolver + tenant-scoped routing | `ALREADY_IMPLEMENTED`; V1 green (37); NT-OWN-03 green at execution SHA |
+| Part B explicit profile projections | `ALREADY_IMPLEMENTED`; V1 registry/projection tests green |
+| Part C closed provider roots | `ALREADY_IMPLEMENTED` (data/gate); **NT-BND-05-2 FAIL** — `intergrax/applications/_shared/queue_worker_wiring.py` import outside `CLOSED_PROVIDER_ROOTS` (cross-ticket residual; file not in T-IGX-043-H write set; Q-WB-13 does not authorize A4-020 bypass edits) |
+| Part D serving lifecycle | `ALREADY_IMPLEMENTED`; NT-PRD-05 / NT-WB-15 nodes green in targeted run; V4 local failures (LKW bootstrap / hosted foreground) match prior checkpoint (memory provider admission in this environment) |
+| Part E importlib allowlist | `ALREADY_IMPLEMENTED`; NT-WB-20/21 green in V1; **b1/b2 caller threading** residual → PT-FC2 per prior checkpoint |
+| Part G | `CONDITIONAL_NOT_AUTHORIZED` (Q-WB-12); not executed |
+| FRZ-BND-05 OP-B (NT-BND-05-1) | `EVIDENCE_MISSING`; `BLOCKER=CANONICAL_NEGATIVE_TEST_WRITE_SET_MISSING` — `test_rw_bnd05_runtime_context_construction.py` not in firm write set; test still asserts `RuntimeConfig.production_mode` posture, not RuntimeContext construction scan |
+| FRZ-OWN-05 | Historical `RED_AT_PREFIX` preserved; **NT-OWN-05-1 FAIL** at execution SHA: AST census includes `applications/*/docker/runtime-context/**/llm_resolver.py` mirrors (not firm implementation); host-resolver duplication guard otherwise satisfied at pin for canonical + façade only |
+
+**Qualification (this session, one pytest process):** V1 PASS (37/37). V2 90 passed, 1 failed (`test_environment_llm_wiring_without_llm_selection_does_not_materialize_adapter`, `ConfigurationError` — out of firm WB write set). V3 89 passed, 3 failed (ACP session host / LKW profile closure — harness/enterprise coupling). V4 15 passed, 4 failed (LKW production bootstrap / hosted foreground — same class as prior LKW admission note). V5 68 passed, 1 xfail (known TRANSFERRED), 1 failed (`test_mcp_public_api_surface` import surface — outside Part E claim). Ruff (core write-set sample): PASS. Pyright (llm_resolver + profile_projection): 0 errors. V7 `igx_gov ticket`: NOT PASS locally (`FileNotFoundError`: `uv` not on PATH for regression-gate subprocess).
+
+**OP-B / progressive evidence:** `OP_B_PENDING=12`; no `af2.red_first_ga2r.v1` publication (TASK-08 skipped). `FRZ_PROMOTION: NONE`.
+
+**PT-WA handoff preserved:** NT-WA-23 roster isolation; harness.policy_smoke ×2 → T-IGX-043-A; OTLP ×2 → T-IGX-043-B; Pyright PT-WA not claimed full PASS; dynamic-import census not published as evidence.
+
+**Lifecycle:** remains `plan_approved`; semantic close `IMPLEMENTED_FIRM_SCOPE_WITH_EXACT_RESIDUALS`; G2 OPEN; RB2 NOT_PERFORMED; independent PT-Q02 audit still required.
