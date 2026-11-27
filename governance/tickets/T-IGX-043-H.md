@@ -12,7 +12,7 @@ Prerequisites before implementation starts: master-plan nodes `SCOPE` and `DS-2`
 
 ## Plan digest
 
-Plan digest: f5f0d6304c8b8f270dd7b74981027c6d829d6112a3788328021ce0d00dc5ccc9
+Plan digest: 33b428e5c010a9d33061ba2f6b3a55e06cd48c68ab2f46ac1ed68a785e39f7e4
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-H.md`](plans/PLAN_T-IGX-043-H.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -124,3 +124,43 @@ Baseline: `c74d42f11c1806de418363ad31572ee9b8005364`; SCOPE closure ancestor `0a
 **Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; FRZ promotion none; PT-Q02 PENDING.
 
 **Evidence SHA reconciliation (WB-01 vs WB-02):** WB-01 cited `245d47177c7814234a8d98fc062ed1afce3b735d` (EC-W3-07 merge) while published package commit was `c74d42f11` (parent `1d0181051fa034b5f45101755002e48f5dc35715`).
+
+## AF-W3-PT-WB-03 executor settlement (2026-11-27)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WB | AF-W3-PT-WB-03`. Authorization: AR-40; OD-AF-PKT1 (historical); OD-AF-W3-BND05-01 variant A; OD-AF-CLOSE-B2; OD-AF-CLOSE-B6.
+Verified baseline ancestor: `3eb76b5ebafd69f4696db5be57f7085b3802e22f` on `origin/development`.
+
+**Implementation verdict:** `BND05_PRODUCT_GATE_AND_PRE_FIX_RED_BASELINE`; FRZ-BND-05 OP-B remains `EVIDENCE_MISSING` (pre-fix RED captured; not `RED_AT_PREFIX` promotion).
+
+| Deliverable | Result |
+|---|---|
+| Detector | Canonical symbol identity for `RuntimeContext` construction (`import`, alias, module alias, qualified reference); local same-name class excluded |
+| Product gate | `test_scan_flags_a_rogue_agent` enforces Tier-2 scan; **RED** on four real `RuntimeContext.build` sites |
+| Synthetic controls | `test_detector_synthetic_runtime_context_construction_controls` — PASS independent of product |
+| Documented census (non-asserting) | `_DOCUMENTED_UNAUTHORIZED_CENSUS_SITES` — four paths; `boundary_demo_agent.py` **not** in T-IGX-043-A write set |
+| OWN-05 | Mirror exclusion via `_resolver_definitions`; synthetic tests use the real census helper |
+| Plan digest | Recomputed after section 13 amendment (OD-AF-W3-BND05-01 variant A) |
+
+**Authority census (Tier-2 `RuntimeContext.build`, unauthorized):**
+
+| Path | Line | Owner |
+|---|---|---|
+| `agents/boundary_demo/boundary_demo_agent.py` | 96 | unresolved product authority (outside T-043-A write set) |
+| `agents/external_contractor_adapter/external_contractor_adapter_agent.py` | 112 | T-IGX-043-A / PT-FC1 |
+| `agents/organization_worker/organization_worker_agent.py` | 118 | T-IGX-043-A / PT-FC1 |
+| `intergrax/agents/authoring/acp_stub_reflex.py` | 69 | T-IGX-043-A / PT-FC1 |
+
+**AF-W3-PT-WB-01 V2–V5 residual accounting (nine failures, execution SHA `245d47177c7814234a8d98fc062ed1afce3b735d`):**
+
+| Node bucket | Count | Representative failure | Owner / remedy |
+|---|---|---|---|
+| V2 | 1 | `test_environment_llm_wiring_without_llm_selection_does_not_materialize_adapter` | out of firm WB write set |
+| V3 | 3 | ACP session host / LKW profile closure harness | enterprise coupling; not WB firm claim |
+| V4 | 4 | LKW production bootstrap / hosted foreground (memory provider admission) | environment admission |
+| V5 | 2 | `test_mcp_public_api_surface` FAIL; one xfail TRANSFERRED | outside Part E surface claim |
+
+Preserved handoffs: `queue_worker_wiring.py` → PT-FC2; importlib b1/b2 → PT-FC2; Part G `CONDITIONAL_NOT_AUTHORIZED`.
+
+**Pre-fix RED baseline (canonical node):** see `.tmp/proof/af-w3-pt-wb-03/` after commit (log SHA256, test blob SHA, execution SHA). `RED_FIRST_EVIDENCE=INCOMPLETE`; `OP_B_PENDING=12`; `FRZ-BND-05` not promoted.
+
+**Lifecycle:** `plan_approved`; not full DONE; G2 OPEN; PT-FC1 product fixes required for GREEN on canonical node; PT-Q02 PENDING.

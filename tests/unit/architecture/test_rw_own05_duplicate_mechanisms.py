@@ -29,13 +29,23 @@ def _is_application_docker_runtime_context_mirror(parts: tuple[str, ...]) -> boo
     return len(parts) >= 4 and parts[0] == "applications" and parts[2] == "docker" and parts[3] == "runtime-context"
 
 
-def _resolver_definitions() -> dict[str, bool]:
+def _resolver_definitions(*extra_roots: Path) -> dict[str, bool]:
     """Map module path to whether the module also calls an adapter factory."""
     found: dict[str, bool] = {}
-    for root in ("intergrax", "agents", "applications"):
-        for path in (_REPO_ROOT / root).rglob("*.py"):
-            relative = path.relative_to(_REPO_ROOT).as_posix()
-            parts = path.relative_to(_REPO_ROOT).parts
+    scan_roots: list[tuple[Path, Path]] = [
+        (_REPO_ROOT / name, _REPO_ROOT) for name in ("intergrax", "agents", "applications")
+    ]
+    for extra in extra_roots:
+        scan_roots.append((extra, extra))
+    for root, base in scan_roots:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.py"):
+            try:
+                relative = path.relative_to(base).as_posix()
+            except ValueError:
+                continue
+            parts = path.relative_to(base).parts
             if "/tests/" in relative:
                 continue
             if _is_application_docker_runtime_context_mirror(parts):
@@ -90,6 +100,8 @@ def test_distribution_mirror_resolver_excluded_from_duplicate_scan(tmp_path: Pat
     )
     parts = mirror.relative_to(tmp_path).parts
     assert _is_application_docker_runtime_context_mirror(parts)
+    definitions = _resolver_definitions(tmp_path)
+    assert "applications/demo/docker/runtime-context/fake_llm.py" not in definitions
 
 
 def test_non_mirror_module_with_adapter_factory_would_fail_gate(tmp_path: Path) -> None:
@@ -99,13 +111,13 @@ def test_non_mirror_module_with_adapter_factory_would_fail_gate(tmp_path: Path) 
         "def resolve_llm_adapter():\n    return create_adapter('x')\n",
         encoding="utf-8",
     )
-    tree = ast.parse(rogue.read_text(encoding="utf-8"))
-    constructs = any(
-        isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _ADAPTER_FACTORIES
-        for node in ast.walk(tree)
-    )
-    assert constructs is True
+    relative = rogue.relative_to(tmp_path).as_posix()
     assert not _is_application_docker_runtime_context_mirror(rogue.relative_to(tmp_path).parts)
+    definitions = _resolver_definitions(tmp_path)
+    assert definitions[relative] is True
+    constructing = [path for path, constructs in definitions.items() if constructs]
+    assert relative in constructing
+    assert _CANONICAL not in constructing or len(constructing) > 1
 
 
 def test_facade_must_not_construct_adapters() -> None:

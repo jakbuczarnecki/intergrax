@@ -425,3 +425,15 @@ The auditor is neither the implementer nor a reviewer of this ticket (C3, DP-03,
 Rollback: before merge, revert the ticket's commits on the wave branch; each part is a separable unit (A together with R1-R6; B as a unit; D; E; G). After merge a revert is possible per part but does not restore the IIAC activation; the RB-2 rebind must be redone. The Tier-3 façade keeps public names, so a revert of A restores the previous two-resolver state without touching callers.
 
 Effort (S/M/L): A `M`, B `M`, C `S` (data), D `S`, E `M`, G `L`; the ticket is `L` overall (19 firm product paths and 14 firm tests; 15 conditional product paths and 5 conditional tests, Part G among them; at most 34 product paths). No split: the ticket stays one unit by agreement of the ARCH-FREEZE orchestrator and the EQO-A planning session (Q-RW-02, Q-RW-15). The earlier split proposal (H-1 = A + B, H-2 = C + E, H-3 = D + G) is withdrawn from the plan and kept only as an alternative in Q-WB-08.
+
+
+## 13. Operator amendment OD-AF-W3-BND05-01 variant A (2026-11-27, historical OD-AF-PKT1 unchanged)
+
+The Operator-approved packet record **OD-AF-PKT1** (ticket approval `Approved:` above) stays historical; this amendment binds **OD-AF-W3-BND05-01 variant A** (`ARCH_FREEZE_OPERATOR_DECISION_REGISTER.md`) to the write set without new product scope.
+
+| Item | Effect |
+|---|---|
+| FRZ-BND-05 construction gate | add `tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py` to the firm test write set of this ticket; the same path remains on `T-IGX-043-A` under canonical merge order **H → A** (posture ownership on 043-A unchanged) |
+| Canonical negative node | `test_scan_flags_a_rogue_agent` — synthetic detector controls plus Tier-2 product enforcement for unauthorized `RuntimeContext` construction |
+| FRZ-OWN-05 mirror classification | `tests/unit/architecture/test_rw_own05_duplicate_mechanisms.py` excludes only `applications/*/docker/runtime-context/**` resolver mirrors from the duplicate-host scan |
+| Out of scope | product fixes for the four censused `RuntimeContext.build` sites; FRZ-BND-05 OP-B promotion; weakening gates |
