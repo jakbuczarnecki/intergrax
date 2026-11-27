@@ -1,0 +1,5 @@
+{
+  "EC-F14": "CORRECTED",
+  "EC-F08": "CORRECTED",
+  "open_residuals": ["EC-F05", "EC-F09", "EC-F12", "EC-F13", "P2C_ENV_7of7", "MCP_P4_FASTMCP_EXTRAS"]
+}

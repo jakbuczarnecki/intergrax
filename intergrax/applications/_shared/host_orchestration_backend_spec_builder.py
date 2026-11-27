@@ -45,6 +45,7 @@ from intergrax.contracts.child_execution_context_inheritance import (
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
+from intergrax.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.host_orchestration_wiring_port import (
     HostOrchestrationApplicationWiringPort,
 )
@@ -151,7 +152,8 @@ def build_host_orchestration_loop_init_spec_from_environment(
     validate_strict_host_execution_capacity(env)
 
     producer_llm = llm_adapter
-    if producer_llm is None and orchestration_requires_llm_adapter(env):
+    requires_context_llm = env.execution_mode is ExecutionMode.STRICT and context_manager is None
+    if producer_llm is None and (orchestration_requires_llm_adapter(env) or requires_context_llm):
         producer_llm = resolve_environment_llm_adapter(env)
     planner_llm = resolve_planner_llm_adapter(env, producer_adapter=producer_llm) if producer_llm is not None else None
     planning_spec = host_orchestration_planning_spec(

@@ -1,0 +1,7 @@
+{
+  "schema": "eqo.batch_manifest.v1",
+  "recorded_utc": "2026-11-27T17:40:00Z",
+  "batches_executed": "see RUN_MANIFEST.json",
+  "p2c_residual": "6/7 FAIL on candidate; EC-F14 unrelated; inbound verifier / qualification env parity open",
+  "gca_smoke_residual": "EC-F12 OPEN_GCA_STRICT_SMOKE_ACTIVATION_MIGRATION — 3 smoke FAIL StrictAgentContractAuthorityError"
+}

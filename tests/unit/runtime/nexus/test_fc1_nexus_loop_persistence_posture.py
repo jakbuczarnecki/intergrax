@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
@@ -21,6 +21,8 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_RUNTIME_EVENTS_DB,
     ENV_TASK_MEMORY_DB,
 )
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterDependencyError
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.store import (
     RuntimeEventPersistenceNotConfiguredError,
@@ -43,6 +45,7 @@ from intergrax.runtime.task_memory.store import (
     resolve_task_memory_persistence,
 )
 from intergrax.runtime.task_memory.stores.memory_task_memory_store import InMemoryTaskMemoryStore
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
 
@@ -188,6 +191,129 @@ def test_strict_loop_refuses_context_manager_without_engine_or_adapter() -> None
     with pytest.raises(ProductionContextCompositionError):
         _strict_loop(context_manager=ContextManager(llm_adapter=MagicMock()), **ack)
     assert NexusLoop(AgentRegistry(), production_mode=False).production_mode is False
+
+
+def _strict_env(profile_id: str = "fc1.strict-ctx") -> ApplicationEnvironmentProfile:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    env.execution_mode = ExecutionMode.STRICT
+    env.orchestration_profile = env.orchestration_profile.model_copy(
+        update={"max_parallel_nodes": 1, "max_inflight_nodes": 1},
+    )
+    return env
+
+
+def _strict_persistence_kwargs() -> dict[str, bool]:
+    return {
+        "disable_human_decision_persistence": True,
+        "disable_task_memory_persistence": True,
+        "disable_runtime_event_persistence": True,
+    }
+
+
+def test_strict_auto_context_default_planner_classifier_resolves_llm_for_context() -> None:
+    """EC-F14: STRICT + DEFAULT planner/classifier must materialize LLM for auto ContextManager."""
+    env = _strict_env("fc1.strict-ctx.default")
+    fake = FakeLLMAdapter()
+    with patch(
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
+        return_value=fake,
+    ) as resolve_mock:
+        spec = build_host_orchestration_loop_init_spec_from_environment(
+            AgentRegistry(),
+            env=env,
+            **_strict_persistence_kwargs(),
+        )
+    resolve_mock.assert_called_once_with(env)
+    assert spec.production_mode is True
+    assert spec.context_manager is not None
+    assert spec.context_manager.context_engine is not None
+    assert spec.context_manager.llm_adapter is fake
+
+
+def test_strict_auto_context_default_planner_rules_classifier_resolves_llm() -> None:
+    env = _strict_env("fc1.strict-ctx.rules")
+    env.orchestration_profile = env.orchestration_profile.model_copy(
+        update={"classifier_kind": "rules"},
+    )
+    fake = FakeLLMAdapter()
+    with patch(
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
+        return_value=fake,
+    ) as resolve_mock:
+        spec = build_host_orchestration_loop_init_spec_from_environment(
+            AgentRegistry(),
+            env=env,
+            **_strict_persistence_kwargs(),
+        )
+    resolve_mock.assert_called_once_with(env)
+    assert spec.context_manager is not None
+    assert spec.context_manager.llm_adapter is fake
+
+
+def test_strict_explicit_llm_adapter_skips_environment_resolution() -> None:
+    env = _strict_env("fc1.strict-ctx.explicit-llm")
+    explicit = FakeLLMAdapter()
+    with patch(
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
+        side_effect=AssertionError("unexpected_environment_llm_resolution"),
+    ):
+        spec = build_host_orchestration_loop_init_spec_from_environment(
+            AgentRegistry(),
+            env=env,
+            llm_adapter=explicit,
+            **_strict_persistence_kwargs(),
+        )
+    assert spec.context_manager is not None
+    assert spec.context_manager.llm_adapter is explicit
+
+
+def test_strict_without_provider_config_fail_closed() -> None:
+    import builtins
+
+    env = _strict_env("fc1.strict-ctx.no-provider")
+    env = env.model_copy(
+        update={"llm_profile": LLMProfile.lab().model_copy(update={"provider": "ollama", "model": "llama3.1:latest"})},
+    )
+    original_import = builtins.__import__
+
+    def _block_ollama(name: str, globals=None, locals=None, fromlist=(), level=0):
+        if name == "ollama":
+            raise ModuleNotFoundError("No module named 'ollama'", name="ollama")
+        return original_import(name, globals, locals, fromlist, level)
+
+    with patch.object(builtins, "__import__", _block_ollama):
+        with pytest.raises(LLMAdapterDependencyError):
+            build_host_orchestration_loop_init_spec_from_environment(
+                AgentRegistry(),
+                env=env,
+                **_strict_persistence_kwargs(),
+            )
+
+
+def test_lab_default_planner_classifier_does_not_force_environment_llm_resolution() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="fc1.lab-ctx")
+    with patch(
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
+        side_effect=AssertionError("unexpected_environment_llm_resolution"),
+    ) as resolve_mock:
+        build_host_orchestration_loop_init_spec_from_environment(
+            AgentRegistry(),
+            env=env,
+            disable_human_decision_persistence=True,
+        )
+    resolve_mock.assert_not_called()
+
+
+def test_strict_explicit_incomplete_context_manager_remains_fail_closed() -> None:
+    env = _strict_env("fc1.strict-ctx.incomplete-explicit")
+    spec = build_host_orchestration_loop_init_spec_from_environment(
+        AgentRegistry(),
+        env=env,
+        context_manager=ContextManager(),
+        **_strict_persistence_kwargs(),
+    )
+    with pytest.raises(ProductionContextCompositionError):
+        materialize_host_orchestration_backend(AgentRegistry(), spec)
 
 
 def test_strict_environment_through_tier3_builder_is_refused_without_engine_or_adapter() -> None:

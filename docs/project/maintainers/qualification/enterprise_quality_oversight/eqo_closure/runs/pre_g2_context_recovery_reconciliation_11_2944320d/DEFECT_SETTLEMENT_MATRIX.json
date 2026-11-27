@@ -1,0 +1,8 @@
+{
+  "EC-F14": {"status": "SETTLED_CORRECTIVE", "evidence_batch": "fc1_nexus_context"},
+  "EC-F08": {"status": "SETTLED_CORRECTIVE", "evidence_batch": "q09_application_host"},
+  "EC-F05": {"status": "OPEN"},
+  "EC-F09": {"status": "OPEN"},
+  "EC-F12": {"status": "OPEN"},
+  "EC-F13": {"status": "OPEN"}
+}

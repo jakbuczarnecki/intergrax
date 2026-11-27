@@ -1,0 +1,6 @@
+{
+  "ec_w3_08_245d4717": {"disposition": "REPLAY_REQUIRED", "reason": "source/tree binding anomalies; selective batch replay in EC-W3-11"},
+  "ec_w3_09_4abc43fa": {"disposition": "REPLAY_REQUIRED", "reason": "local vs published SHA mismatch; prior tests need validity proof"},
+  "ec_w3_10_8b78d592": {"disposition": "STILL_VALID", "reason": "host contract tests unchanged except authorized EC-F08 consumer paths; P2C assertions untouched", "residual": "incomplete raw JUnit for some groups"},
+  "current_candidate": {"disposition": "REPLAYED", "batch_refs": "RUN_MANIFEST.json"}
+}

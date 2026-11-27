@@ -18,7 +18,7 @@ from intergrax.runtime.execution_evidence.key_store import (
     FilesystemHostKeyResolver,
     read_demo_mode_marker,
 )
-from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
+from intergrax.runtime.execution_evidence.verify import verify_execution_evidence_proof_receipt
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -222,7 +222,7 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
         receipt_path = display_relative_path(export_path)
         try:
             resolver = FilesystemHostKeyResolver(store)
-            vr = verify_proof_receipt(
+            vr = verify_execution_evidence_proof_receipt(
                 step.receipt,
                 key_resolver=resolver,
                 require_policy_bundle_artifact=True,

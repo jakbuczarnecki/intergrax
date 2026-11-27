@@ -1,0 +1,133 @@
+{
+  "batch_count": 14,
+  "batches": [
+    {
+      "batch_id": "fc1_nexus_context",
+      "command": "uv run pytest tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:30:24.997322+00:00",
+      "junit_path": "junit\\fc1_nexus_context.xml",
+      "log_path": "logs\\fc1_nexus_context.log",
+      "started_at": "2026-11-27T17:30:24.404521+00:00"
+    },
+    {
+      "batch_id": "p2c_http_admission",
+      "command": "uv run pytest tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "exit_code": 1,
+      "finished_at": "2026-11-27T16:56:18.679384+00:00",
+      "junit_path": "junit\\p2c_http_admission.xml",
+      "log_path": "logs\\p2c_http_admission.log",
+      "started_at": "2026-11-27T17:33:34.481775+00:00"
+    },
+    {
+      "batch_id": "gca_dur_r4",
+      "command": "uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:25:58.822257+00:00",
+      "junit_path": "junit\\gca_dur_r4.xml",
+      "log_path": "logs\\gca_dur_r4.log",
+      "started_at": "2026-11-27T17:25:57.746079+00:00"
+    },
+    {
+      "batch_id": "q09_application_host",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:27:26.224447+00:00",
+      "junit_path": "junit\\q09_application_host.xml",
+      "log_path": "logs\\q09_application_host.log",
+      "started_at": "2026-11-27T17:27:25.601876+00:00"
+    },
+    {
+      "batch_id": "erl_bridge",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:27:38.076739+00:00",
+      "junit_path": "junit\\erl_bridge.xml",
+      "log_path": "logs\\erl_bridge.log",
+      "started_at": "2026-11-27T17:27:37.459725+00:00"
+    },
+    {
+      "batch_id": "trace_x_p3_r1",
+      "command": "uv run pytest tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:30:08.945875+00:00",
+      "junit_path": "junit\\trace_x_p3_r1.xml",
+      "log_path": "logs\\trace_x_p3_r1.log",
+      "started_at": "2026-11-27T17:30:08.386768+00:00"
+    },
+    {
+      "batch_id": "d4_strict_serving",
+      "command": "uv run pytest tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:38:36.447303+00:00",
+      "junit_path": "junit\\d4_strict_serving.xml",
+      "log_path": "logs\\d4_strict_serving.log",
+      "started_at": "2026-11-27T17:38:35.458676+00:00"
+    },
+    {
+      "batch_id": "gca_smoke",
+      "command": "uv run pytest applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+      "exit_code": 1,
+      "finished_at": "2026-11-27T17:30:49.083788+00:00",
+      "junit_path": "junit\\gca_smoke.xml",
+      "log_path": "logs\\gca_smoke.log",
+      "started_at": "2026-11-27T17:30:48.118964+00:00"
+    },
+    {
+      "batch_id": "d03_security",
+      "command": "uv run pytest tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:06.744164+00:00",
+      "junit_path": "junit\\d03_security.xml",
+      "log_path": "logs\\d03_security.log",
+      "started_at": "2026-11-27T17:31:06.204369+00:00"
+    },
+    {
+      "batch_id": "xd12_impact",
+      "command": "uv run pytest tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:15.479942+00:00",
+      "junit_path": "junit\\xd12_impact.xml",
+      "log_path": "logs\\xd12_impact.log",
+      "started_at": "2026-11-27T17:31:15.015793+00:00"
+    },
+    {
+      "batch_id": "mcp_p4_lifecycle",
+      "command": "uv run pytest tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "exit_code": 2,
+      "finished_at": "2026-11-27T17:31:33.901095+00:00",
+      "junit_path": "junit\\mcp_p4_lifecycle.xml",
+      "log_path": "logs\\mcp_p4_lifecycle.log",
+      "started_at": "2026-11-27T17:31:33.123322+00:00"
+    },
+    {
+      "batch_id": "bnd05_gate",
+      "command": "uv run pytest tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:31:41.013997+00:00",
+      "junit_path": "junit\\bnd05_gate.xml",
+      "log_path": "logs\\bnd05_gate.log",
+      "started_at": "2026-11-27T17:31:40.668112+00:00"
+    },
+    {
+      "batch_id": "bnd03b_witness",
+      "command": "uv run pytest tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:32:27.544932+00:00",
+      "junit_path": "junit\\bnd03b_witness.xml",
+      "log_path": "logs\\bnd03b_witness.log",
+      "started_at": "2026-11-27T17:32:27.157171+00:00"
+    },
+    {
+      "batch_id": "p3_integration_gate",
+      "command": "uv run pytest tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "exit_code": 0,
+      "finished_at": "2026-11-27T17:32:50.143420+00:00",
+      "junit_path": "junit\\p3_integration_gate.xml",
+      "log_path": "logs\\p3_integration_gate.log",
+      "started_at": "2026-11-27T17:32:49.393773+00:00"
+    }
+  ],
+  "recorded_utc": "2026-11-27T17:38:51.202545+00:00",
+  "schema": "eqo.run_manifest.v1"
+}

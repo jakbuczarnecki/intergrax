@@ -23,6 +23,7 @@ from intergrax.contracts.execution_identity import (
     TaskId,
     bind_active_execution_identity,
     reset_active_execution_identity,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -426,9 +427,16 @@ def run_offline_governed_contractor_demo(
     store_disp = display_relative_path(store_root)
     key_disp = display_relative_path(key_path)
     verify_cmd = f"uv run intergrax receipt verify {store_disp}/export/accept_receipt.json --store {store_disp}"
+    if accepted.execution_id is None:
+        raise RuntimeError("accept_execution_id_missing")
+    accepted_exec_id = validate_execution_id(accepted.execution_id)
+    canonical_accept_id = validate_execution_id(accept_identity.execution_id)
+    if accepted_exec_id != canonical_accept_id:
+        raise RuntimeError("accept_execution_id_mismatch")
+    accept_execution_id_text = str(accepted_exec_id)
     recovery_cmd = (
         "uv run python -m applications.governed_contractor_application "
-        f"external-work retry-attestation exec-offline-accept --store {store_disp}"
+        f"external-work retry-attestation {accept_execution_id_text} --store {store_disp}"
     )
 
     if simulate_signing_failure:
@@ -444,7 +452,7 @@ def run_offline_governed_contractor_demo(
             task_id=task_id,
             run_id=run_id,
             create_execution_id=created.execution_id or "",
-            accept_execution_id=accepted.execution_id or "exec-offline-accept",
+            accept_execution_id=accept_execution_id_text,
             create_invocation_id=created.governed_result.provider_invocation.invocation_id,
             accept_invocation_id=accepted.governed_result.provider_invocation.invocation_id,
             provider_id=_PROVIDER_ID,
@@ -495,7 +503,7 @@ def run_offline_governed_contractor_demo(
         task_id=task_id,
         run_id=run_id,
         create_execution_id=created.execution_id or "",
-        accept_execution_id=accepted.execution_id or "",
+        accept_execution_id=accept_execution_id_text,
         create_invocation_id=created.governed_result.provider_invocation.invocation_id,
         accept_invocation_id=ger.provider_invocation.invocation_id,
         provider_id=_PROVIDER_ID,

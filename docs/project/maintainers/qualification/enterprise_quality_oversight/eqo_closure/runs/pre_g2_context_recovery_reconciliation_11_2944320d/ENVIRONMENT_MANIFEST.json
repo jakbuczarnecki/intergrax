@@ -1,0 +1,10 @@
+{
+  "python_executable": "D:\\Projekty\\_wt\\intergrax\\ec-w3-11-context-recovery\\.venv\\Scripts\\python.exe",
+  "recorded_utc": "2026-11-27T17:38:50.623523+00:00",
+  "schema": "eqo.environment_manifest.v1",
+  "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+  "source_sha": "2944320dad50398a56c738769daeed6089fdf947",
+  "source_tree_sha": "1577f272ea751be726dcb4b7a92968ac7a202efd",
+  "uv_path": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+  "uv_sha256": "b9d9656370ee1812e53e985d8bbb81870038106df98ef34cb45bcf4e0fe0df17"
+}
