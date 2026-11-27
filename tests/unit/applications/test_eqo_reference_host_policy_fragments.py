@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import replace
 
 import pytest
@@ -84,10 +85,14 @@ def test_product_defaults_caller_fragment_overrides_reference_default() -> None:
 
 def test_product_defaults_build_does_not_mutate_caller_dict() -> None:
     caller = {"custom.domain.policy": {"marker": "caller"}}
-    snapshot = {"custom.domain.policy": {"marker": "caller"}}
-    ApplicationEnvironmentProfile.product_defaults(skill_bundles=["harness"], domain_fragments=caller)
-    caller["custom.domain.policy"]["marker"] = "mutated"
-    assert snapshot == {"custom.domain.policy": {"marker": "caller"}}
+    snapshot = deepcopy(caller)
+    profile = ApplicationEnvironmentProfile.product_defaults(
+        skill_bundles=["harness"],
+        domain_fragments=caller,
+    )
+    assert caller == snapshot
+    assert HARNESS_REFERENCE_POLICY_FRAGMENT_ID not in caller
+    assert HARNESS_REFERENCE_POLICY_FRAGMENT_ID in _runtime_fragments(profile)
 
 
 def test_reference_payload_helpers_return_independent_dicts() -> None:
@@ -95,6 +100,17 @@ def test_reference_payload_helpers_return_independent_dicts() -> None:
     right = reference_harness_policy_fragment_payload()
     left["probe"] = True
     assert "probe" not in right
+    legal_left = reference_legal_contract_review_policy_fragment_payload()
+    legal_right = reference_legal_contract_review_policy_fragment_payload()
+    legal_left["probe"] = True
+    assert "probe" not in legal_right
+    profile_a = ApplicationEnvironmentProfile.lab_defaults()
+    profile_b = ApplicationEnvironmentProfile.lab_defaults()
+    fragments_a = dict(_runtime_fragments(profile_a))
+    fragments_b = dict(_runtime_fragments(profile_b))
+    fragments_a[HARNESS_REFERENCE_POLICY_FRAGMENT_ID]["probe"] = True
+    assert "probe" not in _runtime_fragments(profile_b)[HARNESS_REFERENCE_POLICY_FRAGMENT_ID]
+    assert fragments_b == dict(_runtime_fragments(profile_b))
 
 
 def test_harness_policy_bundle_and_skill_composition_passes() -> None:
@@ -115,9 +131,21 @@ def test_lab_harness_and_legal_skill_fragment_composition_passes() -> None:
     registry = SkillRegistry()
     registry.register(LEGAL_CONTRACT_REVIEW)
     registry.register(HARNESS_POLICY_SMOKE)
-    composition = SkillResolver(registry).resolve_composition([LEGAL_CONTRACT_REVIEW.skill_id])
+    composition = SkillResolver(registry).resolve_composition(
+        [HARNESS_POLICY_SMOKE.skill_id, LEGAL_CONTRACT_REVIEW.skill_id],
+    )
+    assert HARNESS_REFERENCE_POLICY_FRAGMENT_ID in composition.pack.policy_fragment_ids
+    assert LEGAL_REFERENCE_POLICY_FRAGMENT_ID in composition.pack.policy_fragment_ids
+    rules_before = len(bundle.declarative_policy_runtime.rules) if bundle.declarative_policy_runtime else 0
+    tools_before = bundle.tool_access
+    hitl_before = bundle.require_human_on_critical
     merged = merge_skill_policy_fragments(bundle, composition.pack)
+    assert HARNESS_REFERENCE_POLICY_FRAGMENT_ID in merged.domain_fragments
     assert LEGAL_REFERENCE_POLICY_FRAGMENT_ID in merged.domain_fragments
+    assert merged.require_human_on_critical == hitl_before
+    rules_after = len(merged.declarative_policy_runtime.rules) if merged.declarative_policy_runtime else 0
+    assert rules_after == rules_before
+    assert merged.tool_access == tools_before
 
 
 def test_missing_required_fragment_still_raises() -> None:
