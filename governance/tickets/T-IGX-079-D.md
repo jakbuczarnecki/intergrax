@@ -28,7 +28,7 @@ II-W0-05, II-W0-06, W0-B/C/D batches beyond this plan, executable W1 qualificati
 
 ## Lifecycle state
 
-in_progress
+quality_gate
 
 ## Checkpoint
 
@@ -39,3 +39,5 @@ in_progress
 **II-W0-A-PREP-FINAL-RECOVERY-01 (2026-11-27T15:48:21+01:00):** Integrated preparation delta onto `origin/development` `4142575fa035ec19f91def3e3236c6e27c6efa7b`; recorded OD-II-W0-CLOSURE-01 on T-IGX-079-C (F-W0A-04 satisfied); reconciled execution register; plan digest unchanged; lifecycle remains `plan_pending`; terminal preparation state `FINAL_W0_A_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`; no W0-A deliverable execution and no `Approved:` line.
 
 **II-W0-A-APPROVAL-01 (2026-11-27T17:08:12+01:00):** OD-II-W0-A-01 recorded; canonical transition `plan_pending` → `plan_approved` → `in_progress`; plan digest unchanged; preflight remote `origin/development` `79e978feb280614e35daf2c8f09d83c9634ed348`; baseline ancestor `7b7ec4488c504f1c90dba599d5742197dbbf0c1e` verified; protected blobs unchanged; deliverable execution authorized; independent G6 and formal package closure not authorized.
+
+**II-W0-A-QUALIFICATION-01 (2026-11-27T17:22:00+01:00, observed):** Deliverable commit `3a3bfcb707e901798d66aab1a11eddb52998d47a`; approval commit `97c79332d49939096b6bfcd2ce926ed289ba11f5`; Q01–Q07 PASS at implementer scope; governance smoke **1894 passed, 45 deselected, 1 warning**; raw evidence `D:\Projekty\intergrax\.tmp\proof\II-W0-A-ARCHITECTURE-ACCEPTANCE-01\`. Lifecycle `in_progress` → `quality_gate`. Independent pre-publication review and scoped G6 **pending**; no `ready_for_audit`, no publication, no formal package closure. Terminal state: `W0_A_QUALIFIED_CANDIDATE_PENDING_INDEPENDENT_REVIEW`.
