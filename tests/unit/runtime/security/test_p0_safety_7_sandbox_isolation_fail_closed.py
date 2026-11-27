@@ -8,8 +8,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import BaseModel
-
+from intergrax.contracts.runtime_sandbox_isolation_authority import (
+    RuntimeSandboxIsolationAuthority,
+)
+from intergrax.contracts.sandbox_profile import SandboxProfile as ContractSandboxProfile
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.sandbox.isolation_errors import (
@@ -43,6 +45,7 @@ from intergrax.tools.providers.sandbox.extended_service import (
 from intergrax.tools.providers.sandbox.service import SANDBOX_EXEC_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from pydantic import BaseModel
 from testing_support.builder import build_runtime_state_for_tests, canonical_execution_identity_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -133,14 +136,8 @@ def test_name_is_not_isolation_authority() -> None:
         CountingExecutor(),
     )
 
-    assert (
-        registry.get("plugin.safe_api").contract.isolation_requirement
-        is ToolIsolationRequirement.SANDBOX
-    )
-    assert (
-        registry.get("sandbox.named_but_nonisolated").contract.isolation_requirement
-        is ToolIsolationRequirement.NONE
-    )
+    assert registry.get("plugin.safe_api").contract.isolation_requirement is ToolIsolationRequirement.SANDBOX
+    assert registry.get("sandbox.named_but_nonisolated").contract.isolation_requirement is ToolIsolationRequirement.NONE
 
 
 def test_registry_preserves_isolation_requirement() -> None:
@@ -276,7 +273,12 @@ def test_unhealthy_provider_fails_before_executor() -> None:
 
 def test_valid_sandbox_reaches_provider(sandbox_session: SandboxSession) -> None:
     registry = ToolRegistry()
-    ctx = ToolWiringContext(sandbox_session=sandbox_session)
+    ctx = ToolWiringContext(
+        sandbox_session=sandbox_session,
+        sandbox_isolation_authority=RuntimeSandboxIsolationAuthority(
+            sandbox=ContractSandboxProfile(enable_exec_tool=True),
+        ),
+    )
     register_sandbox_tools(registry, ctx)
     invoker = RuntimeToolInvoker(
         registry=registry,
@@ -358,7 +360,6 @@ def test_plugin_isolated_tool_continues_with_valid_sandbox(sandbox_session: Sand
         _isolated_plugin_contract(tool_id="plugin.python_exec"),
         executor,
     )
-    ctx = ToolWiringContext(sandbox_session=sandbox_session)
 
     def _healthy() -> SandboxIsolationAvailability:
         return SandboxIsolationAvailability(

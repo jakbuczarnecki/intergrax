@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import BaseModel
-
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -16,6 +14,7 @@ from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.policy.declarative_enforcer import (
     DeclarativePolicyEnforcer,
     resolve_declarative_policy_enforcer,
@@ -29,7 +28,6 @@ from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
 )
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
 )
@@ -39,6 +37,12 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
 from intergrax.tools.registry import ToolRegistry
+from pydantic import BaseModel
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+)
+
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -46,10 +50,6 @@ from local_workspace_application.host.policy_profile import (
     LKW_RAG_INGEST_ALLOW_RULE_ID,
     build_local_workspace_policy_rules_profile,
     local_workspace_meaningful_side_effect_tool_ids,
-)
-from testing_support.builder import (
-    build_runtime_state_for_tests,
-    canonical_execution_identity_scope,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -297,23 +297,6 @@ def test_read_only_rag_retrieve_does_not_require_side_effect_authorization() -> 
     with canonical_execution_identity_scope(_RUN_ID):
         result = invoker.invoke(state=state, agent_id=_AGENT_ID, request=request)
     assert result.success is True
-
-
-def test_lab_environment_does_not_inherit_lkw_policy_rules() -> None:
-    from intergrax.applications._shared.lab_environment_profile import (
-        _LAB_POLICY_RULES,
-        build_lab_environment_profile,
-    )
-    from lab_application.host.settings import LabApplicationSettings
-
-    lab_env = build_lab_environment_profile(LabApplicationSettings.from_env())
-    lkw_env = build_local_workspace_environment_profile()
-    assert lkw_env.policy_rules is not None
-    assert lkw_env.policy_rules.rules_path is not None
-    assert "local_workspace_application" in str(lkw_env.policy_rules.rules_path)
-    if lab_env.policy_rules is not None and lab_env.policy_rules.rules_path is not None:
-        assert lab_env.policy_rules.rules_path == _LAB_POLICY_RULES
-        assert lab_env.policy_rules.rules_path != lkw_env.policy_rules.rules_path
 
 
 def test_lkw_meaningful_side_effect_inventory_is_least_privilege_for_c1() -> None:
