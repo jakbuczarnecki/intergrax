@@ -59,7 +59,7 @@
     },
     "PLATFORM-FOUNDATION": {
       "INSPECTED": 2,
-      "INDEX_ONLY": 198,
+      "INDEX_ONLY": 200,
       "UNINSPECTED": 0
     }
   },
@@ -963,6 +963,12 @@
     },
     {
       "kind": "document",
+      "path": "docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
       "path": "docs/project/capabilities/architecture/LANGCHAIN_INDEPENDENCE.md",
       "category": "PDC-D3",
       "status": "UNINSPECTED"
@@ -1102,6 +1108,12 @@
     {
       "kind": "document",
       "path": "docs/project/capabilities/plan/EVOL_X_CHANGE_SAFETY.md",
+      "category": "PLATFORM-FOUNDATION",
+      "status": "INDEX_ONLY"
+    },
+    {
+      "kind": "document",
+      "path": "docs/project/capabilities/plan/INTEGRAX_INTELLIGENCE.md",
       "category": "PLATFORM-FOUNDATION",
       "status": "INDEX_ONLY"
     },

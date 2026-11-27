@@ -6,9 +6,10 @@ Deterministic, read-only scanner. It enumerates the platform surfaces relevant t
 eight PDC-X workstreams, assigns every surface exactly one category, and verifies that
 every declared domain anchor (code owner, document, qualification suite) exists.
 
-Categories: ``PDC-D1`` .. ``PDC-D8``, ``PLATFORM-FOUNDATION`` (owned by an already-certified
-non-PDC stage or domain pair), ``CONSUMER`` (Tier-2 agents / Tier-3 applications), or
-``UNMAPPED`` (a classification gap; ``--check`` fails).
+Categories: ``PDC-D1`` .. ``PDC-D8``, ``PLATFORM-FOUNDATION`` (outside PDC semantic
+scope, owned by a non-PDC stage, domain pair or program, certified or not; ``INDEX_ONLY`` carries no
+certification claim), ``CONSUMER`` (Tier-2 agents / Tier-3 applications), or ``UNMAPPED``
+(a classification gap; ``--check`` fails).
 
 Coverage status per surface: ``INSPECTED`` (semantically inspected during PDC-P0/P1),
 ``INDEX_ONLY`` (enumerated and categorized; outside PDC semantic scope), ``UNINSPECTED``
@@ -213,6 +214,9 @@ DOC_DOMAIN_RULES: Final[tuple[tuple[str, str], ...]] = (
     ("COLLABORATIVE_WORK", "PDC-D8"),
     ("ARTIFACT_LIFECYCLE", "PDC-D8"),
 )
+# Exact-stem foundation docs (no broad prefix). INTELLIGENCE-X is PROPOSED (not ratified, not
+# certified); its classification here is index-only.
+DOC_FOUNDATION_EXACT_STEMS: Final[frozenset[str]] = frozenset({"INTEGRAX_INTELLIGENCE"})
 DOC_FOUNDATION_PREFIXES: Final[tuple[str, ...]] = (
     "ADAPTIVE_HARNESS",
     "ARCHITECTURE_OVERVIEW",
@@ -674,7 +678,7 @@ def classify_doc(stem: str) -> str:
     for token, domain in DOC_DOMAIN_RULES:
         if token in key:
             return domain
-    if key.startswith(DOC_FOUNDATION_PREFIXES):
+    if key in DOC_FOUNDATION_EXACT_STEMS or key.startswith(DOC_FOUNDATION_PREFIXES):
         return FOUNDATION
     return UNMAPPED
 
