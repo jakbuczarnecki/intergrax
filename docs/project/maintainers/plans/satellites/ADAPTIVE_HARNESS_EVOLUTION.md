@@ -1,6 +1,6 @@
 # Adaptive Harness Evolution — Implementation Roadmap
 
-**Revision:** 1.1
+**Revision:** 1.3
 **Status:** ARCHITECT-DEFINED / PENDING INDEPENDENT ACCEPTANCE
 **Architecture reference:** [ADAPTIVE_HARNESS_EVOLUTION.md](../../../architecture/satellites/ADAPTIVE_HARNESS_EVOLUTION.md)
 
@@ -92,10 +92,27 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 
 | Package | Implementation | Review / acceptance | Notes |
 |---|---|---|---|
-| AHE-W0-01 | PUBLISHED | Architect review: ACCEPTED_SCOPED; Independent acceptance: PENDING | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. Process finding: AI-tool attribution in commit metadata. Historical commit shall remain unchanged. |
-| AHE-W0-02 | IN_PROGRESS | Architect-defined ownership and reuse mapping: supplied; Independent acceptance: PENDING; External owner acceptance: PENDING | — |
-| AHE-W0-03 | PLANNED | Await architect-issued implementation contract | — |
-| W1–W8 | PLANNED | No executable wave authorization inferred | — |
+| AHE-W0-01 | PUBLISHED | ACCEPTED_SCOPED; Independent acceptance: PENDING; Process finding: repeated prohibited AI-tool attribution in historical commit metadata (no history rewrite) | Commit: `a4ff0130dbaf054bfdaeb8522644c2f8b39d28ac`. |
+| AHE-W0-02 | PUBLISHED | ACCEPTED_SCOPED_WITH_PROCESS_FINDING; Independent acceptance: PENDING; External owner acceptance: PENDING | Commit: `ae93859a5e9574b8402f681cb322c1d86be8f772`. Repeated prohibited AI-tool attribution in historical commit metadata. No history rewrite. |
+| AHE-W0-03 | PUBLISHED | ACCEPTED_SCOPED; Publication compliance: FAILED; Corrective compatibility status: IN_PROGRESS; Independent acceptance: PENDING | Commit: `8a4f962e25bd72ab0c183d0d25437f93a8c001d6`. |
+| W1–W8 | PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED | W1 executable authorization: NOT_AUTHORIZED | — |
+| AHE-G0 | PENDING | — | — |
+| AHE-G1 | PENDING | — | — |
+
+**Closed waves:** 0. **Formally closed packages:** 0.
+
+## Process findings register
+
+| ID | Finding |
+|---|---|
+| F-AHE-01 | Repeated prohibited AI-tool attribution and violation of publication stop condition. |
+| F-AHE-02 | W0-03 execution register reconciliation. |
+| F-AHE-03 | Canonical ADAS contract compatibility. |
+| F-AHE-04 | Candidate lifecycle vocabulary compatibility. |
+| F-AHE-05 | Canonical delivery and acceptance reconciliation. |
+| F-AHE-06 | Configuration-only versus scaffold materialization boundary. |
+| F-AHE-07 | Restore historical W0-01 process finding. |
+
 
 ---
 
@@ -122,6 +139,193 @@ No roadmap row or gate may be declared accepted solely by the implementer.
 | AHE-W1-05 | End-to-end adaptive loop qualification | Real executable LAB task with positive and negative cases |
 
 **W1 exit:** a complete executable baseline–propose–probe–select loop without production effects.
+
+## W1 implementation contract
+
+These batches define **PLANNED_SCOPE / EXECUTION_NOT_AUTHORIZED** for W1. They are not present execution authority until AHE-G0, AHE-G1 and applicable governance requirements are satisfied.
+
+### W1-B01 — Candidate contracts and archive
+
+**Roadmap package:** AHE-W1-01
+
+**Canonical obligation coverage:** AHI-ADAS-10.1 through AHI-ADAS-10.14, subject to exact obligation-level acceptance and explicit residual tracking.
+
+**W1-B01 canonical obligation inventory (planned coverage; acceptance not claimed):**
+
+| Canonical obligation | W1-B01 responsibility | Status |
+|---|---|---|
+| AHI-ADAS-10.1 | Importable canonical package skeleton, copyright headers and no import side effects | NOT_STARTED |
+| AHI-ADAS-10.2 | Compatible operational envelope and provenance | NOT_STARTED |
+| AHI-ADAS-10.3 | Compatible objective contract, scope, budgets and approval semantics | NOT_STARTED |
+| AHI-ADAS-10.4 | Compatible search-run lifecycle, accounting and stop reasons | NOT_STARTED |
+| AHI-ADAS-10.5 | Compatible candidate draft, lineage and configuration-only restriction | NOT_STARTED |
+| AHI-ADAS-10.6 | Immutable candidate records and canonical lifecycle status | NOT_STARTED |
+| AHI-ADAS-10.7 | Compatible evaluation result and canonical metric references | NOT_STARTED |
+| AHI-ADAS-10.8 | Sealed evidence bundle and deterministic integrity | NOT_STARTED |
+| AHI-ADAS-10.9 | Scoped archive protocol and query semantics | NOT_STARTED |
+| AHI-ADAS-10.10 | In-memory archive with append-only and isolation semantics | NOT_STARTED |
+| AHI-ADAS-10.11 | SQLite archive and restart durability | NOT_STARTED |
+| AHI-ADAS-10.12 | Candidate lineage and historical queries | NOT_STARTED |
+| AHI-ADAS-10.13 | Canonical package exports | NOT_STARTED |
+| AHI-ADAS-10.14 | Contract, archive, isolation and evidence integrity tests | NOT_STARTED |
+
+Explicit residual tracking is required for canonical capabilities outside W1, including:
+
+- Executable agent scaffold artifacts.
+- Promotion-related evidence.
+- Later lifecycle states.
+- Archive query behavior associated with later lifecycle states.
+- Enterprise retention and production integration.
+
+Do not mark any of these obligations complete through documentation alone.
+
+The future W1-B01 executable contract must pin exact schema fields, validation rules, archive operations, test cases and canonical obligation-level acceptance.
+
+
+**Proposed runtime write set:**
+
+- `intergrax/runtime/adaptive/agent_design_search/__init__.py`
+- `intergrax/runtime/adaptive/agent_design_search/contracts.py`
+- `intergrax/runtime/adaptive/agent_design_search/archive.py`
+- `intergrax/runtime/adaptive/agent_design_search/sqlite_archive.py`
+
+**Proposed test write set:**
+
+- `tests/unit/runtime/adaptive/agent_design_search/test_contracts.py`
+- `tests/unit/runtime/adaptive/agent_design_search/test_archive.py`
+- `tests/unit/runtime/adaptive/agent_design_search/test_sqlite_archive.py`
+
+The existing AHE documentation pair may be updated for evidence and status only when explicitly authorized by the executable batch.
+
+**Required acceptance:**
+
+- Typed contract validation.
+- Immutable configuration identity.
+- Scope binding.
+- Deterministic evidence digests.
+- Candidate lineage.
+- Valid lifecycle transitions.
+- Duplicate identity handling.
+- In-memory and SQLite semantic parity.
+- Cross-tenant and cross-workspace rejection.
+- Restart durability.
+- No execution or promotion side effects on package import.
+
+**Mandatory planned tests:**
+
+`uv run --no-sync pytest -q tests/unit/runtime/adaptive/agent_design_search/`
+
+`uv run --no-sync pytest -q tests/unit/runtime/adaptive/`
+
+Run the focused tests first. The adjacent invocation may exclude already executed focused tests to avoid unnecessary duplication.
+
+Run compilation, applicable lint, typing and mandatory governance gates.
+
+No modifications to existing runtime owners in this batch.
+
+### W1-B02 — Integrated adaptive search
+
+**Roadmap packages:**
+
+- AHE-W1-02.
+- AHE-W1-03.
+- AHE-W1-04.
+
+**Proposed runtime write set:**
+
+- `intergrax/runtime/adaptive/agent_design_search/static_gate.py`
+- `intergrax/runtime/adaptive/agent_design_search/search_policy.py`
+- `intergrax/runtime/adaptive/agent_design_search/strategies.py`
+- `intergrax/runtime/adaptive/agent_design_search/candidate_evaluator.py`
+- `intergrax/runtime/adaptive/agent_design_search/experiment_bridge.py`
+- `intergrax/runtime/adaptive/agent_design_search/search_controller.py`
+
+Updates to W1-B01 contracts and exports require explicitly authorized additive scope.
+
+**Proposed focused tests:**
+
+- `test_static_gate.py`
+- `test_search_policy.py`
+- `test_strategies.py`
+- `test_candidate_evaluator.py`
+- `test_experiment_bridge.py`
+- `test_search_controller.py`
+
+All located under:
+
+`tests/unit/runtime/adaptive/agent_design_search/`
+
+**Required adjacent regression families:**
+
+- Existing adaptive runtime tests.
+- Existing ExperimentSession and experiment persistence tests.
+- Existing Evaluation unit and integration tests.
+- Existing execution budget enforcement tests.
+
+The exact executable batch contract will pin selected commands and applicable dependencies after W1-B01 acceptance.
+
+### W1-B03 — Behavioral qualification
+
+**Roadmap package:** AHE-W1-05
+
+**Proposed behavioral witness:**
+
+`tests/integration/runtime/adaptive/agent_design_search/test_minimum_adaptive_loop.py`
+
+**Required behavior:**
+
+All positive and negative witnesses defined in Architecture §5.30.
+
+Tests must execute actual canonical LAB behavior rather than compare fabricated results.
+
+**Required evidence:**
+
+- Execution SHA.
+- Exact effective baseline and candidate configurations.
+- Objective and dataset digests.
+- Canonical root execution identities.
+- Evaluation results.
+- Resource and isolation evidence.
+- Selected outcome.
+- Restart persistence result.
+- Focused and adjacent regression results.
+
+W1 exit requires independently accepted behavioral evidence.
+
+### Canonical ADAS publication boundary
+
+The existing canonical ADAS plan prescribes one phase or narrowly scoped sub-phase per PR and corresponding canonical plan updates.
+
+AHE implementation batches represent engineering coordination units. They do not automatically override canonical ADAS publication units.
+
+The planned W1-B02 engineering batch spans obligations associated with AHI-ADAS-20, AHI-ADAS-30 and AHI-ADAS-40.
+
+Its executable authorization must explicitly reconcile the engineering batch with applicable canonical publication and acceptance boundaries.
+
+Final publication targets development through the repository-authorized procedure.
+
+Direct-push authorization must not be inferred from this roadmap.
+
+The exact executable write set must identify any authorized canonical ADAS register updates.
+
+Protected cross-program documents must not be modified without explicit authorization.
+
+`ADAS_DELIVERY_RECONCILIATION: PENDING_AUTHORIZATION`
+
+
+
+### W1 authorization boundary
+
+These planned write sets are not present execution authority.
+
+W1-B01, W1-B02 and W1-B03 each require an architect-issued executable contract and applicable repository approval.
+
+No product-path batch may begin without a valid ticket and required approval.
+
+Do not reserve a competing ticket ID or fabricate an Approved line.
+
+W1 remains unauthorized until AHE-G0, AHE-G1 and applicable existing governance requirements are satisfied.
+
 
 Reuse applicable AHI-ADAS-10 through AHI-ADAS-40 obligations rather than duplicate their ownership (see [ADAPTIVE_HARNESS_INTELLIGENCE plan](../ADAPTIVE_HARNESS_INTELLIGENCE.md)).
 
