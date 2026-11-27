@@ -233,12 +233,18 @@ def _factory_chroma(tenant_id: str, collection_name: str) -> VectorStore:
 
 def _factory_lancedb(tenant_id: str, collection_name: str) -> VectorStore:
     del collection_name
-    return create_lancedb_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+    return create_lancedb_vector_store(
+        vector_store=InMemoryVectorStore(tenant_id=tenant_id),
+        tenant_id=tenant_id,
+    )
 
 
 def _factory_typesense(tenant_id: str, collection_name: str) -> VectorStore:
     del collection_name
-    return create_typesense_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+    return create_typesense_vector_store(
+        vector_store=InMemoryVectorStore(tenant_id=tenant_id),
+        tenant_id=tenant_id,
+    )
 
 
 _BACKENDS: dict[str, Any] = {
