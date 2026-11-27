@@ -41,7 +41,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 | Runtime implementation | **Future** | Build ERL capabilities |
 | Enterprise showcase | **Future** | Demonstrate business scenario |
 
-> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0226`):** The "Runtime implementation: Future" row above reflects full six-phase ERL completion; an implemented baseline slice already exists (`intergrax/runtime/enterprise_reliability/` 29 py, `intergrax/contracts/enterprise_reliability/` 38 py, `tests/unit/runtime/enterprise_reliability/` 18 py) per [`ENTERPRISE_RELIABILITY_LAYER.md`](../../architecture/ENTERPRISE_RELIABILITY_LAYER.md) §279. No ERL certification or stage closure is claimed here.
+> **Currency note (EQO-W4 reconciliation, as of 2026-11-26 @ `646e63953`, `EDER-F-0226`):** The "Runtime implementation: Future" row above reflects full six-phase ERL completion; an implemented baseline slice already exists (`intergrax/runtime/enterprise_reliability/` 29 py, `intergrax/contracts/enterprise_reliability/` 38 py, `tests/unit/runtime/enterprise_reliability/` 18 py) per [`ENTERPRISE_RELIABILITY_LAYER.md`](../../architecture/ENTERPRISE_RELIABILITY_LAYER.md) (`## Current maturity`, line 279). No ERL certification or stage closure is claimed here.
 
 ---
 

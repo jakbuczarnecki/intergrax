@@ -63,6 +63,6 @@
 | Metadata Field | Statement |
 | --- | --- |
 | **Stage Owner** | `DUP-X` (operator decisions governed by [`DUP_X_OPERATOR_DECISION_REGISTER.md`](DUP_X_OPERATOR_DECISION_REGISTER.md)) |
-| **Mechanical Python SSOT** | [`tests/qualification/dup_x/_findings_register.py`](../../../tests/qualification/dup_x/_findings_register.py) |
+| **Mechanical Python SSOT** | [`tests/qualification/dup_x/_findings_register.py`](../../../../tests/qualification/dup_x/_findings_register.py) |
 | **Severity Mapping** | Uses the `Severity` column (`Major` for ratified fence `DUPX-F-COMPAT-R3-FENCE`; `Gap` for Wave 1 evidence gaps `DUPX-GAP-*`; zero unresolved `DUPLICATE`/`BLOCKER` findings at audited HEAD) |
 | **Reopen Conditions** | Reopen immediately upon: (1) any new unregistered duplicate, shadow-authority, or bypass violation outside the mechanical SSOT; (2) scope expansion of any ratified fence (`DUPX-F-COMPAT-R3-FENCE` / `DUPX-CAND-*`) beyond its documented lab-only or projection boundary; or (3) modification to cited production paths without re-running `tests/qualification/dup_x/` mechanical exit gates and recording re-qualification. |
