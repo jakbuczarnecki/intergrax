@@ -1,0 +1,115 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\8832-51db0d37\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 48 items
+
+tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload PASSED [  2%]
+tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer PASSED [  4%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction PASSED [  6%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected PASSED [  8%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected PASSED [ 10%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected PASSED [ 12%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected PASSED [ 14%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass PASSED [ 16%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values PASSED [ 18%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values PASSED [ 20%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal PASSED [ 22%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable PASSED [ 25%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract PASSED [ 27%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable PASSED [ 29%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable PASSED [ 31%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate PASSED [ 33%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded PASSED [ 35%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip PASSED [ 37%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional PASSED [ 39%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports PASSED [ 41%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns PASSED [ 43%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any PASSED [ 45%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition PASSED [ 47%]
+tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition PASSED [ 50%]
+tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only PASSED [ 52%]
+tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import PASSED [ 54%]
+tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape PASSED [ 56%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open] PASSED [ 58%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull] PASSED [ 60%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open] PASSED [ 62%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull] PASSED [ 64%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times PASSED [ 66%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded PASSED [ 68%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream PASSED [ 70%]
+tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path PASSED [ 72%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields PASSED [ 75%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed] PASSED [ 77%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed] PASSED [ 79%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown] PASSED [ 81%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown] PASSED [ 83%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown] PASSED [ 85%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings PASSED [ 87%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only PASSED [ 89%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes PASSED [ 91%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy PASSED [ 93%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2 PASSED [ 95%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2 PASSED [ 97%]
+tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe PASSED [100%]
+
+=================================== PASSES ====================================
+_______________________ test_artifact_ref_from_payload ________________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\pkg_g_d04.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload
+PASSED tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition
+PASSED tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition
+PASSED tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only
+PASSED tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import
+PASSED tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open]
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull]
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open]
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull]
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream
+PASSED tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed]
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed]
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown]
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown]
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown]
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2
+PASSED tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe
+============================= 48 passed in 11.38s =============================
+

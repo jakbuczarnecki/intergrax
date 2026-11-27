@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.baseline_binding.v1",
+  "required_reference_ancestor": "245d47177c7814234a8d98fc062ed1afce3b735d",
+  "task_start_remote_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+  "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+  "tested_tree_sha": "17340e6ab38d93b2329b191581ca0d5feb7ad170",
+  "previous_tested_source": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+  "previous_red_first_baseline": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+  "unresolved_historical_provenance": [
+    "WB06",
+    "272479cd"
+  ]
+}

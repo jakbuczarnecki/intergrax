@@ -1,0 +1,39 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\58420-6fca9d55\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 10 items
+
+tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges PASSED [ 10%]
+tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected PASSED [ 20%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports PASSED [ 30%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings PASSED [ 40%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected PASSED [ 50%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged PASSED [ 60%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_platform_does_not_statically_import_agents_or_applications PASSED [ 70%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_agents_do_not_statically_import_applications PASSED [ 80%]
+tests/unit/architecture/test_tier_dependency_boundaries.py::test_applications_do_not_import_other_applications PASSED [ 90%]
+tests/unit/applications/test_cross_application_policy_isolation.py::test_lab_environment_does_not_inherit_lkw_policy_rules PASSED [100%]
+
+=================================== PASSES ====================================
+__________ test_product_manifest_registry_has_no_tier3_dynamic_edges __________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\pkg_c.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges
+PASSED tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged
+PASSED tests/unit/architecture/test_tier_dependency_boundaries.py::test_platform_does_not_statically_import_agents_or_applications
+PASSED tests/unit/architecture/test_tier_dependency_boundaries.py::test_agents_do_not_statically_import_applications
+PASSED tests/unit/architecture/test_tier_dependency_boundaries.py::test_applications_do_not_import_other_applications
+PASSED tests/unit/applications/test_cross_application_policy_isolation.py::test_lab_environment_does_not_inherit_lkw_policy_rules
+======================= 10 passed in 119.98s (0:01:59) ========================
+

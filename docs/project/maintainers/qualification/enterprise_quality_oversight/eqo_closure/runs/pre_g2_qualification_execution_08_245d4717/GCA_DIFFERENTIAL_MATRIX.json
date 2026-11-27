@@ -1,0 +1,256 @@
+{
+  "schema": "eqo.gca_differential_matrix.v1",
+  "new_regression_count": 0,
+  "nodes": [
+    {
+      "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_health",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_health",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "corrected": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_health",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "candidate": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_health",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_lists_agents",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_lists_agents",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "corrected": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_lists_agents",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "candidate": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_lists_agents",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_run",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_run",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "corrected": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_run",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "candidate": {
+        "node_id": "applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke::test_governed_contractor_backend_run",
+        "status": "failed",
+        "exc_type": "intergrax.contracts.execution_continuation.ExecutionContinuationError",
+        "message": "intergrax.contracts.execution_continuation.ExecutionContinuationError: production composition requires an explicit ExecutionContinuationStateStore; silent in-memory continuation downgrade is lab-only"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_composition_serialized_seal_store_reaches_harness",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_composition_serialized_seal_store_reaches_harness",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_composition_serialized_seal_store_reaches_harness",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_composition_serialized_seal_store_reaches_harness",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_conflicting_kwarg_and_composition_store_rejected",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_conflicting_kwarg_and_composition_store_rejected",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_conflicting_kwarg_and_composition_store_rejected",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_conflicting_kwarg_and_composition_store_rejected",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "disposition_baseline_vs_corrected": "PASS_BOTH"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_sanctioned_process_app_forwards_composition_store",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_sanctioned_process_app_forwards_composition_store",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_sanctioned_process_app_forwards_composition_store",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_sanctioned_process_app_forwards_composition_store",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_startup_failure_after_open_does_not_pin_writer_lock",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_startup_failure_after_open_does_not_pin_writer_lock",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_startup_failure_after_open_does_not_pin_writer_lock",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_dur_02_gca_composition_binding::test_startup_failure_after_open_does_not_pin_writer_lock",
+        "status": "failed",
+        "exc_type": "intergrax.integrations.contracts.base.IntegrationConfigurationError",
+        "message": "intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture"
+      },
+      "disposition_baseline_vs_corrected": "BASELINE_RED_SAME_SIGNATURE"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_activated_registry",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_activated_registry",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_activated_registry",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_activated_registry",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "disposition_baseline_vs_corrected": "PASS_BOTH"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "disposition_baseline_vs_corrected": "PASS_BOTH"
+    },
+    {
+      "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+      "baseline_sha": "a92a023e1a238b95635dcecdc4e51adecdcbc916",
+      "corrected_sha": "063b6ee9d753ca5ae7a66e4f2391ded14c5d0a81",
+      "candidate_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "baseline": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "corrected": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "candidate": {
+        "node_id": "tests.unit.applications.governed_contractor.test_prod_q_r1_r4_production_startup_path::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+        "status": "passed",
+        "exc_type": "",
+        "message": ""
+      },
+      "disposition_baseline_vs_corrected": "PASS_BOTH"
+    }
+  ]
+}

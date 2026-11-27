@@ -1,0 +1,141 @@
+{
+  "schema": "eqo.mapped_des_prereg.v1",
+  "batch_id": "EC-W3-QUALIFICATION-EXECUTION-08",
+  "execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+  "preregistration_utc": "2026-11-27T13:19:25Z",
+  "commands": [
+    {
+      "cmd_id": "Q01",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q01.xml",
+      "command_sha256": "a078ab2c62b0c705ecb0ce18a34859b862ca923460b037c2858730f7a5b1cc21",
+      "expected_log": "logs/q01.log",
+      "expected_junit": "junit/q01.xml"
+    },
+    {
+      "cmd_id": "Q02",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q02.xml",
+      "command_sha256": "4304a71e9f21223b2171af2bed0f281c3df45f56802c7e36884dc46213276ac0",
+      "expected_log": "logs/q02.log",
+      "expected_junit": "junit/q02.xml"
+    },
+    {
+      "cmd_id": "Q03",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q03.xml",
+      "command_sha256": "7cc58a1d1c9de9ae90c9308b77fec508fe4a14214476be811f22ca4536e47860",
+      "expected_log": "logs/q03.log",
+      "expected_junit": "junit/q03.xml"
+    },
+    {
+      "cmd_id": "Q04",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q04.xml",
+      "command_sha256": "39ad8f212c520ed100798f5e552d33b48fff2ea2033e6dac46c4393f55755183",
+      "expected_log": "logs/q04.log",
+      "expected_junit": "junit/q04.xml"
+    },
+    {
+      "cmd_id": "Q05",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q05.xml",
+      "command_sha256": "fdd0fbd317c3eb5779ba8d2798d20a3fca47136bbc7b280efdc4f9165003e9b1",
+      "expected_log": "logs/q05.log",
+      "expected_junit": "junit/q05.xml"
+    },
+    {
+      "cmd_id": "Q06",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q06.xml",
+      "command_sha256": "2fa72f1f7f0c2f8001f308a865d87c22947af23671bd11dc08f5fef9925a31a6",
+      "expected_log": "logs/q06.log",
+      "expected_junit": "junit/q06.xml"
+    },
+    {
+      "cmd_id": "Q07",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/prod_q/test_prod_q_p0_current_head.py tests/qualification/prod_q/test_prod_q_p0_fast.py tests/qualification/prod_q/test_prod_q_p0_integrity.py tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q07.xml",
+      "command_sha256": "af286130931d93736fbc06df56bb1a66c2e99316ac180aa2594d6de22ee59a73",
+      "expected_log": "logs/q07.log",
+      "expected_junit": "junit/q07.xml"
+    },
+    {
+      "cmd_id": "Q08",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q08.xml",
+      "command_sha256": "1b5361c924d10842a86f75ef7f6143379c7f36e147bc3bd490851f1a584fa9c1",
+      "expected_log": "logs/q08.log",
+      "expected_junit": "junit/q08.xml"
+    },
+    {
+      "cmd_id": "Q09",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\q09.xml",
+      "command_sha256": "ac4d6bdb0208822bc18e44ecec7de83e76de5d1db0206179605274075c26386d",
+      "expected_log": "logs/q09.log",
+      "expected_junit": "junit/q09.xml"
+    },
+    {
+      "cmd_id": "PKG_A",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/applications/test_eqo_reference_host_policy_fragments.py tests/unit/applications/test_skill_bridge_wiring.py tests/unit/applications/test_arch_freeze_skill_bridge_package_d.py tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py tests/unit/applications/test_mcp_server_p4_lifecycle.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_a.xml",
+      "command_sha256": "f13cc06d5bea683f24a7b7428c6573f9c225014c66d3b15856a30aa0e8108416",
+      "expected_log": "logs/pkg_a.log",
+      "expected_junit": "junit/pkg_a.xml"
+    },
+    {
+      "cmd_id": "PKG_C",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py tests/unit/architecture/test_tier_dependency_boundaries.py tests/unit/applications/test_cross_application_policy_isolation.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_c.xml",
+      "command_sha256": "55dcd43b1b644b5a083e86c9c0a2624fd0dbed5efdf7b4002d9ed1cbed955883",
+      "expected_log": "logs/pkg_c.log",
+      "expected_junit": "junit/pkg_c.xml"
+    },
+    {
+      "cmd_id": "PKG_G_d01",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/applications/_shared/test_fc1_harness_strict_persistence_wiring.py tests/unit/applications/test_eqo_reference_host_policy_fragments.py tests/unit/applications/test_a4007_caller_import_refusal.py tests/unit/applications/test_a4007_import_policy_derivation.py tests/unit/applications/test_wb_import_allowlist.py tests/unit/applications/test_cross_application_policy_isolation.py tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py tests/unit/architecture/test_rw_bnd05_runtime_context_construction.py tests/unit/architecture/test_tier_dependency_boundaries.py tests/unit/campaign_b/test_pt_t01_nt02_posture_contract.py tests/unit/runtime/architecture/test_hardening_3_layer_boundary_gate.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_g_d01.xml",
+      "command_sha256": "036d9449cdc76e147c7cbb8ede899a789546b8bf503c76ecc968cf290671adec",
+      "expected_log": "logs/pkg_g_d01.log",
+      "expected_junit": "junit/pkg_g_d01.xml"
+    },
+    {
+      "cmd_id": "PKG_G_d02",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py tests/unit/rag/vectorstore/test_publication_visibility.py tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py tests/unit/runtime/token_optimization/test_receipts.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_g_d02.xml",
+      "command_sha256": "3f587b436b7f16bf57c137b902418c40b1970fcb8a10e67ab2d2ae10529ecf71",
+      "expected_log": "logs/pkg_g_d02.log",
+      "expected_junit": "junit/pkg_g_d02.xml"
+    },
+    {
+      "cmd_id": "PKG_G_d03",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py tests/unit/runtime/security/test_sec_ent.py tests/unit/runtime/security/test_sec_planes_evol.py tests/unit/runtime/tools/test_tools_side_effect_safety.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_g_d03.xml",
+      "command_sha256": "7f6dd2de0621d33bf22850d984c57e8e95e72550036a0bb24202487687cf978a",
+      "expected_log": "logs/pkg_g_d03.log",
+      "expected_junit": "junit/pkg_g_d03.xml"
+    },
+    {
+      "cmd_id": "PKG_G_d04",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/contracts/test_acp_prod_artifact_privacy.py tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py tests/unit/contracts/test_evidence_artifact_reference.py tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py tests/unit/runtime/observability/test_problem_signal_export_mapping.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_g_d04.xml",
+      "command_sha256": "d2a06f1064f87cbe8c7f485fa594d5f456487b9847e2988a86e79662d3c51ad5",
+      "expected_log": "logs/pkg_g_d04.log",
+      "expected_junit": "junit/pkg_g_d04.xml"
+    },
+    {
+      "cmd_id": "PKG_G_d05",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest tests/unit/skills/test_skill_execution_pinning_durability_guard.py tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_g_d05.xml",
+      "command_sha256": "30cb1e801689109a008b4cc17aa19e1d1a94259be2501a79863ce1c583ddb911",
+      "expected_log": "logs/pkg_g_d05.log",
+      "expected_junit": "junit/pkg_g_d05.xml"
+    },
+    {
+      "cmd_id": "PKG_B_BASELINE",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_b_baseline.xml",
+      "command_sha256": "7324a5544e568dc8284446a9398a00724888089914abcb52ed34cc97c1755a6c",
+      "expected_log": "logs/pkg_b_baseline.log",
+      "expected_junit": "junit/pkg_b_baseline.xml"
+    },
+    {
+      "cmd_id": "PKG_B_CORRECTED",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_b_corrected.xml",
+      "command_sha256": "95fbed7f6fe317a02cf41f2c4288938f3201540efbf87c8fe0d022a43e0d9690",
+      "expected_log": "logs/pkg_b_corrected.log",
+      "expected_junit": "junit/pkg_b_corrected.xml"
+    },
+    {
+      "cmd_id": "PKG_B_CANDIDATE",
+      "command": "C:\\Users\\XPS\\.local\\bin\\uv.exe run --no-sync pytest applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py -vv -rA --tb=long --junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-08\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_qualification_execution_08_245d4717\\junit\\pkg_b_candidate.xml",
+      "command_sha256": "9d32ccd22a418f6dab18727b848b99cb3f2af3767a3d70728efd8b1ae55336e0",
+      "expected_log": "logs/pkg_b_candidate.log",
+      "expected_junit": "junit/pkg_b_candidate.xml"
+    }
+  ]
+}

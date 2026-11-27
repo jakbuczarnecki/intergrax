@@ -1,0 +1,61 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\11808-bc8c360b\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 21 items
+
+tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures PASSED [  4%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers PASSED [  9%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority PASSED [ 14%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass PASSED [ 19%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered PASSED [ 23%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof PASSED [ 28%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified PASSED [ 33%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay PASSED [ 38%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled PASSED [ 42%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present PASSED [ 47%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x PASSED [ 52%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented PASSED [ 57%]
+tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed PASSED [ 61%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero PASSED [ 66%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero PASSED [ 71%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique PASSED [ 76%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex PASSED [ 80%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete PASSED [ 85%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty PASSED [ 90%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified PASSED [ 95%]
+tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot PASSED [100%]
+
+=================================== PASSES ====================================
+_____________ test_r2_sec_baseline_matrix_covers_fifteen_failures _____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\q02.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented
+PASSED tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified
+PASSED tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot
+============================= 21 passed in 33.78s =============================
+

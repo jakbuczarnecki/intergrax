@@ -1,0 +1,57 @@
+{
+  "schema": "eqo.qualification_profile_binding.v1",
+  "bindings": [
+    {
+      "qualification_profile": "COMPAT-X",
+      "group_id": "Q01"
+    },
+    {
+      "qualification_profile": "CONTROL_DUP_EBH6",
+      "group_id": "Q02"
+    },
+    {
+      "qualification_profile": "EBH-7",
+      "group_id": "Q03"
+    },
+    {
+      "qualification_profile": "ENT-AUDIT-X",
+      "group_id": "Q04"
+    },
+    {
+      "qualification_profile": "MCP-SERVER-X",
+      "group_id": "Q05"
+    },
+    {
+      "qualification_profile": "PDC-X",
+      "group_id": "Q06"
+    },
+    {
+      "qualification_profile": "PROD-Q",
+      "group_id": "Q07"
+    },
+    {
+      "qualification_profile": "ROADMAP-REPLAY-X",
+      "group_id": "Q08"
+    },
+    {
+      "qualification_profile": "APPLICATION_HOST",
+      "group_id": "Q09"
+    },
+    {
+      "qualification_profile": "HOST_POLICY_CORRECTIVE",
+      "group_id": "PKG_A"
+    },
+    {
+      "qualification_profile": "BND03B_SEMANTIC_WITNESS",
+      "group_id": "PKG_C"
+    },
+    {
+      "qualification_profile": "MAPPED_UNIT_REGRESSION",
+      "group_id": "PKG_G"
+    },
+    {
+      "qualification_profile": "MCP_P4_LIFECYCLE",
+      "group_id": "MCP_P4"
+    }
+  ]
+}

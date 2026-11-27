@@ -1,0 +1,149 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\43996-1af4ed09\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 65 items
+
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused PASSED [  1%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused PASSED [  3%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused PASSED [  4%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused PASSED [  6%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused PASSED [  7%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused PASSED [  9%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused PASSED [ 10%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0] PASSED [ 12%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1] PASSED [ 13%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted PASSED [ 15%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted PASSED [ 16%]
+tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores PASSED [ 18%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1 PASSED [ 20%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2 PASSED [ 21%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3 PASSED [ 23%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4 PASSED [ 24%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5 PASSED [ 26%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6 PASSED [ 27%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7 PASSED [ 29%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8 PASSED [ 30%]
+tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv PASSED [ 32%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic PASSED [ 33%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints PASSED [ 35%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution PASSED [ 36%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed PASSED [ 38%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id PASSED [ 40%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected PASSED [ 41%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry PASSED [ 43%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing PASSED [ 44%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected PASSED [ 46%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected PASSED [ 47%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas PASSED [ 49%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity PASSED [ 50%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind PASSED [ 52%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history PASSED [ 53%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning PASSED [ 55%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available PASSED [ 56%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available PASSED [ 58%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory PASSED [ 60%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner PASSED [ 61%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission PASSED [ 63%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends PASSED [ 64%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay PASSED [ 66%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests PASSED [ 67%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected PASSED [ 69%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest PASSED [ 70%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected PASSED [ 72%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected PASSED [ 73%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed PASSED [ 75%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata PASSED [ 76%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding PASSED [ 78%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy PASSED [ 80%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag PASSED [ 81%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed PASSED [ 83%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed PASSED [ 84%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected PASSED [ 86%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs PASSED [ 87%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected PASSED [ 89%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata PASSED [ 90%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness PASSED [ 92%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed PASSED [ 93%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority PASSED [ 95%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed PASSED [ 96%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success PASSED [ 98%]
+tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected PASSED [100%]
+
+=================================== PASSES ====================================
+__________________ test_strict_in_memory_kv_store_is_refused __________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\pkg_g_d05.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0]
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1]
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted
+PASSED tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8
+PASSED tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success
+PASSED tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected
+============================= 65 passed in 4.28s ==============================
+

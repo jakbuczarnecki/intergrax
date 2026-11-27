@@ -1,0 +1,2425 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\8780-0b761565\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 68 items
+
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed PASSED [  1%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates PASSED [  2%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified PASSED [  4%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once PASSED [  5%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent PASSED [  7%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape PASSED [  8%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence PASSED [ 10%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object PASSED [ 11%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33 PASSED [ 13%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite PASSED [ 14%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry PASSED [ 16%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete PASSED [ 17%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker PASSED [ 19%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite PASSED [ 20%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks PASSED [ 22%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity PASSED [ 23%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology PASSED [ 25%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation PASSED [ 26%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved PASSED [ 27%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction PASSED [ 29%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate PASSED [ 30%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique PASSED [ 32%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path PASSED [ 33%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence PASSED [ 35%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass PASSED [ 36%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition PASSED [ 38%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup SKIPPEDession) [ 39%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally PASSED [ 41%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful PASSED [ 42%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed PASSED [ 44%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits SKIPPEDOP â€”
+ARCHITECTURE DECISION REQUIRED))                                         [ 45%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child PASSED [ 47%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process PASSED [ 48%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable PASSED [ 50%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone PASSED [ 51%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution PASSED [ 52%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered PASSED [ 54%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator PASSED [ 55%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete PASSED [ 57%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete PASSED [ 58%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict PASSED [ 60%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged PASSED [ 61%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable PASSED [ 63%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation PASSED [ 64%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary PASSED [ 66%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit PASSED [ 67%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected PASSED [ 69%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner PASSED [ 70%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate PASSED [ 72%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation PASSED [ 73%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered PASSED [ 75%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder PASSED [ 76%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request PASSED [ 77%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition PASSED [ 79%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits PASSED [ 80%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits PASSED [ 82%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app PASSED [ 83%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root PASSED [ 85%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work PASSED [ 86%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work PASSED [ 88%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor PASSED [ 89%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity FAILED [ 91%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution FAILED [ 92%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution FAILED [ 94%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure FAILED [ 95%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity FAILED [ 97%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam FAILED [ 98%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff PASSED [100%]
+
+================================== FAILURES ===================================
+_______________ test_p2c_01_positive_http_admission_continuity ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D050483020>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_01_positive_http_admi0')
+
+    def test_p2c_01_positive_http_admission_continuity(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-01-positive",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:311: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D050483020>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_01_positive_http_admi0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+_____________ test_p2c_02_admission_deny_prevents_inner_execution _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0505BDBB0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_02_admission_deny_pre0')
+
+    def test_p2c_02_admission_deny_prevents_inner_execution(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-02-deny",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0505BDBB0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_02_admission_deny_pre0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+_______________ test_p2c_03_release_after_successful_execution ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0506A42C0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_03_release_after_succ0')
+
+    def test_p2c_03_release_after_successful_execution(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-03-release-ok",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:379: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0506A42C0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_03_release_after_succ0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+______________ test_p2c_04_release_after_inner_execution_failure ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0505BD2B0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_04_release_after_inne0')
+
+    def test_p2c_04_release_after_inner_execution_failure(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-04-release-fail",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0505BD2B0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_04_release_after_inne0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+__________________ test_p2c_05_identity_and_scope_continuity __________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D050842ED0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_05_identity_and_scope0')
+
+    def test_p2c_05_identity_and_scope_continuity(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-05-identity",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:443: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D050842ED0>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_05_identity_and_scope0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+__________ test_p2c_06_request_tenant_mismatch_skips_execution_seam ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0504A4860>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_06_request_tenant_mis0')
+
+    def test_p2c_06_request_tenant_mismatch_skips_execution_seam(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+>       fixture = _build_strict_http_fixture(
+            monkeypatch,
+            tmp_path,
+            revision_id="rev-p2c-06-tenant-mismatch",
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:605: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D0504A4860>
+tmp_path = WindowsPath('D:/Projekty/_wt/intergrax/ec-w3-08/build/pytest/8780-0b761565/test_p2c_06_request_tenant_mis0')
+
+    def _build_strict_http_fixture(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+        *,
+        revision_id: str,
+    ) -> _StrictHttpAdmissionFixture:
+        d4, err = load_d4_launcher_module()
+        assert err is None, f"integration import blocked: {err}"
+        install_diagnostic_cursor_secret(monkeypatch)
+        install_host_llm_stub(monkeypatch)
+    
+        _patch_gca_strict_http_wiring(monkeypatch, d4)
+        session = d4._open_with_activation(
+            tmp_path,
+            environment=d4._ac3_environment(),
+            revision_id=revision_id,
+        )
+        assert session.readiness.ready_for_traffic is True
+        assert session.composition.serving_runtime_handoff is not None
+    
+        handoff = session.serving_runtime_handoff
+        assert handoff is not None
+        admission = handoff.colocated_execution_admission
+        assert admission is not None
+        physical_gate = admission.physical_gate
+        assert isinstance(physical_gate.adapter, VenvBundleColocatedRuntimeDeploymentAdapter)
+        adapter = physical_gate.adapter
+        unit_ref = handoff.identity.serving_unit_ref
+        assert_identity_continuity(session, revision_id=revision_id)
+    
+        env = session.environment
+        tenant_id = env.application_environment_id
+        settings = with_qualified_strict_external_work_provider_pin(
+            with_strict_http_api_keys(
+                replace(
+                    GovernedContractorBackendSettings.from_env(),
+                    include_mcp=False,
+                    include_scheduler=False,
+                    include_interaction_routes=False,
+                    include_task_control=False,
+                    default_agent_id="search",
+                    runtime_policy_bundle=_gr6_production_policy_bundle(),
+                ),
+                execution_tenant_id=tenant_id,
+                wrong_tenant_id=f"{tenant_id}-unauthorized-caller",
+            ),
+        )
+        host_runtime = d4._host_runtime_for_startup(settings)
+>       app = create_governed_contractor_strict_production_asgi_app(
+            session,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = StrictProductionServingSession(lifecycle=ProductionProcessLifecycle(composition=ProductionProcessComposition(agent_pla... serving_state_reconciled=True, serving_handoff_bound=True, execution_admission_eligible=True, ready_for_traffic=True))
+
+    def create_governed_contractor_strict_production_asgi_app(
+        session: StrictProductionServingSession,
+        *,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """
+        Build a traffic-ready GCA ASGI app from an opened strict production serving session.
+    
+        The session must already satisfy reconciliation, handoff binding, and admission wiring.
+        """
+        if not session.readiness.ready_for_traffic:
+            raise ValueError(
+                "strict production serving session is not ready for traffic; "
+                "open via open_strict_production_serving_session first",
+            )
+>       app = create_governed_contractor_process_app(
+            process_composition=session.composition,
+            production_governance=session.lifecycle.governance,
+            settings=settings,
+            host_runtime=host_runtime,
+        )
+
+applications\governed_contractor_application\host\strict_production_serving.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_process_app(
+        *,
+        process_composition: ProductionProcessComposition,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+    ) -> FastAPI:
+        """Build the Governed Contractor STRICT host from an activated process composition."""
+        manifest = build_governed_contractor_manifest()
+        resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+        resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+            resolved_settings,
+        )
+        env = manifest.environment or build_governed_contractor_environment_profile(
+            resolved_settings,
+        )
+>       return create_governed_contractor_backend_app(
+            registry_projection=bootstrap_production_registry_projection(
+                application_id=manifest.app_id,
+                application_environment_id=env.profile_id,
+                stores=process_composition.agent_platform_runtime.stores,
+            ),
+            process_composition=process_composition,
+            production_governance=production_governance,
+            settings=resolved_settings,
+            host_runtime=resolved_host_runtime,
+        )
+
+applications\governed_contractor_application\host\main.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def create_governed_contractor_backend_app(
+        *,
+        registry_projection: MaterializedRegistryProjection,
+        process_composition: ProductionProcessComposition | None = None,
+        production_governance: ProductionControlPlaneGovernance | None = None,
+        settings: GovernedContractorBackendSettings | None = None,
+        host_runtime: GovernedContractorHostRuntimeComposition | None = None,
+        trace_db_path: Path | None = None,
+        runtime_events_db_path: Path | None = None,
+        checkpoints_db_path: Path | None = None,
+        document_store: DocumentStore | None = None,
+        key_value_cache: DistributedKVStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        observability_export: ObservabilityExportOperatorConfig | None = None,
+    ) -> FastAPI:
+        settings = settings or GovernedContractorBackendSettings.from_env()
+        if (
+            registry_projection is not None
+            and process_composition is not None
+            and process_composition.serving_runtime_handoff is not None
+        ):
+            validate_serving_runtime_handoff_against_projection_evidence(
+                process_composition.serving_runtime_handoff,
+                runtime_revision_id=registry_projection.evidence.runtime_revision_id,
+                materialization_artifact_digest=registry_projection.evidence.materialization_artifact_digest,
+            )
+        resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
+        external_work_session_resources = None
+        api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    
+        manifest = build_governed_contractor_manifest()
+        env = manifest.environment or build_governed_contractor_environment_profile(settings)
+        production_mode = env.execution_mode.value == "strict"
+        manifest_for_runtime = manifest
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
+        resolved_tenant_id = manifest.app_id
+        strict_topology_reliability = production_mode and process_composition is not None
+        provider_invocation_store = (
+            process_composition.provider_invocation_store if process_composition is not None else None
+        )
+        resolved_execution_continuation_state_store = execution_continuation_state_store
+        if process_composition is not None:
+            composition_continuation_store = process_composition.execution_continuation_state_store
+            if composition_continuation_store is not None:
+                if (
+                    execution_continuation_state_store is not None
+                    and execution_continuation_state_store is not composition_continuation_store
+                ):
+                    raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                        "strict governed contractor production host rejects conflicting "
+                        "execution_continuation_state_store injection; bind via "
+                        "ProductionProcessComposition.execution_continuation_state_store",
+                    )
+                resolved_execution_continuation_state_store = composition_continuation_store
+        if strict_topology_reliability and provider_invocation_store is None:
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host requires "
+                "ProductionProcessComposition.provider_invocation_store",
+            )
+        if process_composition is not None:
+            if production_mode:
+                env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
+            profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+                production_mode=production_mode,
+                composition=process_composition,
+            )
+        elif document_store is not None:
+            profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+                document_store=document_store,
+                key_value_cache=key_value_cache,
+            )
+            if production_mode and key_value_cache is not None:
+                env = resolve_reference_production_strict_host_environment(env)
+                manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        collaborative_work_integration_profile = None
+        if document_store is not None:
+            collaborative_work_integration_profile = resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        if production_mode:
+            validate_execution_continuation_for_composition(
+                production_mode=True,
+                state_store=resolved_execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
+        strict_serving_tenant_binding = None
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            if production_governance is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor production host with serving_runtime_handoff "
+                    "requires ProductionControlPlaneGovernance",
+                )
+            strict_serving_tenant_binding = resolve_strict_production_serving_execution_tenant_binding(
+                handoff=process_composition.serving_runtime_handoff,
+                governance=production_governance,
+            )
+            validate_strict_production_serving_http_ingress_composition(
+                binding=strict_serving_tenant_binding,
+                api_keys_map=dict(settings.api_keys_map) if settings.api_keys_map else None,
+                include_task_control=settings.include_task_control,
+                include_interaction_routes=settings.include_interaction_routes,
+                include_mcp=settings.include_mcp,
+                identity_source=settings.identity_source,
+            )
+        package_contract_authority = None
+        if (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and provider_invocation_store is not None
+            and settings.runtime_policy_bundle is not None
+            and resolved_host_runtime.collaborative_work_repositories is not None
+            and resolved_host_runtime.active_execution_task_scope is not None
+        ):
+            execution_tenant_for_external_work = resolved_tenant_id
+            if strict_serving_tenant_binding is not None:
+                execution_tenant_for_external_work = strict_serving_tenant_binding.authoritative_execution_tenant_id
+            if strict_serving_tenant_binding is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "strict_serving_tenant_binding for workspace identity",
+                )
+            strict_workspace_id = (
+                f"strict-serving:{strict_serving_tenant_binding.application_id}:"
+                f"{strict_serving_tenant_binding.application_environment_id}"
+            )
+            host_store_bundle = process_composition.governed_external_work_host_store_bundle
+            if host_store_bundle is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ProductionProcessComposition.governed_external_work_host_store_bundle",
+                )
+            if not isinstance(host_store_bundle, GovernedExternalWorkHostStoreBundle):
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "governed_external_work_host_store_bundle must be GovernedExternalWorkHostStoreBundle",
+                )
+            try:
+                strict_capabilities = resolve_strict_external_work_provider_capabilities(
+                    resolved_host_runtime.external_work_integration,
+                    settings=settings,
+                )
+            except StrictExternalWorkProviderResolutionError as exc:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    str(exc),
+                ) from exc
+            external_work_session_resources = build_strict_external_work_host_session_resources(
+                resolved_host_runtime.external_work_integration,
+                settings=settings,
+                host_runtime=resolved_host_runtime,
+                provider_invocation_store=provider_invocation_store,
+                execution_tenant_id=execution_tenant_for_external_work,
+                workspace_id=strict_workspace_id,
+                principal_id="strict-composition-session-unbound",
+                host_stores=host_store_bundle,
+                capabilities=strict_capabilities,
+            )
+            resolved_host_runtime = attach_sanctioned_external_work_to_host_runtime(
+                resolved_host_runtime,
+                operation_port=external_work_session_resources.operation_port,
+            )
+            serving_handoff = process_composition.serving_runtime_handoff
+            if serving_handoff is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires serving_runtime_handoff",
+                )
+            projection_input = serving_handoff.registry_projection_input_bundle
+            if projection_input is None:
+                raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                    "strict governed contractor external work requires "
+                    "ServingRuntimeHandoff.registry_projection_input_bundle",
+                )
+            registry_projection = reproject_registry_with_strict_sanctioned_external_work(
+                projection_input,
+                serving_handoff.runtime_agent_factory_resolver,
+                host_runtime=resolved_host_runtime,
+                manifest=manifest_for_runtime,
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is None
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        elif (
+            strict_topology_reliability
+            and resolved_host_runtime.external_work_integration is not None
+            and settings.runtime_policy_bundle is not None
+            and (
+                provider_invocation_store is None
+                or resolved_host_runtime.collaborative_work_repositories is None
+                or resolved_host_runtime.active_execution_task_scope is None
+            )
+        ):
+            raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+                "strict governed contractor production host with external work integration "
+                "requires ProductionProcessComposition.provider_invocation_store, "
+                "collaborative_work_repositories, active_execution_task_scope, and "
+                "settings.runtime_policy_bundle for sanctioned external-work mutations",
+            )
+        if production_mode and process_composition is not None and process_composition.serving_runtime_handoff is not None:
+            package_contract_authority = resolve_strict_package_contract_authority_for_serving_handoff(
+                manifest=manifest_for_runtime,
+                env=env,
+                handoff=process_composition.serving_runtime_handoff,
+                registry_projection=registry_projection,
+                registry_projection_authority=(process_composition.agent_platform_runtime.registry_projection_authority),
+            )
+>       host_notification_adapter = resolve_host_notification_adapter(
+            env,
+            integration_profile=env.integration_profile,
+        )
+
+applications\governed_contractor_application\host\factory.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+env = ApplicationEnvironmentProfile(meta=HostMeta(profile_id='env-prod', spec_version='1.0.0', application_profile=<Applicat...enable_exec_tool=True)), extensions=EnvironmentExtensions(domain_policy_fragments=DomainPolicyFragments(fragments={})))
+
+    def resolve_host_notification_adapter(
+        env: ApplicationEnvironmentProfile,
+        *,
+        integration_profile: IntegrationProfile | None = None,
+        delivery_ledger: DeliveryLedger | None = None,
+    ) -> NotificationAdapter:
+        """Resolve a composition-time notification adapter for Tier-3 host wiring."""
+        profile = integration_profile or env.integration_profile or IntegrationProfile()
+        slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
+        if slug is not None:
+            return create_notification_adapter_from_profile(profile, delivery_ledger=delivery_ledger)
+    
+        if wiring_fails_closed(env):
+>           raise IntegrationConfigurationError("notification_channel binding is required for STRICT or PRODUCT posture")
+E           intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+
+intergrax\applications\_shared\notification_wiring.py:95: IntegrationConfigurationError
+============================== warnings summary ===============================
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:13
+  D:\Projekty\_wt\intergrax\ec-w3-08\tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:13: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+_____________ test_prod_q_p0_head_q01_discovery_parse_fail_closed _____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+__________ test_p2_r2_research_cli_run_without_reference_flag_exits ___________
+---------------------------- Captured stderr call -----------------------------
+Research STRICT production requires explicit lifecycle deploy/activate before serving. Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with build_research_reference_lifecycle_input(), then create_research_process_app(process_composition=...) with the same composition.
+_____________ test_p2_r2_lkw_cli_run_without_reference_flag_exits _____________
+---------------------------- Captured stderr call -----------------------------
+Local Workspace STRICT production requires explicit lifecycle deploy/activate before serving. Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with build_local_workspace_reference_lifecycle_input(), then create_local_workspace_process_app(process_composition=...) with the same composition.
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\q07.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work
+PASSED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor
+PASSED tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff
+SKIPPED [1] tests\qualification\prod_q\test_prod_q_p0_integrity.py:239: POSIX-only: owned process-group ID is the Popen PID under start_new_session
+SKIPPED [1] tests\qualification\prod_q\test_prod_q_p0_integrity.py:305: Windows: after parent exit, bounded subprocess cannot verify owned descendant termination without a job-object ownership mechanism (STOP â€” ARCHITECTURE DECISION REQUIRED)
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam - intergrax.integrations.contracts.base.IntegrationConfigurationError: notification_channel binding is required for STRICT or PRODUCT posture
+======== 6 failed, 60 passed, 2 skipped, 1 warning in 64.51s (0:01:04) ========
+

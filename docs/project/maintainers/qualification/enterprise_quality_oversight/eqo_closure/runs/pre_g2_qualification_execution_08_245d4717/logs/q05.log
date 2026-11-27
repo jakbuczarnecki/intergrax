@@ -1,0 +1,289 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Scripts\python.exe
+cachedir: build\pytest\48372-29727ba8\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-08
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 41 items
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke PASSED [  2%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker PASSED [  4%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied PASSED [  7%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution PASSED [  9%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution PASSED [ 12%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution PASSED [ 14%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized PASSED [ 17%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity PASSED [ 19%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner PASSED [ 21%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401 PASSED [ 24%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant PASSED [ 26%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict PASSED [ 29%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution PASSED [ 31%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate PASSED [ 34%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants PASSED [ 36%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task PASSED [ 39%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal PASSED [ 41%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user PASSED [ 43%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal PASSED [ 46%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing PASSED [ 48%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution PASSED [ 51%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden PASSED [ 53%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only PASSED [ 56%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials PASSED [ 58%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids PASSED [ 60%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id PASSED [ 63%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids PASSED [ 65%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated PASSED [ 68%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant PASSED [ 70%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion PASSED [ 73%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user PASSED [ 75%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key] PASSED [ 78%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer] PASSED [ 80%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key] PASSED [ 82%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names PASSED [ 85%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution PASSED [ 87%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution PASSED [ 90%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server PASSED [ 92%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server PASSED [ 95%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server PASSED [ 97%]
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant
+  D:\Projekty\_wt\intergrax\ec-w3-08\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py: 16 warnings
+  C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:105: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+___________ test_acc_10_side_effect_port_deny_blocks_catalog_invoke ___________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 14:43:51] Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_________ test_acc_10_side_effect_port_permit_control_reaches_invoker _________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_10_side_effect_tool_without_authorization_port_is_denied ______
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_10_invalid_api_key_is_unauthorized_before_execution _________
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_acc_10_invalid_bearer_key_is_unauthorized_before_execution _______
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_10_missing_credentials_is_unauthorized_before_execution _______
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_10_rejected_identity_provider_token_is_unauthorized _________
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity _
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_10_same_tenant_other_user_is_not_the_execution_owner ________
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+__ test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401 __
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+___ test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant ____
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict _______
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_____ test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution _____
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________________ test_acc_11_two_servers_keep_tenants_separate ________________
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+____________ test_acc_11_concurrent_requests_do_not_bleed_tenants _____________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task ______
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_____________ test_acc_12_bearer_api_key_binds_the_same_principal _____________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_12_identity_provider_principal_binds_tenant_and_user ________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_acc_12_execution_runs_under_the_verified_caller_principal ________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_acc_12_matching_assertion_is_accepted_and_changes_nothing ________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_acc_12_forged_user_assertion_is_rejected_before_execution ________
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_12_tenant_required_without_principal_tenant_is_forbidden ______
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+____ test_acc_12_default_mode_refuses_local_dev_state_without_credentials _____
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'run_agent'                              
+________ test_acc_17_run_agent_payload_carries_valid_task_and_run_ids _________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+____ test_acc_17_each_invocation_runs_under_its_own_platform_execution_id _____
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+___ test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids ____
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_____ test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated _____
+---------------------------- Captured stderr call -----------------------------
+                    Error calling tool 'invoke_catalog_tool'                    
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'p7-l2-catalog-security' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+___ test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant ____
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+____ test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion ____
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key] _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_ test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names _
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+_______ test_acc_10_forged_tenant_assertion_is_denied_before_execution ________
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 14:43:57] Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_10_forged_user_assertion_is_denied_before_execution _________
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 14:43:58] Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+__ test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server ___
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+______ test_acc_11_principal_cannot_assert_another_tenant_on_one_server _______
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 14:43:59] Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+________ test_acc_11_concurrent_principals_stay_isolated_on_one_server ________
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+ERROR    asyncio:base_events.py:1833 Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\XPS\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+ConnectionResetError: [WinError 10054] IstniejÄ…ce poĹ‚Ä…czenie zostaĹ‚o gwaĹ‚townie zamkniÄ™te przez zdalnego hosta
+_ test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials _
+---------------------------- Captured stderr call -----------------------------
+[11/27/26 14:44:12] Error calling tool 'run_agent'                              
+------------------------------ Captured log call ------------------------------
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+WARNING  intergrax.applications._shared.mcp_server_engine:mcp_server_engine.py:247 MCP server 'mcp-server-x-p6-reference' composed in LOCAL_DEV_EXPLICIT identity mode: client-asserted tenant/user are trusted for in-process and loopback callers only
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-08\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_qualification_execution_08_245d4717\junit\q05.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key]
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer]
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key]
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server
+PASSED tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials
+====================== 41 passed, 19 warnings in 26.75s =======================
+

@@ -1,0 +1,11 @@
+{
+  "schema": "eqo.environment_manifest.v1",
+  "uv_exe_path": "C:\\Users\\XPS\\.local\\bin\\uv.exe",
+  "worktree_path": "D:\\Projekty\\_wt\\intergrax\\ec-w3-08",
+  "execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+  "sync_profile": "locked dev-ci dev-ci-rag mcp llm-langchain-ollama llm-gemini",
+  "import_check": "google.genai; langchain_core",
+  "import_ok": true,
+  "blockers": [],
+  "environment_sync_finish_utc": "2026-11-27T14:23:49Z"
+}
