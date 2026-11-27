@@ -6,15 +6,15 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Integrax Intelligence
 
-**Strategic architecture, as-built audit, behavioral contract, implementation master roadmap and enterprise qualification**
+**Strategic architecture, behavioral contract, ownership, and program-level acceptance. Revision 1.1. The canonical roadmap is not this file.**
 
 | Attribute | Value |
 |---|---|
 | Capability name | **Integrax Intelligence** |
 | Proposed program ID | `INTELLIGENCE-X` |
-| Revision | 1.0 — proposed architecture and roadmap |
-| Date | 2026-11-26 |
-| Status | **PROPOSED — NOT RATIFIED / NOT IMPLEMENTATION AUTHORITY** |
+| Revision | 1.1 — architecture candidate |
+| Date | 2026-11-27 |
+| Status | **FINAL DRAFT — PENDING INDEPENDENT REVIEW AND FORMAL RATIFICATION** |
 | Classification | Cross-domain platform capability; logical intelligence layer, not a physical tier |
 | Proposed accountable owner | Intergrax Platform Architecture; canonical domain owners retain their responsibilities |
 | Intended repository path | `docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md` |
@@ -23,8 +23,13 @@ Use, modification, or distribution without written permission is prohibited.
 | Placement | After ARCH-FREEZE and required Enterprise Campaign acceptance; before Scenario Factory implementation |
 | Consumers | Scenario Factory, SEF-X, Autonomous Work, CodeCraft, domain agents and future applications |
 | Evidence level | Canonical documentation and selected source inspection; no fresh executable qualification |
+| R1 preparation baseline | `32005c212ed4debca91f607ee30b3abfab79ce6c` (not an audited qualification SHA) |
+| R2 documentation review baseline | `7d2cc3d28640df4823fa04e07abdc8f98451ccc6` (target blobs unchanged; not a qualified Foundation pin) |
+| Historical v1.0 blob | `3ffd8de71737a3b606a72e89e439854eabaf9ef2` |
+| Canonical roadmap | [`INTELLIGENCE-X-MASTER-PLAN.md`](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md) |
+| Execution register | [`plan/INTEGRAX_INTELLIGENCE.md`](../plan/INTEGRAX_INTELLIGENCE.md) |
 
-> Existing canonical architecture, approved decisions, frozen contracts and acceptance records remain authoritative until formally amended. New identifiers, contracts, diagrams, KPIs and gates in this document describe proposed behavior, not current implementation or authorization. The RW Train SHA is recorded for context, not asserted to have been fully audited. No code, ticket, roadmap entry, FRZ status or approval has been changed by preparing this document.
+> Existing canonical architecture, approved decisions, frozen contracts and acceptance records remain authoritative until formally amended. This revision is a documentation candidate. It does not ratify the program, does not sign an operator decision, does not add an `Approved:` line, and does not treat II-W0-RATIFICATION-01 as authority. Identifiers, contracts, diagrams, KPIs and gates describe required behavior for a future authorized program, not current implementation or authorization. The historical audit SHA and the RW Train SHA are context, not a claim that this preparation baseline was audited. No code, ticket, FRZ status, gate, or approval is changed by this candidate.
 
 ## Contents
 
@@ -37,7 +42,8 @@ Use, modification, or distribution without written permission is prohibited.
 7. [Semantic ownership and conceptual contracts](#7-semantic-ownership-and-conceptual-contracts)
 8. [Detailed implementation design](#8-detailed-implementation-design)
 9. [Enterprise safety and operations](#9-enterprise-safety-and-operations)
-10. [Implementation roadmap W0–W9](#10-implementation-roadmap-w0w9)
+   - [Cross-cutting operational requirements (II-OPR-01..07)](#ii-opr)
+10. [Canonical roadmap pointer](#10-implementation-roadmap-w0w9)
 11. [Behavioral benchmark](#11-behavioral-benchmark)
 12. [Gates and definition of done](#12-gates-and-definition-of-done)
 13. [Program dependencies and product adoption](#13-program-dependencies-and-product-adoption)
@@ -56,7 +62,15 @@ Intergrax is being developed as an enterprise AI operating system. ARCH-FREEZE a
 
 Products should define business goals, domain semantics, permissions, acceptance criteria and user experience. They should inherit shared intelligent execution instead of constructing private harnesses. Enterprise Foundation continues to provide canonical runtime and safety mechanisms. It must not be bypassed to make an agent appear autonomous.
 
-The strategic sequence becomes Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem. Scenario Factory remains the first strategic product consumer. Existing SFX pre-freeze research, specification, design and proposal-only work are preserved. No additional product code is authorized during the current enterprise campaign by this proposal.
+The strategic sequence remains Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem. Scenario Factory remains the first strategic product consumer. Existing SFX pre-freeze research, specification, design and proposal-only work are preserved. No additional product code is authorized by this candidate.
+
+### 1.1 Semantic model
+
+Intelligence is logically cross-cutting. It is not a new physical tier. It is not a second Execution Engine, Nexus, or scheduler. It does not compete with identity, state, persistence, memory, governance, or recovery. It is not a competing domain owner. It does not require an `intergrax/intelligence/` monolith. It is not a central process that all workflows must enter. It does not change the Tier-0–Tier-3 dependency direction. It does not require a model where an authorized deterministic path already meets the goal.
+
+The capability is semantically unified, operationally distributed, resource-aware, and independently qualifiable. Single Execution Authority means one semantic authority. It does not mean one operating-system process, one worker, or one queue.
+
+Semantically unified means one consumption contract, one admission authority, and one outcome meaning. Operationally distributed means work runs through existing execution, capacity, and persistence mechanisms, including more than one worker when the declared scope says so. Resource-aware means parent budgets bind children. Independently qualifiable means a result can be judged from evidence without taking product-domain ownership and without a new certificate family.
 
 **Success is verified outcomes per unit of time, cost and human intervention, not architecture size, number of agents, amount of reasoning or test counts.** Recent experience with fragile coding-agent workflows motivates continuous execution, meaningful recovery and low coordination overhead; it is not controlled comparative evidence about competing harnesses.
 
@@ -117,19 +131,21 @@ Other earlier observations: process-local graph parallelism, deferred FLOW-8, hi
 
 ### 2.4 Findings from selected-source inspection
 
-**II-AUD-01 — Autonomous Work documentation/code mismatch.** AUTONOMOUS_WORK.md states that the runtime is not implemented. The source tree already includes WorkerExecutionDispatchService, WorkerGoalEvaluationService, WorkerRecoveryOrchestrationService, budget admission, PostgreSQL repositories, capability acquisition/fulfillment, wake-up services, recovery episodes and qualified resume. Selected dispatch, goal evaluation and recovery orchestration modules were inspected. Recovery orchestration accepts a replan port with an unavailable default when not injected. Therefore neither the categorical claim of no runtime nor a claim of complete product runtime is justified. W1 must trace composition, injected ports, reachable paths, durable behavior and reference scenario evidence. Reuse rather than rebuild.
+**Historical as-built evidence, not current qualification.** II-AUD-01..07 record the v1.0 selected-source inspection. They are not a present-tense qualification, not a closure, and not a claim that a mechanism is absent or complete. W1 re-pins them. This candidate does not replay them.
 
-**II-AUD-02 — Execution authority.** UEA establishes Execution Engine as the sole legal execution authority; Nexus is private implementation under Execution. ORCHESTRATION documents an existing OrchestrationTopologySubmissionPort with mandatory production policy. Selected submission code requires active execution identity. Preserve these boundaries; verify target child-Execution semantics against actual wiring.
+**HISTORICAL — II-AUD-01 — Autonomous Work documentation/code mismatch.** AUTONOMOUS_WORK.md states that the runtime is not implemented. The source tree already includes WorkerExecutionDispatchService, WorkerGoalEvaluationService, WorkerRecoveryOrchestrationService, budget admission, PostgreSQL repositories, capability acquisition/fulfillment, wake-up services, recovery episodes and qualified resume. Selected dispatch, goal evaluation and recovery orchestration modules were inspected. Recovery orchestration accepts a replan port with an unavailable default when not injected. Therefore neither the categorical claim of no runtime nor a claim of complete product runtime is justified. W1 must trace composition, injected ports, reachable paths, durable behavior and reference scenario evidence. Reuse rather than rebuild.
 
-**II-AUD-03 — Planning and collaboration carriers.** planning_runner.py requires active execution identity and records fallback. nexus_llm_plan_builder.py receives a TaskPlanner fallback. shared_task_context.py defines shared artifact entries and context conflict handling. Inspect failure causes, revision semantics and budget ownership before extending them.
+**HISTORICAL — II-AUD-02 — Execution authority.** UEA establishes Execution Engine as the sole legal execution authority; Nexus is private implementation under Execution. ORCHESTRATION documents an existing OrchestrationTopologySubmissionPort with mandatory production policy. Selected submission code requires active execution identity. Preserve these boundaries; verify target child-Execution semantics against actual wiring.
 
-**II-AUD-04 — AHI has narrower authority.** AHI is governed adaptation of versioned harness configuration, not a self-learning agent or model-weight training. It states A4/I3/P2/E2 for core adaptation, default auto-apply disabled and no claimed 30-day deployment evidence. policy_learning_approval.py defines InMemoryPolicyLearningApprovalStore. The tree includes profile stores, routing tuning, evaluation feedback, proposal and verification mechanisms. Qualify durability and approval lifecycle; do not claim autonomous production promotion.
+**HISTORICAL — II-AUD-03 — Planning and collaboration carriers.** planning_runner.py requires active execution identity and records fallback. nexus_llm_plan_builder.py receives a TaskPlanner fallback. shared_task_context.py defines shared artifact entries and context conflict handling. Inspect failure causes, revision semantics and budget ownership before extending them.
 
-**II-AUD-05 — ERI interprets evidence.** Enterprise Runtime Intelligence explains, correlates and scores canonical facts; its architecture excludes retries, lifecycle mutation and governance bypass. It may feed proposals but cannot become control authority.
+**HISTORICAL — II-AUD-04 — AHI has narrower authority.** AHI is governed adaptation of versioned harness configuration, not a self-learning agent or model-weight training. It states A4/I3/P2/E2 for core adaptation, default auto-apply disabled and no claimed 30-day deployment evidence. policy_learning_approval.py defines InMemoryPolicyLearningApprovalStore. The tree includes profile stores, routing tuning, evaluation feedback, proposal and verification mechanisms. Qualify durability and approval lifecycle; do not claim autonomous production promotion.
 
-**II-AUD-06 — Self-Healing and Decision System reuse.** Existing R1–R6 self-healing architecture/contracts address strategy, learning, execution lifecycle, adaptation, knowledge and governed autonomy. Decision Verification addresses semantic decision and trajectory verification. W1 must classify reuse vs extension and prevent duplication of recovery, evaluation or strategy engines.
+**HISTORICAL — II-AUD-05 — ERI interprets evidence.** Enterprise Runtime Intelligence explains, correlates and scores canonical facts; its architecture excludes retries, lifecycle mutation and governance bypass. It may feed proposals but cannot become control authority.
 
-**II-AUD-07 — Product dependency amendment.** Existing SFX plan has W3+ entry after ARCH-FREEZE and GATE-SFX-ENTRY, with GATE-SEF-CONSUME for agentic engineering. SEF master plan records OD-SEF-02 Option 3: post-freeze parallelism with SCENARIO-READINESS-X, no automatic closure dependency. The inspected SFX R2 cross-program amendment was labeled PROPOSED. New dependencies require ratification; do not silently override existing decisions.
+**HISTORICAL — II-AUD-06 — Self-Healing and Decision System reuse.** Existing R1–R6 self-healing architecture/contracts address strategy, learning, execution lifecycle, adaptation, knowledge and governed autonomy. Decision Verification addresses semantic decision and trajectory verification. W1 must classify reuse vs extension and prevent duplication of recovery, evaluation or strategy engines.
+
+**HISTORICAL — II-AUD-07 — Product dependency amendment.** Existing SFX plan has W3+ entry after ARCH-FREEZE and GATE-SFX-ENTRY, with GATE-SEF-CONSUME for agentic engineering. SEF master plan records OD-SEF-02 Option 3: post-freeze parallelism with SCENARIO-READINESS-X, no automatic closure dependency. The inspected SFX R2 cross-program amendment was labeled PROPOSED. New dependencies require ratification; do not silently override existing decisions.
 
 ### 2.5 Illustrative current path
 
@@ -157,10 +173,10 @@ The gap is behavioral integration. A typed stop is correct if no safe authorized
 ```mermaid
 flowchart TB
     subgraph APP[Product and Application Ecosystem]
-        SF[Scenario Factory]
-        SE[SEF-X]
-        AW[Autonomous Workforce]
-        CC[CodeCraft consumers]
+        SF[Scenario Factory - shared goal realization]
+        SE[SEF-X - shared intelligence, engineering authority retained]
+        AW[Autonomous Work - durable worker lifecycle retained]
+        CC[CodeCraft - qualified tools and sandbox retained]
         RE[Research and domain agents]
         BA[Business applications]
     end
@@ -208,7 +224,11 @@ These are strategic capability layers, not package import directions. Enterprise
 | Tier-1 runtime | Canonical admission, lifecycle, scheduling, cognition integration | One Execution authority, neutral ports for host dependencies |
 | Tier-0 contracts / integrations | Typed contracts and provider implementations under actual owners | No reverse dependencies or vendor selection in generic core |
 
-Foundation supplies mechanisms; Intelligence determines how to use them to achieve a goal; applications determine what business outcome is required. The exact package mapping follows the existing dependency canon.
+Foundation supplies mechanisms. Intelligence determines how those mechanisms are used to realize an accepted goal. Applications determine the business outcome. The exact package mapping follows the existing dependency canon.
+
+Scenario Factory uses Intelligence for goal interpretation, intelligent discovery, decomposition, capability selection, collaboration, dynamic workflow composition, strategy revision, recovery, and outcome verification. Scenario Factory keeps business scenario semantics, business acceptance, scenario specification, blueprint and package semantics, product lifecycle, Studio and UX, engineering handoff, and product-specific evaluation.
+
+SEF-X uses the same Intelligence and keeps engineering-specific authority. CodeCraft keeps qualified engineering tools and sandbox boundaries. Autonomous Work keeps durable responsibility, Worker lifecycle, cadence, dispatch, and wake-up. Product domain semantics do not move into Intelligence. Scenario Factory, SEF-X, and future products do not keep a private general harness. They share goal-realization semantics. Existing legal execution entry points remain the only way to cause effects.
 
 ## 4. Architectural constitution
 
@@ -228,6 +248,24 @@ The following proposed invariants complement, never supersede, SYS-INV, UEA-INV,
 | II-INV-10 | Experience Reuse | Use validated, scoped, versioned experience and measure benefit. |
 | II-INV-11 | Provider Neutrality | Profile- and policy-driven, replaceable, qualified model/backend selection. |
 | II-INV-12 | Single Semantic Ownership | Extend existing owners; no duplicate contracts, stores, validators or control planes. |
+
+
+**Complement map.** These rows cite existing invariant families. They do not rename those invariants, do not promote FRZ, and do not open a freeze.
+
+| II invariant | Existing family this requirement complements |
+|---|---|
+| II-INV-01 | Goal and acceptance ownership in Execution, Cognition, and Autonomous Work. Plans stay means. |
+| II-INV-02 | UEA sole legal Execution authority; UEA-INV-005 one canonical execution tree; UEA-INV-007 Nexus is not the lifecycle owner; UEA-INV-022 child admission policy. |
+| II-INV-03 | UEA-INV-004 node identity is not execution identity; UEA-INV-006 topology is not the execution tree. |
+| II-INV-04 | UEA-INV-009 default authority narrowing; UEA-INV-021 governed execution. Governance remains the permission owner. |
+| II-INV-05 | Orchestration topology and existing handoff mechanisms. No second collaboration bus. |
+| II-INV-06 | UEA-INV-015 observability records execution truth and does not invent it. Untrusted content is not policy. |
+| II-INV-07 | Decision Verification and proof receipts. Formal certification stays a separate authority. |
+| II-INV-08 | UEA-INV-012 pause and resume preserve identity; UEA-INV-013 local retry does not mint a new attempt; ERL uncertainty handling. |
+| II-INV-09 | UEA-INV-010 child budget does not exceed the parent allowance and there is no second ledger. Elastic capacity remains the capacity owner. |
+| II-INV-10 | Memory, AHI, and Self-Healing strategy knowledge, inside their present scopes. |
+| II-INV-11 | Profile-based routing. No vendor branch in the generic core. |
+| II-INV-12 | Platform single-ownership principles and SYS-INV-01 tier import direction. Intelligence adds no Tier-0–Tier-3 edge. |
 
 **Core behavior:** continue pursuing a goal while a valid, feasible, authorized path remains within its budget. Terminate, wait, escalate or fail explicitly when acceptance is reached or a genuine stop condition applies. A progress report, one failed subtask, a model's uncertainty or a choice between valid implementations is not itself a reason to terminate the entire goal.
 
@@ -538,7 +576,7 @@ This is logical responsibility flow, not a claim about exact current call order 
 
 ## 8. Detailed implementation design
 
-The following design specifies required integration behavior, not an already approved implementation write-set. Each extension is contingent on W1 evidence, domain-owner review and change classification. Prefer `REUSE` (already functional), `WIRING` (exists but not connected), `EXTEND` (owner-compatible semantic addition), `NEW` (proven gap, no existing owner) in that order. Existing deficiencies required for Foundation closure stay with that program; they are not deferred into Intelligence to obtain a false freeze.
+The following design specifies required integration behavior, not an already approved implementation write-set. Each extension is contingent on W1 evidence, domain-owner review and change classification. Prefer `REUSE` (already functional), `WIRING` (exists but not connected), `EXTEND` (owner-compatible semantic addition), `NEW` (proven gap, no existing owner) in that order. The roadmap disposition names for the same order are `REUSE_VERIFIED`, `WIRING_REQUIRED`, `EXTENSION_REQUIRED`, and `NEW_CAPABILITY_REQUIRED`, plus an explicitly authorized other disposition. W1 assigns the disposition. This architecture does not pre-assign it. Existing deficiencies required for Foundation closure stay with that program; they are not deferred into Intelligence to obtain a false freeze.
 
 ### 8.1 Goal admission and progress
 
@@ -675,168 +713,107 @@ Distinguish three timescales: within-step choices under tool policy; within-exec
 
 Operational readiness must include monitoring and diagnosable stop dispositions, recovery runbooks, evidence reconstruction, budget exhaustion behavior, rollback, migration compatibility and exact-SHA replay. Use ENT-AUDIT-X and existing independent certification process to prove no regression in affected Foundation criteria. Do not invent a competing audit framework.
 
-## 10. Implementation roadmap W0–W9
+<a id="ii-opr"></a>
 
-The following WBS preserves all **69 proposed work packages** from the strategic roadmap. It is an initial implementation roadmap, not a pre-authorized list of edits. W1 assigns exact existing owners, paths, baseline evidence, dependencies and write-sets. Each package may be disposed as `REUSE_VERIFIED`, `WIRING_REQUIRED`, `EXTENSION_REQUIRED`, `NEW_CAPABILITY_REQUIRED` or an explicitly approved scope disposition. Only proof against its acceptance condition allows closure. Use existing governance status vocabulary for actual tickets.
+## Cross-cutting operational requirements (II-OPR-01..07)
 
-| Wave | Packages | Outcome | Main prerequisites |
-|---|---:|---|---|
-| W0 | 6 | Architecture ratification and documentation | Operator charter; pre-freeze proposals only if authorized |
-| W1 | 7 | As-built and behavioral baseline | Accepted Foundation for executable qualification |
-| W2 | 6 | First end-to-end goal execution slice | W0/W1 and entry/architecture gates |
-| W3 | 6 | Planning and cognition | W2 contracts and working slice |
-| W4 | 7 | Multi-agent collaboration | W2, W3 topology/plan boundaries |
-| W5 | 7 | Tools, context and resources | W2; compatible W3/W4 interfaces |
-| W6 | 8 | Recovery and outcome verification | W2–W4 and affected W5 contracts |
-| W7 | 6 | Adaptation and experience | Verified outcomes from W6, telemetry from W5 |
-| W8 | 8 | Enterprise scale and consumer adoption | Integrated W2–W7 |
-| W9 | 8 | Final independent certification | W8 and all mandatory evidence |
-| **Total** | **69** | | |
+These seven requirements cut across the twelve pillars. They are architecture requirements. They are not new pillars, not new runtimes, not new public APIs, and not a second execution engine. They bind how every consumer uses the same goal-realization behavior. Package acceptance and wave qualification for them live in the [INTELLIGENCE-X master roadmap](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md). This chapter states the required behavior.
 
-The wave dependencies are conservative integration milestones, not a requirement to serialize all independent packages. Safe parallelism is allowed for disjoint write-sets and compatible contracts. W2 must produce a working vertical slice rather than only schema documents. Begin behavior measurements early and repeat them throughout subsequent waves.
+### II-OPR-01 — Universal Intelligence Consumption Contract
 
-### W0 — Architecture Ratification (6)
+Every product that needs goal realization uses one consumption contract. The contract carries:
 
-**Goal:** introduce the capability and formally position it in the platform architecture and roadmap. Before freeze, work is limited to authorized proposal/document preparation; no new pre-freeze mandatory code scope is implied.
+- an objective and the accepted goal revision;
+- domain acceptance criteria, which remain product-owned;
+- tenant and principal from canonical admission;
+- input and context references;
+- capability restrictions;
+- an autonomy envelope;
+- cost, time, and resource budgets;
+- the canonical execution invocation;
+- progress and evidence access;
+- wait, cancel, and resume through existing owners;
+- a verified outcome;
+- an explicit partial, failed, or blocked result when the goal is not verified.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W0-01 | Three-layer strategic architecture | Platform Architecture | Layer diagram and classification; Tier-0–Tier-3 unchanged |
-| II-W0-02 | Intelligence capability contract | Platform Architecture / Execution | Definition, scope, non-goals and adoption contract accepted |
-| II-W0-03 | Twelve architectural invariants | Platform Architecture / Governance | Traceability to existing invariants; no conflicting authority |
-| II-W0-04 | Ownership model | All affected owners | Single owner per concern; overlap and conflict matrix |
-| II-W0-05 | Main architecture documentation | Documentation / architecture owners | Canonical cross-links and approved status; no duplicate semantics |
-| II-W0-06 | Roadmap dependency amendments | Operator / program owners | ARCH-FREEZE, EQO, SFX and SEF dependency changes explicitly ratified; no cycle |
+Consumers are Scenario Factory, SEF-X, Autonomous Work, CodeCraft, domain agents, and future applications. Products do not build their own general goal loop. No new public API or class is introduced before W1 reconciles existing types. The contract does not replace Execution admission or Governance permissions.
 
-**Exit:** accepted charter, approved document boundaries and dependency amendment. Existing freeze scope preserved.
+Owners: Execution, Cognition, Governance, and the existing host contracts. Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-01, II-AC-02, II-AC-12.
 
-### W1 — As-Built & Behavioral Baseline (7)
+### II-OPR-02 — Composition and Reuse
 
-**Goal:** establish exact implementation gaps and behavioral baseline, avoiding speculative construction.
+Use the simplest realization that meets the accepted goal, the risk, and the required result. Deterministic, assisted, bounded autonomous, collaborative, persistent, and adaptive are properties of a realization. They are not six engines and not a mandatory enumeration a caller must set. Collaboration, persistence, and adaptation may coexist on the same admitted execution. Simple canonical mechanisms stay available. Missing model capacity does not block an authorized deterministic path. Complexity stays proportional to the goal, the risk, and the result.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W1-01 | Mechanism and contract inventory | Domain owners; post-freeze SHA | Code, contracts, host consumers, tests and existing tickets mapped |
-| II-W1-02 | Documentation/code reconciliation | Domain owners | II-AUD-01 and other stale claims resolved with evidence |
-| II-W1-03 | Runtime connectivity audit | Execution, Nexus, UAEP, Tools, AW | Trace admission-to-outcome, identify unbound ports and bypass risks |
-| II-W1-04 | Duplicate responsibility audit | Architecture / EVOL-X | Overlap matrix; no second owner or runtime planned |
-| II-W1-05 | Reference workload suite | Evaluation / domain adopters | Reproducible task sets, seeds, oracles, failure taxonomy and held-out split |
-| II-W1-06 | Measure existing harness | Qualification | Baseline raw trials, outcome, cost, latency, interventions and uncertainty |
-| II-W1-07 | Classify gaps and execution packages | Program owner | REUSE/WIRING/EXTEND/NEW dispositions; exact tickets, dependencies, tests, write-sets and acceptance; thresholds locked |
+Owners: Cognition, Execution, Orchestration, ToolRuntime, routing, and Autonomous Work. Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-02, II-AC-03, II-AC-04, II-AC-05, II-AC-06, II-AC-11, II-AC-12.
 
-**Exit:** auditable current-SHA gap and ownership register, behavioral baseline, scoped authorized implementation plan. Do not reopen planning endlessly; proceed to vertical slice after ratification.
+### II-OPR-03 — Performance Engineering
 
-### W2 — Intelligent Goal Execution (6)
+Performance is qualified against verified outcomes. The required metrics are: verified goal throughput; concurrent goal executions; planning latency; orchestration overhead; admission and queue latency; time to first useful result; time to verified goal; end-to-end p50, p95, and p99; token consumption and token amplification; model-call and tool-call amplification; cost per verified goal; duplicate work; resource saturation; recovery latency; and benchmark quality variance.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W2-01 | Goal and success criteria contract | Execution/Cognition + AW | Reuse existing types; accepted objective/criteria/version/scope mapped |
-| II-W2-02 | Goal-to-Execution binding | Execution | One admitted root; correct identity and child lineage |
-| II-W2-03 | Goal authorization and budget | Governance / Execution | Negative tests for denied scope and budget; no silent grants |
-| II-W2-04 | Progress and completion projection | Execution / evidence owners | Reconstruct criteria coverage and explicit incomplete result |
-| II-W2-05 | Durable checkpoint | Existing persistence/recovery | Restart preserves accepted state, identity and evidence |
-| II-W2-06 | First reference E2E scenario | Reference host / verification | End-to-end accepted goal, plan, execution, evidence and verified result |
+Cost includes failures, retries, verification, and recovery. Overhead is compared with a baseline matched on model, tools, budget, and, where the workload allows, quality. Throughput that sacrifices correctness is not an improvement. This architecture does not set production SLO numbers. W1 sets the envelope, the methodology, the units, the denominators, the minimum sample size, and the acceptance thresholds. W2 starts real overhead measurement on the vertical slice. Later waves qualify the impact of their own behavior. W8 proves the declared infrastructure scope. W9 performs independent qualification against the locked W1 protocol.
 
-**Exit:** first working, bounded intelligent goal loop. No private scheduler or mock-only end-to-end proof.
+Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-10, II-AC-11.
 
-### W3 — Planning & Cognitive Intelligence (6)
+### II-OPR-04 — Scalability and Isolation
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W3-01 | Improve Nexus plan generation | Cognition | Measurable improvement on baseline plan cases |
-| II-W3-02 | Iterative plan validation and repair | Cognition / validators | Invalid plan rejected; bounded repair and valid fallback behavior |
-| II-W3-03 | Dynamic decomposition | Cognition | Unseen goal decomposed without complete manual graph |
-| II-W3-04 | Dependency and ordering revision | Orchestration / Execution | Valid revision preserves unaffected work; stale/cyclic revision denied |
-| II-W3-05 | Three-plane cognition integration | Cognition / UAEP / tools | Typed cross-plane feedback and evidence, no owner conflation |
-| II-W3-06 | Non-progress detection | Execution / diagnostics / Cognition | Repeated unproductive strategy detected; bounded alternative or stop |
+The capability must scale and isolate inside existing capacity, scheduling, persistence, and execution mechanisms. Required properties: horizontal scaling; real multi-worker execution; distributed admission; workload-aware allocation; aggregate budgets; tenant isolation; workload isolation; bounded fan-out and fan-in; fairness and starvation prevention; backpressure; overload protection; provider-quota respect; controlled degradation; cancellation propagation; and retry-amplification protection.
 
-**Exit:** adapt plan after a wrong assumption and achieve verified outcome on held-out tasks.
+There is no global mutable Intelligence state and no central Intelligence queue outside existing mechanisms. Process-local concurrency is not distributed evidence. Qualification profiles are LOAD, STRESS, SPIKE, SOAK, RECOVERY, and MIXED-TENANT. W1 defines the concrete conditions for each profile. W8 shows real concurrent multi-consumer, multi-tenant load on the same consumption contract.
 
-### W4 — Multi-Agent Collaboration (7)
+Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-09, II-AC-10, II-AC-11, II-AC-12.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W4-01 | Capability-based agent selection | Agent assembly/catalog | Eligible heterogeneous roles selected; unqualified agent refused |
-| II-W4-02 | Delegation and responsibility hierarchy | Orchestration / Execution | Canonical child admission, scope and identity tests |
-| II-W4-03 | SharedTaskContext and artifact cooperation | Nexus / Context / evidence | Scoped artifact reuse without cross-tenant leakage |
-| II-W4-04 | Typed questions, answers and handoffs | Orchestration/Nexus owner | Causal, scoped communication; replay/stale message negative tests |
-| II-W4-05 | Conflict and disagreement resolution | Decision Deliberation / verification | Conflicting evidence resolved or explicitly escalated |
-| II-W4-06 | Dynamic team replacement | Assembly / Orchestration | Qualified substitute, unchanged authority, no duplicate running work |
-| II-W4-07 | Local blocker isolation and safe parallelism | Nexus / Execution / capacity | Unrelated work continues; dependencies, cancellation and aggregate limits respected |
+### II-OPR-05 — Observability
 
-**Exit:** team decomposes, cooperates, solves local problems and integrates results without routine operator management.
+An authorized reader can reconstruct Goal, Accepted Plan, Plan Revision, Execution, Agent, Tool, Evidence, and Verified Outcome. Required observations: correlation and execution identity; causal lineage; structured decision summaries; strategy and plan-revision evidence; capability-selection evidence; typed obstacles; recovery decisions; latency attribution; queue and resource pressure; model and tool cost; progress against acceptance; verified-outcome traceability; and diagnostic replay where the existing diagnostics owner supports it.
 
-### W5 — Tool, Context & Resource Intelligence (7)
+Bottleneck classes are planning, coordination, model, context, tool, storage, queue, worker, verification, and recovery. Use Observability, Diagnostics, Enterprise Runtime Intelligence, and Proof Receipts. Do not create a competing telemetry system. Do not record private chain-of-thought, secrets, or unnecessary tenant data. Account for telemetry overhead, cardinality, access, retention, and redaction. Diagnostics cannot change execution state.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W5-01 | Tool selection quality | Tool cognition | Accuracy and permitted-candidate measurements |
-| II-W5-02 | Intelligent tool operation composition | Tools / UAEP | Dependency-valid, bounded sequences and batches |
-| II-W5-03 | Result verification and alternatives | Tools / verification | Incorrect results rejected; permitted alternative recovers |
-| II-W5-04 | Dynamic context distribution | Context Engineering / UCL | Relevant, scoped per-agent context and references |
-| II-W5-05 | Evidence-preserving compaction | Context / Memory | Lower token cost without required evidence loss |
-| II-W5-06 | Task-appropriate model routing | Model routing / AHI | Profile-driven model selection; replaceability and cost/quality evidence |
-| II-W5-07 | Aggregate cost and execution budget | Execution / capacity / Worker budgets | Concurrent reservations enforce parent limits and deadlines |
+Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-07, II-AC-09, II-AC-10, II-AC-11, II-AC-14.
 
-**Exit:** improved selection and resource efficiency without quality or safety regression.
+### II-OPR-06 — Resilience
 
-### W6 — Recovery & Outcome Verification (8)
+Each failure class below has a detection signal, a canonical owner, a permitted recovery, required evidence, a safe stop, and a forbidden behavior. Recovery does not bypass Governance. A correct stop is not an autonomy failure. Correct results are kept, effects are contained, duplicate effects are not introduced, and independent work continues.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W6-01 | Common obstacle classification | Execution / ERL / Self-Healing | Map existing typed failures; distinguish unknown effects |
-| II-W6-02 | Recovery strategy selection | Recovery / Self-Healing | Authorized alternatives selected; denial stays denied |
-| II-W6-03 | Local work correction | UAEP / Execution | Repair failed step without repeating unrelated work |
-| II-W6-04 | Global strategy revision | Cognition / Orchestration | Replan after design defect; invalidate affected evidence |
-| II-W6-05 | Independent branch continuation | Nexus / Execution | Local blocker does not stop eligible independent tasks |
-| II-W6-06 | Goal completeness verification | Decision Verification / domain owner | All required criteria mapped to valid current evidence |
-| II-W6-07 | Independent outcome evaluation | Verification | False-positive success and fabricated evidence refused |
-| II-W6-08 | Controlled stop and escalation | Execution / Governance | Genuine exhaustion, cancellation, wait and reserved decision paths reconstructable |
+| Failure class | Detection | Canonical owner | Permitted recovery | Evidence | Safe stop | Forbidden behavior |
+|---|---|---|---|---|---|---|
+| Unavailable model | Profile routing returns no qualified model or the selected model is unreachable | Model routing / AHI | Select another qualified profile or follow the deterministic path when one is authorized | Routing decision, profile identity, error class | Stop or wait when no qualified profile and no deterministic path remain | Hardcode a vendor or bypass the profile policy |
+| Invalid plan | Plan validation rejects shape, cycle, dependency, or evidence rules | Cognition, with existing validators | Bounded repair, valid configured fallback, or typed stop | Rejection reason and proposal identity | Stop when repair budget is exhausted | Execute the invalid graph or weaken the validator |
+| Stale plan revision | Version or conflict check fails against the accepted revision | Orchestration / Execution | Discard the stale proposal; submit a fresh revision if still authorized | Accepted revision and rejected proposal identity | Keep the accepted revision active | Overwrite an accepted active node |
+| Failed agent | Admitted participant is unavailable or fails its local work | Agent assembly / Orchestration | Qualified substitute under the same authority, or typed stop | Failure class, original assignment, substitute identity | Stop that assignment when no qualified substitute exists | Spawn an unauthorized agent or duplicate running work |
+| Lost worker | Claim or heartbeat is lost under existing capacity semantics | Execution / capacity / ERL | Reclaim through canonical claim and fencing | Claim identity and fencing result | Stop the attempt if ownership cannot be proved | Mint a competing execution identity to hide the loss |
+| Process interruption | Process exit before canonical completion | Persistence / ERL | Restore the checkpoint and resume the same logical work | Checkpoint identity and restored execution identity | Stop if the checkpoint is absent or inconsistent | Reconstruct a second runtime truth |
+| Duplicate delivery | The same effect or message is presented again | Execution / ERL | Idempotent acknowledgement after reconciliation | Effect identity and prior receipt | Stop the duplicate path | Apply the external effect twice |
+| Malformed tool result | Result fails schema, invariant, or receipt checks | ToolRuntime | Reject the result; use a permitted alternative when semantics and policy allow | Tool call identity and validation failure | Stop the step when no permitted alternative exists | Treat the malformed payload as success |
+| Contradictory evidence | Two admissible artifacts disagree on a material fact | Decision Verification / Decision Deliberation | Resolve from evidence or escalate explicitly | Both artifacts and the verdict or escalation | Escalate or stop rather than guess | Choose the convenient result without a recorded reason |
+| Uncertain external effect | The platform cannot tell whether an external effect occurred | ERL | Reconcile the canonical effect identity before any retry; compensate only under its own authorized contract | Uncertainty record and reconciliation result | Wait or stop while the effect is unknown | Blind retry or a new identity that avoids deduplication |
+| Unavailable permitted capability | An allowed capability cannot be bound | Tool and capability owners | Defer, or use an independently permitted alternative | Capability reference and denial or deferral reason | Stop or wait inside the autonomy envelope | Import or activate an unqualified implementation |
+| Exhausted budget | Time, token, cost, attempt, depth, or capacity budget is spent | Execution | Checkpoint and record an explicit disposition | Budget ledger and remaining-zero cause | Stop; do not continue the goal | Raise the budget or reset counters through delegation |
+| Stalled workflow | Repeated attempts show no change in verified progress | Execution / diagnostics / Cognition | Bounded strategy change, or stop | Attempt history and progress projection | Stop when the bounded alternatives are exhausted | Infinite identical retries or endless replanning |
+| Provider throttling | Provider quota or rate signal | Routing / capacity | Back off through existing quota and backpressure controls | Quota signal and delay decision | Wait until the quota window or stop at the deadline | Unbounded retry that amplifies load |
+| Workload overload | Admission or queue pressure exceeds the qualified envelope | Capacity / Execution | Backpressure, controlled degradation, or rejection of new work | Pressure signal and shed or delay decision | Refuse new admission rather than collapse admitted work | Bypass admission to keep throughput |
+| Poisoned experience | Retrieved experience fails validation, freshness, or scope checks | Memory / AHI | Quarantine the record and continue without it | Experience identity and quarantine reason | Ignore the record | Let it authorize an action, cross a tenant boundary, or contaminate held-out benchmarks |
+| Tenant isolation attempt | A reference, message, retrieval, or tool call names another tenant or a conflicting caller tenant | Security / Governance | Deny the reference | Principal, tenant, and denied reference | Stop that path | Accept a caller-supplied tenant override |
 
-**Exit:** fault-injected goals recover when an authorized feasible path exists; true blockers remain explicit. This is the critical behavioral uplift, not an unlimited retry loop.
+Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-03, II-AC-07, II-AC-09, II-AC-10.
 
-### W7 — Adaptive & Experience Intelligence (6)
+### II-OPR-07 — Evolution and Compatibility
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W7-01 | Feed verified outcomes into AHI | AHI / evidence | Scoped canonical signals and outcome references |
-| II-W7-02 | Identify successful strategy patterns | AHI / Self-Healing | Validated patterns and conditions, no competing store |
-| II-W7-03 | Experience reuse in future executions | Memory / Cognition | Relevant retrieval with freshness, provenance and isolation |
-| II-W7-04 | Model/tool optimization recommendations | AHI / routing / tools | Measurable recommendation quality and cost/benefit |
-| II-W7-05 | Durable governance of adaptation decisions | AHI / Governance | Approval, proposal, version and rollback survive restart in qualified scope |
-| II-W7-06 | Controlled experiments, promotion and rollback | AHI / Experimentation | Shadow/canary evaluation, reject unauthorized promotion, rollback proven |
+Consumer contracts are versioned. Breaking changes are explicit. Required controls: backward compatibility within a declared contract version; a behavioral regression suite; consumer-compatibility qualification; controlled experiments; scoped experience reuse; canary or shadow where the existing experimentation owner already provides it; rollback; a measured quality and performance impact; and recertification of affected domains.
 
-**Exit:** evidence-backed improvement on new comparable goals. No silent production profile mutation.
+Use EVOL-X, ENT-AUDIT-X, Adaptive Harness Intelligence, COMPAT-X, and independent certification only inside their real scopes. Do not change global qualifications and do not extend certificate authority. Experience or configuration learned for one tenant or product must not affect another tenant or product unless an existing policy explicitly allows that scope. Held-out benchmark tasks are not a training or experience source.
 
-### W8 — Enterprise Scale & Product Integration (8)
+Implementation and qualification mapping: [master roadmap §8](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#8-traceability). Program acceptance: II-AC-08, II-AC-09, II-AC-10, II-AC-11, II-AC-12, II-AC-13, II-AC-14.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W8-01 | Resolve process-local parallelism limitations | Capacity / Execution | Declared distribution topology and real bounded parallelism proof |
-| II-W8-02 | Distributed budget enforcement | Execution / capacity | Aggregate accounting across workers, failure and cancellation |
-| II-W8-03 | Recovery after process loss | Persistence / ERL | Restart, duplicate delivery, claim loss, no duplicate external effects |
-| II-W8-04 | Tenant isolation in cooperation | Security / Governance / context | Cross-tenant negative tests across all new paths |
-| II-W8-05 | Adversarial and security qualification | Security / domain owners | Injection, forged evidence, unsafe tools, sandbox and authorization failures |
-| II-W8-06 | Autonomous Work integration | AW / Execution | Durable goals, dispatch, recovery and resume via canonical services |
-| II-W8-07 | SFX and SEF consumer contract | Platform / SFX / SEF owners | Stable neutral contracts, reference adopter proof; no product implementation dependency |
-| II-W8-08 | ARCH-FREEZE impact and regression | EVOL-X / ENT-AUDIT-X / qualification | Exact-SHA affected-domain recertification and preserved invariants |
+## 10. Canonical roadmap pointer
 
-**Exit:** same intelligent behavior in declared enterprise scope with durability, isolation and stable consumer interface. Full commercial Virtual Workforce and unrestricted live infrastructure are not required.
+<a id="10-implementation-roadmap-w0w9"></a>
 
-### W9 — Final Harness Intelligence Certification (8)
+The only canonical work breakdown is [`governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md`](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md). This architecture does not keep a second editable catalogue of work packages. Revision 1.0 carried the 69-package catalogue so the decision package stayed in one file. Revision 1.1 keeps every original package identifier and acceptance requirement in the master roadmap and points here.
 
-| ID | Work package | Owner / dependency | Acceptance |
-|---|---|---|---|
-| II-W9-01 | Final behavioral benchmark | Qualification | Held-out repeatable trials against locked criteria |
-| II-W9-02 | Comparison with W1 baseline | Evaluation | Matched model/tool/budget comparison and uncertainty reported |
-| II-W9-03 | Multi-domain qualification | Domain owners / certifier | All mandatory reference families and failure cases covered |
-| II-W9-04 | Cost and latency verification | Evaluation / observability | Cost/time per verified goal, no hidden intervention or uncounted retries |
-| II-W9-05 | Independent architecture audit | Separate qualified reviewer | Exact candidate SHA, no duplicate owners or boundary regression |
-| II-W9-06 | Enterprise delta certification | Existing certification authority | Required affected FRZ/EVOL/ENT/IIAC evidence, no false global promotion |
-| II-W9-07 | Documentation and evidence publication | Program owner / authorized publisher | Immutable evidence and canonical links; authorized publication |
-| II-W9-08 | Consumer gate opening | Operator / authorized certifier | All mandatory acceptance rows met and recorded at exact SHA |
+Program-level acceptance stays in §12. Behavioral benchmark design stays in §11. Detailed wave gates, package dependencies, and qualification procedure stay in the master roadmap. Mutable execution status stays in the [delivery register](../plan/INTEGRAX_INTELLIGENCE.md). This chapter does not record how far implementation has gone, and it does not authorize implementation.
 
-**Exit:** scoped independent acceptance, zero unresolved mandatory critical findings, authorized consumer adoption.
+Architecturally, W0 establishes and formally adopts the documentation and dependency obligations under separate authority; this candidate itself closes nothing. W0 acceptance uses documentation evidence and does not depend on W1. W1 inventories what already exists and locks method before judged implementation. W2 is the first vertical slice on the real canonical runtime and does not depend on capabilities that first appear in W3–W8. Later waves add planning, collaboration, tools and resources, recovery and verification, adaptation, enterprise scale, and independent qualification in the order the roadmap specifies.
+
 
 ## 11. Behavioral benchmark
 
@@ -866,7 +843,7 @@ These are qualification workloads, not six commercial applications. Use existing
 
 ### 11.3 Proposed initial KPI thresholds
 
-The numeric targets below preserve the original strategic proposal. They are **not measured results or approved acceptance thresholds**. Calibrate them against W1 evidence, define denominators and lock the resulting acceptance protocol before final qualification. Safety and authorization gates are hard pass/fail requirements on the specified qualification suite, not a claim of zero risk in all possible production use.
+The numeric targets below preserve the original strategic proposal. They are **not measured results, not approved acceptance thresholds, and not production SLO numbers**. II-OPR-03 leaves envelope, units, denominators, minimum sample size, and acceptance thresholds to W1. Thresholds are locked before judged implementation and are not retuned after a failure without a formal contract change and requalification. Calibrate them against W1 evidence, define denominators and lock the resulting acceptance protocol before final qualification. Safety and authorization gates are hard pass/fail requirements on the specified qualification suite, not a claim of zero risk in all possible production use.
 
 | KPI | Definition / denominator | Proposed initial target |
 |---|---|---:|
@@ -900,16 +877,16 @@ Additional tracked indicators: collaboration efficiency, context token usage, to
 
 ## 12. Gates and definition of done
 
-Six gates are proposed. They are distinct from ARCH-FREEZE, G2, FCS, M3, IIAC activation or existing scenario admission. Existing governance must approve their registration, ownership and precise status vocabulary. The entry gate is a predecessor of new implementation, not a new requirement to close the original ARCH-FREEZE baseline.
+Six program gates are named here. They are distinct from ARCH-FREEZE, G2, FCS, M3, IIAC activation, and existing scenario admission. None of them is open. Existing governance must approve registration, ownership, and status vocabulary before any gate is used. GATE-II-ENTRY is a predecessor of executable implementation. It is not a new requirement to close the original ARCH-FREEZE baseline, and this candidate does not claim that baseline is closed. Operational entry checks, qualification evidence, and the closure order that keeps II-W9-08 from depending on itself are normative in the master roadmap.
 
-| Gate | Required state | Meaning |
-|---|---|---|
-| `GATE-II-ENTRY` | ARCH-FREEZE and required Enterprise Campaign scope accepted; exact baseline and authority recorded | Start executable Intelligence implementation/qualification within approved scope. Pre-freeze W0 proposals require their own authority. |
-| `GATE-II-ARCH` | W0 and W1 complete; owners, gaps, contract and benchmark locked | Architecture and implementation eligibility, not capability certification |
-| `GATE-II-CORE` | W2–W4 qualified | Goal execution, cognition and team collaboration integrated |
-| `GATE-II-ADAPTIVE` | W5–W7 qualified | Tool/context/resource, recovery, verification and experience behaviors proven |
-| `GATE-II-ENTERPRISE` | W8 qualified | Declared scale, durability, tenant isolation, security and consumer boundary |
-| `GATE-INTELLIGENCE-CONSUME` | W9 and all mandatory acceptance rows independently certified at exact SHA | Scoped platform capability ready for authorized product adoption; not unrestricted production admission |
+| Gate | Architectural purpose (operational conditions: master roadmap §5) |
+|---|---|
+| `GATE-II-ENTRY` | Eligibility for executable Intelligence baseline work within approved authority, not a freeze predecessor. |
+| `GATE-II-ARCH` | Architecture and implementation eligibility, not capability certification. |
+| `GATE-II-CORE` | Integrated goal execution, cognition and team collaboration. |
+| `GATE-II-ADAPTIVE` | Qualified tool/context/resource, recovery, verification and experience behaviors. |
+| `GATE-II-ENTERPRISE` | Declared scale, durability, tenant isolation, security and consumer boundary. |
+| `GATE-INTELLIGENCE-CONSUME` | Scoped consumer readiness, not unrestricted production admission. The master roadmap §5.1 defines the decision/record/closure sequence; the gate record is an output, not its own prerequisite. |
 
 ### 12.1 Fourteen final acceptance criteria
 
@@ -928,7 +905,7 @@ Six gates are proposed. They are distinct from ARCH-FREEZE, G2, FCS, M3, IIAC ac
 | II-AC-11 | Benchmark | Locked behavioral and quality/cost targets met with raw reproducible evidence |
 | II-AC-12 | Adoption | Stable SFX/SEF consumer contract and reference adoption proof |
 | II-AC-13 | Documentation | Main canonical documents, dependency records, architecture and plans consistent |
-| II-AC-14 | Certification | Independent scoped exact-SHA certification and approved consumer gate record |
+| II-AC-14 | Certification | Independent scoped exact-SHA certification and approved consumer gate record. The master roadmap §5.1 defines their order; the gate record is not a precondition of itself. |
 
 ### 12.2 Evidence and closure rules
 
@@ -940,41 +917,31 @@ Close the program against a finite approved consumer-readiness contract. Do not 
 
 ### 13.1 Proposed strategic dependency graph
 
-```mermaid
-flowchart TD
-    AF[ARCH-FREEZE accepted] --> EF[Enterprise Foundation acceptance]
-    EQ[Required Enterprise Campaign closure] --> EF
-    W0[Authorized Intelligence architecture proposals] --> II[INTELLIGENCE-X W0-W9]
-    EF --> II
-    II --> G[GATE-INTELLIGENCE-CONSUME]
-    G --> SFX[Scenario Factory implementation SFX-P5+]
-    G --> SEFA[SEF-X adoption of shared intelligence]
-    SEF[SEF-X engineering-specific prerequisites] --> SEFA
-    SEFA --> SG[GATE-SEF-CONSUME]
-    SG --> SFXA[SFX agentic engineering modes and full closure]
-    SFX --> SFXA
-    G --> P[Future domain applications / Autonomous Workforce]
-```
+The strategic dependency diagram from revision 1.0 is preserved in the master roadmap. It is a roadmap diagram, so it is not repeated here. The prose below remains the architectural reading of product adoption.
 
 This is a proposed strategic graph, not the current approved DAG. Existing detailed conditions remain mandatory unless formally amended. SEF-X non-conflicting preparatory or engineering-specific tasks may proceed under their existing authorization and technical dependencies; the full SEF product must not become a prerequisite of Intelligence qualification. The graph deliberately separates SEF-specific engineering work from adoption of Intelligence to avoid cycles.
 
-The current roadmap places SFX-P5+ after ARCH-FREEZE and `GATE-SFX-ENTRY`. Amend that gate to include scoped `GATE-INTELLIGENCE-CONSUME` after operator approval. Preserve existing SFX-P0..P4 documentation, design and proposal-only exceptions. Do not delete previous approvals or reclassify already valid research. Existing `GATE-SEF-CONSUME` and `GATE-SFX-FULL` remain separate. Existing SFX product closure does not admit generated scenarios to production.
+The current SFX roadmap places SFX-P5+ after ARCH-FREEZE and `GATE-SFX-ENTRY`. The agreed strategic direction requires a later authorized amendment to add scoped `GATE-INTELLIGENCE-CONSUME` after formal adoption of that dependency. This candidate does not edit the SFX plan. Preserve existing SFX-P0..P4 documentation, design and proposal-only exceptions. Do not delete previous approvals or reclassify already valid research. Existing `GATE-SEF-CONSUME` and `GATE-SFX-FULL` remain separate. Existing SFX product closure does not admit generated scenarios to production.
 
-**Important roadmap consistency rule:** INTELLIGENCE-X is proposed as a mandatory *post-freeze* stage. The canonical roadmap's general language about all mandatory stages preceding ARCH-FREEZE and SCENARIO-GATE must be amended explicitly to avoid a dependency cycle. Preserve the current ARCH-FREEZE baseline scope and historical certificates. The Operator must decide whether general SCENARIO-READINESS-X/SCENARIO-GATE admission also requires the new gate, or whether the requirement applies to specific Intelligence-dependent consumers. This document mandates the proposed SFX dependency but does not silently expand the general scenario gate. Preserve OD-SEF-02 Option 3 except for explicitly approved technical dependency changes; analyze the current R2 SFX/SEF amendment records before editing approved plans or digests.
+**Important roadmap consistency rule:** INTELLIGENCE-X is proposed as a mandatory *post-freeze* stage. The canonical roadmap's general language about all mandatory stages preceding ARCH-FREEZE and SCENARIO-GATE must be amended explicitly to avoid a dependency cycle. Preserve the current ARCH-FREEZE baseline scope and historical certificates. The strategic direction accepted in chat is scoped consumer adoption, not expansion of general SCENARIO-READINESS-X/SCENARIO-GATE. Formal repository ratification remains pending; W0-06 must explicitly exclude INTELLIGENCE-X from both general mandatory-stage predecessor quantifiers and reconcile all consumer entry references. Preserve OD-SEF-02 Option 3 except for explicitly approved technical dependency changes; analyze the current R2 SFX/SEF amendment records before editing approved plans or digests.
 
 ### 13.2 Consumer responsibilities
 
-| Consumer | Consumes Intelligence | Retains product/domain ownership |
+| Consumer | Uses shared Intelligence for | Keeps |
 |---|---|---|
-| Scenario Factory | Goal discovery, decomposition, agent/tool selection, collaboration, adaptive verification and recovery | Scenario specification, blueprint/profile semantics, studio/UX, engineering intake, scenario-specific business acceptance and admission |
-| SEF-X | Shared goal execution, team formation, planning, recovery and evidence-based verification | Engineering workspace, code change lifecycle, engineering-specific testing, evidence, integration/publication controls |
-| CodeCraft | Shared planning and selection where appropriate | Generated code synthesis/execution, qualified sandbox and artifact lifecycle |
-| Autonomous Work | Shared cognition, recovery and verification within work execution | Durable responsibility, Worker goal/cadence, wake-up, dispatch, recovery episode and continuity lifecycle |
-| Domain agents / applications | Shared execution intelligence, tools, context and collaboration | Domain logic, business policies, permissions, UX, acceptance and deployment choices |
+| Scenario Factory | Goal interpretation, intelligent discovery, decomposition, capability selection, collaboration, dynamic workflow composition, strategy revision, recovery, and outcome verification | Business scenario semantics, business acceptance, scenario specification, blueprint and package semantics, product lifecycle, Studio and UX, engineering handoff, and product-specific evaluation |
+| SEF-X | Shared goal execution, team formation, planning, recovery and evidence-based verification | Engineering-specific authority, engineering workspace, code-change lifecycle, engineering-specific testing, evidence, integration/publication controls; HO-2 and CON-N-01 remain binding until authorized amendment |
+| CodeCraft | Shared planning and selection where the engineering goal needs them | Generated code synthesis/execution, qualified engineering tools and sandbox boundaries, artifact lifecycle |
+| Autonomous Work | Shared cognition, recovery, and verification inside admitted work | Durable responsibility, Worker goal/cadence, wake-up, dispatch, recovery episode and continuity lifecycle |
+| Domain agents and future applications | Shared execution intelligence, tools, context and collaboration | Domain logic, business policies, permissions, UX, acceptance and deployment choices |
+
+Product domain semantics stay in the product. No private general harness is added in Scenario Factory, SEF-X, or a future product. Shared goal-realization semantics do not replace the legal execution entry point.
 
 Use a reference adopter (not a full product build) to prove the shared consumer contract in W2 and W8. The adoption interface should expose accepted goal and domain criteria, profile/capability bindings, canonical execution invocation, progress/evidence access, and authorized cancellation/resume where applicable. Exact public interfaces must be derived from existing contracts; no parallel Intelligence API may bypass the legal Execution boundary.
 
 ## 14. Canonical documentation integration
+
+**Future authorized W0 obligation.** This chapter records the documentation integration that a later authorized batch must perform. This candidate does not perform it, does not edit the documents listed below, and does not start the historical chapter-14 adoption. II-W0-RATIFICATION-01 is not authority for that adoption. T-IGX-079-A remains the ticket context and is not executed by this candidate.
 
 The architecture documentation work is mandatory, not a final cosmetic exercise. The new capability must become discoverable from the platform architecture and from relevant domain documents without repeating its semantic definitions in multiple locations.
 
@@ -983,13 +950,13 @@ The architecture documentation work is mandatory, not a final cosmetic exercise.
 | Path | Role |
 |---|---|
 | `docs/project/capabilities/architecture/INTEGRAX_INTELLIGENCE.md` | This architecture hub: thesis, ownership, behavioral contract and source-derived audit rationale |
-| `docs/project/capabilities/plan/INTEGRAX_INTELLIGENCE.md` | Proposed short plan/index linking to one execution SSOT |
-| `governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md` | Proposed single detailed WBS and executable implementation roadmap once ratified |
+| `docs/project/capabilities/plan/INTEGRAX_INTELLIGENCE.md` | Mutable execution register for implementation, qualification, publication, and formal closure. It does not own the work breakdown. |
+| `governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md` | Only canonical work breakdown. It is normative after ratification. This candidate does not ratify it. |
 | `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_INDEX.md` | Proposed evidence/dossier index |
 | `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_ACCEPTANCE_MATRIX.md` | Proposed canonical acceptance/evidence mapping |
 | `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_OWNERSHIP_MATRIX.md` | Proposed concern-level ownership and reuse mapping |
 
-This portable v1.0 document intentionally contains architecture, audit, WBS and qualification design together to preserve the original decision package. During authorized repository adoption, keep it as the architecture hub, or move the detailed execution WBS into the designated master-plan SSOT and replace the duplicate operational table with a link. Preserve all original 69 package IDs and acceptance requirements in the approved master plan. Do not maintain two competing editable WBSs. Keep audit history pinned and distinguish it from mutable current status. The new paths are proposals; verify the current repository convention and governance before creating files.
+Revision 1.0 contained architecture, audit, the work breakdown, and qualification design together. Revision 1.1 keeps this file as the architecture hub and places the only canonical work breakdown in the master roadmap, including every original package identifier and acceptance requirement. There is no second editable work breakdown in this file. Keep audit history pinned and distinguish it from mutable current status. The new paths are proposals; verify the current repository convention and governance before creating files.
 
 ### 14.2 Main architecture documents — required disposition
 
@@ -1089,13 +1056,13 @@ Delivery should use existing DevOS/governance, independent reviews and authorize
 
 ### 15.1 Required W1 execution-ready handoff
 
-For each of the 69 work packages, record canonical requirement IDs, primary owner, dependencies, exact baseline and affected mechanisms, reuse disposition, concrete scope, proposed write-set, existing test/qualification commands, new negative tests where required, acceptance evidence, risk/impact class, approval route, integration branch and rollback plan. Batch tightly related work under valid governance rather than creating unnecessary tickets. Preserve the existing enterprise roadmap and approved authority records. No estimates of elapsed implementation time or total token cost are asserted until W1 establishes actual gaps and baseline performance.
+For W0, use its independent documentation acceptance contract. W1 itself uses the entry and evidence contract in the master roadmap, not its own future outputs. For each of the 69 work packages, record canonical requirement IDs, primary owner, dependencies, exact baseline and affected mechanisms, reuse disposition, concrete scope, proposed write-set, existing test/qualification commands, new negative tests where required, acceptance evidence, risk/impact class, approval route, integration branch and rollback plan. Batch tightly related work under valid governance rather than creating unnecessary tickets. Preserve the existing enterprise roadmap and approved authority records. No estimates of elapsed implementation time or total token cost are asserted until W1 establishes actual gaps and baseline performance.
 
 ## 16. Proposed operator decision
 
-**Decision ID:** `OD-INTELLIGENCE-01` (proposed)
+**Decision ID:** `OD-INTELLIGENCE-01` (proposed, not signed)
 
-**Status:** PROPOSED — awaiting Operator ratification and canonical registration.
+**Status:** PROPOSED — awaiting Operator ratification and canonical registration. Revision 1.1 does not sign this decision, does not add an `Approved:` line, and does not treat II-W0-RATIFICATION-01 as authority.
 
 Integrax Intelligence is established, subject to ratification, as a strategic horizontal platform capability integrating the existing Enterprise Foundation mechanisms into intelligent, autonomous, collaborative, adaptive and evidence-verified goal execution. The strategic architecture consists of Enterprise Foundation, Integrax Intelligence, and Product & Application Ecosystem.
 
@@ -1103,7 +1070,7 @@ Integrax Intelligence is not a business application, second Execution Engine, co
 
 The program shall inventory existing capabilities, resolve documentation/code drift, qualify a behavioral baseline, deliver an end-to-end vertical slice, extend and tune planning, reasoning, team collaboration, tool/context/resource selection, recovery, verification, adaptation and experience reuse, demonstrate enterprise-safe operation and complete independent qualification. It shall update the main architecture documents, domain cross-links and canonical roadmap through the existing governance process.
 
-Successful completion of the mandatory scoped program and `GATE-INTELLIGENCE-CONSUME` is proposed as an additional entry condition for SFX-P5+; preserve all other required gates and product-specific production admission. The general scenario gate and SEF dependency changes require explicit reconciliation and ratification.
+Successful completion of the mandatory scoped program and `GATE-INTELLIGENCE-CONSUME` is proposed as an additional entry condition for SFX-P5+; preserve all other required gates and product-specific production admission. The general scenario gate predecessor set is to remain unchanged; SEF shared-intelligence dependency and the global roadmap exceptions require explicit reconciliation and ratification.
 
 This decision defines a proposed strategic direction only. It does not authorize implementation, modify frozen contracts, promote FRZ, grant IIAC activation, close ARCH-FREEZE/Enterprise Campaign or establish any new certificate. Register approved tickets, plans and digests before implementation. Apply existing EVOL-X/ENT-AUDIT-X change controls and independent certification.
 
@@ -1164,6 +1131,8 @@ Candidate tests identified by tree inspection for W1 replay include `tests/accep
 
 ---
 
-**End of architecture proposal — Integrax Intelligence v1.0.**
+**End of architecture candidate — Integrax Intelligence revision 1.1.**
 
-**Next authorized action:** ratify the strategic direction and register a documentation-only adoption scope. Re-pin and perform W1 executable qualification after accepted Enterprise Foundation. Do not restart or expand active Enterprise Campaign implementation on the basis of this document.
+**Status of this file:** FINAL DRAFT — PENDING INDEPENDENT REVIEW AND FORMAL RATIFICATION.
+
+This candidate is ready for architecture review. It does not ratify the program, does not qualify behavior, and does not authorize implementation. The next eligible action is independent review of this candidate together with the master roadmap and the execution register. Executable W1 still requires GATE-II-ENTRY. Do not restart or expand active Enterprise Campaign implementation on the basis of this document.
