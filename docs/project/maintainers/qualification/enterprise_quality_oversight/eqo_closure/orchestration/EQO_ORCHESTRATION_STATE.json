@@ -347,5 +347,71 @@
       "c01_c25_fully_met": false,
       "pushed_or_merged": false
     }
+  },
+  "reconciliation_2026_11_27_w21d": {
+    "basis": "OP-EC-01 OD-W2-DOCS=A (docs-only batches in isolated worktrees, no push); Wave 2.1-D additive reconciliation; historical records preserved",
+    "observed_at": "2026-11-27",
+    "current_facts": {
+      "development_head": "development == origin/development == 3190a4487",
+      "wave2_first_parent_merges_since_32005c212": [
+        "79f52a89f (W2-B1 + W2-B3 docs)",
+        "a3c6a9d43 (W2-B2 docs, EDER E-01..E-04, EQO re-baseline)",
+        "f52eb70e8 (OD-037-GUARD + EDER-F-0091/0236 guard tests)",
+        "b7002e24f (SFX pre-freeze ADR / WT-12 + T-IGX-RDY-A scaffold)",
+        "plus follow-up commits 7d2cc3d28 (ticket Lifecycle formatting) and 3190a4487 (INTELLIGENCE-X R2 docs, PROPOSED, not Wave 2 scope)"
+      ],
+      "commit_counts_origin_development_all_vs_first_parent": {
+        "since_646e63953": "20 / 11",
+        "since_32005c212": "12 / 6",
+        "since_aabd3925c": "14 / 8"
+      },
+      "pr_680": "MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged.",
+      "pr_715": "8e146e21c (PR #715 af-dev-train-sync) is an ancestor of development; merging it is not a violation (AD-AF-DEVTRAIN D-1, MEP-AF2_v2.1 Appendix V6, signed 2026-11-26: development is the train). Historical.",
+      "f1_view_commit": "321957488 (Co-authored-by Cursor trailer) is already in pushed development history; under OP-EC-01 OD-REWRITE=A published history is immutable; 'strip before any push' is moot and historical.",
+      "retired_orphan_v5_evidence_sha": "9f40f851f is still NOT an ancestor of development (unchanged).",
+      "ci": "CI at 7d2cc3d28 is red; 0 new regressions from Wave 2; downstream jobs never ran. See orchestration/EQO_W21_CI_DISPOSITION.md."
+    },
+    "stale_fields": [
+      {
+        "path_or_line": "orchestration/EQO_ORCHESTRATION_STATE.json f1_bookkeeping.false_blocker_corrections[0]",
+        "recorded_value": "PR #680 (65ef1f196) ... not ancestor of development @ a0598ba3",
+        "current_fact": "MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged."
+      },
+      {
+        "path_or_line": "orchestration/EQO_ORCHESTRATION_STATE.json f1_view_commit_note / commit_trailer_note",
+        "recorded_value": "strip before any push",
+        "current_fact": "321957488 (Co-authored-by Cursor trailer) is already in pushed development history; under OP-EC-01 OD-REWRITE=A published history is immutable; 'strip before any push' is moot and historical."
+      },
+      {
+        "path_or_line": "orchestration/EQO_ORCHESTRATION_STATE.json operator_merge_rule.development_pin",
+        "recorded_value": "a0598ba3e4f4...",
+        "current_fact": "current development pin is 3190a4487"
+      },
+      {
+        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 33 (pre-banner line numbering)",
+        "recorded_value": "merge 8e146e21 into development forbidden",
+        "current_fact": "8e146e21c (PR #715 af-dev-train-sync) is an ancestor of development; merging it is not a violation (AD-AF-DEVTRAIN D-1, MEP-AF2_v2.1 Appendix V6, signed 2026-11-26: development is the train). Historical."
+      },
+      {
+        "path_or_line": "orchestration/EQO_ROADMAP_REMAINING.md line 3 (pre-banner line numbering)",
+        "recorded_value": "development pin dbaa771ac",
+        "current_fact": "historical; current pin is 3190a4487"
+      },
+      {
+        "path_or_line": "EQO_CURRENT_STATE_INVENTORY.md lines 3-12 (pre-banner line numbering)",
+        "recorded_value": "2026-11-20 snapshot: 164 commits ahead; train only; open PR #680 draft",
+        "current_fact": "superseded by AD-AF-DEVTRAIN D-1 (no separate train); MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged."
+      },
+      {
+        "path_or_line": "EQO_MASTER_CLOSURE_MATRIX.md C16/C21 (lines ~20, 25 and later copies) (pre-banner line numbering)",
+        "recorded_value": "#680 on rw-train, not on development @ a0598ba3",
+        "current_fact": "MERGED 2026-11-21 into arch-freeze/rw-train as 65ef1f196; 65ef1f196 is now an ancestor of development. C16/C21 statuses unchanged."
+      }
+    ],
+    "reconciliation_non_claims": [
+      "no G2/R/FCS/M3",
+      "not closed",
+      "CI red"
+    ]
   }
 }
