@@ -42,7 +42,7 @@ The SCOPE, T-AF2-RW-PLAN-AUDIT and T-AF2-RED-CLASSES rows were refreshed at `646
 | T-AF2-RW-GATES | **ABSENT** / **PARTIAL** | KR gates open |
 | T-AF2-RW-TYP | **ABSENT** | No closure @ pin |
 | T-AF2-DEPS-BATCH | **ABSENT** | `T-IGX-051-H` plan only |
-| T-AF2-RW-PLAN-AUDIT | **PARTIAL** | RM-03 structural PASS @ `ebe45c269` only (`RW_PLAN_AUDIT_STATUS.md`); checker: `RW_PLAN_AUDIT=NOT_PERFORMED`. A fresh independent audit is AF-CLOSE step GA.2 |
+| T-AF2-RW-PLAN-AUDIT | **PARTIAL** | Independent audit GA.2 round 1 @ `aabd3925c`: `RW_PLAN_AUDIT_FAIL`. The older RM-03 PASS @ `ebe45c269` was structural only (`RW_PLAN_AUDIT_STATUS.md`). GA.2R (`T-IGX-078-B`) repaired the plan; round 2 is not performed; checker: `RW_PLAN_AUDIT=NOT_PERFORMED` |
 | T-AF2-RED-CLASSES | **PARTIAL** - red-first card **DECIDED** (that card only) | Register and lint `b3e89fd69`; `continuation/RED_FIRST_V5_RED_CLASSES_DECISION.md` (`a61eeaedf`); GAP FIND-AF2-16 still OPEN |
 | G2 | **ABSENT** | `ARCH_FREEZE_SHA_LADDER.md` L26 NOT SET |
 | R | **ABSENT** | LAD L27 NOT SET |
@@ -169,8 +169,8 @@ Row count: 149
 | T-AF2-REQUAL-HIST-PASS | UNK | - | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | HIST, CMP, TEN, EVOL, FRZ-11, AUD |
 | T-AF2-RM499-ENTRY | UNK | T-IGX-050-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | - |
 | T-AF2-RW-GATES | UNK | T-IGX-051-F | NONE | no in-repo closure cite @dev 51edb2a7 (P-R0-A) | N | OBS |
-| T-AF2-RW-PLAN | VALIDATED | T-IGX-073-D | ebe45c269 | T-IGX-073-D L5; T-AF2-RW-PLAN-AUDIT AR-12-07 PASS @ ebe45c269 (`continuation/RW_PLAN_AUDIT_STATUS.md`); not CLOSED | N | all CODE_FIX rows |
-| T-AF2-RW-PLAN-AUDIT | PARTIAL | T-IGX-050-N | ebe45c269 | RM-03 structural PASS @ ebe45c269 only (`continuation/RW_PLAN_AUDIT_STATUS.md`); checker at `646e63953`: RW_PLAN_AUDIT=NOT_PERFORMED; a fresh audit is AF-CLOSE GA.2 | N | - |
+| T-AF2-RW-PLAN | VALIDATED | T-IGX-073-D | ebe45c269 | VALIDATED here means the mechanical structure check only; it is not an independent audit result and the node is not CLOSED. Independent audit GA.2 round 1 @ `aabd3925c` failed the plan; GA.2R (`T-IGX-078-B`) regenerated it (`RW_PLAN.md`); round 2 is not performed; `RED_FIRST_EVIDENCE=INCOMPLETE` (`continuation/RED_FIRST_GA2R_RESULT.md`) | N | all CODE_FIX rows |
+| T-AF2-RW-PLAN-AUDIT | PARTIAL | T-IGX-050-N | ebe45c269 | No independent PASS exists. GA.2 round 1 @ `aabd3925c`: `RW_PLAN_AUDIT_FAIL`; round 2 is not performed. The AR-12-07 RM-03 PASS @ `ebe45c269` covered structure only (`continuation/RW_PLAN_AUDIT_STATUS.md`); checker: `RW_PLAN_AUDIT=NOT_PERFORMED` | N | - |
 | T-AF2-RW-RECOVERY | PARTIAL | T-IGX-051-E | NONE | RC0 L34-42; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-E=plan_approved | N | REL |
 | T-AF2-RW-RUNTIME | REQ | T-IGX-051-D | NONE | plan section 1.4; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-D=plan_approved | Y | CTR, REL |
 | T-AF2-RW-SUPPLY | REQ | T-IGX-051-B/N | 711ee4a11 | CHECKPOINT.md L120-124; CHECKPOINT header stale (e69e1ff58); P-R0-A annex; @dev 51edb2a7 / train be0ce70d (P-R0-A); T-IGX-051-B=plan_approved | Y | PLG, SEC |

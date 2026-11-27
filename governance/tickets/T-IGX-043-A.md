@@ -66,3 +66,14 @@ Deviations and residuals recorded by the implementer; the plan digest is unchang
 - R-5 B9 applied: `scenario_runtime_baseline.py` passes `disable_human_decision_persistence=True` and the task-memory acknowledgement for STRICT (a STRICT path through it exists: `test_diag_foundation_5_destructive_proof.py` failed without it).
 - R-6 Product call sites of `build_harness_host_runtime` edited with `disable_human_decision_persistence=True` (hosts without HITL tools; the harness refuses it in STRICT if the HITL bundle is enabled): governed_contractor, research, legal, dispute_sim, lab, local_workspace (two sites), `intergrax/harness/app.py`, and the product scaffold template. Not edited (LAB only): attestation_demo, intergrax_assistant, poc_template, the lab scaffold template.
 - D-3 Verification record (train head `475e34cde` merged). Red-first at a detached checkout of `37fd3e984`: `test_fc1_agent_router_posture_and_fallback.py` 6 of 7 red (NT-FC1-11 control green), `test_fc1_host_task_routing_posture.py` NT-FC1-01 and NT-FC1-04 red (NT-FC1-02 and the NT-FC1-03 control green; NT-FC1-02 is unattainable at the base as in R-4), the two AST gates red (NT-FC1-12, NT-BND-05-1), the persistence-posture and harness-wiring files fail at collection (they import the new typed errors and keywords). On the branch all six files pass (33 tests). The sweep proof R5 (5 commands, 104 files, `--continue-on-collection-errors` because `fastmcp`, `celery` and `psycopg` are not installed) was run once after Parts A and B; every red it showed also exists at the base except the 15 tests of the two R-8 files, which are fixed in `a494cbbe2` (13 STRICT `NexusLoop` sites plus two STRICT environment factory calls now pass the acknowledgements and context doubles). R1/R2, R3 and R4 slices: every red also exists at the base (scaffold canonical surface, `agent_registry_storage`, finalization hook, harness_01 and EBH-4 import classification, npsc1 host surface). The R7 L1 scripts `check_agent_registry_bypass.py` and `check_integration_vendor_imports.py` exit 1 identically at the base. TYP-05: no file under `intergrax/contracts` changed; detector output before and after is identical.
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-EXE-02 | NT-EXE-02-1, NT-EXE-02-2 |
+| FRZ-PLG-05 | NT-PLG-05-1 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

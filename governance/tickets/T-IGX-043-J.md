@@ -54,3 +54,24 @@ TENANT **T-IGX-051-A**, FC-1/FC-3 file overlap without declared merge order, `sc
 ## Lifecycle state
 
 in_progress — part 1 (F01–F04) published @ `2c6d7af1a`; part 2 (E2 + owner batch) open; no ticket closure
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-BND-06 | NT-BND-06-1 |
+| FRZ-OWN-02 | NT-OWN-02-P, NT-OWN-02-1 |
+| FRZ-PLG-01 | NT-PLG-01-P, NT-PLG-01-1 |
+| FRZ-PLG-02 | NT-PLG-02-P, NT-PLG-02-1, NT-PLG-02-2 |
+| FRZ-PLG-06 | NT-PLG-06-P, NT-PLG-06-1 |
+| FRZ-PLG-07 | NT-PLG-07-P, NT-PLG-07-1 |
+| FRZ-PRD-08 | NT-PRD-08-P, NT-PRD-08-1, NT-PRD-08-2 |
+| FRZ-TEN-01 | NT-TEN-01-1, NT-TEN-01-2, NT-WF-A01 |
+
+Planned test files that the write set extracted from this ticket's plan does not contain: `tests/unit/applications/test_wf_tenant_evaluation_fail_closed.py`, `tests/unit/architecture/test_rw_gates_contract_census.py`, `tests/unit/architecture/test_rw_gates_plugin_contracts.py`, `tests/unit/architecture/test_rw_gates_production_only_bypass.py`, `tests/unit/architecture/test_rw_gates_transport_semantics.py`. The plan does not cover them yet.
+
+FIND-AF2 mapping that names this ticket: FIND-AF2-09.
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

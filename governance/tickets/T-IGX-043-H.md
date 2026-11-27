@@ -63,3 +63,16 @@ Recorded after the independent review of PR #654. The plan, its digest and the a
 - Out-of-write-set red tests caused in part by this change, for the known-red register: `tests/acceptance/llm_routing/test_mid_run_budget_routing_e2e.py::test_materialize_runtime_config_wraps_evaluating_adapter` and `tests/acceptance/llm_routing/test_production_metering_routing_e2e.py::test_production_metering_mid_run_budget_swap_with_tracker` (red at the train head already; they also patch Tier-3 private names that moved to `intergrax.runtime.wiring.llm_resolver`).
 - Contracts ratchet by the prescribed scripts (`typ_measure.py`, `measure_typ05.py`) over `intergrax/contracts`, base vs head: Any 138 to 138, object_annot 357 to 357, getattr 11 to 11, type_ignore 0 to 0, TYP-05 lookup tables 5 to 5.
 - The rewritten LKW bootstrap tests are red at the train head in this environment (memory provider admission), so their new assertions that the hosted runner receives the activated composition are not shown green here.
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-BND-05 | NT-BND-05-1, NT-BND-05-2 |
+| FRZ-OWN-03 | NT-OWN-03-1 |
+| FRZ-OWN-05 | NT-OWN-05-1 |
+| FRZ-PRD-05 | NT-PRD-05-1, NT-PRD-05-2 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

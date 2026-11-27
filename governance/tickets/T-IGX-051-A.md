@@ -66,3 +66,17 @@ plan_approved — P-R0-6: approved; product wave **not closed** (see `CHECKPOINT
 ## Implementer session
 
 Implementer session: local_79a111e9-0bfd-458e-9e73-2ce206bf114c
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-TEN-10 | NT-TEN-10-1, NT-TEN-10-2, NT-WF-A07 |
+
+Planned test files that the write set extracted from this ticket's plan does not contain: `tests/unit/applications/test_wf_serving_tenant_fail_closed.py`. The plan does not cover them yet.
+
+FIND-AF2 mapping that names this ticket: FIND-AF2-09.
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

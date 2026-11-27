@@ -97,3 +97,21 @@ Review fixes for PR #670 (review at `23f04252d`; implementer record, no PASS):
 - H-1 (Q-RUN-02 scope): Bedrock and LangChain Ollama no longer fail closed when the adapter built its own client. A call that carries an effective timeout runs on a client built for that call (Bedrock: `boto3.client(config=Config(connect_timeout=, read_timeout=))`; LangChain Ollama: `ChatOllama(client_kwargs={"timeout": ...})`), released after the call through `intergrax/llm_adapters/providers/_per_call_client.py` (new, under the provider glob). Fail closed remains only for an injected client or chat model. The Bedrock InvokeModel body is now read inside the attempt, before the per-call client is closed. Step-0 table above updated.
 - L-1: `_PrimedStream` no longer needs a `type: ignore`. L-2: the fail-closed error is renamed `LLMCallBudgetNotForwardableError` (no transient class-name word), so retry does not repeat it and the default failover policy stops; a test pins both. L-3: the per-call native Ollama client is closed after a buffered call and after a stream ends. L-4: Claude `stream_with_tools` reads the final message from the last opened stream.
 - Observed, not fixed (outside the write set): `tests/qualification/pdc_x/d3/test_d3_f08_langchain_ollama_stream.py::test_error_after_partial_output_is_raised_and_the_call_is_not_reissued` is red at `23f04252d` and at the fix head, green at the train base `5ba8c4928`. The mid-stream typed mapping (Part C) converts the builtin `ConnectionError` raised after partial output into `LLMProviderConnectionError`, and the test expects the builtin type. Orchestrator disposition (2026-11-18): keep the mapping and the test; make the typed errors backward compatible. Done: `LLMProviderTimeoutError` also inherits the builtin `TimeoutError` and `LLMProviderConnectionError` the builtin `ConnectionError` (contract docstring states it); typed fields, message and retry or failover classification are unchanged, no other category gains a builtin base, and `LLMCallBudgetNotForwardableError` is not a `TimeoutError`. The f08 test is green again without being edited.
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-CTR-01 | NT-CTR-01-1, NT-CTR-01-2 |
+| FRZ-CTR-02 | NT-CTR-02-1 |
+| FRZ-CTR-06 | NT-CTR-06-1 |
+
+| Audit row | Campaign A finding | Negative test named in the RW plan |
+|---|---|---|
+| NT-ROW-005 | A4-018 | test_rw_runtime_no_vendor_sdk_outside_providers.py |
+
+FIND-AF2 mapping that names this ticket: FIND-AF2-12.
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

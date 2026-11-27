@@ -38,3 +38,15 @@ See Scope. No Docker, vendor integration or production configuration.
 ## Lifecycle state
 
 plan_approved
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+This ticket owns no row of the RW CODE_FIX inventory.
+
+| Audit row | Campaign A finding | Negative test named in the RW plan |
+|---|---|---|
+| NT-ROW-010 | A2-038 | NT-E05-01 |
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.

@@ -45,3 +45,18 @@ Exact pytest paths and gate script invocations are defined only in the approved 
 ## Lifecycle state
 
 in_progress
+
+## RW traceability (GA.2R)
+
+Traceability only (RW-PLAN-AUDIT finding M7, ticket T-IGX-078-B). This section grants no write authority and changes no scope, plan, plan digest, approval or lifecycle state.
+
+| FRZ row of the RW CODE_FIX inventory | Negative test ids in the RW plan |
+|---|---|
+| FRZ-DEBT-04 | NT-DEBT-04-1, NT-DEBT-04-2 |
+| FRZ-REG-09 | NT-REG-09-1, NT-REG-09-2 |
+
+Planned test files that the write set extracted from this ticket's plan does not contain: `tests/unit/architecture/test_rw_gates_gate_completeness.py`, `tests/unit/architecture/test_rw_gates_partial_inventory.py`. The plan does not cover them yet.
+
+FIND-AF2 mapping that names this ticket: FIND-AF2-13.
+
+Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
