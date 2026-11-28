@@ -39,3 +39,14 @@ Full FC-1 rewrite, **T-IGX-043-M** Part E, **043-J** E2–E4 (D4 BLOCKED), TENAN
 ## Lifecycle state
 
 quality_gate
+## AF-W3-BATCH-12-14 — NT-FC1-26 case 2 qualification (2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | ENT-FC1-WF | AF-W3-BATCH-12-14`. **PRODUCT_DELTA: NONE**.
+
+**Call chain:** `build_harness_host_runtime` → `wire_application_environment(human_decision_store=…)` → `build_application_tool_wiring` → `ToolWiringContext.human_decision_store`.
+
+**Witness:** `test_injected_human_decision_store_reaches_tool_wiring_context` — `assert ctx_store is store` (**GREEN**). `test_acknowledgement_is_refused_when_hitl_tools_are_wired` — **GREEN**. Focused batch incl. harness wiring file: **60 passed** (log sha256 `b641b1d2e2ad5902c6f6752b6a98bbf2f6dfd248537449c52a27761d8904fd8c`).
+
+**FC1 regression batch:** 48 passed, **2 failed** — `test_nexus_loop_finalization_hook_failure.py::{test_after_finalization_hook_failure_emits_runtime_event_and_keeps_success,test_before_finalization_hook_failure_emits_runtime_event_and_fails_task}` (`TaskState.FAILED` vs expected `COMPLETED`; pre-existing; **not** carrier scope). Log sha256 `bb50216ca2d11bd92ceca3f522c027ab86b162bcfae5a2c516bf6914fc4a8423`.
+
+**Residuals:** FRZ-EXE-02 / FRZ-PLG-05 not closed by this witness. Lifecycle **quality_gate** unchanged. No independent PASS.
