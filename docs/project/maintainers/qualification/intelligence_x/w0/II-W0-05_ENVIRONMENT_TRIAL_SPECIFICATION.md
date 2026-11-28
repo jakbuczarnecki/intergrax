@@ -1,6 +1,6 @@
 ﻿# II-W0-05 — execution environment trial specification (document only)
 
-**Source of truth:** [INTELLIGENCE-X Master Roadmap §10 — Execution-environment readiness](../../../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#10-execution-environment-readiness) (protected blob `ce7d248cd43fe2dace182fb6eedf7cdc65b82622`)
+**Source of truth:** [INTELLIGENCE-X Master Roadmap §10 — Execution-environment readiness](../../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md#10-execution-environment-readiness) (protected blob `ce7d248cd43fe2dace182fb6eedf7cdc65b82622`)
 
 **Batch:** II-W0-B-CONSOLIDATED-ACCEPTANCE-01 (corrective materialization of F-W0B-20)
 
