@@ -17,8 +17,8 @@ Use, modification, or distribution without written permission is prohibited.
 | Roadmap revision and path | 1.0 — `governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md` |
 | Actual evidence baseline | Remote `origin/development` preflight baseline ancestor `4abc43faad149cc0ce7291468e07886efcdd1f13`. R3.1 ratification publication `4637c7fa6295a37ad155fbff9d4a9718646c9cf8`. Historical v1.0/R2/R3 candidate and audit provenance preserved in ticket evidence; not rewritten as pre-ratification facts. |
 | Active wave | W0 — Architecture Acceptance (W0-A) |
-| Active batch | II-W0-A-PUBLICATION-01 — corrective integration of scoped-accepted candidate onto `origin/development` |
-| W0-A execution baseline | Integration base `8f03bae217386e26ce1d7804ca673f57f6bfccfc`; accepted audited candidate `00ae3f6b5a882021f500b6424f8213b26263111a`; premature remote deliverable `3a3bfcb707e901798d66aab1a11eddb52998d47a` (F-W0A-43); prior corrective chain preserved in Git |
+| Active batch | II-W0-A-PUBLICATION-SETTLEMENT-01 — publication evidence settlement and formal G6 handoff preparation |
+| W0-A execution baseline | Preflight `8f03bae217386e26ce1d7804ca673f57f6bfccfc`; parent `9efe643045c40255ce868e99400e9468d2fee4f4`; publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; candidate `00ae3f6b5a882021f500b6424f8213b26263111a`; premature `3a3bfcb707e901798d66aab1a11eddb52998d47a` (F-W0A-43) |
 | GATE-II-ENTRY | NOT_REACHED |
 | GATE-II-ARCH | NOT_REACHED |
 | GATE-II-CORE | NOT_REACHED |
@@ -26,11 +26,12 @@ Use, modification, or distribution without written permission is prohibited.
 | GATE-II-ENTERPRISE | NOT_REACHED |
 | GATE-INTELLIGENCE-CONSUME | NOT_REACHED |
 | Executable W1 | NOT_AUTHORIZED |
+| W0-A formal package closures | 0/4 |
 | W0 formal package closures | 0/6 |
 | Total roadmap formal package closures | 0/69 |
 | Blockers | Formal G6 for T-IGX-079-D pending; formal W0-A package closure not authorized. II-FIND-11/12 and C11 remain W0-06 obligations. GATE-II-ENTRY not satisfied. |
-| Next eligible action | Authorized corrective publication under OD-II-W0-A-01 after integration qualification; no W0-05/06, W1 or gates. |
-| Ticket refs | T-IGX-079-C `closed` (OD-II-W0-CLOSURE-01). T-IGX-079-D `quality_gate` (OD-II-W0-A-01). Scoped acceptance II-W0-A-SCOPED-FINAL-ACCEPTANCE-01 `DOCUMENTARY_ACCEPTANCE_PASS_SCOPED`; evidence archive `416c285e78e80510d6214726f792935fa5f82680d5aa9d3d95190aca470d12e2`; F-W0A-43/F-W0A-44 recorded; publication SHA pending. |
+| Next eligible action | Operator-authorized transition to `ready_for_audit` and separate `independent-quality-auditor` session per Q08; no W0-05/06, W1 or gates. |
+| Ticket refs | T-IGX-079-C `closed` (OD-II-W0-CLOSURE-01). T-IGX-079-D `quality_gate` (OD-II-W0-A-01). Scoped acceptance II-W0-A-SCOPED-FINAL-ACCEPTANCE-01 `DOCUMENTARY_ACCEPTANCE_PASS_SCOPED`; publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; settlement II-W0-A-PUBLICATION-SETTLEMENT-01; F-W0A-43/F-W0A-44 recorded. |
 | Evidence refs | Ratified D1 blob `c89c4ccb9e253108de70b126c62c1c206063ab83`; D2 blob `ce7d248cd43fe2dace182fb6eedf7cdc65b82622`; OD-INTELLIGENCE-01; R3.1 G6 in `governance/tickets/T-IGX-079-C.md`. Historical R2 `3190a448707b9ca0835ba354d4cbd18c23565408` and pre-ratification audits preserved. |
 | Audited candidate SHA | R3 reviewed candidate `6bd2c62760ba5e91e9f05d3ae3b8df235540b5e5`; formal G6 scoped PASS — T-IGX-079-C. |
 | Authorized publication SHA | R3.1 integration `4637c7fa6295a37ad155fbff9d4a9718646c9cf8`; R2 historical publication preserved. |
@@ -41,10 +42,10 @@ DevOS ticket lifecycle uses the existing vocabulary: `draft`, `plan_pending`, `p
 
 | Package | Ticket ref | DevOS lifecycle | Reuse disposition | Evidence status | Qualification | Formal closure | Evidence refs | Candidate SHA | Publication SHA | Residual blocker | Next eligible action |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| II-W0-01 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `a16bd1c7718ae2e9ddd2d5becb77dc8d62335dd6`; historical premature remote blobs superseded (F-W0A-43) | Integration Q07 pending at publication HEAD | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-01_LAYER_TIER_BOUNDARIES.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | Formal G6 pending | No formal closure |
-| II-W0-02 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `9a9d58e43d1d43b6d883ddda9f8452ee2154a371` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-02_CAPABILITY_CONTRACT.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | Formal G6 pending | No formal closure |
-| II-W0-03 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `e1724a91fd61bf079cd890269acd6fb68bfc2692` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-03_INVARIANT_TRACEABILITY.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | Formal G6 pending | No formal closure |
-| II-W0-04 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `2aee4593fdba959e449ba5fa6c6bffe3b53071e2` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-04_SEMANTIC_OWNERSHIP.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | Formal G6 pending | No formal closure |
+| II-W0-01 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `a16bd1c7718ae2e9ddd2d5becb77dc8d62335dd6`; historical premature remote blobs superseded (F-W0A-43) | Q07 PASS at `a6e3a6e` (1894/45/1w); documentary acceptance scoped | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-01_LAYER_TIER_BOUNDARIES.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | `a6e3a6e631d1e72aaeb779a189fa331fc5542938` | Formal G6 pending | No formal closure |
+| II-W0-02 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `9a9d58e43d1d43b6d883ddda9f8452ee2154a371` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-02_CAPABILITY_CONTRACT.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | `a6e3a6e631d1e72aaeb779a189fa331fc5542938` | Formal G6 pending | No formal closure |
+| II-W0-03 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `e1724a91fd61bf079cd890269acd6fb68bfc2692` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-03_INVARIANT_TRACEABILITY.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | `a6e3a6e631d1e72aaeb779a189fa331fc5542938` | Formal G6 pending | No formal closure |
+| II-W0-04 | T-IGX-079-D | quality_gate | N/A — documentation | Accepted blob `2aee4593fdba959e449ba5fa6c6bffe3b53071e2` | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Open | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-04_SEMANTIC_OWNERSHIP.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | `a6e3a6e631d1e72aaeb779a189fa331fc5542938` | Formal G6 pending | No formal closure |
 | II-W0-05 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
 | II-W0-06 | — | — | N/A — documentation | Document candidate prepared; formal acceptance pending | Not independently accepted | Open | — | — | — | Independent review and adoption authority | Review candidate; bind W0 adoption ticket |
 | II-W1-01 | — | — | N/A — baseline | Baseline evidence not yet assessed | Not independently accepted | Open | — | — | — | W0 closure, GATE-II-ENTRY and W1 authority | Await entry; read-only preparation only if authorized |
