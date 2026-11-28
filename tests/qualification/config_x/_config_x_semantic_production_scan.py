@@ -5,11 +5,10 @@
 from __future__ import annotations
 
 import ast
-import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import lru_cache
-from pathlib import Path
 from typing import Final
 
 from tests.qualification.config_x._config_x_concern_inventory import (
@@ -198,10 +197,7 @@ def _lab_reference_provider_surface_paths() -> frozenset[str]:
 
 
 def _normalize_production_finding(finding: SemanticProductionFinding) -> SemanticProductionFinding:
-    if (
-        finding.finding_class
-        is not SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION
-    ):
+    if finding.finding_class is not SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION:
         return finding
     rel = finding.repo_path.replace("\\", "/")
     if "api.elevenlabs.io" in finding.detail:
@@ -211,15 +207,12 @@ def _normalize_production_finding(finding: SemanticProductionFinding) -> Semanti
             detail="vendor REST API base URL — not ambient production endpoint selection",
             concern_id=finding.concern_id,
         )
-    if "/observability_backend/" in rel and (
-        "localhost" in finding.detail or "base_url" in finding.detail
-    ):
+    if "/observability_backend/" in rel and ("localhost" in finding.detail or "base_url" in finding.detail):
         return SemanticProductionFinding(
             repo_path=finding.repo_path,
             finding_class=SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT,
             detail=(
-                "local observability stack reference default — explicit profile/env binding "
-                "required for activation"
+                "local observability stack reference default — explicit profile/env binding required for activation"
             ),
             concern_id=finding.concern_id,
         )
@@ -482,10 +475,7 @@ def _literal_default_on_semantic_param(tree: ast.Module, rel: str) -> list[Seman
                         SemanticProductionFinding(
                             repo_path=rel,
                             finding_class=SemanticProductionFindingClass.HARD_CODED_SEMANTIC_PRODUCTION_SELECTION,
-                            detail=(
-                                f"{node.name} parameter {arg.arg!r} defaults to string literal "
-                                f"{default.value!r}"
-                            ),
+                            detail=(f"{node.name} parameter {arg.arg!r} defaults to string literal {default.value!r}"),
                             concern_id=_primary_concern_for_path(rel),
                         ),
                     )
@@ -518,7 +508,7 @@ def _scan_file_semantic_findings(rel: str) -> tuple[SemanticProductionFinding, .
 
     if is_config_surface and rel not in _LOCALHOST_SANCTIONED_REL_PATHS:
         for marker, detail in _AMBIENT_LOCALHOST_URL_MARKERS:
-            if marker in text and 'get(' in text and "localhost" in text:
+            if marker in text and "get(" in text and "localhost" in text:
                 findings.append(
                     SemanticProductionFinding(
                         repo_path=rel,
@@ -577,9 +567,7 @@ def _scan_file_semantic_findings(rel: str) -> tuple[SemanticProductionFinding, .
 
     if is_config_surface:
         evidence = [
-            f
-            for f in findings
-            if f.finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
+            f for f in findings if f.finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
         ]
         evidence.append(
             SemanticProductionFinding(
@@ -647,9 +635,7 @@ def discover_unclassified_provider_surface_paths() -> frozenset[str]:
     inventory = discover_inventory_provider_surface_paths()
     classified = discover_classified_provider_surface_paths()
     lab_reference = _lab_reference_provider_surface_paths()
-    return frozenset(
-        path for path in inventory if path not in classified and path not in lab_reference
-    )
+    return frozenset(path for path in inventory if path not in classified and path not in lab_reference)
 
 
 @lru_cache(maxsize=1)
@@ -668,10 +654,7 @@ def discover_semantic_i_blocker_paths() -> frozenset[str]:
 def discover_named_constant_semantic_blind_spot_paths() -> frozenset[str]:
     paths: set[str] = set()
     for finding in discover_semantic_production_findings():
-        if (
-            finding.finding_class
-            is SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT
-        ):
+        if finding.finding_class is SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT:
             paths.add(finding.repo_path)
     return frozenset(paths)
 
@@ -682,8 +665,7 @@ def discover_sanctioned_vector_store_localhost_transport_paths() -> frozenset[st
     for finding in discover_semantic_production_findings():
         if (
             finding.finding_class is SemanticProductionFindingClass.SANCTIONED_DEPLOYMENT_DEFAULT
-            and finding.repo_path.replace("\\", "/")
-            in _SANCTIONED_INTEGRATION_TRANSPORT_DEFAULT_SURFACES
+            and finding.repo_path.replace("\\", "/") in _SANCTIONED_INTEGRATION_TRANSPORT_DEFAULT_SURFACES
             and "integration transport default" in finding.detail
         ):
             paths.add(finding.repo_path.replace("\\", "/"))
@@ -700,3 +682,859 @@ def frz_cfg_05_unclassified_provider_surface_count() -> int:
 
 def frz_cfg_05_named_constant_blind_spot_count() -> int:
     return len(discover_named_constant_semantic_blind_spot_paths())
+
+
+# --- FC3 vendor-default discovery (T-IGX-043-F / FRZ-CFG-08 scoped extension) ---
+
+FC3_SCOPED_PHYSICAL_PATHS: Final[tuple[str, ...]] = (
+    "intergrax/rag/embedding/registry/provider_authority.py",
+    "intergrax/rag/embedding/registry/profile.py",
+    "intergrax/rag/embedding/runtime/resolver.py",
+    "intergrax/rag/vectorstore/bootstrap/integration_vectorstore.py",
+    "intergrax/runtime/notifications/backend_contract.py",
+    "intergrax/runtime/interactions/verification/factory.py",
+    "intergrax/integrations/providers/llm_guardrail/_factory.py",
+    "intergrax/model_inference/adapters/triton_vision.py",
+    "intergrax/model_inference/adapters/huggingface_inference_vision.py",
+)
+
+_FC3_SEMANTIC_PARAM_NAMES: Final[frozenset[str]] = _SEMANTIC_PARAM_NAMES | frozenset(
+    {"mode", "slug", "store", "channel"}
+)
+
+_FC3_KNOWN_ENUMS: dict[str, type[StrEnum]] = {}
+_FC3_SCAN_CTX: dict[str, object] = {}
+
+
+class Fc3VendorDisposition(StrEnum):
+    BLOCKING_VENDOR_DEFAULT = "blocking_vendor_default"
+    PROVIDER_IDENTITY = "provider_identity"
+    VALIDATION_ONLY = "validation_only"
+    OPEN_SYNTACTIC_RESIDUAL = "open_syntactic_residual"
+    EXPECTED_RESIDUAL = "expected_residual"
+    LAB_REFUSED = "lab_refused"
+    OUTSIDE_SCOPE_RECORD = "outside_scope_record"
+
+
+@dataclass(frozen=True, slots=True)
+class Fc3VendorDefaultFinding:
+    repo_path: str
+    enclosing_symbol: str
+    semantic_field: str
+    expression: str
+    normalized_expression: str
+    resolved_vendor_value: str
+    detection_mechanism: str
+    disposition: Fc3VendorDisposition
+    source_line: int
+    detail: str = ""
+
+    @property
+    def fingerprint(self) -> tuple[str, str, str, str, str, str]:
+        return (
+            self.repo_path.replace("\\", "/"),
+            self.enclosing_symbol,
+            self.semantic_field,
+            self.normalized_expression,
+            self.resolved_vendor_value.strip().lower(),
+            self.detection_mechanism,
+        )
+
+
+EXPECTED_RESIDUAL_FINGERPRINTS: Final[tuple[tuple[str, str, str, str, str, str], ...]] = (
+    (
+        "intergrax/runtime/interactions/verification/factory.py",
+        "InboundVerifierSettings",
+        "mode",
+        "InboundVerifierMode.NONE",
+        "none",
+        "class_field_default:local_enum_member",
+    ),
+    (
+        "intergrax/rag/embedding/registry/provider_authority.py",
+        "lab_embedding_provider_slug",
+        "_LAB_EMBEDDING_PROVIDER",
+        "_LAB_EMBEDDING_PROVIDER",
+        "ollama",
+        "lab_named_constant",
+    ),
+    (
+        "intergrax/rag/vectorstore/bootstrap/integration_vectorstore.py",
+        "lab_inmemory_vector_store_slug",
+        "_LAB_INMEMORY_VECTOR_STORE_SLUG",
+        "_LAB_INMEMORY_VECTOR_STORE_SLUG",
+        "inmemory",
+        "lab_named_constant",
+    ),
+)
+
+
+def _fc3_is_excluded_scan_path(rel: str) -> bool:
+    return _is_excluded_path(rel)
+
+
+def _fc3_bootstrap_known_enums() -> dict[str, type[StrEnum]]:
+    if _FC3_KNOWN_ENUMS:
+        return _FC3_KNOWN_ENUMS
+    from intergrax.model_inference.registry.vision_provider import VisionProvider
+    from intergrax.runtime.interactions.verification.factory import InboundVerifierMode
+    from intergrax.runtime.notifications.backend_contract import NotificationBackend
+
+    _FC3_KNOWN_ENUMS.update(
+        {
+            "NotificationBackend": NotificationBackend,
+            "InboundVerifierMode": InboundVerifierMode,
+            "VisionProvider": VisionProvider,
+        }
+    )
+    return _FC3_KNOWN_ENUMS
+
+
+def derive_fc3_vendor_values() -> tuple[frozenset[str], dict[str, str | int]]:
+    from intergrax.integrations.registry.bootstrap import (
+        register_default_integrations,
+        reset_default_integrations_state,
+    )
+    from intergrax.integrations.registry.catalog import list_slugs
+
+    reset_default_integrations_state()
+    _fc3_vendor_values_cached.cache_clear()
+    register_default_integrations(preset="full", override=True)
+    slugs = frozenset(s.strip().lower() for s in list_slugs() if s and s.strip())
+    enums = _fc3_bootstrap_known_enums()
+    enum_vals: set[str] = set()
+    for cls in enums.values():
+        for member in cls:
+            enum_vals.add(member.value.strip().lower())
+    vendor = frozenset(slugs | enum_vals)
+    counts: dict[str, str | int] = {
+        "catalog_slug_count": len(slugs),
+        "enum_value_count": len(enum_vals),
+        "unique_vendor_value_count": len(vendor),
+    }
+    import hashlib
+
+    counts["vendor_value_digest"] = hashlib.sha256("\n".join(sorted(vendor)).encode()).hexdigest()
+    return vendor, counts
+
+
+def _fc3_vision_adapter_identity_bases(tree: ast.Module) -> frozenset[str]:
+    bases: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for base in node.bases:
+            text = ast.unparse(base) if hasattr(ast, "unparse") else ""
+            if "VisionInferenceAdapter" in text:
+                bases.add(node.name)
+    return frozenset(bases)
+
+
+def _fc3_is_provider_identity_slug(
+    *,
+    class_name: str,
+    field_name: str,
+    literal_value: str,
+    tree: ast.Module,
+    vision_bases: frozenset[str],
+) -> bool:
+    if field_name != "slug" or class_name not in vision_bases:
+        return False
+    return literal_value.strip().lower() in _fc3_vendor_values_cached()
+
+
+@lru_cache(maxsize=1)
+def _fc3_vendor_values_cached() -> frozenset[str]:
+    vendor, _ = derive_fc3_vendor_values()
+    return vendor
+
+
+def _fc3_normalize_expression(expression: str) -> str:
+    return " ".join(expression.split())
+
+
+def _fc3_disposition_for_finding(
+    raw: Fc3VendorDefaultFinding,
+    *,
+    tree: ast.Module | None = None,
+    field_name: str = "",
+) -> Fc3VendorDisposition:
+    fp = raw.fingerprint
+    for expected in EXPECTED_RESIDUAL_FINGERPRINTS:
+        if fp == expected:
+            if expected[1] in {"lab_embedding_provider_slug", "lab_inmemory_vector_store_slug"}:
+                return Fc3VendorDisposition.OPEN_SYNTACTIC_RESIDUAL
+            return Fc3VendorDisposition.EXPECTED_RESIDUAL
+    if raw.detection_mechanism == "lab_named_constant":
+        if (
+            raw.repo_path.endswith("integration_vectorstore.py")
+            and raw.enclosing_symbol == "_resolve_lab_inmemory_slug"
+        ):
+            return Fc3VendorDisposition.VALIDATION_ONLY
+        return Fc3VendorDisposition.LAB_REFUSED
+    if tree is not None and field_name == "slug" and raw.detection_mechanism.startswith("class_field_default"):
+        vision_bases = _fc3_vision_adapter_identity_bases(tree)
+        if _fc3_is_provider_identity_slug(
+            class_name=raw.enclosing_symbol,
+            field_name="slug",
+            literal_value=raw.resolved_vendor_value,
+            tree=tree,
+            vision_bases=vision_bases,
+        ):
+            return Fc3VendorDisposition.PROVIDER_IDENTITY
+    if raw.repo_path.replace("\\", "/") not in FC3_SCOPED_PHYSICAL_PATHS:
+        return Fc3VendorDisposition.OUTSIDE_SCOPE_RECORD
+    return Fc3VendorDisposition.BLOCKING_VENDOR_DEFAULT
+
+
+def discover_fc3_vendor_defaults_in_source(source: str, rel: str) -> tuple[Fc3VendorDefaultFinding, ...]:
+    vendor = _fc3_vendor_values_cached()
+    tree = ast.parse(source, filename=rel)
+    _FC3_SCAN_CTX["local_enums"] = _module_str_enum_members(tree)
+    raw_findings = _fc3_scan_module_impl(rel, vendor, source=source)
+    out: list[Fc3VendorDefaultFinding] = []
+    for item in raw_findings:
+        semantic_field = _fc3_infer_semantic_field(item)
+        normalized = _fc3_normalize_expression(item.expression)
+        base = Fc3VendorDefaultFinding(
+            repo_path=rel.replace("\\", "/"),
+            enclosing_symbol=item.enclosing_symbol,
+            semantic_field=semantic_field,
+            expression=item.expression,
+            normalized_expression=normalized,
+            resolved_vendor_value=item.resolved_vendor_value or "",
+            detection_mechanism=item.detection_mechanism,
+            disposition=Fc3VendorDisposition.BLOCKING_VENDOR_DEFAULT,
+            source_line=item.line if hasattr(item, "line") else 0,
+            detail=item.reason,
+        )
+        disposition = _fc3_disposition_for_finding(base, tree=tree, field_name=semantic_field)
+        out.append(
+            Fc3VendorDefaultFinding(
+                repo_path=base.repo_path,
+                enclosing_symbol=base.enclosing_symbol,
+                semantic_field=base.semantic_field,
+                expression=base.expression,
+                normalized_expression=base.normalized_expression,
+                resolved_vendor_value=base.resolved_vendor_value,
+                detection_mechanism=base.detection_mechanism,
+                disposition=disposition,
+                source_line=getattr(item, "line", 0),
+                detail=base.detail,
+            )
+        )
+    return tuple(
+        sorted(out, key=lambda f: (f.repo_path, f.enclosing_symbol, f.semantic_field, f.expression, f.source_line))
+    )
+
+
+def _fc3_infer_semantic_field(item: Fc3VendorDefaultFinding) -> str:
+    # placeholder — patched after core rename
+    return getattr(item, "semantic_field", "")
+
+
+def discover_fc3_vendor_defaults_for_path(rel: str) -> tuple[Fc3VendorDefaultFinding, ...]:
+    path = repo_root() / rel
+    if not path.is_file():
+        return (
+            Fc3VendorDefaultFinding(
+                repo_path=rel,
+                enclosing_symbol="<missing-file>",
+                semantic_field="",
+                expression="",
+                normalized_expression="",
+                resolved_vendor_value="",
+                detection_mechanism="missing_file",
+                disposition=Fc3VendorDisposition.BLOCKING_VENDOR_DEFAULT,
+                source_line=0,
+                detail="expected scoped path file is missing",
+            ),
+        )
+    return discover_fc3_vendor_defaults_in_source(path.read_text(encoding="utf-8"), rel)
+
+
+def discover_fc3_vendor_defaults_inventory() -> tuple[Fc3VendorDefaultFinding, ...]:
+    paths = set(_scan_paths_for_inventory_surfaces())
+    paths.update(FC3_SCOPED_PHYSICAL_PATHS)
+    findings: list[Fc3VendorDefaultFinding] = []
+    for rel in sorted(paths):
+        if _fc3_is_excluded_scan_path(rel):
+            continue
+        findings.extend(discover_fc3_vendor_defaults_for_path(rel))
+    return tuple(findings)
+
+
+def discover_fc3_scoped_blocking_candidates() -> tuple[Fc3VendorDefaultFinding, ...]:
+    return tuple(
+        f
+        for f in discover_fc3_vendor_defaults_inventory()
+        if f.repo_path in FC3_SCOPED_PHYSICAL_PATHS
+        and f.disposition
+        in (
+            Fc3VendorDisposition.BLOCKING_VENDOR_DEFAULT,
+            Fc3VendorDisposition.LAB_REFUSED,
+            Fc3VendorDisposition.OPEN_SYNTACTIC_RESIDUAL,
+        )
+    )
+
+
+def discover_fc3_outside_scope_vendor_findings() -> tuple[Fc3VendorDefaultFinding, ...]:
+    return tuple(
+        f
+        for f in discover_fc3_vendor_defaults_inventory()
+        if f.repo_path not in FC3_SCOPED_PHYSICAL_PATHS
+        and f.disposition == Fc3VendorDisposition.OUTSIDE_SCOPE_RECORD
+        and f.resolved_vendor_value
+    )
+
+
+def evaluate_fc3_scoped_gate() -> tuple[bool, tuple[Fc3VendorDefaultFinding, ...], tuple[Fc3VendorDefaultFinding, ...]]:
+    scoped = tuple(f for f in discover_fc3_vendor_defaults_inventory() if f.repo_path in FC3_SCOPED_PHYSICAL_PATHS)
+    residuals = tuple(f for f in scoped if f.fingerprint in EXPECTED_RESIDUAL_FINGERPRINTS)
+    unexpected = tuple(
+        f
+        for f in scoped
+        if f.fingerprint not in EXPECTED_RESIDUAL_FINGERPRINTS
+        and f.disposition not in (Fc3VendorDisposition.PROVIDER_IDENTITY, Fc3VendorDisposition.VALIDATION_ONLY)
+    )
+    ok = len(unexpected) == 0
+    return ok, residuals, unexpected
+
+
+@dataclass(frozen=True, slots=True)
+class _Fc3RawFinding:
+    repo_path: str
+    line: int
+    enclosing_symbol: str
+    expression: str
+    resolved_vendor_value: str | None
+    detection_mechanism: str
+    lab_exemption: str
+    reason: str
+    semantic_field: str = ""
+
+
+def _fc3_module_string_constants(tree: ast.Module) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            t = node.targets[0]
+            if isinstance(t, ast.Name) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                out[t.id] = node.value.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                out[node.target.id] = node.value.value
+    return out
+
+
+def _module_all_names(tree: ast.Module) -> set[str]:
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id == "__all__" and isinstance(node.value, (ast.List, ast.Tuple)):
+                    names: set[str] = set()
+                    for elt in node.value.elts:
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                            names.add(elt.value)
+                    return names
+    return set()
+
+
+def _module_str_enum_members(tree: ast.Module) -> dict[str, dict[str, str]]:
+    members: dict[str, dict[str, str]] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        bases = {ast.unparse(b) if hasattr(ast, "unparse") else "" for b in node.bases}
+        if not any("StrEnum" in b for b in bases):
+            continue
+        body_members: dict[str, str] = {}
+        for stmt in node.body:
+            if isinstance(stmt, ast.Assign):
+                for t in stmt.targets:
+                    if (
+                        isinstance(t, ast.Name)
+                        and isinstance(stmt.value, ast.Constant)
+                        and isinstance(stmt.value.value, str)
+                    ):
+                        body_members[t.id] = stmt.value.value
+        if body_members:
+            members[node.name] = body_members
+    return members
+
+
+def _enum_aliases(tree: ast.Module) -> dict[str, str]:
+    """Map local name -> canonical enum class name (NotificationBackend, ...)."""
+    aliases: dict[str, str] = {}
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                name = alias.asname or alias.name
+                if alias.name in _FC3_KNOWN_ENUMS:
+                    aliases[name] = alias.name
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name in _FC3_KNOWN_ENUMS:
+                    aliases[alias.asname or alias.name] = alias.name
+    return aliases
+
+
+def _expr_source(expr: ast.expr, source: str) -> str:
+    try:
+        segment = ast.get_source_segment(source, expr)
+        return segment if segment else ast.dump(expr)
+    except Exception:
+        return ast.dump(expr)
+
+
+def _line_of(node: ast.AST) -> int:
+    return getattr(node, "lineno", 0) or 0
+
+
+def _resolve_expr_to_vendor(
+    expr: ast.expr | None,
+    bindings: dict[str, str],
+    enum_aliases: dict[str, str],
+    vendor: frozenset[str],
+    local_enums: dict[str, dict[str, str]] | None = None,
+) -> tuple[str | None, str]:
+    local_enums = local_enums if local_enums is not None else _FC3_SCAN_CTX.get("local_enums", {})
+    if expr is None:
+        return None, "none"
+    if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+        v = expr.value.strip().lower()
+        return (v, "string_literal") if v in vendor else (None, "non_vendor_literal")
+    if isinstance(expr, ast.Name):
+        if expr.id in bindings:
+            v = bindings[expr.id].strip().lower()
+            return (v, "module_constant") if v in vendor else (None, "non_vendor_constant")
+        return None, "unresolved_name"
+    if isinstance(expr, ast.Attribute):
+        base = expr.value
+        if isinstance(base, ast.Name):
+            cls_name = enum_aliases.get(base.id, base.id)
+            member = expr.attr
+            if cls_name in local_enums and member in local_enums[cls_name]:
+                v = local_enums[cls_name][member].strip().lower()
+                return (v, "local_enum_member") if v in vendor else (None, "enum_non_vendor")
+            if base.id in enum_aliases:
+                cls = _FC3_KNOWN_ENUMS[enum_aliases[base.id]]
+                if member in cls.__members__:
+                    v = cls.__members__[member].value.strip().lower()
+                    return (v, "enum_member") if v in vendor else (None, "enum_non_vendor")
+        if expr.attr == "value" and isinstance(base, ast.Attribute):
+            inner = base
+            if isinstance(inner.value, ast.Name):
+                cls_name = enum_aliases.get(inner.value.id, inner.value.id)
+                member = inner.attr
+                if cls_name in local_enums and member in local_enums[cls_name]:
+                    v = local_enums[cls_name][member].strip().lower()
+                    return (v, "enum_member_value_attr") if v in vendor else (None, "enum_non_vendor")
+                if inner.value.id in enum_aliases:
+                    cls = _FC3_KNOWN_ENUMS[enum_aliases[inner.value.id]]
+                    if member in cls.__members__:
+                        v = cls.__members__[member].value.strip().lower()
+                        return (v, "enum_member_value_attr") if v in vendor else (None, "enum_non_vendor")
+    return None, "unresolved_expression"
+
+
+def _lab_opt_in_param(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    for arg in list(func.args.args) + list(func.args.kwonlyargs) + list(func.args.posonlyargs):
+        if arg.arg != "lab_opt_in":
+            continue
+        ann = arg.annotation
+        if ann is None:
+            continue
+        text = ast.unparse(ann) if hasattr(ast, "unparse") else ""
+        if "LabSelectorOptIn" in text:
+            return True
+    return False
+
+
+def _approved_guard_test(test: ast.expr) -> bool:
+    if isinstance(test, ast.Name) and test.id == "lab_opt_in":
+        return True
+    if isinstance(test, ast.Compare):
+        if (
+            isinstance(test.left, ast.Name)
+            and test.left.id == "lab_opt_in"
+            and len(test.ops) == 1
+            and isinstance(test.ops[0], ast.IsNot)
+            and len(test.comparators) == 1
+            and isinstance(test.comparators[0], ast.Constant)
+            and test.comparators[0].value is None
+        ):
+            return True
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        inner = test.operand
+        if (
+            isinstance(inner, ast.Compare)
+            and isinstance(inner.left, ast.Name)
+            and inner.left.id == "lab_opt_in"
+            and len(inner.ops) == 1
+            and isinstance(inner.ops[0], ast.Is)
+            and len(inner.comparators) == 1
+            and isinstance(inner.comparators[0], ast.Constant)
+            and inner.comparators[0].value is None
+        ):
+            return True
+    return False
+
+
+def _expr_in_lab_guard(expr: ast.expr, func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    if not _lab_opt_in_param(func):
+        return False
+
+    class GuardVisitor(ast.NodeVisitor):
+        def __init__(self) -> None:
+            self.guarded: set[int] = set()
+
+        def visit_If(self, node: ast.If) -> None:
+            if _approved_guard_test(node.test):
+                for child in ast.walk(node):
+                    if isinstance(child, ast.expr) and child is not node.test:
+                        self.guarded.add(id(child))
+            self.generic_visit(node)
+
+        def visit_IfExp(self, node: ast.IfExp) -> None:
+            if _approved_guard_test(node.test):
+                for child in ast.walk(node.body):
+                    if isinstance(child, ast.expr):
+                        self.guarded.add(id(child))
+            self.generic_visit(node)
+
+        def visit_BoolOp(self, node: ast.BoolOp) -> None:
+            if isinstance(node.op, ast.And) and node.values:
+                if _approved_guard_test(node.values[0]):
+                    for child in ast.walk(node.values[-1]):
+                        if isinstance(child, ast.expr):
+                            self.guarded.add(id(child))
+            self.generic_visit(node)
+
+    vis = GuardVisitor()
+    vis.visit(func)
+    for sub in ast.walk(expr):
+        if id(sub) in vis.guarded:
+            return True
+    return False
+
+
+def _is_os_environ_get(call: ast.Call) -> bool:
+    f = call.func
+    return (
+        isinstance(f, ast.Attribute)
+        and f.attr == "get"
+        and isinstance(f.value, ast.Attribute)
+        and f.value.attr == "environ"
+    )
+
+
+def _is_os_getenv(call: ast.Call) -> bool:
+    f = call.func
+    return isinstance(f, ast.Attribute) and f.attr == "getenv" and isinstance(f.value, ast.Name) and f.value.id == "os"
+
+
+def _iter_functions(tree: ast.Module) -> Iterator[tuple[str, ast.FunctionDef | ast.AsyncFunctionDef]]:
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            yield (node.name, node)
+        elif isinstance(node, ast.ClassDef):
+            for stmt in node.body:
+                if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    yield (f"{node.name}.{stmt.name}", stmt)
+
+
+def _env_vendor_fallbacks_in_expr(
+    expr: ast.expr,
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    bindings: dict[str, str],
+    enum_aliases: dict[str, str],
+    vendor: frozenset[str],
+    rel: str,
+    source: str,
+    enclosing: str,
+    findings: list[_Fc3RawFinding],
+) -> None:
+    for node in ast.walk(expr):
+        if isinstance(node, ast.Call) and (_is_os_getenv(node) or _is_os_environ_get(node)):
+            default_expr: ast.expr | None = None
+            if len(node.args) >= 2:
+                default_expr = node.args[1]
+            if default_expr is not None:
+                resolved, mech = _resolve_expr_to_vendor(default_expr, bindings, enum_aliases, vendor)
+                if resolved:
+                    lab = "YES" if _expr_in_lab_guard(default_expr, func) else "NO"
+                    reason = (
+                        "lab_syntactic_guard"
+                        if lab == "YES"
+                        else "class_and_param_never_lab_exempt"
+                        if False
+                        else "env_fallback_vendor"
+                    )
+                    findings.append(
+                        _Fc3RawFinding(
+                            repo_path=rel,
+                            line=_line_of(default_expr),
+                            enclosing_symbol=enclosing,
+                            expression=_expr_source(default_expr, source),
+                            resolved_vendor_value=resolved,
+                            detection_mechanism=f"env_get_default:{mech}",
+                            lab_exemption=lab if lab == "YES" else "NO",
+                            reason=reason if lab == "YES" else "environment_vendor_fallback",
+                        )
+                    )
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+            has_env = any(isinstance(v, ast.Call) and (_is_os_getenv(v) or _is_os_environ_get(v)) for v in node.values)
+            if has_env:
+                for v in node.values:
+                    if isinstance(v, ast.Call) and (_is_os_getenv(v) or _is_os_environ_get(v)):
+                        continue
+                    resolved, mech = _resolve_expr_to_vendor(v, bindings, enum_aliases, vendor)
+                    if resolved:
+                        lab = "YES" if _expr_in_lab_guard(v, func) else "NO"
+                        findings.append(
+                            _Fc3RawFinding(
+                                repo_path=rel,
+                                line=_line_of(v),
+                                enclosing_symbol=enclosing,
+                                expression=_expr_source(v, source),
+                                resolved_vendor_value=resolved,
+                                detection_mechanism=f"env_or_fallback:{mech}",
+                                lab_exemption=lab,
+                                reason="environment_or_vendor_fallback" if lab == "NO" else "lab_syntactic_guard",
+                            )
+                        )
+
+
+def _scan_parameter_defaults(
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    enclosing: str,
+    rel: str,
+    source: str,
+    bindings: dict[str, str],
+    enum_aliases: dict[str, str],
+    vendor: frozenset[str],
+    findings: list[_Fc3RawFinding],
+) -> None:
+    posonly = list(func.args.posonlyargs)
+    pos = list(func.args.args)
+    kwonly = list(func.args.kwonlyargs)
+    pos_defaults = list(func.args.defaults)
+    kw_defaults = list(func.args.kw_defaults)
+
+    # positional-only + positional-or-keyword (no shared padding with kwonly)
+    pos_args = posonly + pos
+    if len(pos_defaults) < len(pos_args):
+        pos_pad = [None] * (len(pos_args) - len(pos_defaults))
+        pos_defaults_full = pos_pad + pos_defaults
+    else:
+        pos_defaults_full = pos_defaults[-len(pos_args) :] if pos_args else []
+
+    for arg, default in zip(pos_args, pos_defaults_full, strict=False):
+        if default is None or arg.arg not in _FC3_SEMANTIC_PARAM_NAMES:
+            continue
+        resolved, mech = _resolve_expr_to_vendor(default, bindings, enum_aliases, vendor)
+        if resolved:
+            findings.append(
+                _Fc3RawFinding(
+                    repo_path=rel,
+                    line=_line_of(default),
+                    enclosing_symbol=enclosing,
+                    semantic_field=arg.arg,
+                    expression=_expr_source(default, source),
+                    resolved_vendor_value=resolved,
+                    detection_mechanism=f"positional_default:{mech}",
+                    lab_exemption="NO",
+                    reason="parameter_defaults_never_lab_exempt",
+                )
+            )
+        _env_vendor_fallbacks_in_expr(default, func, bindings, enum_aliases, vendor, rel, source, enclosing, findings)
+
+    for arg, default in zip(kwonly, kw_defaults, strict=False):
+        if default is None or arg.arg not in _FC3_SEMANTIC_PARAM_NAMES:
+            continue
+        resolved, mech = _resolve_expr_to_vendor(default, bindings, enum_aliases, vendor)
+        if resolved:
+            findings.append(
+                _Fc3RawFinding(
+                    repo_path=rel,
+                    line=_line_of(default),
+                    enclosing_symbol=enclosing,
+                    semantic_field=arg.arg,
+                    expression=_expr_source(default, source),
+                    resolved_vendor_value=resolved,
+                    detection_mechanism=f"keyword_only_default:{mech}",
+                    lab_exemption="NO",
+                    reason="parameter_defaults_never_lab_exempt",
+                )
+            )
+        _env_vendor_fallbacks_in_expr(default, func, bindings, enum_aliases, vendor, rel, source, enclosing, findings)
+
+
+def _scan_class_field_defaults(
+    tree: ast.Module,
+    rel: str,
+    source: str,
+    bindings: dict[str, str],
+    enum_aliases: dict[str, str],
+    vendor: frozenset[str],
+    findings: list[_Fc3RawFinding],
+) -> None:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if any(
+            isinstance(base, ast.Name)
+            and base.id == "StrEnum"
+            or (hasattr(ast, "unparse") and "StrEnum" in ast.unparse(base))
+            for base in node.bases
+        ):
+            continue
+        for stmt in node.body:
+            target_name: str | None = None
+            default_node: ast.expr | None = None
+            if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                target_name = stmt.target.id
+                default_node = stmt.value
+            elif isinstance(stmt, ast.Assign):
+                for t in stmt.targets:
+                    if isinstance(t, ast.Name):
+                        target_name = t.id
+                        default_node = stmt.value
+                        break
+            if target_name is None or target_name not in _FC3_SEMANTIC_PARAM_NAMES or default_node is None:
+                continue
+            resolved, mech = _resolve_expr_to_vendor(default_node, bindings, enum_aliases, vendor)
+            if resolved:
+                findings.append(
+                    _Fc3RawFinding(
+                        repo_path=rel,
+                        line=_line_of(default_node),
+                        enclosing_symbol=node.name,
+                        semantic_field=target_name,
+                        expression=_expr_source(default_node, source),
+                        resolved_vendor_value=resolved,
+                        detection_mechanism=f"class_field_default:{mech}",
+                        lab_exemption="NO",
+                        reason="class_field_never_lab_exempt",
+                    )
+                )
+
+
+def _enclosing_function_map(tree: ast.Module) -> dict[ast.AST, ast.FunctionDef | ast.AsyncFunctionDef]:
+    parents: dict[ast.AST, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parents[child] = node
+
+    def climb(n: ast.AST) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+        cur: ast.AST | None = n
+        while cur is not None:
+            if isinstance(cur, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                return cur
+            cur = parents.get(cur)
+        return None
+
+    return {node: fn for node in ast.walk(tree) if (fn := climb(node)) is not None}
+
+
+def _scan_lab_constants(
+    tree: ast.Module,
+    rel: str,
+    source: str,
+    all_exports: set[str],
+    findings: list[_Fc3RawFinding],
+) -> None:
+    lab_consts = {k: v for k, v in _fc3_module_string_constants(tree).items() if k.startswith("_LAB_")}
+    if not lab_consts:
+        return
+    enc_map = _enclosing_function_map(tree)
+    for name in lab_consts:
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, ast.Load)):
+                continue
+            if name in all_exports:
+                findings.append(
+                    _Fc3RawFinding(
+                        repo_path=rel,
+                        line=_line_of(node),
+                        enclosing_symbol=name,
+                        semantic_field=name,
+                        expression=name,
+                        resolved_vendor_value=lab_consts[name].strip().lower(),
+                        detection_mechanism="lab_named_constant",
+                        lab_exemption="REFUSED",
+                        reason=f"{name}_listed_in___all__",
+                    )
+                )
+                continue
+            parent = enc_map.get(node)
+            if parent is None:
+                findings.append(
+                    _Fc3RawFinding(
+                        repo_path=rel,
+                        line=_line_of(node),
+                        enclosing_symbol=name,
+                        semantic_field=name,
+                        expression=name,
+                        resolved_vendor_value=lab_consts[name].strip().lower(),
+                        detection_mechanism="lab_named_constant",
+                        lab_exemption="REFUSED",
+                        reason="unguarded_module_level_load",
+                    )
+                )
+            elif not _expr_in_lab_guard(node, parent):
+                findings.append(
+                    _Fc3RawFinding(
+                        repo_path=rel,
+                        line=_line_of(node),
+                        enclosing_symbol=parent.name,
+                        semantic_field=name,
+                        expression=_expr_source(node, source),
+                        resolved_vendor_value=lab_consts[name].strip().lower(),
+                        detection_mechanism="lab_named_constant",
+                        lab_exemption="REFUSED",
+                        reason="literal_syntactic_contract_violation",
+                    )
+                )
+
+
+def _fc3_scan_module_impl(
+    rel: str, vendor: frozenset[str], *, source: str | None = None
+) -> list[Fc3VendorDefaultFinding]:
+    if _fc3_is_excluded_scan_path(rel):
+        return []
+    path = repo_root() / rel
+    if source is None:
+        if not path.is_file():
+            return []
+        source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=rel)
+    _FC3_SCAN_CTX["local_enums"] = _module_str_enum_members(tree)
+    bindings = _fc3_module_string_constants(tree)
+    enum_aliases = _enum_aliases(tree)
+    all_exports = _module_all_names(tree)
+    findings: list[_Fc3RawFinding] = []
+
+    _scan_class_field_defaults(tree, rel, source, bindings, enum_aliases, vendor, findings)
+    for enc, func in _iter_functions(tree):
+        _scan_parameter_defaults(func, enc, rel, source, bindings, enum_aliases, vendor, findings)
+        for stmt in ast.walk(func):
+            if isinstance(stmt, ast.Assign):
+                _env_vendor_fallbacks_in_expr(
+                    stmt.value, func, bindings, enum_aliases, vendor, rel, source, enc, findings
+                )
+            elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+                _env_vendor_fallbacks_in_expr(
+                    stmt.value, func, bindings, enum_aliases, vendor, rel, source, enc, findings
+                )
+            elif isinstance(stmt, ast.Return) and stmt.value is not None:
+                _env_vendor_fallbacks_in_expr(
+                    stmt.value, func, bindings, enum_aliases, vendor, rel, source, enc, findings
+                )
+                resolved, mech = _resolve_expr_to_vendor(stmt.value, bindings, enum_aliases, vendor)
+                if resolved and isinstance(stmt.value, ast.Name) and stmt.value.id.startswith("_LAB_"):
+                    pass
+
+    _scan_lab_constants(tree, rel, source, all_exports, findings)
+    return findings
