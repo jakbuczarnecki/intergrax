@@ -18,7 +18,7 @@ Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-F.md`](plans/PLAN_T-IG
 
 ## Approved
 
-PENDING. The approval line goes here after plan review and is written by the Operator personally, because this ticket is a gate-meaning change; it is not written by a commissioned session and never by the implementer. This placeholder deliberately avoids the approval keyword because the ticket validators accept any line that starts with it (finding EQOA-A6-002).
+Approved: operator @ 2026-11-28T12:02:23+01:00
 
 ## Test contract
 
