@@ -86,6 +86,97 @@ def _sync_synthetic_records(baseline: Path) -> None:
     (rec / f"{batch}.post.json").write_text(json.dumps(post, indent=2), encoding="utf-8")
 
 
+FINAL_BATCH_PRIMARY = "fc1_nexus_context"
+FINAL_BATCH_PEER = "adv_final_peer"
+
+
+def _materialize_final_valid_fixture(root: Path) -> None:
+    binding = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
+    qual_sha = binding["qualification_source_sha"]
+    qual_tree = binding["qualification_source_tree_sha"]
+    for syn in root.glob("execution_records/synthetic_pass*"):
+        syn.unlink(missing_ok=True)
+    peer_path = "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py"
+    prereg = json.loads((root / "DES_PREREG.json").read_text(encoding="utf-8"))
+    prereg["batches"] = [
+        {
+            "expected_coverage": "FC1",
+            "id": FINAL_BATCH_PRIMARY,
+            "paths": ["tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py"],
+        },
+        {"expected_coverage": "ADV_PEER", "id": FINAL_BATCH_PEER, "paths": [peer_path]},
+    ]
+    (root / "DES_PREREG.json").write_text(json.dumps(prereg, indent=2), encoding="utf-8")
+
+    def write_batch(batch_id: str, *, junit_name: str, log_name: str) -> None:
+        log_rel = f"logs/{log_name}"
+        junit_rel = f"junit/{junit_name}"
+        log_path = root / log_rel
+        junit_path = root / junit_rel
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        junit_path.parent.mkdir(parents=True, exist_ok=True)
+        if not log_path.is_file():
+            log_path.write_bytes(b"")
+        pre = {
+            "schema": "eqo.execution_record.v1",
+            "phase": "pre",
+            "batch_id": batch_id,
+            "source_commit_sha": qual_sha,
+            "source_tree_sha": qual_tree,
+            "argv": ["python", "-m", "pytest"],
+            "command_digest_sha256": "c" * 64,
+            "started_at_utc": "2026-11-28T06:00:00Z",
+            "tracked_source_consistency": {"porcelain_empty": True},
+        }
+        post = {
+            "schema": "eqo.execution_record.v1",
+            "phase": "post",
+            "batch_id": batch_id,
+            "process_returncode": 0,
+            "process_exit_disposition": "PROCESS_COMPLETED",
+            "monotonic_elapsed_seconds": 1.0,
+            "finished_at_utc": "2026-11-28T06:01:00Z",
+            "stdout_stderr_path": log_rel,
+            "stdout_stderr_sha256": sha256_file(log_path),
+            "junit_path": junit_rel,
+            "junit_sha256": sha256_file(junit_path),
+            "source_commit_sha_after": qual_sha,
+            "source_tree_sha_after": qual_tree,
+        }
+        rec = root / "execution_records"
+        rec.mkdir(parents=True, exist_ok=True)
+        (rec / f"{batch_id}.pre.json").write_text(json.dumps(pre, indent=2), encoding="utf-8")
+        (rec / f"{batch_id}.post.json").write_text(json.dumps(post, indent=2), encoding="utf-8")
+
+    fc1_junit = FIXTURES / "minimal_valid/junit/fc1_nexus_context.xml"
+    if fc1_junit.is_file():
+        dest = root / "junit/fc1_nexus_context.xml"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if not dest.is_file():
+            shutil.copyfile(fc1_junit, dest)
+    fc1_log = FIXTURES / "minimal_valid/logs/fc1_nexus_context.log"
+    if fc1_log.is_file():
+        dest = root / "logs/fc1_nexus_context.log"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if not dest.is_file():
+            shutil.copyfile(fc1_log, dest)
+    write_batch(FINAL_BATCH_PRIMARY, junit_name="fc1_nexus_context.xml", log_name="fc1_nexus_context.log")
+    peer_junit = root / "junit/adv_final_peer.xml"
+    peer_junit.parent.mkdir(parents=True, exist_ok=True)
+    if not peer_junit.is_file():
+        peer_junit.write_text(
+            '<?xml version="1.0" encoding="utf-8"?><testsuite tests="1" failures="0">'
+            f'<testcase classname="tests.qualification.compat_x.test_compat_x_deprecation_r5_p0_gates" '
+            f'name="test_placeholder" file="{peer_path}"/>'
+            "</testsuite>",
+            encoding="utf-8",
+        )
+    (root / "logs/adv_final_peer.log").parent.mkdir(parents=True, exist_ok=True)
+    if not (root / "logs/adv_final_peer.log").is_file():
+        (root / "logs/adv_final_peer.log").write_bytes(b"")
+    write_batch(FINAL_BATCH_PEER, junit_name="adv_final_peer.xml", log_name="adv_final_peer.log")
+
+
 @pytest.fixture(scope="module")
 def ensure_baseline_fixture() -> None:
     """Use frozen validator fixtures only (V09: no tracked RUN_ROOT mutation)."""
@@ -100,8 +191,6 @@ def ensure_baseline_fixture() -> None:
     missing = [name for name in required if not (baseline / name).is_file()]
     if missing:
         raise RuntimeError(f"validator fixture incomplete: {missing}")
-    if not (baseline / "execution_records" / "fc1_nexus_context.post.json").is_file():
-        _sync_synthetic_records(baseline)
 
 
 def _refresh_batch_digests(root: Path, batch_id: str = "synthetic_pass") -> None:
@@ -201,11 +290,7 @@ ADVERSARIAL_CASES = [
 def _mutate(case_id: str, root: Path) -> None:
     prefix = case_id.split("_", 1)[0]
     if prefix.isdigit() and int(prefix) >= 29:
-        prereg = json.loads((root / "DES_PREREG.json").read_text(encoding="utf-8"))
-        prereg["batches"] = [b for b in prereg.get("batches", []) if b.get("id") == "fc1_nexus_context"]
-        (root / "DES_PREREG.json").write_text(json.dumps(prereg, indent=2), encoding="utf-8")
-        for syn in root.glob("execution_records/synthetic_pass*"):
-            syn.unlink(missing_ok=True)
+        _materialize_final_valid_fixture(root)
     if case_id.startswith("01"):
         return
     if case_id.startswith("02"):
@@ -371,36 +456,48 @@ def _mutate(case_id: str, root: Path) -> None:
             _shutil.rmtree(rec)
         rec.mkdir(parents=True)
     elif case_id.startswith("30"):
-        (root / "execution_records" / "fc1_nexus_context.post.json").unlink(missing_ok=True)
+        (root / "execution_records" / f"{FINAL_BATCH_PRIMARY}.post.json").unlink(missing_ok=True)
+        (root / "execution_records" / f"{FINAL_BATCH_PRIMARY}.pre.json").unlink(missing_ok=True)
     elif case_id.startswith("31"):
-        (root / "execution_records" / "fc1_nexus_context.pre.json").unlink(missing_ok=True)
+        (root / "execution_records" / f"{FINAL_BATCH_PRIMARY}.pre.json").unlink(missing_ok=True)
     elif case_id.startswith("32"):
-        (root / "execution_records" / "fc1_nexus_context.post.json").unlink(missing_ok=True)
+        (root / "execution_records" / f"{FINAL_BATCH_PRIMARY}.post.json").unlink(missing_ok=True)
     elif case_id.startswith("33"):
-        pre = root / "execution_records" / "fc1_nexus_context.pre.json"
+        pre = root / "execution_records" / f"{FINAL_BATCH_PRIMARY}.pre.json"
         data = json.loads(pre.read_text(encoding="utf-8"))
         data.pop("source_commit_sha", None)
         pre.write_text(json.dumps(data, indent=2), encoding="utf-8")
     elif case_id.startswith("34"):
-        pre = root / "execution_records" / "fc1_nexus_context.pre.json"
-        data = json.loads(pre.read_text(encoding="utf-8"))
-        data["source_commit_sha"] = "0" * 40
-        pre.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        wrong = "0" * 40
+        for name in (f"{FINAL_BATCH_PRIMARY}.pre.json", f"{FINAL_BATCH_PRIMARY}.post.json"):
+            path = root / "execution_records" / name
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if name.endswith(".pre.json"):
+                data["source_commit_sha"] = wrong
+                data["source_tree_sha"] = wrong
+            else:
+                data["source_commit_sha_after"] = wrong
+                data["source_tree_sha_after"] = wrong
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     elif case_id.startswith("35"):
-        row = queue["qualification_queue"][-1]
-        dup = dict(row)
-        queue["qualification_queue"].append(dup)
+        qual = queue.get("qualification_queue", [])
+        if len(qual) >= 2:
+            qual[-1]["path"] = qual[-2]["path"]
     elif case_id.startswith("36"):
         hosts = queue.setdefault("application_host_queue", [])
         if hosts:
             hosts[0]["recalculated_disposition"] = "GREEN"
     elif case_id.startswith("37"):
+        uncovered = "tests/qualification/prod_q/test_prod_q_p0_fast.py"
         for row in queue.get("qualification_queue", []):
-            row["recalculated_disposition"] = "OPEN"
-        for ob in obl.get("obligations", []):
-            ob["recalculated_disposition"] = "GREEN"
+            if row.get("path") == uncovered:
+                row["recalculated_disposition"] = "GREEN"
+                break
     elif case_id.startswith("38"):
-        obl["obligations"][0]["evidence_reference"] = "not_a_real_batch_record"
+        for ob in obl.get("obligations", []):
+            if ob.get("mapped_test_file_paths"):
+                ob["evidence_reference"] = "execution_records/not_a_real_batch.post.json"
+                break
     elif case_id.startswith("39"):
         rec = root / "execution_records"
         rec.mkdir(parents=True, exist_ok=True)

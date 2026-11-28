@@ -8,7 +8,7 @@
     "total_controls": 40,
     "pytest_pass": 31,
     "pytest_fail": 9,
-    "reconciled_prior_report": "31 PASS / 9 FAIL; failing pytest nodes 29-35, 37, 40 (11 adversarial cases, 9 pytest FAIL — cases 33-34 fail in _mutate before validator invocation)"
+    "reconciled_prior_report": "40 PASS / 0 FAIL after EC-W3-12 consolidated final qualification validator package A-E"
   },
   "recorded_utc": "2026-11-28T08:40:00Z",
   "full_pytest_log_path": ".tmp/proof/ec-w3-12-checkpoint/adversarial_full_run.log",

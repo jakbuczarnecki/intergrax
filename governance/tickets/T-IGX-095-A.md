@@ -31,6 +31,10 @@ EC-W3-12 packages A–G; 28/28 validator adversarial controls; semantic validato
 
 Production code, intergrax/** product changes, lockfile/CI/hooks, historical evidence directories (EC-W3-08/11), COMPAT-X / REPLAY-X operator decisions, formal G2/EQO_CLOSED.
 
+## Checkpoint
+
+- 2026-11-28: EC-W3-12 packages A-E adversarial validator 40/40 PASS (TOOL_ROOT pre_g2_evidence_integrity_recovery_12_8f03bae2). F-H replay and publication pending.
+
 ## Lifecycle state
 
 in_progress

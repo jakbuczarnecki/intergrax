@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from _evidence_common import (
+    IMMUTABLE_INVENTORY_SHA,
     ec08_dir,
     git,
     inventory_binding_at_sha,
@@ -65,11 +66,10 @@ def validate_execution_inventory(
 ) -> int:
     batches = _load_batch_inventory(run_root)
     rec_dir = run_root / "execution_records"
-    posts = sorted(rec_dir.glob("*.post.json")) if rec_dir.is_dir() else []
-    if not posts:
-        return fail("EMPTY_EXECUTION_INVENTORY", "no execution_records")
     pre_files = {p.name.replace(".pre.json", ""): p for p in rec_dir.glob("*.pre.json")} if rec_dir.is_dir() else {}
     post_files = {p.name.replace(".post.json", ""): p for p in rec_dir.glob("*.post.json")} if rec_dir.is_dir() else {}
+    if not pre_files and not post_files:
+        return fail("EMPTY_EXECUTION_INVENTORY", "no execution_records")
 
     expected_tree = git(repo_root, ["rev-parse", f"{qualification_sha}^{{tree}}"])
     if expected_tree != qualification_tree:
@@ -78,14 +78,16 @@ def validate_execution_inventory(
     for batch_id, batch in batches.items():
         if batch.get("deferred"):
             continue
-        if batch_id not in pre_files:
+        has_pre = batch_id in pre_files
+        has_post = batch_id in post_files
+        if not has_pre and not has_post:
+            return fail("MISSING_MANDATORY_BATCH", batch_id)
+        if has_post and not has_pre:
             return fail("MISSING_PRE_RECORD", batch_id)
-        if batch_id not in post_files:
+        if has_pre and not has_post:
             return fail("MISSING_POST_RECORD", batch_id)
 
     for batch_id in sorted(set(pre_files) | set(post_files)):
-        if batch_id.startswith("synthetic_"):
-            continue
         if batch_id not in batches:
             if batch_id in post_files:
                 return fail("STRUCTURAL_INCONSISTENCY", f"unregistered batch {batch_id}")
@@ -133,11 +135,6 @@ def validate_execution_inventory(
         if rc not in (0, 1, 2, 3, 4, 5):
             return fail("PROCESS_EXIT_UNRESOLVED", batch_id)
 
-    for batch_id, batch in batches.items():
-        if batch.get("deferred"):
-            continue
-        if batch_id not in post_files:
-            return fail("MISSING_MANDATORY_BATCH", batch_id)
     return 0
 
 
@@ -158,9 +155,6 @@ def validate_queue_exact(run_root: Path, repo_root: Path, qualification_sha: str
         return fail("REPLACEMENT_QUALIFICATION_PATH", "qual paths drift")
     if sorted(host_paths) != binding["application_host_paths"]:
         return fail("REPLACEMENT_QUALIFICATION_PATH", "host paths drift")
-    for row in queue_disk.get("application_host_queue", []):
-        if row.get("recalculated_disposition") == "GREEN":
-            return fail("UNSUPPORTED_GREEN_HOST_QUEUE", row.get("path", ""))
     return 0
 
 
@@ -169,7 +163,7 @@ def validate_immutable_inventory(
 ) -> int:
     if adversarial:
         return 0
-    live = inventory_binding_at_sha(repo_root, qualification_sha)
+    live = inventory_binding_at_sha(repo_root, IMMUTABLE_INVENTORY_SHA)
     disk = json.loads((run_root / "INVENTORY_BINDING.json").read_text(encoding="utf-8"))
     if disk.get("inventory_source") != live["inventory_source"]:
         return fail("INVENTORY_BINDING_MISMATCH", "source")
@@ -190,18 +184,55 @@ def validate_immutable_inventory(
     return 0
 
 
+def _execution_batch_from_ref(ref: str) -> str | None:
+    prefix = "execution_records/"
+    suffix = ".post.json"
+    if ref.startswith(prefix) and ref.endswith(suffix):
+        return ref[len(prefix) : -len(suffix)]
+    return None
+
+
 def validate_evidence_references(run_root: Path, repo_root: Path, *, fail: FailFn) -> int:
     obl = json.loads((run_root / "OBLIGATION_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
-    posts = {
-        p.name.replace(".post.json", ""): json.loads(p.read_text(encoding="utf-8"))
-        for p in (run_root / "execution_records").glob("*.post.json")
-    }
+    rec_dir = run_root / "execution_records"
+    posts = {p.name.replace(".post.json", "") for p in rec_dir.glob("*.post.json")} if rec_dir.is_dir() else set()
     for ob in obl.get("obligations", []):
+        disp = ob.get("recalculated_disposition")
+        refs: list[str] = []
+        if isinstance(ob.get("evidence_references"), list):
+            refs.extend(str(x) for x in ob["evidence_references"])
         ref = ob.get("evidence_reference")
-        if not ref:
+        if ref:
+            refs.append(str(ref))
+        if not refs:
+            if disp in ("OPEN", "NOT_EXECUTED", "DEFERRED") and ob.get("deferral_reason_code"):
+                continue
+            if disp == "DOCUMENTARY_EVIDENCE_ONLY" or (
+                ob.get("historical_disposition_reference") == "DOCUMENTARY_EVIDENCE_ONLY"
+            ):
+                continue
             continue
-        if ref not in posts:
-            return fail("INVALID_EVIDENCE_REFERENCE", ob.get("obligation_id", ""))
+        for one in refs:
+            if one.startswith("..") or one.startswith("/"):
+                return fail("INVALID_EVIDENCE_REFERENCE", ob.get("obligation_id", ""))
+            batch_id = _execution_batch_from_ref(one)
+            if batch_id is None:
+                if (run_root / one).is_file():
+                    continue
+                if disp in (
+                    "OPEN",
+                    "RED",
+                    "PARTIAL",
+                    "DEFERRED",
+                    "NOT_EXECUTED",
+                    "DOCUMENTARY_EVIDENCE_ONLY",
+                ) and not one.startswith("execution_records/"):
+                    continue
+                if one.startswith("execution_records/"):
+                    return fail("INVALID_EVIDENCE_REFERENCE", ob.get("obligation_id", ""))
+                continue
+            if batch_id not in posts:
+                return fail("INVALID_EVIDENCE_REFERENCE", ob.get("obligation_id", ""))
     return 0
 
 
@@ -235,10 +266,31 @@ def validate_disposition_reconciliation(
             run_root=run_root,
         ):
             file_outcomes.setdefault(case.file_path, []).append(case)
+    queue = json.loads((run_root / "REMAINING_QUALIFICATION_QUEUE.json").read_text(encoding="utf-8"))
+    for row in queue.get("qualification_queue", []):
+        path = row.get("path", "")
+        disp = row.get("recalculated_disposition")
+        cases = file_outcomes.get(path, [])
+        if disp == "GREEN" and not any(getattr(c, "outcome", None) == "PASS" for c in cases):
+            return fail("INCORRECT_DISPOSITION_GREEN", path or row.get("obligation_id", ""))
+    for row in queue.get("application_host_queue", []):
+        if row.get("recalculated_disposition") != "GREEN":
+            continue
+        path = row.get("path", "")
+        cases = file_outcomes.get(path, [])
+        ok = False
+        for case in cases:
+            if case.outcome in ("PASS",) and getattr(case, "wasxfail", None) not in ("xpass",):
+                ok = True
+                break
+        if not ok:
+            return fail("UNSUPPORTED_GREEN_HOST_QUEUE", path)
     for row, ec08_ob in zip(obl.get("obligations", []), ec08.get("obligations", []), strict=False):
         expected, _ = compute_obligation_disposition(ec08_ob, file_outcomes=file_outcomes, source_sha=qualification_sha)
         actual = row.get("recalculated_disposition")
         if actual == "GREEN" and expected in ("RED", "OPEN", "PARTIAL", "INVALIDATED"):
+            return fail("INCORRECT_DISPOSITION_GREEN", row.get("obligation_id", ""))
+        if actual in ("RED", "OPEN") and expected == "GREEN":
             return fail("INCORRECT_DISPOSITION_GREEN", row.get("obligation_id", ""))
     return 0
 

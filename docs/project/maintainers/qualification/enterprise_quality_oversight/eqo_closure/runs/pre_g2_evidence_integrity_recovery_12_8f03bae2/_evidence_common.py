@@ -87,6 +87,7 @@ EC08_REL = (
     "docs/project/maintainers/qualification/enterprise_quality_oversight/"
     "eqo_closure/runs/pre_g2_qualification_execution_08_245d4717"
 )
+IMMUTABLE_INVENTORY_SHA = "4abc43faad149cc0ce7291468e07886efcdd1f13"
 
 
 def ec08_dir(repo_root: Path) -> Path:
@@ -131,13 +132,14 @@ def inventory_binding_at_sha(repo_root: Path, sha: str) -> dict[str, Any]:
     payloads: dict[str, Any] = {}
     for name, rel in files_rel.items():
         blob = git(repo_root, ["rev-parse", f"{sha}:{rel}"])
-        raw = git(repo_root, ["show", f"{sha}:{rel}"])
+        raw_bytes = subprocess.check_output(["git", "-C", str(repo_root), "cat-file", "blob", blob])
+        raw = raw_bytes.decode("utf-8")
         payload = json.loads(raw)
         payloads[name] = payload
         out["artifacts"][name] = {
             "path": rel,
             "git_blob_sha": blob,
-            "content_digest_sha256": sha256_bytes(raw.encode("utf-8")),
+            "content_digest_sha256": sha256_bytes(raw_bytes),
             "json_canonical_digest_sha256": sha256_json_canonical(payload),
         }
     obl = payloads["OBLIGATION_EXECUTION_MATRIX.json"]

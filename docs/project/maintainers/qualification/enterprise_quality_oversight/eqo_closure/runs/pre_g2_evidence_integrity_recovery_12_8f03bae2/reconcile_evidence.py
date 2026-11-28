@@ -14,7 +14,6 @@ from _evidence_common import (
     build_test_path_reverse_index,
     compute_obligation_disposition,
     ec08_dir,
-    git,
     inventory_binding,
     parse_junit_cases,
     repo_root_from_run,
@@ -44,7 +43,12 @@ def _load_execution_records() -> dict[str, dict[str, Any]]:
 
 def emit() -> None:
     repo_root = repo_root_from_run(RUN_ROOT)
-    source_sha = git(repo_root, ["rev-parse", "HEAD"])
+    baseline_path = RUN_ROOT / "BASELINE_BINDING.json"
+    if not baseline_path.is_file():
+        _die("missing BASELINE_BINDING.json for qualification source sha")
+    source_sha = json.loads(baseline_path.read_text(encoding="utf-8")).get("qualification_source_sha")
+    if not source_sha:
+        _die("BASELINE_BINDING.json missing qualification_source_sha")
     obl_src = json.loads((ec08_dir(repo_root) / "OBLIGATION_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
     queue_src = json.loads((ec08_dir(repo_root) / "REMAINING_QUALIFICATION_QUEUE.json").read_text(encoding="utf-8"))
     binding = inventory_binding(repo_root)

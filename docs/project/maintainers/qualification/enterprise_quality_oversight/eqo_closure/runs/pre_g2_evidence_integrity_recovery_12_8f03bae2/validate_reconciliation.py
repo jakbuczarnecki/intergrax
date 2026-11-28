@@ -47,10 +47,6 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
     root = run_root or RUN_ROOT
     repo_root = repo_root_from_run(root)
     final_mode = mode == "FINAL_VALIDATION"
-    if final_mode:
-        rc = validate_synthetic_isolation(root, fail)
-        if rc:
-            return rc
     required = [
         "DES_PREREG.json",
         "BASELINE_BINDING.json",
@@ -107,6 +103,44 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
         return fail("REPLACEMENT_OBLIGATION_ID", forged[0])
 
     file_outcomes: dict[str, list] = {}
+    if final_mode:
+        baseline = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
+        qual_sha = baseline.get("qualification_source_sha") or source_sha
+        qual_tree = baseline.get("qualification_source_tree_sha") or tree_sha
+        adversarial = "--adversarial" in sys.argv
+        final_steps = (
+            ("synthetic", validate_synthetic_isolation),
+            ("inventory", validate_immutable_inventory),
+            ("execution", validate_execution_inventory),
+            ("node_ids", validate_testcase_node_ids),
+            ("queue", validate_queue_exact),
+            ("references", validate_evidence_references),
+            ("dispositions", validate_disposition_reconciliation),
+        )
+        for _name, fn in final_steps:
+            if fn is validate_immutable_inventory:
+                rc = fn(root, repo_root, qual_sha, adversarial=adversarial, fail=fail)
+            elif fn is validate_execution_inventory:
+                rc = fn(
+                    root,
+                    repo_root,
+                    qualification_sha=qual_sha,
+                    qualification_tree=qual_tree,
+                    fail=fail,
+                )
+            elif fn in (validate_queue_exact, validate_disposition_reconciliation):
+                rc = fn(root, repo_root, qual_sha, fail=fail)
+            elif fn is validate_evidence_references:
+                rc = fn(root, repo_root, fail=fail)
+            elif fn is validate_testcase_node_ids:
+                rc = fn(root, fail=fail)
+            else:
+                rc = fn(root, fail=fail)
+            if rc:
+                return rc
+        print("VALIDATION_OK:ACCEPT")
+        return 0
+
     rec_dir = root / "execution_records"
     if rec_dir.is_dir():
         for post_path in rec_dir.glob("*.post.json"):
@@ -253,40 +287,6 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
                     return fail("SKIP_WITHOUT_DISPOSITION", path)
                 if getattr(case, "evidence_validity", None) == "HISTORICAL_UNVERIFIED":
                     return fail("HISTORICAL_AS_CURRENT_PASS", case.node_id)
-
-    baseline = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
-    qual_sha = baseline.get("qualification_source_sha") or source_sha
-    qual_tree = baseline.get("qualification_source_tree_sha") or tree_sha
-    adversarial = "--adversarial" in sys.argv
-
-    if final_mode:
-        for step, fn, kwargs in (
-            ("synthetic", validate_synthetic_isolation, {}),
-            ("inventory", validate_immutable_inventory, {"adversarial": adversarial}),
-            ("queue", validate_queue_exact, {}),
-            ("references", validate_evidence_references, {}),
-            ("execution", validate_execution_inventory, {"qualification_tree": qual_tree}),
-            ("dispositions", validate_disposition_reconciliation, {}),
-            ("node_ids", validate_testcase_node_ids, {}),
-        ):
-            if fn == validate_immutable_inventory:
-                rc = fn(root, repo_root, qual_sha, adversarial=adversarial, fail=fail)
-            elif fn in (validate_queue_exact, validate_evidence_references):
-                rc = (
-                    fn(root, repo_root, qual_sha, fail=fail)
-                    if fn == validate_queue_exact
-                    else fn(root, repo_root, fail=fail)
-                )
-            elif fn == validate_execution_inventory:
-                rc = fn(root, repo_root, qualification_sha=qual_sha, qualification_tree=qual_tree, fail=fail)
-            elif fn == validate_disposition_reconciliation:
-                rc = fn(root, repo_root, qual_sha, fail=fail)
-            elif fn == validate_testcase_node_ids:
-                rc = fn(root, fail=fail)
-            else:
-                rc = fn(root, fail=fail)
-            if rc:
-                return rc
 
     print("VALIDATION_OK:ACCEPT")
     return 0
