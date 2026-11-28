@@ -24,7 +24,9 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     SearchSelectionOutcome,
     W1TerminalEvidenceOutcome,
     adas_json_to_plain,
+    canonical_record_json,
     compute_evidence_bundle_digest,
+    verify_evidence_bundle_digest,
 )
 from intergrax.runtime.adaptive.agent_design_search.sqlite_archive import SQLiteAgentDesignArchive
 from pydantic import ValidationError
@@ -32,6 +34,7 @@ from tests.unit.runtime.adaptive.agent_design_search.test_contracts import (
     _DIGEST,
     _NOW,
     sample_baseline,
+    sample_envelope,
     sample_evaluation_mapping,
     sample_record,
     sample_w1_baseline_retention_provenance,
@@ -2152,21 +2155,448 @@ def test_q07_02_forbidden_successor_append_rejected(
     assert len(archive.get_candidate_history("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)) == before
 
 
+_WS_B = "ws-b"
+_OBJ_B = "obj-2"
+
+
+def _record_for_workspace(
+    *,
+    workspace_id: str,
+    candidate_id: str,
+    objective_id: str = "obj-1",
+    sequence: int = 0,
+    status: AgentCandidateStatus = AgentCandidateStatus.DRAFT,
+    parent_candidate_id: str | None = None,
+    tenant_id: str = _TENANT,
+    **kwargs: object,
+) -> AgentCandidateRecord:
+    envelope = sample_envelope(tenant_id=tenant_id, workspace_id=workspace_id)
+    base = sample_record(
+        sequence=sequence,
+        status=status,
+        candidate_id=candidate_id,
+        **kwargs,  # type: ignore[arg-type]
+    )
+    update: dict[str, object] = {
+        "tenant_id": tenant_id,
+        "workspace_id": workspace_id,
+        "objective_id": objective_id,
+        "envelope": envelope,
+    }
+    if parent_candidate_id is not None:
+        update["parent_candidate_id"] = parent_candidate_id
+    return base.model_copy(update=update)
+
+
+def _terminal_gate_failed_record(candidate_id: str) -> AgentCandidateRecord:
+    return sample_record(
+        candidate_id=candidate_id,
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        static_gate_result={"passed": False},
+        rejection_reason="static gate rejected",
+    )
+
+
+def _sealed_terminal_bundle(
+    *,
+    record: AgentCandidateRecord,
+    bundle_id: str,
+    created_by: str = "operator",
+) -> AgentCandidateEvidenceBundle:
+    bundle = AgentCandidateEvidenceBundle(
+        bundle_id=bundle_id,
+        candidate_id=record.candidate_id,
+        objective_id=record.objective_id,
+        tenant_id=record.tenant_id,
+        workspace_id=record.workspace_id,
+        created_at=datetime.now(UTC),
+        created_by=created_by,
+        baseline_configuration_digest=_DIGEST,
+        candidate_configuration_digest=record.candidate_configuration_digest,
+        candidate_record=record,
+        static_gate_result={"passed": False},
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        assembled_at=datetime.now(UTC),
+        sealed=True,
+    )
+    digest = compute_evidence_bundle_digest(bundle)
+    return bundle.model_copy(update={"bundle_digest": digest})
+
+
+def test_q05_04_cross_workspace_read_write_isolation(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    rec_a = _record_for_workspace(workspace_id=_WORKSPACE, candidate_id="cand-ws-a")
+    rec_b = _record_for_workspace(workspace_id=_WS_B, candidate_id="cand-ws-b")
+    archive.append_candidate_snapshot(rec_a, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    archive.append_candidate_snapshot(rec_b, tenant_id=_TENANT, workspace_id=_WS_B)
+
+    latest_a = archive.get_latest_candidate_snapshot("cand-ws-a", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    latest_b = archive.get_latest_candidate_snapshot("cand-ws-b", tenant_id=_TENANT, workspace_id=_WS_B)
+    assert latest_a is not None and latest_a.workspace_id == _WORKSPACE and latest_a.envelope.workspace_id == _WORKSPACE
+    assert latest_b is not None and latest_b.workspace_id == _WS_B and latest_b.envelope.workspace_id == _WS_B
+
+    assert archive.get_latest_candidate_snapshot("cand-ws-a", tenant_id=_TENANT, workspace_id=_WS_B) is None
+    assert archive.get_candidate_history("cand-ws-a", tenant_id=_TENANT, workspace_id=_WS_B) == []
+    listed_b = archive.list_candidates_for_objective("obj-1", tenant_id=_TENANT, workspace_id=_WS_B)
+    assert [item.candidate_id for item in listed_b] == ["cand-ws-b"]
+    assert archive.get_sealed_evidence_bundle("bundle-ws", tenant_id=_TENANT, workspace_id=_WS_B) is None
+
+    foreign_rec = rec_a.model_copy(
+        update={"workspace_id": _WS_B, "envelope": rec_a.envelope.model_copy(update={"workspace_id": _WS_B})}
+    )
+    with pytest.raises(AgentDesignArchiveScopeError):
+        archive.append_candidate_snapshot(foreign_rec, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+    gate_failed_a = _terminal_gate_failed_record("cand-ws-a")
+    archive.append_candidate_snapshot(gate_failed_a, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    sealed = _sealed_terminal_bundle(record=gate_failed_a, bundle_id="bundle-ws")
+    archive.append_sealed_evidence_bundle(sealed, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(AgentDesignArchiveScopeError):
+        archive.append_sealed_evidence_bundle(sealed, tenant_id=_TENANT, workspace_id=_WS_B)
+
+    stored_bundle = archive.get_sealed_evidence_bundle("bundle-ws", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert stored_bundle is not None
+    assert archive.get_latest_candidate_snapshot("cand-ws-b", tenant_id=_TENANT, workspace_id=_WS_B) is not None
+
+
+def test_q05_05_missing_and_foreign_lookup_equivalence(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    foreign_tenant = "tenant-b"
+    parent = _record_for_workspace(workspace_id=_WORKSPACE, candidate_id="parent-foreign", tenant_id=foreign_tenant)
+    child = _record_for_workspace(
+        workspace_id=_WORKSPACE,
+        candidate_id="child-foreign",
+        tenant_id=foreign_tenant,
+        parent_candidate_id="parent-foreign",
+    ).model_copy(update={"lineage_id": "line-foreign"})
+    archive.append_candidate_snapshot(parent, tenant_id=foreign_tenant, workspace_id=_WORKSPACE)
+    archive.append_candidate_snapshot(child, tenant_id=foreign_tenant, workspace_id=_WORKSPACE)
+    gate_failed = parent.model_copy(
+        update={
+            "sequence": 1,
+            "status": AgentCandidateStatus.STATIC_GATE_FAILED,
+            "static_gate_result": {"passed": False},
+            "rejection_reason": "static gate rejected",
+            "snapshot_id": "snap-parent-foreign-1",
+        }
+    )
+    archive.append_candidate_snapshot(gate_failed, tenant_id=foreign_tenant, workspace_id=_WORKSPACE)
+    sealed = _sealed_terminal_bundle(record=gate_failed, bundle_id="bundle-foreign")
+    archive.append_sealed_evidence_bundle(sealed, tenant_id=foreign_tenant, workspace_id=_WORKSPACE)
+
+    assert (
+        archive.get_latest_candidate_snapshot("parent-foreign", tenant_id=foreign_tenant, workspace_id=_WORKSPACE)
+        is not None
+    )
+    assert archive.get_parent_candidate("child-foreign", tenant_id=foreign_tenant, workspace_id=_WORKSPACE) is not None
+
+    def local_absence(candidate_id: str, bundle_id: str) -> tuple[object, ...]:
+        return (
+            archive.get_latest_candidate_snapshot(candidate_id, tenant_id=_TENANT, workspace_id=_WORKSPACE),
+            archive.get_candidate_history(candidate_id, tenant_id=_TENANT, workspace_id=_WORKSPACE),
+            archive.list_candidates_for_objective("obj-1", tenant_id=_TENANT, workspace_id=_WORKSPACE),
+            archive.get_parent_candidate(candidate_id, tenant_id=_TENANT, workspace_id=_WORKSPACE),
+            archive.get_child_candidates(candidate_id, tenant_id=_TENANT, workspace_id=_WORKSPACE),
+            archive.get_sealed_evidence_bundle(bundle_id, tenant_id=_TENANT, workspace_id=_WORKSPACE),
+        )
+
+    assert local_absence("missing-cand", "missing-bundle") == local_absence("parent-foreign", "bundle-foreign")
+
+
+def test_q08_05_distinct_snapshot_same_sequence_rejected(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    archive.append_candidate_snapshot(
+        sample_record(sequence=0, status=AgentCandidateStatus.DRAFT),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.append_candidate_snapshot(
+        sample_record(sequence=1, status=AgentCandidateStatus.STATIC_GATE_PASSED, static_gate_result={"passed": True}),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    history_before = archive.get_candidate_history("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    latest_before = archive.get_latest_candidate_snapshot("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert latest_before is not None
+    conflicting = sample_record(
+        sequence=1,
+        snapshot_id="snap-conflict-seq1",
+        status=AgentCandidateStatus.STATIC_GATE_PASSED,
+        static_gate_result={"passed": True},
+    )
+    with pytest.raises(AgentDesignArchiveError):
+        archive.append_candidate_snapshot(conflicting, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert archive.get_candidate_history("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE) == history_before
+    assert (
+        archive.get_latest_candidate_snapshot("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE).snapshot_id
+        == latest_before.snapshot_id
+    )
+    archive.append_candidate_snapshot(
+        sample_record(
+            sequence=2,
+            status=AgentCandidateStatus.EVALUATED,
+            static_gate_result={"passed": True},
+            evaluation_result=sample_evaluation_mapping(passed=True),
+        ),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert len(archive.get_candidate_history("cand-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 3
+
+
+def test_q09_02_scoped_objective_and_latest_status_filtering(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    archive.append_candidate_snapshot(
+        sample_record(candidate_id="cand-a", sequence=0),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.append_candidate_snapshot(
+        sample_record(
+            candidate_id="cand-a",
+            sequence=1,
+            status=AgentCandidateStatus.STATIC_GATE_PASSED,
+            static_gate_result={"passed": True},
+        ),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.append_candidate_snapshot(
+        sample_record(candidate_id="cand-b", sequence=0, status=AgentCandidateStatus.DRAFT),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.append_candidate_snapshot(
+        _record_for_workspace(workspace_id=_WORKSPACE, candidate_id="cand-other-obj", objective_id=_OBJ_B),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    foreign = sample_record(candidate_id="cand-foreign-tenant", sequence=0).model_copy(
+        update={
+            "tenant_id": "tenant-b",
+            "envelope": sample_record().envelope.model_copy(update={"tenant_id": "tenant-b"}),
+        }
+    )
+    archive.append_candidate_snapshot(foreign, tenant_id="tenant-b", workspace_id=_WORKSPACE)
+
+    unfiltered = archive.list_candidates_for_objective("obj-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert [item.candidate_id for item in unfiltered] == ["cand-a", "cand-b"]
+    assert archive.list_candidates_for_objective(
+        "obj-1", tenant_id=_TENANT, workspace_id=_WORKSPACE, status=AgentCandidateStatus.DRAFT
+    ) == [unfiltered[1]]
+    assert archive.list_candidates_for_objective(
+        "obj-1", tenant_id=_TENANT, workspace_id=_WORKSPACE, status=AgentCandidateStatus.STATIC_GATE_PASSED
+    ) == [unfiltered[0]]
+
+
+def test_q09_03_cross_objective_parent_rejected(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    parent_a = _record_for_workspace(workspace_id=_WORKSPACE, candidate_id="parent-a", objective_id="obj-1")
+    archive.append_candidate_snapshot(parent_a, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    child_b = _record_for_workspace(
+        workspace_id=_WORKSPACE,
+        candidate_id="child-b",
+        objective_id=_OBJ_B,
+        parent_candidate_id="parent-a",
+    ).model_copy(update={"lineage_id": "line-b"})
+    with pytest.raises(AgentDesignArchiveError, match="cross-objective lineage rejected"):
+        archive.append_candidate_snapshot(child_b, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert archive.get_latest_candidate_snapshot("child-b", tenant_id=_TENANT, workspace_id=_WORKSPACE) is None
+    child_ok = _record_for_workspace(
+        workspace_id=_WORKSPACE,
+        candidate_id="child-ok",
+        objective_id="obj-1",
+        parent_candidate_id="parent-a",
+    ).model_copy(update={"lineage_id": "line-ok"})
+    archive.append_candidate_snapshot(child_ok, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert archive.get_parent_candidate("child-ok", tenant_id=_TENANT, workspace_id=_WORKSPACE) is not None
+
+
+def test_q10_10_orphan_evidence_rejected(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    terminal = _terminal_gate_failed_record("cand-orphan")
+    orphan_bundle = _sealed_terminal_bundle(record=terminal, bundle_id="bundle-orphan")
+    with pytest.raises(AgentDesignArchiveError, match="orphan evidence bundle rejected"):
+        archive.append_sealed_evidence_bundle(orphan_bundle, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert archive.get_sealed_evidence_bundle("bundle-orphan", tenant_id=_TENANT, workspace_id=_WORKSPACE) is None
+    archive.append_candidate_snapshot(
+        sample_record(candidate_id="cand-orphan", sequence=0, status=AgentCandidateStatus.DRAFT),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.append_candidate_snapshot(terminal, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    appended = archive.append_sealed_evidence_bundle(orphan_bundle, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert appended.bundle_id == "bundle-orphan"
+
+
+def test_q11_04_same_scope_conflicting_bundle_identity_rejected(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    archive = archive_backend
+    archive.append_candidate_snapshot(
+        sample_record(candidate_id="cand-bid", sequence=0, status=AgentCandidateStatus.DRAFT),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    terminal = _terminal_gate_failed_record("cand-bid")
+    archive.append_candidate_snapshot(terminal, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    first = _sealed_terminal_bundle(record=terminal, bundle_id="bundle-conflict", created_by="operator-a")
+    stored = archive.append_sealed_evidence_bundle(first, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    second = _sealed_terminal_bundle(record=terminal, bundle_id="bundle-conflict", created_by="operator-b")
+    assert first.bundle_digest != second.bundle_digest
+    with pytest.raises(AgentDesignArchiveError, match="conflicting evidence bundle identity"):
+        archive.append_sealed_evidence_bundle(second, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    again = archive.append_sealed_evidence_bundle(first, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert again.model_dump(mode="json") == stored.model_dump(mode="json")
+
+
+def test_q11_05_archive_mutation_boundaries(
+    archive_backend: InMemoryAgentDesignArchive | SQLiteAgentDesignArchive,
+) -> None:
+    import json as json_mod
+
+    archive = archive_backend
+    nested: dict[str, object] = {"layer": {"items": [{"k": "v"}], "flags": [True, False]}}
+    stored_record = archive.append_candidate_snapshot(
+        sample_record(candidate_id="cand-mut", sequence=0).model_copy(update={"agent_contract_snapshot": nested}),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    terminal = stored_record.model_copy(
+        update={
+            "sequence": 1,
+            "snapshot_id": "snap-cand-mut-1",
+            "status": AgentCandidateStatus.STATIC_GATE_FAILED,
+            "static_gate_result": {"passed": False},
+            "rejection_reason": "static gate rejected",
+        }
+    )
+    archive.append_candidate_snapshot(terminal, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert stored_record is not None
+    sealed = _sealed_terminal_bundle(record=terminal, bundle_id="bundle-mut")
+    stored_bundle = archive.append_sealed_evidence_bundle(sealed, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(TypeError):
+        stored_record.agent_contract_snapshot["layer"]["items"][0]["k"] = "mutated"  # type: ignore[index]
+    with pytest.raises((TypeError, ValidationError)):
+        stored_bundle.static_gate_result["passed"] = True  # type: ignore[index]
+    record_json = json_mod.loads(json_mod.dumps(canonical_record_json(stored_record)))
+    bundle_json = json_mod.loads(json_mod.dumps(canonical_record_json(stored_bundle)))
+    record_json["rejection_reason"] = "detached"
+    bundle_json["created_by"] = "detached"
+    latest = archive.get_latest_candidate_snapshot("cand-mut", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    history = archive.get_candidate_history("cand-mut", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    listed = archive.list_candidates_for_objective("obj-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    loaded_bundle = archive.get_sealed_evidence_bundle("bundle-mut", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    canonical_before = canonical_record_json(terminal)
+    assert latest is not None and latest.snapshot_id == terminal.snapshot_id
+    assert history[-1].model_dump(mode="json") == terminal.model_dump(mode="json")
+    assert any(item.candidate_id == "cand-mut" for item in listed)
+    assert loaded_bundle is not None and loaded_bundle.model_dump(mode="json") == stored_bundle.model_dump(mode="json")
+    verify_evidence_bundle_digest(loaded_bundle)
+    assert canonical_record_json(terminal) == canonical_before
+
+
+_Q13_01_Q05_Q11_CONTRACT_ONLY_WITNESSES: dict[str, tuple[str, ...]] = {
+    "Q05": (
+        "test_c02_search_run_mismatch_in_sealed_bundle",
+        "test_q10_rejects_contradictory_bundle_configuration_digest",
+    ),
+    "Q10": (
+        "test_c02_incomplete_terminal_static_gate_shape",
+        "test_c02_invalid_bundle_digest_rejected_at_construction",
+        "test_q10_rejects_foreign_evaluation_candidate_id",
+    ),
+}
+
 _Q13_01_Q05_Q11_ARCHIVE_WITNESSES: dict[str, tuple[str, ...]] = {
-    "Q05": ("test_q05_unknown_parent_same_as_foreign_parent",),
+    "Q05": (
+        "test_cross_scope_rejection",
+        "test_q05_04_cross_workspace_read_write_isolation",
+        "test_q05_05_missing_and_foreign_lookup_equivalence",
+        "test_q05_unknown_parent_same_as_foreign_parent",
+        "test_ia11_stop_scope_bound_at_archive_ingress",
+    ),
     "Q06": (
         "test_q06_immutable_successor_positive_control",
         "test_q06_immutable_identity_fields_rejected_on_successor",
         "test_q06_candidate_identity_rebinding_rejected",
     ),
     "Q07": (
+        "test_c08_w1_permitted_lifecycle_chain",
+        "test_c08_w1_forbidden_lifecycle_transitions_rejected",
+        "test_c08_w1_forbidden_terminal_targets_rejected",
+        "test_c02_static_gate_evidence_loss_rejected",
+        "test_c02_contradictory_evaluation_replacement_rejected",
         "test_q07_rejects_successor_omitting_prior_evaluation",
         "test_q07_02_w1_lifecycle_transition_table_matches_cartesian_matrix",
         "test_q07_02_forbidden_successor_append_rejected",
+        "test_q08_compatible_additive_nested_evidence",
+        "test_ia12_draft_must_not_contain_completed_evaluation",
+        "test_ia13_archived_must_not_gain_new_selection",
+        "test_ia20_completed_negative_evaluation",
+        "test_ia22_pre_execution_rejection_phase_rejects_fabricated_gate",
+        "test_ia23_missing_typed_stop_rejected",
+        "test_ia24_failed_gate_with_fabricated_execution_rejected",
     ),
-    "Q08": ("test_q08_compatible_additive_nested_evidence",),
-    "Q09": ("test_q09_actual_parent_child_lineage_queries",),
-    "Q11": ("test_q11_evidence_binds_exact_historical_snapshot",),
+    "Q08": (
+        "test_snapshot_append_history_and_latest",
+        "test_idempotent_and_conflicting_duplicates",
+        "test_q08_05_distinct_snapshot_same_sequence_rejected",
+        "test_ia02_evaluated_snapshot_requires_valid_typed_evaluation",
+    ),
+    "Q09": (
+        "test_scoped_listing_parent_child_and_sealed_bundle",
+        "test_invalid_transition_and_lineage_checks",
+        "test_q09_actual_parent_child_lineage_queries",
+        "test_q09_02_scoped_objective_and_latest_status_filtering",
+        "test_q09_03_cross_objective_parent_rejected",
+    ),
+    "Q10": (
+        "test_ia01_rejected_candidate_cannot_have_selected_sealed_evidence",
+        "test_ia02_evaluated_snapshot_requires_valid_typed_evaluation",
+        "test_ia03_incomplete_negative_evaluation_rejected",
+        "test_ia04_nonselecting_outcomes_on_static_gate_failed",
+        "test_ia05_pre_gate_rejection_sealed_and_negative",
+        "test_ia06_incomplete_accounting_rejects_selection",
+        "test_ia06_complete_accounting_allows_zero_monetary",
+        "test_ia07_failed_or_cancelled_execution",
+        "test_ia07_rejection_without_typed_execution_evidence_rejected",
+        "test_ia08_selection_accounting_rejects_invalid_values",
+        "test_ia09_retain_baseline_requires_passed_baseline",
+        "test_ia10_bundle_stop_must_match_archived_stop",
+        "test_ia11_stop_scope_bound_at_archive_ingress",
+        "test_ia12_draft_must_not_contain_completed_evaluation",
+        "test_ia13_archived_must_not_gain_new_selection",
+        "test_ia20_completed_negative_evaluation",
+        "test_ia21_strict_accounting_measurements_rejected",
+        "test_ia21_strict_accounting_positive_control",
+        "test_ia22_pre_execution_rejection_phase_rejects_fabricated_gate",
+        "test_ia22_pre_execution_rejection_positive_control",
+        "test_ia23_missing_typed_stop_rejected",
+        "test_ia24_failed_gate_with_fabricated_execution_rejected",
+        "test_ia24_failed_gate_without_execution_positive_control",
+        "test_control_valid_evaluated_selection",
+        "test_q10_10_orphan_evidence_rejected",
+    ),
+    "Q11": (
+        "test_q11_evidence_binds_exact_historical_snapshot",
+        "test_q11_04_same_scope_conflicting_bundle_identity_rejected",
+        "test_q11_05_archive_mutation_boundaries",
+        "test_mutation_escape_blocked",
+    ),
 }
 
 
@@ -2176,9 +2606,10 @@ def test_q13_01_backend_parity_witness_collects_memory_and_sqlite(tmp_path: Path
     from pathlib import Path as PathLib
 
     witness_tests = sorted({name for names in _Q13_01_Q05_Q11_ARCHIVE_WITNESSES.values() for name in names})
+    contract_only = sorted({name for names in _Q13_01_Q05_Q11_CONTRACT_ONLY_WITNESSES.values() for name in names})
     assert witness_tests
     repo_root = PathLib(__file__).resolve().parents[5]
-    proc = subprocess.run(
+    proc_archive = subprocess.run(
         [
             sys.executable,
             "-m",
@@ -2192,13 +2623,33 @@ def test_q13_01_backend_parity_witness_collects_memory_and_sqlite(tmp_path: Path
         text=True,
         check=False,
     )
-    assert proc.returncode == 0, proc.stderr
-    collected = proc.stdout.splitlines()
+    assert proc_archive.returncode == 0, proc_archive.stderr
+    archive_collected = proc_archive.stdout.splitlines()
     for test_name in witness_tests:
-        matching = [line for line in collected if f"::{test_name}" in line]
+        matching = [line for line in archive_collected if f"::{test_name}" in line]
         assert matching, test_name
         assert any("[memory" in line for line in matching), test_name
         assert any("[sqlite" in line for line in matching), test_name
+
+    proc_contracts = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "--collect-only",
+            "-q",
+            "tests/unit/runtime/adaptive/agent_design_search/test_contracts.py",
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc_contracts.returncode == 0, proc_contracts.stderr
+    contract_collected = proc_contracts.stdout.splitlines()
+    for test_name in contract_only:
+        matching = [line for line in contract_collected if f"::{test_name}" in line]
+        assert matching, test_name
 
     memory = InMemoryAgentDesignArchive()
     sqlite = SQLiteAgentDesignArchive(tmp_path / "parity.sqlite3")

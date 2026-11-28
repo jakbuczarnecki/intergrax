@@ -1202,13 +1202,7 @@ def test_q02_03_unsupported_merge_strategy_rejected() -> None:
 
 def test_q02_06_lab_only_posture_false_rejected() -> None:
     with pytest.raises(ValidationError):
-        AgentDesignObjective.model_validate(
-            {
-                **sample_objective().model_dump(),
-                "envelope": sample_envelope().model_dump(),
-            }
-            | {"envelope": {**sample_envelope().model_dump(), "lab_only_posture": False}}
-        )
+        AdasOperationalEnvelope.model_validate({**sample_envelope().model_dump(), "lab_only_posture": False})
 
 
 def test_q02_07_external_effects_prohibited_false_rejected() -> None:
@@ -1371,3 +1365,111 @@ def test_q12_08_nested_nonfinite_json_rejected(bad: dict[str, object]) -> None:
     payload["agent_contract_snapshot"] = bad
     with pytest.raises((ValidationError, ValueError, TypeError)):
         AgentCandidateRecord.model_validate(payload)
+
+
+def test_q12_04_canonical_optional_null_preserved() -> None:
+    record = sample_record(sequence=0, status=AgentCandidateStatus.DRAFT).model_copy(
+        update={"parent_candidate_id": None}
+    )
+    dumped = canonical_record_json(record)
+    assert "parent_candidate_id" in dumped
+    assert dumped["parent_candidate_id"] is None
+
+    gate_failed = sample_record(
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        static_gate_result={"passed": False},
+        rejection_reason="static gate rejected",
+    )
+    bundle = AgentCandidateEvidenceBundle(
+        bundle_id="bundle-null-eval",
+        candidate_id=gate_failed.candidate_id,
+        objective_id=gate_failed.objective_id,
+        tenant_id=gate_failed.tenant_id,
+        workspace_id=gate_failed.workspace_id,
+        created_at=_NOW,
+        created_by="operator",
+        baseline_configuration_digest=_DIGEST,
+        candidate_configuration_digest=gate_failed.candidate_configuration_digest,
+        candidate_record=gate_failed,
+        static_gate_result={"passed": False},
+        evaluation_result=None,
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        assembled_at=_NOW,
+        sealed=True,
+    )
+    bundle_dumped = canonical_record_json(bundle)
+    assert "evaluation_result" in bundle_dumped
+    assert bundle_dumped["evaluation_result"] is None
+
+
+def test_q12_06_canonical_round_trip() -> None:
+    import json as json_mod
+
+    record = sample_record(
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        static_gate_result={"passed": False},
+        rejection_reason="static gate rejected",
+    )
+    bundle = AgentCandidateEvidenceBundle(
+        bundle_id="bundle-roundtrip",
+        candidate_id=record.candidate_id,
+        objective_id=record.objective_id,
+        tenant_id=record.tenant_id,
+        workspace_id=record.workspace_id,
+        created_at=_NOW,
+        created_by="operator",
+        baseline_configuration_digest=_DIGEST,
+        candidate_configuration_digest=record.candidate_configuration_digest,
+        candidate_record=record,
+        static_gate_result={"passed": False},
+        evaluation_result=None,
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        assembled_at=_NOW,
+        sealed=True,
+    )
+    digest = compute_evidence_bundle_digest(bundle)
+    bundle = bundle.model_copy(update={"bundle_digest": digest})
+    for model in (record, bundle):
+        first = canonical_record_json(model)
+        serialized = json_mod.dumps(first, sort_keys=True)
+        restored = type(model).model_validate(json_mod.loads(serialized))
+        second = canonical_record_json(restored)
+        assert first == second
+    verify_evidence_bundle_digest(bundle.model_validate(json_mod.loads(json_mod.dumps(bundle.model_dump(mode="json")))))
+
+
+def test_q12_07_meaningful_payload_mutation_changes_digest() -> None:
+    record = sample_record(
+        sequence=1,
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        static_gate_result={"passed": False},
+        rejection_reason="static",
+    )
+    base = AgentCandidateEvidenceBundle(
+        bundle_id="bundle-sensitive",
+        candidate_id=record.candidate_id,
+        objective_id=record.objective_id,
+        tenant_id=record.tenant_id,
+        workspace_id=record.workspace_id,
+        created_at=_NOW,
+        created_by="operator",
+        baseline_configuration_digest=_DIGEST,
+        candidate_configuration_digest=record.candidate_configuration_digest,
+        candidate_record=record,
+        static_gate_result={"passed": False},
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        assembled_at=_NOW,
+        sealed=True,
+    )
+    digest_a = compute_evidence_bundle_digest(base)
+    changed = base.model_copy(update={"created_by": "auditor"})
+    digest_b = compute_evidence_bundle_digest(changed)
+    assert digest_a != digest_b
+    forged_only = base.model_copy(update={"bundle_digest": "c" * 64})
+    assert compute_evidence_bundle_digest(forged_only) == digest_a
+    sealed = base.model_copy(update={"bundle_digest": digest_a})
+    verify_evidence_bundle_digest(sealed)
+    with pytest.raises(ValueError):
+        verify_evidence_bundle_digest(sealed.model_copy(update={"bundle_digest": "d" * 64}))
