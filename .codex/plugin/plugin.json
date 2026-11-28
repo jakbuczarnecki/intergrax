@@ -1,0 +1,5 @@
+{
+  "name": "intergrax-codex",
+  "version": "1.0.0",
+  "description": "Codex adapters for the repository's canonical Intergrax workflows. No external services."
+}

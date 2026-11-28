@@ -1,0 +1,6 @@
+{
+  "name": "intergrax-codex",
+  "version": "1.0.0",
+  "description": "Repository-local Codex adapters for Intergrax workflows.",
+  "skills": "./skills/"
+}

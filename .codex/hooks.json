@@ -1,0 +1,60 @@
+{
+  "description": "Intergrax Codex-only guards and session-owned approved-plan continuation.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; c=pathlib.Path.cwd(); p=next(x/'.codex/hooks/igx_codex_guard.py' for x in (c,*c.parents) if (x/'.codex/hooks/igx_codex_guard.py').is_file()); runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; c=pathlib.Path.cwd(); p=next(x/'.codex/hooks/igx_codex_guard.py' for x in (c,*c.parents) if (x/'.codex/hooks/igx_codex_guard.py').is_file()); runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; c=pathlib.Path.cwd(); p=next(x/'.codex/hooks/igx_codex_guard.py' for x in (c,*c.parents) if (x/'.codex/hooks/igx_codex_guard.py').is_file()); runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; c=pathlib.Path.cwd(); p=next(x/'.codex/hooks/igx_codex_guard.py' for x in (c,*c.parents) if (x/'.codex/hooks/igx_codex_guard.py').is_file()); runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; c=pathlib.Path.cwd(); p=next(x/'.codex/hooks/igx_codex_guard.py' for x in (c,*c.parents) if (x/'.codex/hooks/igx_codex_guard.py').is_file()); runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

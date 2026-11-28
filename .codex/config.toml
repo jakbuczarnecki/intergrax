@@ -1,0 +1,42 @@
+# Intergrax project-only Codex configuration. Trust this project before use.
+# Model, permissions, sandbox, providers, MCP, and credentials remain inherited.
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+
+[features]
+hooks = true
+
+[plugins."intergrax-codex@intergrax-codex-local"]
+enabled = true
+
+# These names are existing Antigravity adapters. Their Codex counterparts have
+# the codex- prefix; name selectors avoid machine-specific absolute paths.
+[[skills.config]]
+name = "igx-autonomy"
+enabled = false
+
+[[skills.config]]
+name = "igx-run-plan"
+enabled = false
+
+[[skills.config]]
+name = "intergrax-ci-hotfix"
+enabled = false
+
+[[skills.config]]
+name = "intergrax-hep-step"
+enabled = false
+
+[[skills.config]]
+name = "intergrax-independent-audit"
+enabled = false
+
+[[skills.config]]
+name = "intergrax-iteration"
+enabled = false
+
+[[skills.config]]
+name = "intergrax-micro-implement"
+enabled = false

@@ -1,0 +1,20 @@
+{
+  "name": "intergrax-codex-local",
+  "interface": {
+    "displayName": "Intergrax Codex (repository local)"
+  },
+  "plugins": [
+    {
+      "name": "intergrax-codex",
+      "source": {
+        "source": "local",
+        "path": "./.codex/plugin"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
