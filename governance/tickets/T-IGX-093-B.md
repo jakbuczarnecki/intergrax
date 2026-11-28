@@ -14,7 +14,21 @@ Plan digest: 5746462840ea01fe7a9e5acb2d96363ef72d0533c66a4f7acd35e809e21353b4
 
 ## Approved
 
-Pending explicit Operator approval and EBH-5 owner acceptance.
+Approved: operator @ 2026-11-28T17:24:20+01:00
+
+OD-AHE-05 - APPROVED, variant A.
+
+Approved plan digest: 5746462840ea01fe7a9e5acb2d96363ef72d0533c66a4f7acd35e809e21353b4
+
+EBH-5 owner acceptance: INTERNAL classification for ADAS W1 LAB SQLite archive.
+
+Authorized: preparation, publication and qualification of the integration candidate.
+
+Historical exception: preserve b53b74a755395812b9d4f2f93754ca1b669e8eae without history rewriting.
+
+All independent certification and final integration controls remain mandatory.
+
+Timestamp records repository registration of the previously granted Operator decision.
 
 ## Test contract
 
@@ -40,4 +54,4 @@ Product redesign; production activation; governance gate or hook changes; automa
 
 ## Lifecycle state
 
-plan_pending
+plan_approved
