@@ -192,6 +192,21 @@ def test_fc3_global_semantic_scan_unchanged_blocker_set() -> None:
         encoding="utf-8",
         check=True,
     ).stdout
+    # Operator-approved exception in CORRECTIVE-02: normalize exactly the prior
+    # typing-only guard. _resolve_string_constant reports unresolved only for Name.
+    original = "if unresolved:\n                    findings.append("
+    typed = (
+        "if unresolved:\n"
+        "                    const_ref = default_node.id if isinstance(default_node, ast.Name)"
+        " else ast.dump(default_node)\n"
+        "                    findings.append("
+    )
+    assert baseline.count(original) == 1
+    assert baseline.count("{default_node.id!r}") == 1
+    baseline = baseline.replace(original, typed, 1).replace("{default_node.id!r}", "{const_ref!r}", 1)
+    assert scan._resolve_string_constant(ast.Name(id="unbound"), {}) == (None, True)
+    for expression in ("'literal'", "C.VALUE", "call()", "None"):
+        assert scan._resolve_string_constant(ast.parse(expression, mode="eval").body, {})[1] is False
     old = {
         n.name: ast.dump(n, include_attributes=False)
         for n in ast.parse(baseline).body
