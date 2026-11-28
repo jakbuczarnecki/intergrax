@@ -1,0 +1,723 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py",
+      "node_id": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py::test_r2_sec_baseline_matrix_covers_fifteen_failures",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_unresolved_duplicate_blockers",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_shadow_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_measure_open_bypass",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_open_gaps_registered",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_retained_parallel_delta_proof",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_section_13_candidates_classified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_closed_world_replay",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_config_x_reconciled",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_composition_hints_normative_in_config_x",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_audited_head_documented",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py::test_dup_x_exit_operator_gates_not_self_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_findings_unclassified_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_prohibited_unresolved_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_finding_ids_unique",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_sqlite_findings_cover_annex",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_coverage_findings_complete",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_layer_evidence_annex_non_empty",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_tracked_debt_findings_ratified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py::test_ebh6_register_md_references_ssot",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

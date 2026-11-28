@@ -1,0 +1,21 @@
+{
+  "findings": [
+    {
+      "campaign_residual": true,
+      "disposition": "OPEN_FASTAPI_CORE_OWNER_CORRECTIVE",
+      "finding_id": "EC-F16"
+    },
+    {
+      "campaign_residual": true,
+      "disposition": "OPEN_OWNER_BLOCK",
+      "finding_id": "EC-F12"
+    },
+    {
+      "disposition": "SETTLED_WITH_RESIDUALS",
+      "finding_id": "AUD-11",
+      "note": "replay #2 semantic evidence; FC3 PARTIAL_VALIDATION witness preserved"
+    }
+  ],
+  "recorded_utc": "2026-11-28T14:31:17Z",
+  "schema": "eqo.finding_disposition.v1"
+}

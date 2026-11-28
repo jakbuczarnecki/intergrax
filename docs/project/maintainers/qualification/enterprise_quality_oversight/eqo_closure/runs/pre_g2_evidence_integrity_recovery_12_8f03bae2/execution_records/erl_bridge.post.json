@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "erl_bridge",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:54:14Z",
+  "monotonic_elapsed_seconds": 14.813000000023749,
+  "stdout_stderr_path": "logs/erl_bridge.log",
+  "stdout_stderr_sha256": "06650c627f98b14d8e4729f52cc80307c39a9432b6df69ff5949f1cd612d500d",
+  "junit_path": "junit/erl_bridge.xml",
+  "junit_sha256": "cf0b62b1a73e7ff942ca25994c5034fe3b82441a61920b47f956063fed1a1e9b",
+  "node_report_path": "node_reports/erl_bridge_nodes.json",
+  "node_report_sha256": "b695506e6d4b65bfecf7fe278f03bf70b87bc265a274dbb3e67e90e3bd6e8ed3",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

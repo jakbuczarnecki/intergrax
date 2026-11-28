@@ -1,0 +1,791 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

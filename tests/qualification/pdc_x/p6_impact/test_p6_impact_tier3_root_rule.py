@@ -32,7 +32,7 @@ LADDER = REPO_ROOT / "docs/project/maintainers/qualification/platform_domain_com
 SSOT = REPO_ROOT / "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
 _PRODUCT_ROOTS = ("intergrax/", "agents/", "applications/")
 _ROOT_PREFIX = "applications"
-_MANIFEST_SIZE = 85
+_MANIFEST_SIZE = 91
 _EXPECTED_IDS = frozenset(
     {
         "ENT-A-BND-01",
@@ -85,7 +85,7 @@ def _pdc_touched_product_modules() -> list[str]:
     return sorted(p for p in changed if p.endswith(".py") and p.startswith(_PRODUCT_ROOTS))
 
 
-def test_manifest_still_has_exactly_85_checks() -> None:
+def test_manifest_still_has_exactly_91_checks() -> None:
     assert len(load_default_manifest()) == _MANIFEST_SIZE
 
 

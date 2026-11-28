@@ -1,0 +1,274 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\63148-2f2d55e3\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 123 items
+
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_010_backend_persistence_sqlite_behavioral PASSED [  0%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_007_tool_skill_plugin_shadow_denied PASSED [  1%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_012_trace_replay_tenant_boundary PASSED [  2%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_014_cancel_external_effect_tenant PASSED [  3%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_015_compat_historical_evidence_reject PASSED [  4%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_016_vbn_composition_factory_behavioral PASSED [  4%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_017_failure_diagnostics_tenant_leak PASSED [  5%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_018_plugin_tenant_activate_denied PASSED [  6%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_019_recovery_gov_restore_denied PASSED [  7%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_022_llm_tenant_gov_block PASSED [  8%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_023_worker_lease_tenant PASSED [  8%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_024_retry_side_effect_tenant PASSED [  9%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_025_hitl_trace_tenant PASSED [ 10%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_026_config_compat_tenant PASSED [ 11%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_027_agent_distribution_tenant PASSED [ 12%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_028_nexus_agent_tenant PASSED [ 13%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_029_integration_external_di_boundary PASSED [ 13%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_030_obs_evidence_tenant_isolate PASSED [ 14%]
+tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_031_scale_backpressure_tenant PASSED [ 15%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_r4_probe_g_cross_tenant_evidence <- tests\qualification\compat_x\test_compat_x_plugin_provider_r4_gates.py PASSED [ 16%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_txp4r1_q20_cross_tenant_attribution_rejected <- tests\qualification\trace_x\test_trace_x_p4_model_context_attribution.py PASSED [ 17%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed PASSED [ 17%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected PASSED [ 18%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected PASSED [ 19%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected PASSED [ 20%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied PASSED [ 21%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary PASSED [ 21%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime PASSED [ 22%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_05_config_provider_cross_tenant PASSED [ 23%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_12_skill_compose_cross_tenant PASSED [ 24%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_14_backend_switch_preserves_tenant PASSED [ 25%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_17_obs_tenant_isolate PASSED [ 26%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_18_hitl_resume_tenant PASSED [ 26%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_19_child_exec_cross_tenant PASSED [ 27%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_21_control_plane_cross_tenant PASSED [ 28%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_22_scheduler_tenant_drift PASSED [ 29%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_23_trace_replay_cross_tenant PASSED [ 30%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten03_governed_root_launch_admission_denies_before_intake PASSED [ 30%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten04_tool_runtime_invoke_reaches_invoker_tenant_guard PASSED [ 31%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten05_resolve_from_profile_sqlite_sanctioned PASSED [ 32%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten05_resolve_from_profile_unregistered_fail_closed PASSED [ 33%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten13_plugin_host_cross_tenant_activation_blocker PASSED [ 34%]
+tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_rpl_relational_store_sqlite_duckdb_dual_slug PASSED [ 34%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_testsuites_590_581_9 PASSED [ 35%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_testsuite_590_581_9 PASSED [ 36%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_testsuites_root_without_tests_attribute_is_not_zero PASSED [ 37%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_no_double_counting_with_declared_root_sums PASSED [ 38%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_two_leaf_suites_summed_once PASSED [ 39%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_classifies_passed_failed_error_skipped_xfailed PASSED [ 39%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skipped_is_never_counted_as_passed PASSED [ 40%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_malformed_xml_fails PASSED [ 41%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_missing_file_fails PASSED [ 42%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_unsupported_root_fails PASSED [ 43%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_zero_testcases_is_failure_not_success PASSED [ 43%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_testcase_outside_suite_fails PASSED [ 44%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_inconsistent_tests_counter_fails PASSED [ 45%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_inconsistent_skipped_counter_fails PASSED [ 46%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_failure_hidden_behind_clean_summary_fails PASSED [ 47%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_error_hidden_behind_clean_summary_fails PASSED [ 47%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_failed_and_error_reported_not_hidden PASSED [ 48%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_omitted_statistics_fail PASSED [ 49%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_repeated_testcases_fail PASSED [ 50%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_duplicated_suite_block_fails PASSED [ 51%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_declared_sum_mismatch_fails PASSED [ 52%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_non_integer_statistic_fails PASSED [ 52%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_cli_summary_and_meta_lines_for_590 PASSED [ 53%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_cli_summary_failure_exit_nonzero_and_meta_not_zero PASSED [ 54%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_meta_lines_without_inputs_is_fail_unknown PASSED [ 55%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_passes_for_exact_register PASSED [ 56%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_unregistered_skip_fails PASSED [ 56%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_evidence_failed_fails PASSED [ 57%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_evidence_missing_fails PASSED [ 58%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_reason_mismatch_fails PASSED [ 59%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_stale_register_record_fails PASSED [ 60%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_blocked_or_unready_record_fails PASSED [ 60%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_mandatory_without_evidence_fails PASSED [ 61%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_has_nine_individual_unique_records PASSED [ 62%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_records_are_complete_and_ready PASSED [ 63%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_node_ids_resolve_to_real_tests_and_skip_statements PASSED [ 64%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_evidence_nodes_exist_and_are_not_themselves_skipped PASSED [ 65%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_scenarios_are_qualified_and_equivalents_match_semantic_ssot PASSED [ 65%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_covers_every_routed_skip_path_in_gate_sources PASSED [ 66%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_matches_renderer PASSED [ 67%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_render_is_read_only_to_dossier PASSED [ 68%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_states_non_claims PASSED [ 69%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_workflow_uses_strict_junit_evidence_not_legacy_parser PASSED [ 69%]
+tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_workflow_final_status_fails_on_junit_or_skip_disposition PASSED [ 70%]
+tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_scope_residual_empty_when_not_approved PASSED [ 71%]
+tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_scope_residual_poison_fails_b6 PASSED [ 72%]
+tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_disposition_sha_poison PASSED [ 73%]
+tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_composed_proxy_fails_ssot PASSED [ 73%]
+tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py::test_ebh7_structural_exit_traceability_and_mechanisms PASSED [ 74%]
+tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py::test_ebh7_structural_exit_npsc_gate_executes PASSED [ 75%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-01] PASSED [ 76%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-02] PASSED [ 77%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-03] PASSED [ 78%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-04] SKIPPED [ 78%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-05] PASSED [ 79%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-06] PASSED [ 80%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-07] SKIPPED [ 81%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-08] PASSED [ 82%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-09] PASSED [ 82%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-10] PASSED [ 83%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-11] SKIPPED [ 84%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-12] PASSED [ 85%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-13] PASSED [ 86%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-14] SKIPPED [ 86%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-15] PASSED [ 87%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-16] PASSED [ 88%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-17] PASSED [ 89%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-18] PASSED [ 90%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-19] PASSED [ 91%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-20] PASSED [ 91%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-21] PASSED [ 92%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-22] PASSED [ 93%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-23] PASSED [ 94%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-24] PASSED [ 95%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-25] PASSED [ 95%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-26] PASSED [ 96%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_scenario_07_durable_cross_tenant PASSED [ 97%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_semantic_open_register PASSED [ 98%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py::test_ebh7_w6_tenant_e2e_registry_structural PASSED [ 99%]
+tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py::test_ebh7_w6_gap_ten_unk_05_structural_disposition PASSED [100%]
+
+=================================== PASSES ====================================
+___________ test_ebh7_xdm_010_backend_persistence_sqlite_behavioral ___________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+___________________ test_cli_summary_and_meta_lines_for_590 ___________________
+---------------------------- Captured stdout call -----------------------------
+junit_summary=PASS tests=590 passed=581 failed=0 errors=0 skipped=9 xfailed=0
+skip_disposition=PASS skipped=9 registered=9 problems=0
+___________ test_cli_summary_failure_exit_nonzero_and_meta_not_zero ___________
+---------------------------- Captured stdout call -----------------------------
+junit_summary=FAIL reason=JUnit XML malformed: no element found: line 1, column 61
+skip_disposition=FAIL reason=JUnit XML malformed: no element found: line 1, column 61
+____________ test_register_document_render_is_read_only_to_dossier ____________
+---------------------------- Captured stdout call -----------------------------
+register_doc=WRITTEN D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\build\pytest\63148-2f2d55e3\test_register_document_render_0\REGISTER.md
+register_doc=PASS
+register_doc=STALE D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\build\pytest\63148-2f2d55e3\test_register_document_render_0\REGISTER.md
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\q03.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_010_backend_persistence_sqlite_behavioral
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_007_tool_skill_plugin_shadow_denied
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_012_trace_replay_tenant_boundary
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_014_cancel_external_effect_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_015_compat_historical_evidence_reject
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_016_vbn_composition_factory_behavioral
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_017_failure_diagnostics_tenant_leak
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_018_plugin_tenant_activate_denied
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_019_recovery_gov_restore_denied
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_022_llm_tenant_gov_block
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_023_worker_lease_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_024_retry_side_effect_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_025_hitl_trace_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_026_config_compat_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_027_agent_distribution_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_028_nexus_agent_tenant
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_029_integration_external_di_boundary
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_030_obs_evidence_tenant_isolate
+PASSED tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py::test_ebh7_xdm_031_scale_backpressure_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_r4_probe_g_cross_tenant_evidence
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_txp4r1_q20_cross_tenant_attribution_rejected
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_10_distributed_queue_cross_tenant_fail_closed
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_11_trace_attribution_cross_tenant_rejected
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_13_plugin_compat_cross_tenant_rejected
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_20_compat_assess_cross_tenant_rejected
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_03_gov_exec_cross_tenant_denied
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_04_exec_tool_tenant_boundary_tool_runtime
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_05_config_provider_cross_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_12_skill_compose_cross_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_14_backend_switch_preserves_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_17_obs_tenant_isolate
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_18_hitl_resume_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_19_child_exec_cross_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_21_control_plane_cross_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_22_scheduler_tenant_drift
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py::test_ebh7_ten_e2e_23_trace_replay_cross_tenant
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten03_governed_root_launch_admission_denies_before_intake
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten04_tool_runtime_invoke_reaches_invoker_tenant_guard
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten05_resolve_from_profile_sqlite_sanctioned
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten05_resolve_from_profile_unregistered_fail_closed
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_ten13_plugin_host_cross_tenant_activation_blocker
+PASSED tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py::test_ebh7_w1w2_rpl_relational_store_sqlite_duckdb_dual_slug
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_testsuites_590_581_9
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_testsuite_590_581_9
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_testsuites_root_without_tests_attribute_is_not_zero
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_no_double_counting_with_declared_root_sums
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_two_leaf_suites_summed_once
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_classifies_passed_failed_error_skipped_xfailed
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skipped_is_never_counted_as_passed
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_malformed_xml_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_missing_file_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_unsupported_root_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_zero_testcases_is_failure_not_success
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_testcase_outside_suite_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_inconsistent_tests_counter_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_inconsistent_skipped_counter_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_failure_hidden_behind_clean_summary_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_error_hidden_behind_clean_summary_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_failed_and_error_reported_not_hidden
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_omitted_statistics_fail
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_repeated_testcases_fail
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_duplicated_suite_block_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_root_declared_sum_mismatch_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_junit_non_integer_statistic_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_cli_summary_and_meta_lines_for_590
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_cli_summary_failure_exit_nonzero_and_meta_not_zero
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_meta_lines_without_inputs_is_fail_unknown
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_passes_for_exact_register
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_unregistered_skip_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_evidence_failed_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_evidence_missing_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_reason_mismatch_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_stale_register_record_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_blocked_or_unready_record_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_skip_disposition_mandatory_without_evidence_fails
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_has_nine_individual_unique_records
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_records_are_complete_and_ready
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_node_ids_resolve_to_real_tests_and_skip_statements
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_evidence_nodes_exist_and_are_not_themselves_skipped
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_scenarios_are_qualified_and_equivalents_match_semantic_ssot
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_covers_every_routed_skip_path_in_gate_sources
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_matches_renderer
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_render_is_read_only_to_dossier
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_register_document_states_non_claims
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_workflow_uses_strict_junit_evidence_not_legacy_parser
+PASSED tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py::test_workflow_final_status_fails_on_junit_or_skip_disposition
+PASSED tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_scope_residual_empty_when_not_approved
+PASSED tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_scope_residual_poison_fails_b6
+PASSED tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_disposition_sha_poison
+PASSED tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py::test_ebh7_mutation_composed_proxy_fails_ssot
+PASSED tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py::test_ebh7_structural_exit_traceability_and_mechanisms
+PASSED tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py::test_ebh7_structural_exit_npsc_gate_executes
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-01]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-02]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-03]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-05]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-06]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-08]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-09]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-10]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-12]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-13]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-15]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-16]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-17]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-18]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-19]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-20]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-21]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-22]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-23]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-24]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-25]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_executes_registered_proof[EBH7-TEN-E2E-26]
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_scenario_07_durable_cross_tenant
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py::test_ebh7_w6_tenant_e2e_semantic_open_register
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py::test_ebh7_w6_tenant_e2e_registry_structural
+PASSED tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py::test_ebh7_w6_gap_ten_unk_05_structural_disposition
+SKIPPED [2] tests\qualification\ebh_7\test_ebh_7_w6_tenant_e2e_behavioral_gates.py:27: async/governed_execution proofs run in tenant_platform_e2e module
+SKIPPED [2] tests\qualification\ebh_7\test_ebh_7_w6_tenant_e2e_behavioral_gates.py:29: proof requires tmp_path — run in dedicated fixture test
+================= 119 passed, 4 skipped in 184.41s (0:03:04) ==================

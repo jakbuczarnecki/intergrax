@@ -1,0 +1,196 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\43468-6c39aee6\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 24 items
+
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count PASSED [  4%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split PASSED [  8%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids PASSED [ 12%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count PASSED [ 16%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels PASSED [ 20%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero PASSED [ 25%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present PASSED [ 29%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder PASSED [ 33%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap PASSED [ 37%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist PASSED [ 41%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x FAILED [ 45%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded PASSED [ 50%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped PASSED [ 54%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed FAILED [ 58%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero FAILED [ 62%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present PASSED [ 66%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted PASSED [ 70%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported PASSED [ 75%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero PASSED [ 79%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero PASSED [ 83%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported PASSED [ 87%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff PASSED [ 91%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff PASSED [ 95%]
+tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed PASSED [100%]
+
+================================== FAILURES ===================================
+_________________ test_replay_x_prod_delta_empty_since_dup_x __________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:110: in test_replay_x_prod_delta_empty_since_dup_x
+    assert unscoped == [], f"{path}: {unscoped}"
+E   AssertionError: intergrax: ['intergrax/applications/_shared/reliability_wiring.py', 'intergrax/applications/_shared/skill_bridge_wiring.py', 'intergrax/applications/contracts/environment_profile/presets.py', 'intergrax/integrations/providers/message_bus/celery/config.py', 'intergrax/integrations/providers/vector_store/milvus/rag_store.py', 'intergrax/integrations/providers/vector_store/weaviate/rag_store.py', 'intergrax/memory/contracts/provider_durability_evidence.py', 'intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/queueing/providers/document_store/durable_wake_task_queue.py', 'intergrax/queueing/providers/document_store/task_row_lease.py', 'intergrax/queueing/worker/dispatcher.py', 'intergrax/queueing/worker/execution.py', 'intergrax/queueing/worker/registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py', 'intergrax/runtime/execution/lab_reference_agent_runtime.py', 'intergrax/runtime/nexus/agents/reference_harness_runtime.py', 'intergrax/runtime/nexus/session/document_store_session_storage.py', 'intergrax/scaffold/canonical_host_templates.py', 'intergrax/skills/execution_binding.py', 'intergrax/skills/instruction_policy_pins.py', 'intergrax/skills/resolver.py']
+E   assert ['intergrax/applications/_shared/reliability_wiring.py', 'intergrax/applications/_shared/skill_bridge_wiring.py', 'intergrax/applications/contracts/environment_profile/presets.py', 'intergrax/integrations/providers/message_bus/celery/config.py', 'intergrax/integrations/providers/vector_store/milvus/rag_store.py', 'intergrax/integrations/providers/vector_store/weaviate/rag_store.py', 'intergrax/memory/contracts/provider_durability_evidence.py', 'intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/queueing/providers/document_store/durable_wake_task_queue.py', 'intergrax/queueing/providers/document_store/task_row_lease.py', 'intergrax/queueing/worker/dispatcher.py', 'intergrax/queueing/worker/execution.py', 'intergrax/queueing/worker/registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py', 'intergrax/runtime/execution/lab_reference_agent_runtime.py', 'intergrax/runtime/nexus/agents/reference_harness_runtime.py', 'intergrax/runtime/nexus/session/document_store_session_storage.py', 'intergrax/scaffold/canonical_host_templates.py', 'intergrax/skills/execution_binding.py', 'intergrax/skills/instruction_policy_pins.py', 'intergrax/skills/resolver.py'] == []
+E     
+E     Left contains 22 more items, first extra item: 'intergrax/applications/_shared/reliability_wiring.py'
+E     
+E     Full diff:
+E     - []
+E     + [
+E     +     'intergrax/applications/_shared/reliability_wiring.py',
+E     +     'intergrax/applications/_shared/skill_bridge_wiring.py',
+E     +     'intergrax/applications/contracts/environment_profile/presets.py',
+E     +     'intergrax/integrations/providers/message_bus/celery/config.py',
+E     +     'intergrax/integrations/providers/vector_store/milvus/rag_store.py',
+E     +     'intergrax/integrations/providers/vector_store/weaviate/rag_store.py',
+E     +     'intergrax/memory/contracts/provider_durability_evidence.py',
+E     +     'intergrax/prompts/registry/pin_config.py',
+E     +     'intergrax/prompts/registry/yaml_registry.py',
+E     +     'intergrax/queueing/providers/document_store/durable_wake_task_queue.py',
+E     +     'intergrax/queueing/providers/document_store/task_row_lease.py',
+E     +     'intergrax/queueing/worker/dispatcher.py',
+E     +     'intergrax/queueing/worker/execution.py',
+E     +     'intergrax/queueing/worker/registry.py',
+E     +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+E     +     'intergrax/runtime/execution/lab_reference_agent_runtime.py',
+E     +     'intergrax/runtime/nexus/agents/reference_harness_runtime.py',
+E     +     'intergrax/runtime/nexus/session/document_store_session_storage.py',
+E     +     'intergrax/scaffold/canonical_host_templates.py',
+E     +     'intergrax/skills/execution_binding.py',
+E     +     'intergrax/skills/instruction_policy_pins.py',
+E     +     'intergrax/skills/resolver.py',
+E     + ]
+___________________ test_replay_x_closure_counters_computed ___________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:148: in test_replay_x_closure_counters_computed
+    assert by_name["historical_evidence_invalidated_by_later_changes"].value == 0
+E   AssertionError: assert 3 == 0
+E    +  where 3 = CounterResult(name='historical_evidence_invalidated_by_later_changes', value=3, denominator='prod paths since DUP-X acceptance minus replay L2 scoped dispositions', source='tests/qualification/roadmap_replay_x/_prod_delta_disposition.py', failure_mode='non-zero unscoped prod delta or invalid scoped disposition').value
+___________________ test_replay_x_b6_r2_reconciliation_zero ___________________
+tests\qualification\roadmap_replay_x\test_roadmap_replay_x_mechanical_exit_gates.py:160: in test_replay_x_b6_r2_reconciliation_zero
+    assert replay_r2_reconciliation_violations() == ()
+E   AssertionError: assert ('ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3', 'ecap_counter_vs_mechanical:vendor_neutrality_replay_failures:0!=1') == ()
+E     
+E     Left contains 2 more items, first extra item: 'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3'
+E     
+E     Full diff:
+E     - ()
+E     + (
+E     +     'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3',
+E     +     'ecap_counter_vs_mechanical:vendor_neutrality_replay_failures:0!=1',
+E     + )
+=================================== PASSES ====================================
+_________________________ test_replay_x_frz_row_count _________________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+_________________ test_f56_net_zero_deleted_path_is_accepted __________________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+_________ test_f56_path_existing_at_head_but_not_in_diff_is_reported __________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/unrelated.md', LF will be replaced by CRLF the next time Git touches it
+___ test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero ___
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+_________ test_f56_path_deleted_after_existing_at_pin_is_not_net_zero _________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+________ test_f56_path_renamed_away_after_existing_at_pin_is_reported _________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+___________ test_f56_wrong_head_is_still_reported_for_path_in_diff ____________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+_______ test_f56_missing_disposition_is_still_reported_for_path_in_diff _______
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'intergrax/integrations/providers/embedding_provider/ollama/manifest.py', LF will be replaced by CRLF the next time Git touches it
+______________________ test_f56_unknown_pin_fails_closed ______________________
+---------------------------- Captured stderr call -----------------------------
+warning: in the working copy of 'intergrax/keep.py', LF will be replaced by CRLF the next time Git touches it
+fatal: Invalid revision range ffffffffffffffffffffffffffffffffffffffff..HEAD
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\q08.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff
+PASSED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x - AssertionError: intergrax: ['intergrax/applications/_shared/reliability_wiring.py', 'intergrax/applications/_shared/skill_bridge_wiring.py', 'intergrax/applications/contracts/environment_profile/presets.py', 'intergrax/integrations/providers/message_bus/celery/config.py', 'intergrax/integrations/providers/vector_store/milvus/rag_store.py', 'intergrax/integrations/providers/vector_store/weaviate/rag_store.py', 'intergrax/memory/contracts/provider_durability_evidence.py', 'intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/queueing/providers/document_store/durable_wake_task_queue.py', 'intergrax/queueing/providers/document_store/task_row_lease.py', 'intergrax/queueing/worker/dispatcher.py', 'intergrax/queueing/worker/execution.py', 'intergrax/queueing/worker/registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py', 'intergrax/runtime/execution/lab_reference_agent_runtime.py', 'intergrax/runtime/nexus/agents/reference_harness_runtime.py', 'intergrax/runtime/nexus/session/document_store_session_storage.py', 'intergrax/scaffold/canonical_host_templates.py', 'intergrax/skills/execution_binding.py', 'intergrax/skills/instruction_policy_pins.py', 'intergrax/skills/resolver.py']
+assert ['intergrax/applications/_shared/reliability_wiring.py', 'intergrax/applications/_shared/skill_bridge_wiring.py', 'intergrax/applications/contracts/environment_profile/presets.py', 'intergrax/integrations/providers/message_bus/celery/config.py', 'intergrax/integrations/providers/vector_store/milvus/rag_store.py', 'intergrax/integrations/providers/vector_store/weaviate/rag_store.py', 'intergrax/memory/contracts/provider_durability_evidence.py', 'intergrax/prompts/registry/pin_config.py', 'intergrax/prompts/registry/yaml_registry.py', 'intergrax/queueing/providers/document_store/durable_wake_task_queue.py', 'intergrax/queueing/providers/document_store/task_row_lease.py', 'intergrax/queueing/worker/dispatcher.py', 'intergrax/queueing/worker/execution.py', 'intergrax/queueing/worker/registry.py', 'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py', 'intergrax/runtime/execution/lab_reference_agent_runtime.py', 'intergrax/runtime/nexus/agents/reference_harness_runtime.py', 'intergrax/runtime/nexus/session/document_store_session_storage.py', 'intergrax/scaffold/canonical_host_templates.py', 'intergrax/skills/execution_binding.py', 'intergrax/skills/instruction_policy_pins.py', 'intergrax/skills/resolver.py'] == []
+  
+  Left contains 22 more items, first extra item: 'intergrax/applications/_shared/reliability_wiring.py'
+  
+  Full diff:
+  - []
+  + [
+  +     'intergrax/applications/_shared/reliability_wiring.py',
+  +     'intergrax/applications/_shared/skill_bridge_wiring.py',
+  +     'intergrax/applications/contracts/environment_profile/presets.py',
+  +     'intergrax/integrations/providers/message_bus/celery/config.py',
+  +     'intergrax/integrations/providers/vector_store/milvus/rag_store.py',
+  +     'intergrax/integrations/providers/vector_store/weaviate/rag_store.py',
+  +     'intergrax/memory/contracts/provider_durability_evidence.py',
+  +     'intergrax/prompts/registry/pin_config.py',
+  +     'intergrax/prompts/registry/yaml_registry.py',
+  +     'intergrax/queueing/providers/document_store/durable_wake_task_queue.py',
+  +     'intergrax/queueing/providers/document_store/task_row_lease.py',
+  +     'intergrax/queueing/worker/dispatcher.py',
+  +     'intergrax/queueing/worker/execution.py',
+  +     'intergrax/queueing/worker/registry.py',
+  +     'intergrax/runtime/enterprise_reliability/default_provider_invocation_recovery_policy.py',
+  +     'intergrax/runtime/execution/lab_reference_agent_runtime.py',
+  +     'intergrax/runtime/nexus/agents/reference_harness_runtime.py',
+  +     'intergrax/runtime/nexus/session/document_store_session_storage.py',
+  +     'intergrax/scaffold/canonical_host_templates.py',
+  +     'intergrax/skills/execution_binding.py',
+  +     'intergrax/skills/instruction_policy_pins.py',
+  +     'intergrax/skills/resolver.py',
+  + ]
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed - AssertionError: assert 3 == 0
+ +  where 3 = CounterResult(name='historical_evidence_invalidated_by_later_changes', value=3, denominator='prod paths since DUP-X acceptance minus replay L2 scoped dispositions', source='tests/qualification/roadmap_replay_x/_prod_delta_disposition.py', failure_mode='non-zero unscoped prod delta or invalid scoped disposition').value
+FAILED tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero - AssertionError: assert ('ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3', 'ecap_counter_vs_mechanical:vendor_neutrality_replay_failures:0!=1') == ()
+  
+  Left contains 2 more items, first extra item: 'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3'
+  
+  Full diff:
+  - ()
+  + (
+  +     'ecap_counter_vs_mechanical:historical_evidence_invalidated_by_later_changes:0!=3',
+  +     'ecap_counter_vs_mechanical:vendor_neutrality_replay_failures:0!=1',
+  + )
+======================== 3 failed, 21 passed in 37.97s ========================

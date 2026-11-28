@@ -92,6 +92,7 @@
     "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
     "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py"
   ],
+  "qualification_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
   "schema": "eqo.inventory_binding.v1",
   "support_module_paths": [
     "tests/qualification/ebh_7/_ebh7_scope_residual_register.py",

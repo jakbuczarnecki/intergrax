@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "bnd03b_witness",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:56:55Z",
+  "monotonic_elapsed_seconds": 15.64100000000326,
+  "stdout_stderr_path": "logs/bnd03b_witness.log",
+  "stdout_stderr_sha256": "1b9035157a9fb3432c898e690460f66183fafb270696387e112dbce8fd683c18",
+  "junit_path": "junit/bnd03b_witness.xml",
+  "junit_sha256": "06f3f7ac195b7c2620a3cf80d81d45171ff720b001f87233046c72289cc4c054",
+  "node_report_path": "node_reports/bnd03b_witness_nodes.json",
+  "node_report_sha256": "ebe4c7ec68024cff0b005c63e662dd6ebfca05c9e7c0da82504122d7fcd5a97b",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

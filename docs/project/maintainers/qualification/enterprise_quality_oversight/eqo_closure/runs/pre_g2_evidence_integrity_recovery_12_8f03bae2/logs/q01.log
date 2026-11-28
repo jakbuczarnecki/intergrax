@@ -1,0 +1,197 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\41820-d1719e7c\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 87 items
+
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head FAILED [  1%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed PASSED [  2%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable PASSED [  3%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper PASSED [  4%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation PASSED [  5%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes PASSED [  6%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state PASSED [  8%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field PASSED [  9%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement PASSED [ 10%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition PASSED [ 11%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes PASSED [ 12%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason PASSED [ 13%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes PASSED [ 14%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter PASSED [ 16%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority PASSED [ 17%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority PASSED [ 18%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path PASSED [ 19%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes PASSED [ 20%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback PASSED [ 21%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner PASSED [ 22%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate PASSED [ 24%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified PASSED [ 25%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate PASSED [ 26%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent PASSED [ 27%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate PASSED [ 28%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut PASSED [ 29%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut PASSED [ 31%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer PASSED [ 32%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback PASSED [ 33%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails PASSED [ 34%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails PASSED [ 35%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails PASSED [ 36%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified PASSED [ 37%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent PASSED [ 39%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent PASSED [ 40%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition PASSED [ 41%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes PASSED [ 42%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes PASSED [ 43%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails PASSED [ 44%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails PASSED [ 45%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails PASSED [ 47%]
+tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths PASSED [ 48%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head PASSED [ 49%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails PASSED [ 50%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails PASSED [ 51%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails PASSED [ 52%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails PASSED [ 54%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails PASSED [ 55%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails PASSED [ 56%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails PASSED [ 57%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected PASSED [ 58%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list PASSED [ 59%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails PASSED [ 60%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed PASSED [ 62%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails PASSED [ 63%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails PASSED [ 64%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate PASSED [ 65%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity PASSED [ 66%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation PASSED [ 67%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world PASSED [ 68%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive PASSED [ 70%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded PASSED [ 71%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails PASSED [ 72%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails PASSED [ 73%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts PASSED [ 74%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap PASSED [ 75%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present PASSED [ 77%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged PASSED [ 78%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision PASSED [ 79%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work PASSED [ 80%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected PASSED [ 81%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority PASSED [ 82%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version PASSED [ 83%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance PASSED [ 85%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family PASSED [ 86%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity PASSED [ 87%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes PASSED [ 88%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world PASSED [ 89%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes PASSED [ 90%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected PASSED [ 91%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded PASSED [ 93%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected PASSED [ 94%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected PASSED [ 95%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded PASSED [ 96%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression PASSED [ 97%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero PASSED [ 98%]
+tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items PASSED [100%]
+
+================================== FAILURES ===================================
+_____________ test_r5_p0_closed_world_gate_passes_on_current_head _____________
+tests\qualification\compat_x\test_compat_x_deprecation_r5_p0_gates.py:77: in test_r5_p0_closed_world_gate_passes_on_current_head
+    assert passed, violations
+E   AssertionError: ('shim reconciliation: removed historical shim paths: intergrax/contracts/host_profile_slices.py, intergrax/runtime/execution/inference_composition.py', 'shim reconciliation: unexpected added shim paths: intergrax/applications/_shared/host_orchestration_backend_spec_builder.py, intergrax/applications/_shared/host_orchestration_environment_resolution.py, intergrax/contracts/host_orchestration_environment.py')
+E   assert False
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+=================================== PASSES ====================================
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\q01.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails
+PASSED tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero
+PASSED tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items
+FAILED tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head - AssertionError: ('shim reconciliation: removed historical shim paths: intergrax/contracts/host_profile_slices.py, intergrax/runtime/execution/inference_composition.py', 'shim reconciliation: unexpected added shim paths: intergrax/applications/_shared/host_orchestration_backend_spec_builder.py, intergrax/applications/_shared/host_orchestration_environment_resolution.py, intergrax/contracts/host_orchestration_environment.py')
+assert False
+================== 1 failed, 86 passed in 991.42s (0:16:31) ===================

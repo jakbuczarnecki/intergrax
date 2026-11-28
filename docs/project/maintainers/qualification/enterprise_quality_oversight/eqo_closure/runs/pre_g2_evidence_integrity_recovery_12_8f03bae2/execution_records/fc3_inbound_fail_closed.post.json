@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "fc3_inbound_fail_closed",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:57:07Z",
+  "monotonic_elapsed_seconds": 11.28200000000652,
+  "stdout_stderr_path": "logs/fc3_inbound_fail_closed.log",
+  "stdout_stderr_sha256": "bb35daca123188e4ef7ceb7b269ed1cf4bf0bbc9da59439a93ef459386d37648",
+  "junit_path": "junit/fc3_inbound_fail_closed.xml",
+  "junit_sha256": "96449731d92d7d5bc69d0a80cc48da1ed128724cb76cd25654e2216c94b88b28",
+  "node_report_path": "node_reports/fc3_inbound_fail_closed_nodes.json",
+  "node_report_sha256": "c3b690c412fe85a5ebc19adec2e46d4c2fb1565493fd576486f18a11de937a42",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

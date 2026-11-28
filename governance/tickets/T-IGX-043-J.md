@@ -75,3 +75,21 @@ Planned test files still outside the extracted write set: `tests/unit/applicatio
 FIND-AF2 mapping that names this ticket: FIND-AF2-09.
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+## AF-W3-BATCH-12-14 — qualification & owner-repair inventory (2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | ENT-FC1-WF | AF-W3-BATCH-12-14`. Write set: this checkpoint only (`PRODUCT_CODE_CHANGES: NONE`).
+
+**G-09:** `test_harness_evaluation_wiring.py` + tenant/debug/experiment focused files — **60 passed** @ `2f8ec5dd5` (log sha256 `b641b1d2…`). Ancestry: `2c6d7af1a`, `c945260f`, `df2b99c6` are ancestors of `development` HEAD (verified).
+
+**FRZ-BND-06 / NT-BND-06-1:** `tests/unit/architecture/test_rw_gates_transport_semantics.py` — **ABSENT**; **EVIDENCE_MISSING** (OP-B unchanged).
+
+**E2–E4:** Campaign B-1 trigger not binding for new product edits — **BLOCKED** (provisional anchors green: `test_inference_root_runtime_binds_identity_authority_budget`, `test_from_langchain_rejects_missing_tenant`, `test_experiment_session_echo_workflow` in focused batch).
+
+**Owner rows (execution snapshot):** probes in `test_nt_plg_red_first_probes.py`, `test_nt_ten_red_first_probes.py`, `test_nt_ent_iso_red_first_probes.py` — see batch report; FRZ-PLG-07 / FRZ-PRD-08 remain **RED_FIRST_OUT**; gate files `test_rw_gates_*.py` largely absent from repo.
+
+**Consolidated regression:** rw_plan **145** paths deduped (+ fc3 bundle); hosting/queue/application slices executed under pytest lock (logs under `.tmp/session/af-w3-batch-12-14/`). Lifecycle **in_progress** (owner gate files + E2–E4 product slices open). No independent PASS.
+
+**Regression slices @ HEAD `b6ed56d138a85a6472e07127da35fcebfe3dbe28`:** hosting **404 passed, 3 skipped** (exit 0); queue **75 passed, 14 failed** (exit 1; dispatcher rate-limit/retry nodes); app/other batch **NOT_EXECUTED** (pytest lock contention � long-running slice). Ancestry: `2c6d7af1a` ancestor=0; `c945260f`/`df2b99c6` **not** ancestors (semantic parity only, not fabricated).
+
+**Governance @ batch close:** phase_check3 **0**; pre-g2 **1** (11 OP-B); traceability **0**; igx_gov ticket � **FAIL** locally when `uv` absent from subprocess PATH (same class as ENT `test_run_qual_wave`).

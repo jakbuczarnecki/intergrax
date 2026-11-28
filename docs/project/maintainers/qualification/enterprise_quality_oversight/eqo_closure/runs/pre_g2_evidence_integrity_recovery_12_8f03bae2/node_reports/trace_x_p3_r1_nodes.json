@@ -1,0 +1,1301 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1q1_q01_production_delta_zero",
+      "outcome": "SKIPPED",
+      "phases": {
+        "call": {
+          "outcome": "SKIPPED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q30_frz_trc_06_readiness_evidence",
+      "outcome": "SKIPPED",
+      "phases": {
+        "call": {
+          "outcome": "SKIPPED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py",
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1q1_q01_production_delta_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1q1_q01_production_delta_zero",
+      "outcome": "SKIPPED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1q1_q01_production_delta_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q30_frz_trc_06_readiness_evidence",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q30_frz_trc_06_readiness_evidence",
+      "outcome": "SKIPPED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q30_frz_trc_06_readiness_evidence",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

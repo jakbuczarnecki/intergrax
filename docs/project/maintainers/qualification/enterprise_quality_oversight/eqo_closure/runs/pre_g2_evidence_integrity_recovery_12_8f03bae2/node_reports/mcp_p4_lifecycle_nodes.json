@@ -1,0 +1,179 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

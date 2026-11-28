@@ -1,0 +1,134 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\7576-1c24aaef\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 7 items
+
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor PASSED [ 14%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity FAILED [ 28%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution FAILED [ 42%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution FAILED [ 57%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure FAILED [ 71%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity FAILED [ 85%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam FAILED [100%]
+
+================================== FAILURES ===================================
+_______________ test_p2c_01_positive_http_admission_continuity ________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+_____________ test_p2c_02_admission_deny_prevents_inner_execution _____________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+_______________ test_p2c_03_release_after_successful_execution ________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+______________ test_p2c_04_release_after_inner_execution_failure ______________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+__________________ test_p2c_05_identity_and_scope_continuity __________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+__________ test_p2c_06_request_tenant_mismatch_skips_execution_seam ___________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+============================== warnings summary ===============================
+intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166
+  D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+________________ test_p2c_g00_qualification_baseline_ancestor _________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\p2c_http_admission.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+FAILED tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam - AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+============== 6 failed, 1 passed, 1 warning in 81.24s (0:01:21) ==============

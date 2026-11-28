@@ -1,0 +1,2969 @@
+{
+  "collection_errors": [],
+  "exitstatus": 1,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\compat_x\\test_compat_x_deprecation_r5_p0_gates.py:77: in test_r5_p0_closed_world_gate_passes_on_current_head\n    assert passed, violations\nE   AssertionError: ('shim reconciliation",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\compat_x\\test_compat_x_deprecation_r5_p0_gates.py:77: in test_r5_p0_closed_world_gate_passes_on_current_head\n    assert passed, violations\nE   AssertionError: ('shim reconciliation",
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_closed_world_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_owner_matrix_deprecation_policy_confirmed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_p0_metrics_reportable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a_unknown_deprecated_helper",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_b_parallel_deprecated_implementation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_c_delegating_alias_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_d_deprecated_import_path_owns_state",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_e_dual_truth_deprecated_field",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_f_temporary_missing_replacement",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_g_temporary_missing_removal_condition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_h_permanent_boundary_with_reason_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_i_permanent_boundary_without_reason",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_j_legacy_provider_delegate_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_k_legacy_provider_independent_adapter",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_l_deprecated_governance_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_m_deprecated_execution_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_n_retired_write_path",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_o_historical_read_only_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_p_removal_fallback",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_q_shim_version_owner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_r_omitted_candidate_fails_gate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_a2_legacy_transform_unclassified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_s_generic_unknown_production_candidate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_t_compat_folder_unknown_not_permanent",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_u_fake_provider_return_not_delegate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_v_production_governance_shortcut",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_w_production_execution_shortcut",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_x_retired_writer",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_y_silent_legacy_fallback",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_aa_shim_reconciliation_hidden_removal_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ab_shim_reconciliation_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ac_shim_reconciliation_extra_addition_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ad_provider_compatibility_without_semantics_unclassified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ae_independent_compat_not_permanent",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_af_translation_only_wire_permanent",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_ag_historical_read_disposition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py::test_r5_probe_z_benign_delegating_wrapper_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_accepted_exact_match_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_unexpected_third_addition_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_historical_removal_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_balanced_substitution_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py::test_r5_shim_delta_count_only_match_still_fails_on_wrong_paths",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_gate_passes_on_current_head",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_a_added_family_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_b_removed_family_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_c_same_count_substitution_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_d_version_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_e_migration_owner_drift_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_f_obligation_disposition_drift_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_g_sanctioned_reader_drift_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_h_constituent_gate_failure_injected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_baseline_fixture_matches_accepted_family_list",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_i_bad_provenance_sha_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_j_malformed_family_baseline_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_k_family_id_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py::test_cx_r2_final_probe_l_obligation_key_mismatch_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_closed_world_inventory_gate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r1_continuity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_historical_five_reconciliation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a_unknown_sqlite_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_a2_service_false_positive",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_serialization_only_excluded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_document_store_unknown_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_unknown_sql_table_fails",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_mechanical_discovery_closed_world_counts",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_sqlite_contract_authority_gap",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_b_versioned_round_trip_family_present",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_c_unversioned_durable_payload_flagged",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_d_unknown_version_fail_closed_runtime_revision",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_explicit_migration_owner_autonomous_work",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_f_implicit_fallback_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_g_no_duplicate_migration_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_h_container_not_payload_version",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_i_envelope_inheritance",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_e_exception_not_payload_family",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_j_historical_not_payload_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_required_head_module_probes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_k_redis_unknown_fails_closed_world",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_l_redis_classified_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_m_durable_file_detected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_n_evidence_export_excluded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_o_pickle_sqlite_detected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_p_pickle_redis_detected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_q_cache_name_not_false_excluded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_adversarial_r_durable_state_file_regression",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_r2_production_module_scan_non_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py::test_cx_r2_p0_remediation_waves_r2_r2_has_migration_items",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

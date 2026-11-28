@@ -1,0 +1,1641 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/contracts/test_acp_prod_artifact_privacy.py",
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_acp_prod_artifact_privacy.py",
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py",
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_evidence_artifact_reference.py",
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_evidence_artifact_reference.py",
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/contracts/test_evidence_artifact_reference.py",
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py",
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py",
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_artifact_ref_from_payload",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_acp_prod_artifact_privacy.py::test_redact_pii_text_masks_email_and_bearer",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_valid_construction",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_empty_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_whitespace_observation_id_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_reliability_case_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_validation_error_is_value_error_subclass",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_signal_kind_stable_values",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_automation_safety_hint_stable_values",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_evidence_ref_required_for_reconciliation_signal",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_external_emitter_implementable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_null_emitter_satisfies_contract",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_immutable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_artifact_refs_immutable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_correlation_identities_remain_separate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_trace_refs_bounded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_observation_model_dump_json_roundtrip",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_exports_intentional",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_runtime_or_scenario_imports",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_diagnostics_package_no_forbidden_dynamic_patterns",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_public_models_do_not_use_any",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_observation_definition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_enterprise_reliability_diagnostics_foundation.py::test_single_canonical_emitter_definition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_imports_work_artifact_version_ref_only",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_has_no_proof_receipt_import",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/contracts/test_evidence_artifact_reference.py::test_evidence_reference_strict_shape",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[open]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_open_failure_trips_the_breaker[first_pull]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[open]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_retriable_stream_open_failure_is_retried_within_max_retries[first_pull]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_a_stream_that_never_opens_is_attempted_max_retries_plus_one_times",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_a_failure_after_the_first_event_is_neither_retried_nor_recorded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_an_empty_stream_is_a_successful_empty_stream",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/llm_adapters/test_rw_runtime_stream_open_breaker.py::test_control_permits_are_released_exactly_once_on_every_path",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_core_fields",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[error-failed]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[critical-failed]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[warning-unknown]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[degraded-unknown]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_status_mapping_is_minimal_and_plugin_safe[custom-risk-unknown]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_preserves_plugin_taxonomy_strings",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_maps_primary_artifact_ref_only",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_envelope_from_problem_signal_applies_existing_policy_to_application_attributes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_forbidden_custom_application_fields_are_dropped_after_policy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_agent_attributes_are_not_silently_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_safe_message_is_not_exported_in_obs_problem_2",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/observability/test_problem_signal_export_mapping.py::test_problem_signal_export_envelope_is_content_safe",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

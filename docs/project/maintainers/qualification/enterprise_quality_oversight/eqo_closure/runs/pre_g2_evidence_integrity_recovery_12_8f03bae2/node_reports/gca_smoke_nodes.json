@@ -1,0 +1,117 @@
+{
+  "collection_errors": [],
+  "exitstatus": 1,
+  "node_records": [
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_health",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:108: in test_governed_contractor_backend_health\n    create_governed_contractor_backend_app(\napplications\\",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_lists_agents",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:124: in test_governed_contractor_backend_lists_agents\n    create_governed_contractor_backend_app(\napplica",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_run",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:141: in test_governed_contractor_backend_run\n    create_governed_contractor_backend_app(\napplications\\gov",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_health",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:108: in test_governed_contractor_backend_health\n    create_governed_contractor_backend_app(\napplications\\",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_health",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_health",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_lists_agents",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:124: in test_governed_contractor_backend_lists_agents\n    create_governed_contractor_backend_app(\napplica",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_lists_agents",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_lists_agents",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_run",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "applications\\governed_contractor_application\\tests\\host\\test_governed_contractor_host_smoke.py:141: in test_governed_contractor_backend_run\n    create_governed_contractor_backend_app(\napplications\\gov",
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_run",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_run",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

@@ -1,0 +1,417 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py",
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

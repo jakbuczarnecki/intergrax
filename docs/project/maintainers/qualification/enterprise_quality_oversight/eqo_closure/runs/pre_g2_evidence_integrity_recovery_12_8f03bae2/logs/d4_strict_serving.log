@@ -1,0 +1,69 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\47336-83d5edd9\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 23 items
+
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle PASSED [  4%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation PASSED [  8%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources PASSED [ 13%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot PASSED [ 17%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure PASSED [ 21%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store PASSED [ 26%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission PASSED [ 30%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher PASSED [ 34%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff PASSED [ 39%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions PASSED [ 43%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources PASSED [ 47%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance PASSED [ 52%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation PASSED [ 56%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open PASSED [ 60%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected PASSED [ 65%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle PASSED [ 69%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving PASSED [ 73%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed PASSED [ 78%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle PASSED [ 82%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot PASSED [ 86%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources PASSED [ 91%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors PASSED [ 95%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors PASSED [100%]
+
+============================== warnings summary ===============================
+tests\unit\applications\governed_contractor\test_prod_q_r1_r7_d4_strict_production_gca_launcher.py:12
+  D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\tests\unit\applications\governed_contractor\test_prod_q_r1_r7_d4_strict_production_gca_launcher.py:12: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+_________ test_d4_authorized_production_opener_builds_valid_lifecycle _________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\d4_strict_serving.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_authorized_production_opener_builds_valid_lifecycle
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_active_state_served_after_reconciliation
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_close_process_resources
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_close_failure_propagates_and_releases_slot
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_owned_host_store_closed_after_reconciliation_failure
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_strict_session_close_closes_owned_gca_host_store
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_session_close_drains_colocated_execution_admission
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_explicit_activation_uses_d2_launcher
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_gca_factory_consumes_validated_handoff
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_startup_only_after_preconditions
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_asgi_shutdown_releases_owned_resources
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_governance
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_governance_deny_blocks_activation
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_missing_serving_pointer_after_open
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_fake_adapter_rejected
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_duplicate_process_lifecycle
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_stale_physical_unit_after_serving
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_03_legacy_main_run_fail_closed
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_21_activation_intent_scope_mismatch_before_lifecycle
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_success_preserves_primary_and_releases_slot
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_failure_still_closes_process_resources
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_session_close_drain_and_cleanup_failure_preserves_both_errors
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r7_d4_strict_production_gca_launcher.py::test_d4_r2_startup_failure_cleanup_failure_preserves_both_errors
+======================== 23 passed, 1 warning in 8.45s ========================

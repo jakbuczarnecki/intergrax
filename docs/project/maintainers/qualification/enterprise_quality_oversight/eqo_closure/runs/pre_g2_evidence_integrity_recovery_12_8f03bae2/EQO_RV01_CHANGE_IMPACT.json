@@ -1,0 +1,17 @@
+{
+  "ec_w3_12_replay_1": {
+    "disposition": "INVALIDATED_ENVIRONMENT",
+    "reason": "detached worktree pytest missing; uv project binding uncorrected"
+  },
+  "ec_w3_12_replay_2": {
+    "disposition": "CURRENT",
+    "evidence_root": "D:/Projekty/intergrax/docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2"
+  },
+  "qualification_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
+  "recorded_utc": "2026-11-28T14:31:17Z",
+  "residual_owner_blocked": [
+    "EC-F16",
+    "EC-F12"
+  ],
+  "schema": "eqo.eqo_rv01_change_impact.v1"
+}

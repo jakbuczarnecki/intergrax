@@ -1,0 +1,8 @@
+{
+  "evidence_run_root": "pre_g2_evidence_integrity_recovery_12_8f03bae2",
+  "publication_pending": true,
+  "qualification_product_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
+  "qualification_tooling_sha_at_emit": "1ad61d19e9f4e603ccbc5c7e6ac824dea07f5bd1",
+  "recorded_utc": "2026-11-28T14:31:17Z",
+  "schema": "eqo.execution_publication_binding.v1"
+}

@@ -21,6 +21,7 @@ from _evidence_common import (
     extract_pytest_paths_from_command,
     git,
     inventory_binding_at_sha,
+    load_execution_record_pairs,
     resolve_execution_context,
     sha256_bytes,
     sha256_file,
@@ -69,6 +70,25 @@ def _tracked_consistency(repo_root: Path) -> dict[str, Any]:
 
 def _command_digest(argv: list[str]) -> str:
     return hashlib.sha256(json.dumps(argv, separators=(",", ":")).encode()).hexdigest()
+
+
+def _pytest_log_has_session_footer(log_path: Path) -> bool:
+    if not log_path.is_file():
+        return False
+    tail = log_path.read_bytes()[-12000:].decode("utf-8", "replace")
+    return "short test summary info" in tail or " passed in " in tail or " failed in " in tail
+
+
+def _returncode_from_junit(junit_path: Path) -> int:
+    if not junit_path.is_file():
+        return 1
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(junit_path).getroot()
+    failed = 0
+    for suite in root.iter("testsuite"):
+        failed += int(suite.attrib.get("failures", "0")) + int(suite.attrib.get("errors", "0"))
+    return 0 if failed == 0 else 1
 
 
 def _write_prereg() -> None:
@@ -195,13 +215,11 @@ def run_batch(
     junit_path = RUN_ROOT / "junit" / f"{batch_id}.xml"
     log_path = RUN_ROOT / "logs" / f"{batch_id}.log"
     uv_exe = _uv()
+    venv_python = project_root / ".venv" / "Scripts" / "python.exe"
+    if not venv_python.is_file():
+        venv_python = Path(sys.executable)
     argv = [
-        uv_exe,
-        "run",
-        "--no-sync",
-        "--project",
-        str(project_root),
-        "python",
+        str(venv_python),
         "-m",
         "pytest",
         *paths,
@@ -209,6 +227,8 @@ def run_batch(
         "-rA",
         "--tb=short",
         f"--junitxml={junit_path}",
+        "-p",
+        "no:xdist",
         "-p",
         "eqo_nodecapture_plugin",
         f"--eqo-node-report={node_report}",
@@ -224,7 +244,7 @@ def run_batch(
         "source_commit_sha": pre_sha,
         "source_tree_sha": pre_tree,
         "git_worktree_git_dir": worktree,
-        "tracked_source_consistency": _tracked_consistency(REPO_ROOT),
+        "tracked_source_consistency": _tracked_consistency(source_root),
         "argv": argv,
         "command_digest_sha256": digest,
         "environment_profile": env_manifest,
@@ -238,35 +258,52 @@ def run_batch(
     (rec_dir / f"{batch_id}.pre.json").write_text(json.dumps(record_pre, indent=2), encoding="utf-8")
     child_env = _child_env(uv_exe)
     started = time.monotonic()
-    proc: subprocess.CompletedProcess[bytes] | None = None
-    timed_out = False
+    disposition = "PROCESS_EXIT_UNRESOLVED"
+    returncode: int | None = None
+    proc_obj: subprocess.Popen[bytes] | None = None
     with log_path.open("wb") as log:
-        try:
-            proc = subprocess.run(
-                argv,
-                cwd=source_root,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                env=child_env,
-                timeout=BATCH_TIMEOUT_SECONDS,
-            )
-        except subprocess.TimeoutExpired:
-            timed_out = True
+        proc_obj = subprocess.Popen(
+            argv,
+            cwd=source_root,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            env=child_env,
+        )
+        deadline = time.monotonic() + BATCH_TIMEOUT_SECONDS
+        disposition = "EXECUTION_TIMEOUT"
+        returncode = 124
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            try:
+                returncode = proc_obj.wait(timeout=min(5.0, remaining))
+                disposition = "PROCESS_COMPLETED"
+                break
+            except subprocess.TimeoutExpired:
+                if junit_path.is_file() and _pytest_log_has_session_footer(log_path):
+                    proc_obj.kill()
+                    try:
+                        proc_obj.wait(timeout=30)
+                    except subprocess.TimeoutExpired:
+                        proc_obj.kill()
+                    returncode = _returncode_from_junit(junit_path)
+                    disposition = "PROCESS_COMPLETED"
+                    break
+        if disposition != "PROCESS_COMPLETED":
+            proc_obj.kill()
+            try:
+                proc_obj.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                pass
     elapsed = time.monotonic() - started
     log_bytes = log_path.read_bytes() if log_path.is_file() else b""
     junit_bytes = junit_path.read_bytes() if junit_path.is_file() else b""
     node_bytes = node_report.read_bytes() if node_report.is_file() else b""
     post_sha = git(source_root, ["rev-parse", "HEAD"])
     post_tree = git(source_root, ["rev-parse", "HEAD^{tree}"])
-    if timed_out:
-        disposition = "EXECUTION_TIMEOUT"
-        returncode: int | None = 124
-    elif proc is None:
-        disposition = "PROCESS_EXIT_UNRESOLVED"
-        returncode = None
-    else:
-        disposition = "PROCESS_COMPLETED"
-        returncode = proc.returncode
+    if junit_path.is_file() and disposition == "PROCESS_COMPLETED":
+        returncode = _returncode_from_junit(junit_path)
     record_post = {
         "schema": "eqo.execution_record.v1",
         "phase": "post",
@@ -367,13 +404,17 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     manifest_path = ctx.run_root / "RUN_MANIFEST.json"
-    if manifest_path.is_file():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    else:
-        manifest = {"schema": "eqo.run_manifest.v1", "execution_attempts": []}
-    manifest["recorded_utc"] = utc_now()
-    manifest["batch_count"] = len(batch_results)
-    manifest["batches"] = batch_results
+    records = load_execution_record_pairs(ctx.run_root)
+    manifest_batches = [
+        {"batch_id": batch_id, "pre": pair.get("pre"), "post": pair.get("post")}
+        for batch_id, pair in sorted(records.items())
+    ]
+    manifest = {
+        "schema": "eqo.run_manifest.v1",
+        "recorded_utc": utc_now(),
+        "batch_count": len(manifest_batches),
+        "batches": manifest_batches,
+    }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
     return 0
 

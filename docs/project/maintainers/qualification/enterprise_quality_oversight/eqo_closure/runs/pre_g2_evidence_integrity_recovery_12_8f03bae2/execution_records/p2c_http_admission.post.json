@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "p2c_http_admission",
+  "process_returncode": 1,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T14:19:12Z",
+  "monotonic_elapsed_seconds": 105.53100000001723,
+  "stdout_stderr_path": "logs/p2c_http_admission.log",
+  "stdout_stderr_sha256": "74d516a7f09653c55686646440da050998d6a7c184e03d667a3fff0340592e1f",
+  "junit_path": "junit/p2c_http_admission.xml",
+  "junit_sha256": "bb618e62b29f9e93e388ec77a231a7135b5a95d1c517f9b052c21175e40943b2",
+  "node_report_path": "node_reports/p2c_http_admission_nodes.json",
+  "node_report_sha256": "23bf7b69c8aabc7e3566776f81e23c369c288da16cdf81b9e5924c25a92fa8c2",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

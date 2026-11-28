@@ -1,0 +1,29 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\60068-6a29ca58\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 6 items
+
+tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges PASSED [ 16%]
+tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected PASSED [ 33%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports PASSED [ 50%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings PASSED [ 66%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected PASSED [ 83%]
+tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged PASSED [100%]
+
+=================================== PASSES ====================================
+__________ test_product_manifest_registry_has_no_tier3_dynamic_edges __________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\bnd03b_witness.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges
+PASSED tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected
+PASSED tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged
+============================= 6 passed in 10.78s ==============================

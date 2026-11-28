@@ -34,6 +34,7 @@ Production code, intergrax/** product changes, lockfile/CI/hooks, historical evi
 ## Checkpoint
 
 - 2026-11-28: EC-W3-12 packages A-E adversarial validator 40/40 PASS (TOOL_ROOT pre_g2_evidence_integrity_recovery_12_8f03bae2). F-H replay and publication pending.
+- 2026-11-28: EC-W3-12 replay #2 complete; PACKAGE G emitted; FINAL_VALIDATION exit 0.
 
 ## Lifecycle state
 
