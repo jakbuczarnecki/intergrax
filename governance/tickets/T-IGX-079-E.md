@@ -6,7 +6,7 @@ Documentation-only adoption batch for package **II-W0-05 — Main architecture d
 
 ## Plan digest
 
-Plan digest: 2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89
+Plan digest: 0e13374852951f72818910fb1980211465bfc49e79919faf9ad9bfea875ebd8b
 
 ## Approved
 
@@ -28,4 +28,6 @@ plan_pending
 
 **II-W0-B-PREP-01 (2026-11-28):** Ticket and plan prepared at `plan_pending`; digest `3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481` (commit `6e5110cb08320e05aba3fb44d3bfbecb946adeaf`, blob `7673ad3f19a51988598391be7bbd2b3347b3fe55`); independent preparation review verdict `PLAN_CORRECTIONS_REQUIRED` (`F-W0B-01`..`F-W0B-06`); rejected for execution.
 
-**II-W0-B-PREP-CORRECTIVE-01 (2026-11-28):** Resolved findings `F-W0B-01`..`F-W0B-06`: deduplicated core inventory (49 unique paths: 3 `NO_CHANGE_WITH_REASON`, 41 `STATUS_RECONCILIATION`, 1 `DEFERRED_PENDING_AUTHORITY`, 3 `W0_06_SCOPE`, 1 `LINK_ONLY`), corrected 5 document dispositions, enumerated 49-path execution write-set, enumerated 137-path additional record-only inventory (136 `NO_CHANGE_WITH_REASON`, 1 `CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY`), bound semantic status/authority boundaries, and corrected Q07/Q08 qualification contract. Previous rejected digest preserved as historical evidence; new digest `2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89`; no `Approved:` line; lifecycle `plan_pending`; no II-W0-05 deliverable execution; terminal preparation state `W0_B_CORRECTED_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`.
+**II-W0-B-PREP-CORRECTIVE-01 (2026-11-28):** Resolved findings `F-W0B-01`..`F-W0B-06`: deduplicated core inventory (49 unique paths: 3 `NO_CHANGE_WITH_REASON`, 41 `STATUS_RECONCILIATION`, 1 `DEFERRED_PENDING_AUTHORITY`, 3 `W0_06_SCOPE`, 1 `LINK_ONLY`), corrected 5 document dispositions, enumerated 49-path execution write-set, enumerated 137-path additional record-only inventory (136 `NO_CHANGE_WITH_REASON`, 1 `CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY`), bound semantic status/authority boundaries, and corrected Q07/Q08 qualification contract. Previous rejected digest preserved as historical evidence; digest `2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89` (plan blob `fe7bd9aaec3d6fc9b0b22c1d72e5c1cef3deb21e`; commit `3fcd7241369f21d4676ec9d980eb4cbf6bb8550d`); no `Approved:` line; lifecycle `plan_pending`; no II-W0-05 deliverable execution; terminal preparation state `W0_B_CORRECTED_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`.
+
+**II-W0-B-PREP-FINAL-01 (2026-11-28):** Final preparation correction: `F-W0B-07` promoted `docs/project/maintainers/qualification/README.md` into enumerated 50-path execution write-set (`STATUS_RECONCILIATION` / `LINK_ONLY`); `F-W0B-08` bound EVOL-X via `evol_x_change_workflow.py` with `EVOL_X_ACCEPTED_BASELINE_UNAVAILABLE` prerequisite; `F-W0B-09` bound ENT-AUDIT-X via `run_enterprise_audit.py` CHANGED-SINCE (removed formal-closure preflight binding); `F-W0B-10` historical session-naming deviation. Final digest `0e13374852951f72818910fb1980211465bfc49e79919faf9ad9bfea875ebd8b`; no `Approved:` line; lifecycle `plan_pending`; terminal state `W0_B_FINAL_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`.

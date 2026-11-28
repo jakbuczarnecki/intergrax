@@ -19,6 +19,13 @@ Prepare and, after Operator approval, execute **II-W0-05 — Main architecture d
 - Previous plan digest: `3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481`
 - Independent preparation review verdict: `PLAN_CORRECTIONS_REQUIRED` (`F-W0B-01` through `F-W0B-06` resolved in `II-W0-B-PREP-CORRECTIVE-01`).
 
+**Corrected preparation baseline (II-W0-B-PREP-CORRECTIVE-01; subject to II-W0-B-PREP-FINAL-01 settlement):**
+
+- Previous preparation commit: `3fcd7241369f21d4676ec9d980eb4cbf6bb8550d`
+- Previous plan blob: `fe7bd9aaec3d6fc9b0b22c1d72e5c1cef3deb21e`
+- Previous plan digest: `2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89`
+
+
 **Preconditions:** Operator approval of this exact corrected plan digest; accepted prerequisites II-W0-02, II-W0-03, II-W0-04; ticket lifecycle transitions per Q08; no gate opening; no W1; no ENV-QUALIFIED declaration; no product delta.
 
 ## Semantic status and authority boundaries
@@ -54,7 +61,7 @@ External dependency adoption remains `W0_06_SCOPE` (`II-W0-06`) or separately au
 | Scope | v1.0 Chapter 14 broad `docs/` adoption | Proposed supersession by II-W0-05 scoped plan with explicit per-path write-set and ratified v1.1 R3.1 semantics (pending separate Operator authority) |
 | Plan digest | None attached | None attached; `T-IGX-079-A` does **not** automatically inherit the `T-IGX-079-E` plan digest |
 | Lifecycle | `in_progress` without approval | **Preserved as-is (`in_progress`, missing approval)** — not current execution authority; do not declare `T-IGX-079-A` formally superseded or closed without separate Operator authority |
-| Write-set | Entire `docs/` tree | Proposed narrowing to enumerated 49-path II-W0-05 write-set; W0-06 paths excluded |
+| Write-set | Entire `docs/` tree | Proposed narrowing to enumerated 50-path II-W0-05 write-set (49 core inventory paths + 1 promoted qualification index path); W0-06 paths excluded |
 | README / status drift | Partial adoption | `STATUS_RECONCILIATION` under II-W0-05 |
 
 Final closure or supersession of `T-IGX-079-A` requires separate Operator authority; this plan records proposed mechanical reconciliation only.
@@ -125,15 +132,15 @@ Mechanical scan session `II-W0-B-PREP-01` corrected in `II-W0-B-PREP-CORRECTIVE-
 | `governance/tickets/plans/SFX-MASTER-PLAN.md` | `41650185164180480763dd58dad20da3a9c71624` | — | W0_06_SCOPE | Operator / program owners (II-W0-06) | no | Excluded from II-W0-05; stage-order/dependency/predicate adoption under II-W0-06. |
 | `governance/tickets/plans/ASF-SEF-MASTER-PLAN.md` | `2bb03394ad2f0974db24d297898a0fa0e46b4d36` | — | W0_06_SCOPE | Operator / program owners (II-W0-06) | no | Excluded from II-W0-05; stage-order/dependency/predicate adoption under II-W0-06. |
 
-### Additional affected paths (record-only; 137 paths; not in 49-path execution write-set)
+### Additional affected paths (record-only; 137 paths; not in 50-path execution write-set except one promoted path)
 
 Enumerated mechanical discovery across: (1) existing maintainer plan pairs for all 26 domain architecture documents (22 existing + 4 explicitly missing: `ENTERPRISE_RUNTIME_INTELLIGENCE.md`, `RECOVERY_AND_COMPENSATION.md`, `ENTERPRISE_RELIABILITY_LAYER.md`, `DIAGNOSTICS.md`); (2) matching architecture and maintainer-plan satellites; (3) Self-Healing R1–R6 architecture and qualification documents under `docs/project/maintainers/architecture/` and `docs/project/maintainers/qualification/`; (4) existing qualification indexes relevant to affected domains; (5) PDC closed-world inventory documentation, JSON, and `scripts/qualification/pdc_x_inventory.py`; (6) capability navigation and `intelligence_x/` W0-A evidence artifacts; (7) public overview/community/proofs pages.
 
-**Additional record-only disposition totals:** `{"NO_CHANGE_WITH_REASON": 136, "CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY": 1}` (total 137 paths).
+**Additional record-only disposition totals:** `{"NO_CHANGE_WITH_REASON": 136, "STATUS_RECONCILIATION / LINK_ONLY (promoted to execution write-set)": 1}` (total 137 paths; promoted path remains listed here for traceability).
 
-**Additional findings (record-only; not added autonomously to the 49-path write-set):**
+**Additional findings (record-only; not added autonomously except F-W0B-07 orchestrator promotion):**
 
-1. **`docs/project/maintainers/qualification/README.md` (line 127):** States `INTELLIGENCE-X` is `PROPOSED` and `future dossier intelligence_x/ proposed in hub §14.1; not created until authorized`. W0-A created `intelligence_x/` and `OD-INTELLIGENCE-01` ratified the architecture. Flagged as `CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY` (`STATUS_RECONCILIATION` / `LINK_ONLY`) for orchestrator scope decision.
+1. **`docs/project/maintainers/qualification/README.md` (line 127; baseline blob `a1ef04b359d526d0098789d83f5716b225ff78f2`):** Stale text `Integrax Intelligence (INTELLIGENCE-X, PROPOSED)` and `future dossier intelligence_x/ proposed in hub §14.1; not created until authorized`. **Promoted (F-W0B-07):** future implementation disposition `STATUS_RECONCILIATION` / `LINK_ONLY` with explicit write permission in the 50-path execution write-set. At execution: record OD-INTELLIGENCE-01 architecture and Master Roadmap ratification; preserve distinction from runtime implementation and qualification; remove obsolete dossier-absence claim; link to `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_INDEX.md` and accepted W0-A evidence; do not imply full Intelligence certification or runtime readiness.
 2. **`scripts/qualification/pdc_x_inventory.py` (lines 217–219):** Contains historical comment `INTELLIGENCE-X is PROPOSED (not ratified, not certified); its classification here is index-only.` Mechanical inspection confirms classification logic at line 681 uses executable predicate `DOC_FOUNDATION_EXACT_STEMS` (`frozenset({"INTEGRAX_INTELLIGENCE"})`) only, not the comment; zero functional classification inconsistency. Script, tests, and inventory JSON remain untouched.
 
 | Path | Category | Baseline blob SHA | Intel ref | Lines | Link target & resolution | Record-only disposition | Concrete reason | Extra owner authority? |
@@ -248,7 +255,7 @@ Enumerated mechanical discovery across: (1) existing maintainer plan pairs for a
 | `docs/project/maintainers/qualification/mcp_server_x/MCP_SERVER_X_INDEX.md` | 4_QUALIFICATION_INDEX | `f97cf1c03d7905f8100e87b35b4c3c83b07b4192` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
 | `docs/project/maintainers/qualification/platform_domain_completeness/PDC_INDEX.md` | 4_QUALIFICATION_INDEX | `90a08f059f33b95433776f6a6752cf4738d36913` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
 | `docs/project/maintainers/qualification/scenario_factory_x/SFX_INDEX.md` | 4_QUALIFICATION_INDEX | `454f6f5bec206bdf89867f96f4ed23f157da6b1d` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
-| `docs/project/maintainers/qualification/README.md` | 4_QUALIFICATION_INDEX | `a1ef04b359d526d0098789d83f5716b225ff78f2` | present (1 lines) | 127 | L127:../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md(OK) | CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY | Line 127 states INTELLIGENCE-X is PROPOSED and intelligence_x/ dossier not created until authorized; W0-A created intelligence_x/ and OD-INTELLIGENCE-01 ratified architecture. Flagged for orchestrator scope decision. | yes (orchestrator scope inclusion) |
+| `docs/project/maintainers/qualification/README.md` | 4_QUALIFICATION_INDEX | `a1ef04b359d526d0098789d83f5716b225ff78f2` | present (1 lines) | 127 | L127:../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md(OK) | STATUS_RECONCILIATION / LINK_ONLY (**promoted**) | Promoted to 50-path execution write-set (F-W0B-07): reconcile PROPOSED/dossier-absence drift vs OD-INTELLIGENCE-01 and existing `intelligence_x/` evidence index; LINK_ONLY to Intelligence index and W0-A artifacts; no certification or runtime readiness implied. | yes (promoted write-set) |
 | `docs/project/maintainers/qualification/platform_domain_completeness/PDC_CLOSED_WORLD_INVENTORY.json` | 5_PDC_INVENTORY | `0b352434a9ed75b42f87b63d5b421ec99779453a` | present (2 lines) | 966,1116 | — | NO_CHANGE_WITH_REASON | Generated closed-world inventory (L966, L1116 INDEX_ONLY); verified via pdc_x_inventory.py --check in Q07. | yes (PDC/scripts owner) |
 | `docs/project/maintainers/qualification/platform_domain_completeness/PDC_CLOSED_WORLD_INVENTORY.md` | 5_PDC_INVENTORY | `79b82ade758ac3e31235aed8306864db1fb4776e` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
 | `scripts/qualification/pdc_x_inventory.py` | 5_PDC_INVENTORY_SCRIPT | `599d10abc744ae0e4dc40ac4b7b24eee33f38b85` | present (2 lines) | 217,219 | — | NO_CHANGE_WITH_REASON | Lines 217-219 carry historical PROPOSED comment; classification logic at L681 uses executable predicate DOC_FOUNDATION_EXACT_STEMS only (unaffected by comment). | yes (scripts/ outside II-W0-05 write-set) |
@@ -276,9 +283,9 @@ Enumerated mechanical discovery across: (1) existing maintainer plan pairs for a
 | `docs/project/proofs/PROOF_LIBRARY.md` | 7_PUBLIC_OVERVIEW | `2c4ca43789e049b3d23117132db9e39ba25b1388` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
 | `docs/project/proofs/PROOFS.md` | 7_PUBLIC_OVERVIEW | `b129df92694fc2ef80258711b855f63a88f0d570` | absent | — | — | NO_CHANGE_WITH_REASON | No Intelligence reference at baseline; domain ownership unchanged and no II-W0-05 edit required. | no |
 
-## Proposed execution write-set (II-W0-B-DOCUMENTATION-ADOPTION-01; enumerated; 49 unique paths)
+## Proposed execution write-set (II-W0-B-DOCUMENTATION-ADOPTION-01; enumerated; 50 unique paths)
 
-No directory wildcards. Derived strictly from: 42 core `STATUS_RECONCILIATION` + `LINK_ONLY` paths + 1 Execution Register (`docs/project/capabilities/plan/INTEGRAX_INTELLIGENCE.md`, administrative register updates only) + 5 new evidence deliverables (`INTELLIGENCE_X_INDEX.md`, `INTELLIGENCE_X_ACCEPTANCE_MATRIX.md`, `INTELLIGENCE_X_OWNERSHIP_MATRIX.md`, `II-W0-05_DOCUMENTATION_ADOPTION_REGISTER.md`, `II-W0-05_ENVIRONMENT_TRIAL_SPECIFICATION.md`) + 1 ticket record (`governance/tickets/T-IGX-079-E.md`) = **49 unique tracked paths** (maximum authorized paths; every actual changed path must belong to this set; the 5 evidence deliverables remain mandatory).
+No directory wildcards. Derived strictly from: 42 core `STATUS_RECONCILIATION` + `LINK_ONLY` paths + 1 Execution Register (`docs/project/capabilities/plan/INTEGRAX_INTELLIGENCE.md`, administrative register updates only) + 1 promoted qualification index path (`docs/project/maintainers/qualification/README.md`, F-W0B-07) + 5 new evidence deliverables (`INTELLIGENCE_X_INDEX.md`, `INTELLIGENCE_X_ACCEPTANCE_MATRIX.md`, `INTELLIGENCE_X_OWNERSHIP_MATRIX.md`, `II-W0-05_DOCUMENTATION_ADOPTION_REGISTER.md`, `II-W0-05_ENVIRONMENT_TRIAL_SPECIFICATION.md`) + 1 ticket record (`governance/tickets/T-IGX-079-E.md`) = **50 unique tracked paths** (maximum authorized paths; every actual changed path must belong to this set; the 5 evidence deliverables remain mandatory).
 
 - `README.md`
 - `docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`
@@ -320,6 +327,7 @@ No directory wildcards. Derived strictly from: 42 core `STATUS_RECONCILIATION` +
 - `docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL.md`
 - `docs/project/maintainers/plans/AUTONOMOUS_ORGANIZATION_ROADMAP.md`
 - `docs/project/maintainers/plans/satellites/ASF_SEF_SEMANTIC_OWNERSHIP_AND_REUSE_MATRIX.md`
+- `docs/project/maintainers/qualification/README.md`
 - `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_ACCEPTANCE_MATRIX.md`
 - `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_INDEX.md`
 - `docs/project/maintainers/qualification/intelligence_x/INTELLIGENCE_X_OWNERSHIP_MATRIX.md`
@@ -373,7 +381,7 @@ The subsequent `II-W0-05_ENVIRONMENT_TRIAL_SPECIFICATION.md` MUST define: dispos
 
 ### Q01 — Authority and scope integrity
 
-Verify accepted prerequisites II-W0-02..04, W0-A artifacts, protected blobs unchanged, exact 49-path approved write-set above, zero product delta outside write-set, and external dependency immutability (SFX/SEF/ECAP/EQO/Autonomous Organization predicates unchanged).
+Verify accepted prerequisites II-W0-02..04, W0-A artifacts, protected blobs unchanged, exact 50-path approved write-set above, zero product delta outside write-set, and external dependency immutability (SFX/SEF/ECAP/EQO/Autonomous Organization predicates unchanged).
 
 ### Q02 — Chapter 14 coverage
 
@@ -408,16 +416,61 @@ Execute sequentially at execution baseline using `uv run` (if `uv` is unavailabl
 - `git diff --check` over the actual immutable authorized candidate range
 - `uv run python -m scripts.governance.igx_gov ticket --profile smoke`
 
-**Affected-domain EVOL-X and ENT-AUDIT-X bindings:**
+**Pre-implementation governance commands (preserved):** Execute the `uv run` validators above at the execution integration base before candidate work and again over the immutable candidate range after the candidate commit.
 
-- **EVOL-X** (`docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md`): Passive change-time impact and closed-world surface analysis (`scripts/qualification/evol_x_change_workflow.py`, A1–A8) verifying IB-1/IB-4 tier isolation and zero unauthorized frozen-core mutations over the candidate range.
-- **ENT-AUDIT-X** (`docs/project/maintainers/qualification/ent_audit_x/ENT_AUDIT_X_ARCHITECTURE.md`): Pre-closure/publication integrity gates (`scripts/qualification/ent_audit_x_formal_closure_preflight.py`) confirming no premature formal closure headline or FRZ/IIAC promotion.
+**Future implementation qualification sequence (candidate-bound; Q07 extension):**
+
+1. Pre-commit document and governance checks (plan digest, lifecycle, domain pairs, PDC inventory, smoke profile as applicable before staging).
+2. Candidate commit and exact committed-range checks (`git diff --check` over `BASE_SHA..CANDIDATE_SHA`; no reuse of evidence from a different SHA).
+3. EVOL-X candidate-range qualification (binding below; prerequisite: accepted baseline manifest).
+4. ENT-AUDIT-X affected-change qualification (binding below; dry-run selection evidence then certifying CHANGED-SINCE run at candidate).
+5. Canonical governance smoke (`uv run python -m scripts.governance.igx_gov ticket --profile smoke`).
+6. Independent pre-publication review where required.
+7. Authorized publication.
+8. Operator-authorized formal G6 handoff (`ready_for_audit` only with separate authority).
+
+If subsequent qualification requires candidate changes, invalidate affected evidence and requalify the changed scope.
+
+**EVOL-X execution binding (F-W0B-08)** — `docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md`; canonical CLI `scripts/qualification/evol_x_change_workflow.py` (verified arguments: `--base-sha`, `--head-sha`, `--baseline`, `--out-dir`). Documentation adoption only; not EVOL-X formal closure; no `--write-baseline` to manufacture accepted baseline authority; no `--authorize-surface` without a signed authorization record.
+
+```text
+uv run python scripts/qualification/evol_x_change_workflow.py --base-sha BASE_SHA --head-sha CANDIDATE_SHA --baseline ACCEPTED_BASELINE_MANIFEST --out-dir .tmp/proof/II-W0-B-DOCUMENTATION-ADOPTION-01/evol-x
+```
+
+`testing_support/change_safety/workflow.py` fails A8 when no accepted baseline manifest is supplied; the `--baseline` argument is mandatory for a meaningful freshness verdict.
+
+**EVOL-X accepted baseline prerequisite (canonical record resolution):**
+
+| Field | Value |
+|---|---|
+| Status | `EVOL_X_ACCEPTED_BASELINE_UNAVAILABLE` |
+| Accepted manifest path | — (no `evol_baseline_manifest.v1` artifact located under canonical EVOL-X closure records at preparation HEAD) |
+| Accepted baseline SHA | — |
+| Authority record | EVOL-X formal closure `FORMAL_CLOSURE_PUBLICATION_SHA` `be77b3a5fb97f10a3bd2df6ee038cb92aad77eca` (`docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md`); does not publish a separate accepted change-workflow baseline manifest for this scope |
+| Manifest identity | — |
+| Usable for II-W0-05 candidate A8 | **No** — locate or establish an operator-accepted manifest before claiming EVOL-X PASS; do not waive A8 |
+
+**ENT-AUDIT-X affected-change binding (F-W0B-09)** — routine documentation adoption audit via `scripts/enterprise_audit/run_enterprise_audit.py` (not `scripts/qualification/ent_audit_x_formal_closure_preflight.py`, which governs formal ENT-AUDIT-X closure only). No baseline promotion, FREEZE mode, FRZ/IIAC promotion, or ENT-AUDIT-X formal closure in this batch.
+
+Selection evidence (dry-run only; not qualification PASS):
+
+```text
+uv run python scripts/enterprise_audit/run_enterprise_audit.py run --mode CHANGED-SINCE --since-sha BASE_SHA --dry-run --output-dir .tmp/proof/II-W0-B-DOCUMENTATION-ADOPTION-01/ent-audit-selection
+```
+
+Certifying affected-change run at exact candidate:
+
+```text
+uv run python scripts/enterprise_audit/run_enterprise_audit.py run --mode CHANGED-SINCE --since-sha BASE_SHA --output-dir .tmp/proof/II-W0-B-DOCUMENTATION-ADOPTION-01/ent-audit
+```
+
+Record actual selected check IDs, executed results, deferred controls and blocking findings. Relevant controls when in changed scope (from canonical ENT-AUDIT-X definitions): **ENT-A-DOC-01** (canonical docs present), **ENT-A-DOC-02** (ownership manifest drift), **ENT-A-DOC-03** (roadmap/checklist sync), **VBN-INVENTORY-DRIFT** where applicable. If a mandatory applicable documentation control is not selected automatically, retain its explicit existing validation requirement from the preserved pre-commit governance commands; do not claim execution merely because a control appears in the matrix.
 
 ### Q08 — Independent review and closure (mandatory lifecycle sequence)
 
 1. Actual Operator approval bound to the exact corrected plan digest.
 2. Canonical lifecycle transition: `plan_pending` → `plan_approved` → `in_progress`.
-3. Authorized implementation within the 49-path write-set.
+3. Authorized implementation within the 50-path write-set.
 4. Actual qualification (Q01–Q07).
 5. Candidate commit (`Ref: governance/tickets/T-IGX-079-E.md`) and canonical `quality_gate` checkpoint.
 6. Independent pre-publication review where required.
