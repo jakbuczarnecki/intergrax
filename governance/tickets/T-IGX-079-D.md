@@ -18,6 +18,12 @@ Approved: operator @ 2026-11-27T17:08:12+01:00
 
 **Scope bound:** Plan digest `ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81` only. No formal W0-A closure, W0-05/06, W1, product changes, or gate opening.
 
+**Decision ID:** OD-II-W0-A-G6-01 — APPROVED (observed recording time 2026-11-28T08:04:24+01:00; not an independently verified chat submission timestamp). Transcription under explicit Operator authorization; not approval by the implementing agent.
+
+**Operator statement (chat):** „Zatwierdzam OD-II-W0-A-G6-01 w przedstawionym zakresie. Autoryzuję przejście T-IGX-079-D do ready_for_audit oraz przeprowadzenie formalnej G6 w odrębnej sesji niezależnego audytora.”
+
+**Scope bound:** Lifecycle `quality_gate` → `ready_for_audit` and formal independent G6 for II-W0-01..04 only. No formal package closure, ticket closure, W0-05, W0-06, W1, product implementation or gate opening.
+
 ## Test contract
 
 See linked plan Qualification contract (Q01–Q08); execute actual validators sequentially in authorized workspace after plan approval only; preserve command, exit code and evidence.
@@ -28,7 +34,7 @@ II-W0-05, II-W0-06, W0-B/C/D batches beyond this plan, executable W1 qualificati
 
 ## Lifecycle state
 
-quality_gate
+ready_for_audit
 
 ## Checkpoint
 
@@ -61,3 +67,5 @@ quality_gate
 **II-W0-A-PUBLICATION-01 (2026-11-28):** Session INTEGRAX INTELLIGENCE | W0 | W0-A | II-W0-A-PUBLICATION-01; preflight `8f03bae217386e26ce1d7804ca673f57f6bfccfc`; parent `9efe643045c40255ce868e99400e9468d2fee4f4`; publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; lifecycle `quality_gate`; no formal package closure.
 
 **II-W0-A-PUBLICATION-SETTLEMENT-01 (2026-11-28):** Governance reconciliation and G6 handoff prep; lifecycle `quality_gate`; no `ready_for_audit` without Operator authority.
+
+**II-W0-A-G6-HANDOFF-01 (2026-11-28T08:04:24+01:00):** Session INTEGRAX INTELLIGENCE | W0 | W0-A | II-W0-A-G6-HANDOFF-01; Operator OD-II-W0-A-G6-01; lifecycle `quality_gate` → `ready_for_audit`; publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; settlement `74a5ff47956d48497368797dac406547924a2216`; implementer checkpoint `.tmp/proof/II-W0-A-G6-HANDOFF-01/igx_gov_ticket_checkpoint.log` (igx_gov ticket --profile fast); qualification binding at integration SHA `a6e3a6e` (1894/45/1w per recovered smoke); formal G6 **pending** in separate `independent-quality-auditor` session; terminal state `W0_A_READY_FOR_INDEPENDENT_FORMAL_G6`.
