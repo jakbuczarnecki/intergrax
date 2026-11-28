@@ -1052,7 +1052,12 @@ def _fc3_disposition_for_finding(
     return Fc3VendorDisposition.BLOCKING_VENDOR_DEFAULT
 
 
-def discover_fc3_vendor_defaults_in_source(source: str, rel: str) -> tuple[Fc3VendorDefaultFinding, ...]:
+def discover_fc3_vendor_defaults_in_source(
+    source: str,
+    rel: str,
+    *,
+    module_sources: dict[str, str] | None = None,
+) -> tuple[Fc3VendorDefaultFinding, ...]:
     vendor = _fc3_vendor_values_cached()
     tree = ast.parse(source, filename=rel)
     ctx = _fc3_build_scan_context(tree)
