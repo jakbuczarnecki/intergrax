@@ -108,7 +108,7 @@
         {
           "nt_id": "NT-BND-06-1",
           "node": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
-          "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -276,7 +276,7 @@
         {
           "nt_id": "NT-FC3-CX1",
           "node": "tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py",
-          "mechanism": "NT-FC3-CX1..12: a vendor-slug default on one of the eight FC-3 paths turns the CONFIG-X gate red; other hits are recorded, not failed. (planned; not authored at the read pin)",
+          "mechanism": "NT-FC3-CX1..12: a vendor-slug default on one of the eight FC-3 paths turns the CONFIG-X gate red; other hits are recorded, not failed. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed)",
           "owner_ticket": "T-IGX-043-F"
         }
       ],
@@ -367,7 +367,7 @@
         {
           "nt_id": "NT-DEBT-04-1",
           "node": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
-          "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
+          "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
           "owner_ticket": "T-IGX-051-F"
         },
         {
@@ -407,7 +407,7 @@
           "nt_id": "NT-FRZ-10-1",
           "node": "tests/unit/governance/test_pfp_post_freeze_policy_gate.py",
           "owner_ticket": "T-IGX-052-I",
-          "mechanism": "After activation, a change to a frozen path without an exception record fails the policy gate. (planned; not authored at the read pin)"
+          "mechanism": "After activation, a change to a frozen path without an exception record fails the policy gate. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed)"
         }
       ],
       "regression_tests": [
@@ -425,7 +425,7 @@
         {
           "nt_id": "NT-OWN-02-1",
           "node": "tests/unit/architecture/test_rw_gates_contract_census.py",
-          "mechanism": "A second contract with the same field set and responsibility as a canonical one fails the census unless it has a ratification entry. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "A second contract with the same field set and responsibility as a canonical one fails the census unless it has a ratification entry. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -472,7 +472,7 @@
         {
           "nt_id": "NT-PLG-01-1",
           "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
-          "mechanism": "An evaluator registered outside the single evaluator contract fails registration. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "An evaluator registered outside the single evaluator contract fails registration. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -491,13 +491,13 @@
         {
           "nt_id": "NT-PLG-02-1",
           "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
-          "mechanism": "An external chunker registered through the public plugin entry point is used without a core patch. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "An external chunker registered through the public plugin entry point is used without a core patch. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         },
         {
           "nt_id": "NT-PLG-02-2",
           "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
-          "mechanism": "No provider-plugin registration path exists outside LLMAdapterRegistry. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "No provider-plugin registration path exists outside LLMAdapterRegistry. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -532,7 +532,7 @@
         {
           "nt_id": "NT-PLG-06-1",
           "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
-          "mechanism": "Every tool, skill, MCP and integration package is in the package inventory; a missing one fails. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "Every tool, skill, MCP and integration package is in the package inventory; a missing one fails. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -551,7 +551,7 @@
         {
           "nt_id": "NT-PLG-07-1",
           "node": "tests/unit/architecture/test_rw_gates_plugin_contracts.py",
-          "mechanism": "A package that adds a capability beyond its manifest is refused. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "A package that adds a capability beyond its manifest is refused. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -605,13 +605,13 @@
         {
           "nt_id": "NT-PRD-08-1",
           "node": "tests/unit/architecture/test_rw_gates_production_only_bypass.py",
-          "mechanism": "A code path active only in production mode that skips a control fails the gate. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "A code path active only in production mode that skips a control fails the gate. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         },
         {
           "nt_id": "NT-PRD-08-2",
           "node": "tests/unit/architecture/test_rw_gates_production_only_bypass.py",
-          "mechanism": "A PIS-only CREATE without provenance fails the inventory. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "A PIS-only CREATE without provenance fails the inventory. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -626,7 +626,7 @@
         {
           "nt_id": "NT-REG-09-1",
           "node": "tests/unit/architecture/test_rw_gates_gate_completeness.py",
-          "mechanism": "Removing a banned entry from the gate list fails the completeness check. No evidence covers this part. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
+          "mechanism": "Removing a banned entry from the gate list fails the completeness check. No evidence covers this part. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it.",
           "owner_ticket": "T-IGX-051-F"
         },
         {
@@ -767,7 +767,7 @@
         {
           "nt_id": "NT-WF-A01",
           "node": "tests/unit/applications/test_wf_tenant_evaluation_fail_closed.py",
-          "mechanism": "NT-WF-A01..A04: a STRICT or PRODUCT host with a None, empty or blank tenant_id refuses to wire the shared evaluation registry, and an observation without tenant_id is rejected. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
+          "mechanism": "NT-WF-A01..A04: a STRICT or PRODUCT host with a None, empty or blank tenant_id refuses to wire the shared evaluation registry, and an observation without tenant_id is rejected. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.",
           "owner_ticket": "T-IGX-043-J"
         }
       ],
@@ -832,7 +832,7 @@
         {
           "nt_id": "NT-WF-A07",
           "node": "tests/unit/applications/test_wf_serving_tenant_fail_closed.py",
-          "mechanism": "NT-WF-A07..A14 and A16: a request with a missing tenant_id is rejected and never becomes 'default'; a client-asserted tenant that differs from the context tenant is refused. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-A; the owner plan has to add it.",
+          "mechanism": "NT-WF-A07..A14 and A16: a request with a missing tenant_id is rejected and never becomes 'default'; a client-asserted tenant that differs from the context tenant is refused. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-A; the owner plan has to add it.",
           "owner_ticket": "T-IGX-051-A"
         }
       ],
@@ -877,7 +877,7 @@
         {
           "nt_id": "NT-TYP-05-2",
           "node": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
-          "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it.",
+          "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it.",
           "owner_ticket": "T-IGX-051-G"
         },
         {
@@ -2544,7 +2544,7 @@
       "FRZ-BND-06": {
         "owner_ticket": "T-IGX-043-J",
         "negative_test_node": "tests/unit/architecture/test_rw_gates_transport_semantics.py",
-        "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. (planned; not authored at the read pin) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it."
+        "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it."
       },
       "FRZ-DEBT-02": {
         "owner_ticket": "T-IGX-051-H",
@@ -2561,7 +2561,7 @@
       "FRZ-DEBT-04": {
         "owner_ticket": "T-IGX-051-F",
         "negative_test_node": "tests/unit/architecture/test_rw_gates_partial_inventory.py",
-        "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it."
+        "mechanism": "Every PARTIAL entry of the PDC debt register maps to exactly one owner node or a non-RW disposition, and no new PARTIAL row appears. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-F; the owner plan has to add it."
       },
       "FRZ-EXE-02": {
         "owner_ticket": "T-IGX-043-A",
@@ -2596,7 +2596,7 @@
       "FRZ-TYP-05": {
         "owner_ticket": "T-IGX-051-G",
         "negative_test_node": "tests/unit/architecture/test_rw_typ05_string_dispatch_reduction.py",
-        "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). (planned; not authored at the read pin) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it."
+        "mechanism": "The string-keyed dispatch detector over intergrax/contracts/** finds no table apart from ratified baseline entries (reduction, red-first). GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The file is not in the write set extracted for T-IGX-051-G; the owner plan has to add it."
       }
     }
   },

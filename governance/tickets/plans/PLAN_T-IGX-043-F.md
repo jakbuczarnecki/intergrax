@@ -142,6 +142,10 @@ Decision ID: **OD-AF-W3-FC3-F-01**, variant **A**, status **DECIDED**. English r
 **Bounded tests:** `test_config_x_fc3_vendor_slug_defaults.py` implements NT-FC3-CX1..12 plus inbound verifier behavioral controls; scoped gate fails on unexpected vendor/LAB findings within the nine paths only; outside-scope hits recorded non-blocking (AWS/Azure/GCP adapter `slug` identity rows).
 
 **Independent audit:** PT-Q02 pending; implementer records no `PASS_SCOPED`.
+## 17. Amendment — AF-W3-PT-FC3-F-CORRECTIVE-01 (F01–F08, 2026-11-28)
+
+Tests-only corrective package on the authorized PT-FC3-F implementation. Closes audit findings F01–F08: strict LAB AST guards, validation-only disposition without path suffix, vision identity import binding, multiset expected-residual gate, cross-module `_LAB_*` import witness, subprocess-isolated vendor catalog derivation, and per-module scan context. Bounded tests extended with F01–F08 RED controls; NT-FC3-CX4/CX8/CX11 and global scan stability strengthened. No product paths; no gate scope change; PT-Q02 still pending.
+
 
 Historical plan digest before this amendment: `60d2a16a20e23b167bcfebfe7977b72d869e26b09512904d630e93d8c5d303cf`. Recompute after edit.
 

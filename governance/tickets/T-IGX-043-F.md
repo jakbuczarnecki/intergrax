@@ -155,3 +155,27 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-02`. Operator:
 **RED-first note:** F-A2 scratch RED at `2f38f0031b0e9c1d5b1aba1df7db8b3dfaf31809` preserved; formal NT-FC3 RED at baseline SHA not re-recorded in this pass (GREEN qualification executed on authorized implementation tree).
 
 **Lifecycle:** implementation evidence recorded; approval line remains Operator-only; not a PT-Q02 PASS.
+
+## Checkpoint — AF-W3-PT-FC3-F-CORRECTIVE-01 (audit findings F01–F08, 2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-CORRECTIVE-01`. Operator contract: close independent review findings **F01–F08** in the scoped CONFIG-X FC3 detector and bounded tests only; no product-path edits.
+
+| Finding | Corrective |
+|---|---|
+| F01 | Structural `LabSelectorOptIn` annotation; strict `If` true-branch guard (no whole-`If` `ast.walk` else bleed) |
+| F02 | `VALIDATION_ONLY` via AST comparison/error context, not path suffix |
+| F03 | `VisionInferenceAdapter` via import bindings, not classname substring |
+| F04 | `Counter` multiset in `evaluate_fc3_scoped_gate` / pure `evaluate_fc3_scoped_gate_from_inventory` |
+| F05 | Cross-module `_LAB_*` import flags |
+| F06 | CX4/CX8/CX11/global scan/Null verifier behavioral completion |
+| F07 | `derive_fc3_vendor_values` child-process catalog snapshot (no parent catalog pollution) |
+| F08 | Per-scan `_Fc3ScanContext`; enum module bindings; env fallback chains |
+
+| Verification | Result |
+|---|---|
+| `test_config_x_fc3_vendor_slug_defaults.py` | 28 passed |
+| `tests/qualification/config_x` | 105 passed |
+| Product delta | NONE |
+| PT-Q02 / FRZ promotion | NONE |
+
+**Note:** RED corrective assertions landed before detector GREEN in separate commits on `development`; approval line unchanged (Operator-only).
