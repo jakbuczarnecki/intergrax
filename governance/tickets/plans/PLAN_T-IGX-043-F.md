@@ -1,6 +1,6 @@
-# PLAN T-IGX-043-F — EQO-A remediation: CONFIG-X semantic scan extension for vendor-slug defaults (gate-meaning change)
+﻿# PLAN T-IGX-043-F — EQO-A remediation: CONFIG-X semantic scan extension for vendor-slug defaults (gate-meaning change)
 
-Status: DRAFT (revision 3: the Operator's ruling of 2026-11-16 is recorded in section 14 from `FC/OPERATOR_ANSWERS_TRANSCRIPTION.md` (a transcription by the orchestrating session of the Operator's chat answers of 2026-11-16, a session artefact, not yet a repository record); the approval line of this ticket is still the Operator's own and is not written; revision 2 after `FC/REVIEW/FC_DELTA_REVIEW_1.md`, section 5: the LAB exemption mechanism, the source of the vendor values, the false-positive list and an honest NT-FC3-CX7 expectation are defined in sections 3.1 to 3.4; the scratch measurement has its own authorization entry in `AUTHORIZATION_REQUESTS_T-IGX-043-F.md`). Drafted 2026-11-16 by the planning session of `T-IGX-043-C` after the independent delegate review (`FC/REVIEW/FC_DELEGATE_REVIEW.md`, section 4 check 3, finding X-5) found that Part G of FC-3 is a gate-meaning change. Read-only planning: no branch, no worktree, no commit, no test run. Nothing here is approved, applied or audited. This ticket is **not approvable by a delegate** and no implementer or delegate writes its approval line.
+Status: DRAFT (revision 4, amendment OD-AF-W3-FC3-F-01 variant A 2026-11-28: the Operator's ruling of 2026-11-16 is recorded in section 14 from `FC/OPERATOR_ANSWERS_TRANSCRIPTION.md` (a transcription by the orchestrating session of the Operator's chat answers of 2026-11-16, a session artefact, not yet a repository record); the approval line of this ticket is still the Operator's own and is not written; revision 2 after `FC/REVIEW/FC_DELTA_REVIEW_1.md`, section 5: the LAB exemption mechanism, the source of the vendor values, the false-positive list and an honest NT-FC3-CX7 expectation are defined in sections 3.1 to 3.4; the scratch measurement has its own authorization entry in `AUTHORIZATION_REQUESTS_T-IGX-043-F.md`). Drafted 2026-11-16 by the planning session of `T-IGX-043-C` after the independent delegate review (`FC/REVIEW/FC_DELEGATE_REVIEW.md`, section 4 check 3, finding X-5) found that Part G of FC-3 is a gate-meaning change. Read-only planning: no branch, no worktree, no commit, no test run. Nothing here is approved, applied or audited. This ticket is **not approvable by a delegate** and no implementer or delegate writes its approval line.
 
 Notation. `B` = `258bbf6abb6fdbb92ef0185d058527fbb1e47f04`, `H` = `7960ae7f6c82da60ca9acdc0ceebf63810002a42`; `path@B:line` means the full SHA (FACT_CHECK.md spells them out). All files named below are `UNCHANGED` between B and H (`git diff --stat B H -- tests/qualification/config_x` is empty).
 
@@ -124,3 +124,24 @@ Still open and not decided by that file: the approval line of this ticket (the O
 ## 15. Effort
 
 M (one existing 700-line scanner module plus one new test file); the measurement of R1 decides whether it grows.
+
+## 16. Amendment — OD-AF-W3-FC3-F-01 variant A (Operator 2026-11-28)
+
+Decision ID: **OD-AF-W3-FC3-F-01**, variant **A**, status **DECIDED**. English rendering of the Operator decision: approve the full scoped CONFIG-X vendor-default gate extension for PT-FC3-F per binding contract AF-W3-PT-FC3-F-02; no product-path edits; no provider allowlist; no module/path exemptions; preserve existing CONFIG-X global verdict.
+
+**Nine physical paths (eight functional groups):** `provider_authority.py`, `profile.py`, `resolver.py`, `integration_vectorstore.py`, `backend_contract.py`, `verification/factory.py`, `llm_guardrail/_factory.py`, `triton_vision.py`, `huggingface_inference_vision.py`.
+
+**Derived vendor values:** `list_slugs()` after `register_default_integrations(preset="full")` plus `NotificationBackend`, `InboundVerifierMode`, and `VisionProvider` enum `.value` sets; sorted newline SHA256 digest (historical F-A2 count 205, not a future catalog contract).
+
+**Provider identity vs selection:** class-level field name `slug` with literal vendor value and static `VisionInferenceAdapter` binding is `provider_identity` (HF + Triton adapters confirmed); suffix/class-name/module-name/path exemptions refused.
+
+**Strict LAB contract:** syntactic `lab_opt_in: LabSelectorOptIn | None` guard only; `_LAB_*` load-site analysis; validation-only loads in `_resolve_lab_inmemory_slug` (comparison + error message branches) classified `VALIDATION_ONLY`.
+
+**Expected residual inventory (exact three):** `InboundVerifierSettings.mode` = `InboundVerifierMode.NONE` (`none`); `lab_embedding_provider_slug` → `_LAB_EMBEDDING_PROVIDER` (`ollama`, `OPEN_SYNTACTIC_RESIDUAL`); `lab_inmemory_vector_store_slug` → `_LAB_INMEMORY_VECTOR_STORE_SLUG` (`inmemory`, `OPEN_SYNTACTIC_RESIDUAL`).
+
+**Bounded tests:** `test_config_x_fc3_vendor_slug_defaults.py` implements NT-FC3-CX1..12 plus inbound verifier behavioral controls; scoped gate fails on unexpected vendor/LAB findings within the nine paths only; outside-scope hits recorded non-blocking (AWS/Azure/GCP adapter `slug` identity rows).
+
+**Independent audit:** PT-Q02 pending; implementer records no `PASS_SCOPED`.
+
+Historical plan digest before this amendment: `60d2a16a20e23b167bcfebfe7977b72d869e26b09512904d630e93d8c5d303cf`. Recompute after edit.
+
