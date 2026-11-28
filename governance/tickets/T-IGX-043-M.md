@@ -58,6 +58,21 @@ Part E manifest / consumer write set: **UNBLOCKED** (operator D3); implementatio
 
 ## Lifecycle state
 
-in_progress — P-R0-6: Part E work continues; **not closed**
+quality_gate — Part E E0–E3 qualified on `development` @ AF-W3-BATCH-12-14 (stale manifest guards corrected; no independent PASS).
 
 Part E E0–E3 authorized OD-W06-AUTH-01 @ 2026-11-23
+
+## AF-W3-BATCH-12-14 — Part E qualification & stale manifest guards (2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | ENT-FC1-WF | AF-W3-BATCH-12-14`. Write set: two `p6_impact` manifest-count tests + this checkpoint (`PRODUCT_CODE_CHANGES: NONE`; manifest **91** unchanged).
+
+| Slice | Qualification |
+|-------|----------------|
+| E0 | Parts A–D on `development`; FRZ attribution / stage_gate_only / FAST / CHANGED-SINCE via ENT unit suite |
+| E1 | Manifest **91**; ENT-A-AUD-01, ENT-A-CTL-01, ENT-A-DEBT-01, ENT-A-FRZ-01, ENT-A-HRN-01, ENT-A-TRC-01 — wrappers `test_wd_mapped_stage_gate_check_attribution[…]` |
+| E2 | PDC mapping **5/5** green + exact-file guard green |
+| E3 | Consumers on `development`; bounded ENT unit regression (no acceptance cert) |
+
+**Stale guards:** RED `91 == 85` (exit 1, 2 failed); GREEN after `_MANIFEST_SIZE=91` + `test_manifest_still_has_exactly_91_checks` (exit 0, 2 passed). Log sha256 red `274d925d72ef71a25a044505a9fcdfd4bf09a48da71302fd621151d49bfef5fb`; green `b2b9306dbe1c80fb53c80e95050e4d5b32c072c55e58d5b655381fd9332268b9`.
+
+**ENT unit batch:** 305 collected, **304 passed**, 1 failed (`test_run_qual_wave.py::test_acceptance_tests_not_collected_as_ent_l2` — `uv` not on Windows subprocess PATH). **Residuals:** baseline digest 85-check window; `regression_nodes_split2.txt` absent (Q2 overlap inventory only).

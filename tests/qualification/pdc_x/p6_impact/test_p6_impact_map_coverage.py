@@ -29,7 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 LADDER = REPO_ROOT / "docs/project/maintainers/qualification/platform_domain_completeness/PDC_SHA_LADDER.md"
 SSOT = REPO_ROOT / "intergrax/platform/enterprise_audit/data/changed_since_impact_map.v1.json"
 _PRODUCT_ROOTS = ("intergrax/", "agents/", "applications/")
-_MANIFEST_SIZE = 85
+_MANIFEST_SIZE = 91
 
 # One representative module per product area the PDC campaign changed (stable, independent of git history).
 _REPRESENTATIVE_MODULES = (
@@ -91,7 +91,7 @@ def _pdc_touched_product_modules() -> list[str]:
     return sorted(p for p in changed if p.endswith(".py") and p.startswith(_PRODUCT_ROOTS))
 
 
-def test_manifest_still_has_exactly_85_checks() -> None:
+def test_manifest_still_has_exactly_91_checks() -> None:
     assert len(load_default_manifest()) == _MANIFEST_SIZE
 
 
