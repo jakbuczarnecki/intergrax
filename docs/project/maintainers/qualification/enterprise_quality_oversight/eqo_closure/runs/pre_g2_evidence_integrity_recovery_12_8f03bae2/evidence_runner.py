@@ -176,6 +176,7 @@ def run_batch(
     *,
     env_manifest: dict[str, Any],
     source_root: Path,
+    project_root: Path,
     qualification_sha: str,
     qualification_tree: str,
 ) -> dict[str, Any]:
@@ -198,6 +199,8 @@ def run_batch(
         uv_exe,
         "run",
         "--no-sync",
+        "--project",
+        str(project_root),
         "python",
         "-m",
         "pytest",
@@ -358,6 +361,7 @@ def main(argv: list[str] | None = None) -> int:
                 batch,
                 env_manifest=env_manifest,
                 source_root=ctx.source_root,
+                project_root=ctx.repo_root,
                 qualification_sha=ctx.qualification_sha,
                 qualification_tree=ctx.qualification_tree_sha,
             )

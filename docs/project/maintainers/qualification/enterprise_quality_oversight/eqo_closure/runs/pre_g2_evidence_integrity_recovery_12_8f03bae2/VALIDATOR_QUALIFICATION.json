@@ -1,0 +1,20 @@
+{
+  "schema": "eqo.validator_qualification.v1",
+  "session_name": "INTEGRAX | ENTERPRISE CAMPAIGN EQO | W3 B-1 | EC-W3-12 CONSOLIDATED FINAL QUALIFICATION",
+  "ticket": "governance/tickets/T-IGX-095-A.md",
+  "recorded_utc": "2026-11-28T09:38:00Z",
+  "adversarial_controls": {
+    "total": 40,
+    "pass": 40,
+    "fail": 0,
+    "pytest_node": "test_evidence_reconciliation.py::test_adversarial_validator_control"
+  },
+  "integrated_e2e_witness": {
+    "chain": "evidence_runner -> pytest node capture -> reconcile_evidence -> PARTIAL_VALIDATION",
+    "batch": "fc3_inbound_fail_closed",
+    "process_returncode": 0,
+    "validator_exit": 0,
+    "validator_line": "VALIDATION_OK:ACCEPT"
+  },
+  "historical_checkpoint_preserved": "EC_W3_12_PARTIAL_CHECKPOINT_ADVERSARIAL_EVIDENCE.json (31/40 narrative retained)"
+}
