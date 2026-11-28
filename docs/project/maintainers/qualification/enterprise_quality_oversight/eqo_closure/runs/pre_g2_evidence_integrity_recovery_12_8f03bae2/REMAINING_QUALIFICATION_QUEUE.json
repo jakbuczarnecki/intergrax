@@ -16,7 +16,7 @@
       "qualification_profile": "APPLICATION_HOST",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -35,7 +35,7 @@
       "qualification_profile": "APPLICATION_HOST",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     }
   ],
@@ -58,7 +58,7 @@
       "qualification_profile": "COMPAT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -78,7 +78,7 @@
       "qualification_profile": "COMPAT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -99,7 +99,7 @@
       "qualification_profile": "COMPAT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -119,7 +119,7 @@
       "qualification_profile": "COMPAT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -139,7 +139,7 @@
       "qualification_profile": "CONTROL_DUP_EBH6",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -160,7 +160,7 @@
       "qualification_profile": "CONTROL_DUP_EBH6",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -180,7 +180,7 @@
       "qualification_profile": "CONTROL_DUP_EBH6",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -200,7 +200,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -220,7 +220,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -240,7 +240,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -261,7 +261,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -281,7 +281,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -301,7 +301,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -321,7 +321,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -341,7 +341,7 @@
       "qualification_profile": "EBH-7",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -361,7 +361,7 @@
       "qualification_profile": "ENT-AUDIT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -381,7 +381,7 @@
       "qualification_profile": "ENT-AUDIT-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -401,7 +401,7 @@
       "qualification_profile": "MCP-SERVER-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -421,7 +421,7 @@
       "qualification_profile": "MCP-SERVER-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -441,7 +441,7 @@
       "qualification_profile": "PDC-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -461,7 +461,7 @@
       "qualification_profile": "PDC-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -481,7 +481,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -501,7 +501,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -521,7 +521,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -542,7 +542,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -562,7 +562,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -582,7 +582,7 @@
       "qualification_profile": "PROD-Q",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -602,7 +602,7 @@
       "qualification_profile": "ROADMAP-REPLAY-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     },
     {
@@ -622,12 +622,12 @@
       "qualification_profile": "ROADMAP-REPLAY-X",
       "recalculated_disposition": "NOT_EXECUTED",
       "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
       "testcase_outcomes": []
     }
   ],
   "qualification_test_file_count": 29,
   "queue_count": 31,
   "schema": "eqo.remaining_qualification_queue.v2",
-  "source_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+  "source_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
 }

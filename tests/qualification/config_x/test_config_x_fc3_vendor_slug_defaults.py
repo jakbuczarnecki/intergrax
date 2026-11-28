@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import Counter
+from collections.abc import Iterator
 
 import pytest
 from intergrax.core.security.security_configuration import (
@@ -43,7 +44,7 @@ def _has_vendor_hit(findings, *, value: str | None = None) -> bool:
 
 
 @pytest.fixture(autouse=True)
-def _reset_registry() -> None:
+def _reset_registry() -> Iterator[None]:
     reset_default_integrations_state()
     yield
     reset_default_integrations_state()

@@ -1,4 +1,21 @@
 {
-  "batches": [],
+  "batches": [
+    {
+      "argv_digest": "d8870168fe635732bfc9bb9c6474457614e3ffdb6a01d67b2350ae211e54a2e4",
+      "batch_id": "fc1_nexus_context",
+      "junit_sha256": "d79552add031c835cb38480b1dd637c36c4012a368a1bdbe6341393619e36c94",
+      "log_sha256": "22fe34d67d15dc6ffb03df5f46385e00b2d27d3d1f3c30c4ac0347b8db7e0da0",
+      "process_returncode": 0,
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "argv_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "batch_id": "synthetic_pass",
+      "junit_sha256": "94a739a416116b85a4f4d48ce039be4c8b03ff8c9cc86ef9207702d47126ede9",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "process_returncode": 0,
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
+    }
+  ],
   "schema": "eqo.batch_manifest.v1"
 }

@@ -239,9 +239,9 @@
   ],
   "classification": "PRE_G2_EVIDENCE_INTEGRITY_RECOVERY",
   "inventory_source": "runs/pre_g2_qualification_execution_08_245d4717/OBLIGATION_EXECUTION_MATRIX.json",
-  "preregistered_at": "2026-11-28T07:01:47Z",
+  "preregistered_at": "2026-11-28T07:20:45Z",
   "run_id": "ec_w3_12_evidence_integrity_recovery",
   "schema": "eqo.mapped_des_prereg.v2",
-  "source_sha_at_prereg": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+  "source_sha_at_prereg": "438252b942a09952e4edc0ae58961c9c437d9c03",
   "ticket": "governance/tickets/T-IGX-095-A.md"
 }

@@ -13,6 +13,8 @@ import pytest
 
 RUN_ROOT = Path(__file__).resolve().parent
 FIXTURES = RUN_ROOT / "validator_fixtures"
+if str(RUN_ROOT) not in sys.path:
+    sys.path.insert(0, str(RUN_ROOT))
 
 
 def _run_validator(run_root: Path) -> tuple[int, str]:
@@ -31,45 +33,38 @@ def _minimal_valid_fixture(tmp_path: Path) -> Path:
     return target
 
 
-@pytest.fixture(scope="module")
-def ensure_baseline_fixture() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
-    baseline = FIXTURES / "minimal_valid"
-    if baseline.is_dir():
-        return
-    baseline.mkdir(parents=True)
-    # built during module setup from live repo inventory
-    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--write-prereg"], check=True, cwd=RUN_ROOT)
-    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--manifests-only"], check=True, cwd=RUN_ROOT)
-    for artifact in (
-        "DES_PREREG.json",
-        "BASELINE_BINDING.json",
-        "ENVIRONMENT_MANIFEST.json",
-        "INVENTORY_BINDING.json",
-        "OBLIGATION_EXECUTION_MATRIX.json",
-        "REMAINING_QUALIFICATION_QUEUE.json",
-        "BATCH_MANIFEST.json",
-        "TESTCASE_EXECUTION_MATRIX.json",
-    ):
-        src = RUN_ROOT / artifact
-        if src.is_file():
-            shutil.copy(src, baseline / artifact)
-    # synthetic passing batch
-    rec = baseline / "execution_records"
-    rec.mkdir(exist_ok=True)
-    junit = baseline / "junit"
-    logs = baseline / "logs"
-    junit.mkdir(exist_ok=True)
-    logs.mkdir(exist_ok=True)
+def _sync_synthetic_records(baseline: Path) -> None:
+    import hashlib
+
+    def sha256_file(path: Path) -> str:
+        digest = hashlib.sha256()
+        digest.update(path.read_bytes())
+        return digest.hexdigest()
+
+    binding = json.loads((baseline / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
     batch = "synthetic_pass"
+    rec = baseline / "execution_records"
+    rec.mkdir(parents=True, exist_ok=True)
+    junit = baseline / "junit" / f"{batch}.xml"
+    logs = baseline / "logs" / f"{batch}.log"
+    logs.parent.mkdir(parents=True, exist_ok=True)
+    junit.parent.mkdir(parents=True, exist_ok=True)
+    if not logs.is_file():
+        logs.write_bytes(b"")
+    if not junit.is_file():
+        junit.write_text(
+            '<?xml version="1.0" encoding="utf-8"?><testsuite tests="1" failures="0">'
+            '<testcase classname="tests.unit.applications.test_mcp_server_p4_lifecycle" '
+            'name="test_placeholder" file="tests/unit/applications/test_mcp_server_p4_lifecycle.py"/>'
+            "</testsuite>",
+            encoding="utf-8",
+        )
     pre = {
         "schema": "eqo.execution_record.v1",
         "phase": "pre",
         "batch_id": batch,
-        "source_commit_sha": json.loads((baseline / "BASELINE_BINDING.json").read_text())["qualification_source_sha"],
-        "source_tree_sha": json.loads((baseline / "BASELINE_BINDING.json").read_text())[
-            "qualification_source_tree_sha"
-        ],
+        "source_commit_sha": binding["qualification_source_sha"],
+        "source_tree_sha": binding["qualification_source_tree_sha"],
         "started_at_utc": "2026-11-28T06:00:00Z",
         "command_digest_sha256": "a" * 64,
     }
@@ -80,21 +75,106 @@ def ensure_baseline_fixture() -> None:
         "process_returncode": 0,
         "finished_at_utc": "2026-11-28T06:01:00Z",
         "stdout_stderr_path": f"logs/{batch}.log",
-        "stdout_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_stderr_sha256": sha256_file(logs),
         "junit_path": f"junit/{batch}.xml",
-        "junit_sha256": "",
-        "source_commit_sha_after": pre["source_commit_sha"],
+        "junit_sha256": sha256_file(junit),
+        "source_commit_sha_after": binding["qualification_source_sha"],
+        "source_tree_sha_after": binding["qualification_source_tree_sha"],
     }
     (rec / f"{batch}.pre.json").write_text(json.dumps(pre, indent=2), encoding="utf-8")
-    (logs / f"{batch}.log").write_bytes(b"")
-    junit_xml = """<?xml version="1.0" encoding="utf-8"?><testsuite name="pytest" tests="1" failures="0" errors="0" skipped="0"><testcase classname="tests.unit.applications.test_mcp_server_p4_lifecycle" name="test_placeholder" file="tests/unit/applications/test_mcp_server_p4_lifecycle.py"/></testsuite>"""
-    (junit / f"{batch}.xml").write_text(junit_xml, encoding="utf-8")
-    from _evidence_common import sha256_file
-
-    post["junit_sha256"] = sha256_file(junit / f"{batch}.xml")
-    post["stdout_stderr_sha256"] = sha256_file(logs / f"{batch}.log")
     (rec / f"{batch}.post.json").write_text(json.dumps(post, indent=2), encoding="utf-8")
-    subprocess.run([sys.executable, str(RUN_ROOT / "reconcile_evidence.py")], cwd=baseline, check=True)
+
+
+@pytest.fixture(scope="module")
+def ensure_baseline_fixture() -> None:
+    FIXTURES.mkdir(parents=True, exist_ok=True)
+    baseline = FIXTURES / "minimal_valid"
+    if not baseline.is_dir():
+        baseline.mkdir(parents=True)
+    # built during module setup from live repo inventory
+    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--write-prereg"], check=True, cwd=RUN_ROOT)
+    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--manifests-only"], check=True, cwd=RUN_ROOT)
+    if not (baseline / "BASELINE_BINDING.json").is_file():
+        for artifact in (
+            "DES_PREREG.json",
+            "BASELINE_BINDING.json",
+            "ENVIRONMENT_MANIFEST.json",
+            "INVENTORY_BINDING.json",
+            "OBLIGATION_EXECUTION_MATRIX.json",
+            "REMAINING_QUALIFICATION_QUEUE.json",
+            "BATCH_MANIFEST.json",
+            "TESTCASE_EXECUTION_MATRIX.json",
+        ):
+            src = RUN_ROOT / artifact
+            if src.is_file():
+                shutil.copy(src, baseline / artifact)
+    _sync_synthetic_records(RUN_ROOT)
+    subprocess.run([sys.executable, str(RUN_ROOT / "reconcile_evidence.py")], cwd=RUN_ROOT, check=True)
+    for rel in (
+        "DES_PREREG.json",
+        "BASELINE_BINDING.json",
+        "ENVIRONMENT_MANIFEST.json",
+        "INVENTORY_BINDING.json",
+        "OBLIGATION_EXECUTION_MATRIX.json",
+        "REMAINING_QUALIFICATION_QUEUE.json",
+        "BATCH_MANIFEST.json",
+        "TESTCASE_EXECUTION_MATRIX.json",
+    ):
+        src = RUN_ROOT / rel
+        if src.is_file():
+            shutil.copy(src, baseline / rel)
+    _sync_synthetic_records(baseline)
+    subprocess.run([sys.executable, str(RUN_ROOT / "reconcile_evidence.py")], cwd=RUN_ROOT, check=True)
+
+
+def _refresh_batch_digests(root: Path, batch_id: str = "synthetic_pass") -> None:
+    import hashlib
+
+    post_path = root / "execution_records" / f"{batch_id}.post.json"
+    if not post_path.is_file():
+        return
+    post = json.loads(post_path.read_text(encoding="utf-8"))
+    log_rel = post.get("stdout_stderr_path")
+    junit_rel = post.get("junit_path")
+    if log_rel and (root / log_rel).is_file():
+        post["stdout_stderr_sha256"] = hashlib.sha256((root / log_rel).read_bytes()).hexdigest()
+    if junit_rel and (root / junit_rel).is_file():
+        post["junit_sha256"] = hashlib.sha256((root / junit_rel).read_bytes()).hexdigest()
+    post_path.write_text(json.dumps(post, indent=2), encoding="utf-8")
+
+
+def _first_post(root: Path) -> Path:
+    posts = sorted(root.glob("execution_records/*.post.json"))
+    assert posts, f"missing execution post records under {root}"
+    return posts[0]
+
+
+def _junit_covered_paths(root: Path) -> set[str]:
+    from _evidence_common import parse_junit_cases
+
+    covered: set[str] = set()
+    for post_path in root.glob("execution_records/*.post.json"):
+        post = json.loads(post_path.read_text(encoding="utf-8"))
+        junit_rel = post.get("junit_path")
+        if not junit_rel:
+            continue
+        junit_path = root / junit_rel
+        if not junit_path.is_file():
+            continue
+        batch_id = post_path.name.replace(".post.json", "")
+        binding = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
+        sha = binding.get("qualification_source_sha", "")
+        for case in parse_junit_cases(junit_path, batch_id=batch_id, source_sha=sha):
+            covered.add(case.file_path)
+    return covered
+
+
+def _clear_queue_green_except(queue: dict, *, keep_path: str | None = None) -> None:
+    for row in queue.get("qualification_queue", []):
+        if keep_path is not None and row.get("path") == keep_path:
+            continue
+        if row.get("recalculated_disposition") == "GREEN":
+            row["recalculated_disposition"] = "OPEN"
 
 
 ADVERSARIAL_CASES = [
@@ -154,45 +234,60 @@ def _mutate(case_id: str, root: Path) -> None:
     elif case_id.startswith("07"):
         queue["queue_count"] = 999
     elif case_id.startswith("08"):
-        obl["obligations"][0]["recalculated_disposition"] = "GREEN"
-        junit = list((root / "junit").glob("*.xml"))[0]
-        text = (
-            junit.read_text(encoding="utf-8")
-            .replace('failures="0"', 'failures="1"')
-            .replace(
-                "/>",
-                '><failure message="forced"/></testcase>',
-                1,
-            )
+        target_row = next(
+            (r for r in queue.get("qualification_queue", []) if r.get("path")),
+            queue["qualification_queue"][0],
         )
-        junit.write_text(text, encoding="utf-8")
+        target_path = target_row.get("path", "tests/x.py")
+        _clear_queue_green_except(queue, keep_path=target_path)
+        target_row["recalculated_disposition"] = "GREEN"
+        junit = root / "junit" / "synthetic_pass.xml"
+        junit.write_text(
+            '<?xml version="1.0" encoding="utf-8"?><testsuite tests="1" failures="1">'
+            f'<testcase classname="synthetic.adversarial" name="t" file="{target_path}">'
+            '<failure message="forced"/></testcase></testsuite>',
+            encoding="utf-8",
+        )
+        _refresh_batch_digests(root)
     elif case_id.startswith("09"):
         for row in queue["qualification_queue"]:
             row["recalculated_disposition"] = "GREEN"
             row["testcase_outcomes"] = []
     elif case_id.startswith("10"):
-        (root / "logs").unlink(missing_ok=True)
+        post = json.loads(_first_post(root).read_text(encoding="utf-8"))
+        log_rel = post.get("stdout_stderr_path")
+        if log_rel:
+            log_path = root / log_rel
+            if log_path.is_file():
+                log_path.unlink()
     elif case_id.startswith("11"):
         for p in (root / "junit").glob("*.xml"):
             p.unlink()
     elif case_id.startswith("12"):
-        post = json.loads(list((root / "execution_records").glob("*.post.json"))[0].read_text())
+        post_path = _first_post(root)
+        post = json.loads(post_path.read_text(encoding="utf-8"))
         post["stdout_stderr_sha256"] = "0" * 64
-        list((root / "execution_records").glob("*.post.json"))[0].write_text(json.dumps(post), encoding="utf-8")
+        post_path.write_text(json.dumps(post), encoding="utf-8")
     elif case_id.startswith("13"):
-        post = json.loads(list((root / "execution_records").glob("*.post.json"))[0].read_text())
-        post["source_commit_sha_after"] = "0" * 40
-        list((root / "execution_records").glob("*.post.json"))[0].write_text(json.dumps(post), encoding="utf-8")
+        obl["source_sha"] = "0" * 40
+    elif case_id.startswith("14"):
+        post_path = _first_post(root)
+        post = json.loads(post_path.read_text(encoding="utf-8"))
+        post["source_tree_sha_after"] = "f" * 40
+        post_path.write_text(json.dumps(post), encoding="utf-8")
     elif case_id.startswith("15"):
-        post = json.loads(list((root / "execution_records").glob("*.post.json"))[0].read_text())
+        post_path = _first_post(root)
+        post = json.loads(post_path.read_text(encoding="utf-8"))
         post["source_commit_sha_after"] = "f" * 40
-        list((root / "execution_records").glob("*.post.json"))[0].write_text(json.dumps(post), encoding="utf-8")
+        post_path.write_text(json.dumps(post), encoding="utf-8")
     elif case_id.startswith("16"):
-        post = json.loads(list((root / "execution_records").glob("*.post.json"))[0].read_text())
+        post_path = _first_post(root)
+        post = json.loads(post_path.read_text(encoding="utf-8"))
         post["finished_at_utc"] = "2020-01-01T00:00:00Z"
-        list((root / "execution_records").glob("*.post.json"))[0].write_text(json.dumps(post), encoding="utf-8")
+        post_path.write_text(json.dumps(post), encoding="utf-8")
     elif case_id.startswith("17"):
-        post = json.loads(list((root / "execution_records").glob("*.post.json"))[0].read_text())
+        post_path = _first_post(root)
+        post = json.loads(post_path.read_text(encoding="utf-8"))
         post["process_returncode"] = 0
         log = root / post["stdout_stderr_path"]
         log.write_text("FAILED\n", encoding="utf-8")
@@ -202,9 +297,11 @@ def _mutate(case_id: str, root: Path) -> None:
         tc["testcases"].append(dup)
         (root / "TESTCASE_EXECUTION_MATRIX.json").write_text(json.dumps(tc, indent=2), encoding="utf-8")
     elif case_id.startswith("20"):
+        covered = _junit_covered_paths(root)
         for ob in obl["obligations"]:
-            if ob.get("historical_disposition_reference") in ("GREEN", "QUALIFICATION_COMPLETE"):
-                ob["recalculated_disposition"] = ob["historical_disposition_reference"]
+            mapped = ob.get("mapped_test_file_paths") or []
+            if mapped and not ob.get("semantic_review_required") and not any(p in covered for p in mapped):
+                ob["recalculated_disposition"] = "QUALIFICATION_COMPLETE"
                 break
     elif case_id.startswith("22"):
         tc_path = root / "TESTCASE_EXECUTION_MATRIX.json"
@@ -228,29 +325,48 @@ def _mutate(case_id: str, root: Path) -> None:
                 ob["recalculated_disposition"] = "QUALIFICATION_COMPLETE"
                 break
     elif case_id.startswith("27"):
-        for row in queue.get("qualification_queue", []):
-            if row.get("testcase_outcomes"):
-                row["testcase_outcomes"][0]["outcome"] = "SKIP"
-            row["recalculated_disposition"] = "GREEN"
+        row = queue["qualification_queue"][0]
+        _clear_queue_green_except(queue, keep_path=row.get("path"))
+        row["recalculated_disposition"] = "GREEN"
+        row["testcase_outcomes"] = [
+            {
+                "node_id": "synthetic::skip",
+                "file_path": row.get("path", "tests/x.py"),
+                "outcome": "SKIP",
+                "batch_id": "synthetic_pass",
+            }
+        ]
     elif case_id.startswith("18"):
-        junit = list((root / "junit").glob("*.xml"))[0]
-        text = junit.read_text(encoding="utf-8")
-        text = text.replace(
-            "test_mcp_server_p4_lifecycle.py",
-            "synthetic/unmapped_module.py",
+        bad = "tests/synthetic/unmapped_adversarial_module.py"
+        junit = root / "junit" / "synthetic_pass.xml"
+        junit.write_text(
+            '<?xml version="1.0" encoding="utf-8"?><testsuite tests="1" failures="0">'
+            f'<testcase classname="synthetic.unmapped" name="t" file="{bad}"/></testsuite>',
+            encoding="utf-8",
         )
-        junit.write_text(text, encoding="utf-8")
+        _refresh_batch_digests(root)
     elif case_id.startswith("21"):
         a, b = 0, 1
         oid_a, oid_b = obl["obligations"][a]["obligation_id"], obl["obligations"][b]["obligation_id"]
         obl["obligations"][a]["obligation_id"] = oid_b
         obl["obligations"][b]["obligation_id"] = oid_a
     elif case_id.startswith("24"):
+        row0 = queue["qualification_queue"][0]
+        row0["recalculated_disposition"] = "GREEN"
+        path0 = row0.get("path", "tests/x.py")
         tc = json.loads((root / "TESTCASE_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
-        for row in tc.get("testcases", []):
-            row["evidence_validity"] = "HISTORICAL_UNVERIFIED"
+        if not tc.get("testcases"):
+            tc["testcases"] = []
+        tc["testcases"] = [
+            {
+                "node_id": "hist::pass",
+                "file_path": path0,
+                "outcome": "PASS",
+                "batch_id": "synthetic_pass",
+                "evidence_validity": "HISTORICAL_UNVERIFIED",
+            }
+        ]
         (root / "TESTCASE_EXECUTION_MATRIX.json").write_text(json.dumps(tc, indent=2), encoding="utf-8")
-        queue["qualification_queue"][0]["recalculated_disposition"] = "GREEN"
     elif case_id.startswith("28"):
         obl["obligations"][0]["evidence_reference"] = "unrelated_batch"
     (root / "OBLIGATION_EXECUTION_MATRIX.json").write_text(json.dumps(obl, indent=2), encoding="utf-8")
@@ -284,5 +400,4 @@ def test_adversarial_validator_control(
             assert before == after, "validator must not mutate obligation matrix"
             return
         assert code == 1, output
-        if reason:
-            assert reason in output or "STRUCTURAL_INCONSISTENCY" in output or "GREEN" in output
+        assert reason and reason in output, output

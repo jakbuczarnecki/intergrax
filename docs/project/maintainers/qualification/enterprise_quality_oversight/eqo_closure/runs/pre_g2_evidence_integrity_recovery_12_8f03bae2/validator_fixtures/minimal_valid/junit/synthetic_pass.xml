@@ -1,1 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?><testsuite name="pytest" tests="1" failures="0" errors="0" skipped="0"><testcase classname="tests.unit.applications.test_mcp_server_p4_lifecycle" name="test_placeholder" file="tests/unit/applications/test_mcp_server_p4_lifecycle.py"/></testsuite>
+<?xml version="1.0" encoding="utf-8"?><testsuite tests="1" failures="0"><testcase classname="tests.unit.applications.test_mcp_server_p4_lifecycle" name="test_placeholder" file="tests/unit/applications/test_mcp_server_p4_lifecycle.py"/></testsuite>

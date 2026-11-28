@@ -1,5 +1,142 @@
 {
   "schema": "eqo.testcase_execution_matrix.v1",
-  "source_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
-  "testcases": []
+  "source_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
+  "testcases": [
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_refuses_missing_human_decision_store",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_accepts_explicit_human_persistence_disable",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_refuses_in_memory_human_store",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_ignores_ambient_task_memory_env",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_ignores_ambient_runtime_events_env",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_lab_loop_keeps_env_resolution_and_none_default",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_spec_forwards_persistence_arguments",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_loop_refuses_context_manager_without_engine_or_adapter",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_auto_context_default_planner_classifier_resolves_llm_for_context",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_auto_context_default_planner_rules_classifier_resolves_llm",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_explicit_llm_adapter_skips_environment_resolution",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_auto_context_default_planner_without_configured_provider_fail_closed",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_without_provider_config_fail_closed",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_lab_default_planner_classifier_does_not_force_environment_llm_resolution",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_explicit_incomplete_context_manager_remains_fail_closed",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "fc1_nexus_context",
+      "evidence_reference": "execution_records/fc1_nexus_context.post.json",
+      "file_path": "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+      "node_id": "tests.unit.runtime.nexus.test_fc1_nexus_loop_persistence_posture::test_strict_environment_through_tier3_builder_is_refused_without_engine_or_adapter",
+      "outcome": "PASS",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+    },
+    {
+      "batch_id": "synthetic_pass",
+      "evidence_reference": "execution_records/synthetic_pass.post.json",
+      "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
+      "node_id": "tests.unit.applications.test_mcp_server_p4_lifecycle::test_placeholder",
+      "outcome": "PASS",
+      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
+    }
+  ]
 }

@@ -1,0 +1,13 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "synthetic_pass",
+  "process_returncode": 0,
+  "finished_at_utc": "2026-11-28T06:01:00Z",
+  "stdout_stderr_path": "logs/synthetic_pass.log",
+  "stdout_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "junit_path": "junit/synthetic_pass.xml",
+  "junit_sha256": "94a739a416116b85a4f4d48ce039be4c8b03ff8c9cc86ef9207702d47126ede9",
+  "source_commit_sha_after": "438252b942a09952e4edc0ae58961c9c437d9c03",
+  "source_tree_sha_after": "10510c426e6d888369d5083f42c10f2b6ffb0b03"
+}

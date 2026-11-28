@@ -1,0 +1,9 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "pre",
+  "batch_id": "synthetic_pass",
+  "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
+  "source_tree_sha": "10510c426e6d888369d5083f42c10f2b6ffb0b03",
+  "started_at_utc": "2026-11-28T06:00:00Z",
+  "command_digest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

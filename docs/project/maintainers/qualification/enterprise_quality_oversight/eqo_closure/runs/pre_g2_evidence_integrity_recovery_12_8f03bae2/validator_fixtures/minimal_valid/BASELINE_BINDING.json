@@ -2,10 +2,10 @@
   "implementation_commit_ec_w3_11": "b716ecfef7e62c4edbaa16b9d2fc522bea777cd7",
   "implementation_tree_ec_w3_11": "05637e5a76c3d1bf9124c4c687a3ce2543b3f274",
   "published_tree": "25a014baa889f2c6c79ea8109f94b5900f451c17",
-  "qualification_source_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
-  "qualification_source_tree_sha": "25a014baa889f2c6c79ea8109f94b5900f451c17",
-  "recorded_utc": "2026-11-28T07:01:49Z",
+  "qualification_source_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
+  "qualification_source_tree_sha": "10510c426e6d888369d5083f42c10f2b6ffb0b03",
+  "recorded_utc": "2026-11-28T07:20:46Z",
   "required_ancestor": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
   "schema": "eqo.baseline_binding.v1",
-  "task_start_remote_sha": "74a5ff47956d48497368797dac406547924a2216"
+  "task_start_remote_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
 }

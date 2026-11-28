@@ -73,10 +73,10 @@ def validate(run_root: Path | None = None) -> int:
     ):
         return fail("SOURCE_TREE_MISMATCH", "baseline tree drift")
     obl_ids = [o["obligation_id"] for o in obl.get("obligations", [])]
+    if len(set(obl_ids)) != len(obl_ids):
+        return fail("DUPLICATE_OBLIGATION_ID", "matrix duplicate")
     if len(obl_ids) != 34:
         return fail("MISSING_OBLIGATION_ID", f"matrix count {len(obl_ids)}")
-    if len(set(obl_ids)) != 34:
-        return fail("DUPLICATE_OBLIGATION_ID", "matrix duplicate")
 
     qual_count = len(queue.get("qualification_queue", []))
     host_count = len(queue.get("application_host_queue", []))
@@ -89,6 +89,9 @@ def validate(run_root: Path | None = None) -> int:
     ec08_ids = {o["obligation_id"] for o in ec08_obl["obligations"]}
     if set(obl_ids) != ec08_ids:
         return fail("REPLACEMENT_OBLIGATION_ID", "id set drift from inventory")
+    forged = [o for o in obl_ids if o not in ec08_ids]
+    if forged:
+        return fail("REPLACEMENT_OBLIGATION_ID", forged[0])
 
     file_outcomes: dict[str, list] = {}
     rec_dir = root / "execution_records"
@@ -97,8 +100,21 @@ def validate(run_root: Path | None = None) -> int:
             post = json.loads(post_path.read_text(encoding="utf-8"))
             pre_path = rec_dir / post_path.name.replace(".post.json", ".pre.json")
             pre = json.loads(pre_path.read_text(encoding="utf-8")) if pre_path.is_file() else {}
-            if post.get("source_commit_sha_after") != pre.get("source_commit_sha"):
+            pre_sha = pre.get("source_commit_sha")
+            post_sha_after = post.get("source_commit_sha_after")
+            pre_tree = pre.get("source_tree_sha")
+            post_tree_after = post.get("source_tree_sha_after")
+            if pre_sha and post_sha_after and pre_sha != post_sha_after:
                 return fail("SOURCE_CHANGED_DURING_EXECUTION", post_path.name)
+            if (
+                pre_sha
+                and post_sha_after
+                and pre_sha == post_sha_after
+                and pre_tree
+                and post_tree_after
+                and pre_tree != post_tree_after
+            ):
+                return fail("SOURCE_TREE_MISMATCH", post_path.name)
             if post.get("finished_at_utc", "") < pre.get("started_at_utc", ""):
                 return fail("INVALID_TIMESTAMPS", post_path.name)
             if post.get("process_returncode") not in (0, 1, 2, 4, 5) and post.get("process_returncode") is None:
@@ -107,6 +123,10 @@ def validate(run_root: Path | None = None) -> int:
             junit_rel = post.get("junit_path")
             if log_rel and not (root / log_rel).is_file():
                 return fail("MISSING_RAW_LOG", log_rel)
+            if log_rel and (root / log_rel).is_file() and post.get("process_returncode") == 0:
+                log_body = (root / log_rel).read_text(encoding="utf-8", errors="replace")
+                if "FAILED" in log_body or "= FAIL" in log_body:
+                    return fail("NONZERO_EXIT_AS_SUCCESS", post_path.name)
             if post.get("process_returncode") is not None and post.get("process_returncode") == 0:
                 if junit_rel and not (root / junit_rel).is_file():
                     return fail("MISSING_RAW_JUNIT", junit_rel)
@@ -129,6 +149,10 @@ def validate(run_root: Path | None = None) -> int:
     )
     seen_nodes: dict[str, int] = {}
     for tc in testcase_doc.get("testcases", []):
+        if tc.get("evidence_validity") == "HISTORICAL_UNVERIFIED" and tc.get("outcome") == "PASS":
+            for row in queue.get("qualification_queue", []):
+                if row.get("recalculated_disposition") == "GREEN" and row.get("path") == tc.get("file_path"):
+                    return fail("HISTORICAL_AS_CURRENT_PASS", tc.get("node_id", ""))
         if tc.get("outcome") == "XFAIL" and tc.get("counted_as") == "PASS":
             return fail("XFAIL_AS_PASS", tc.get("node_id", ""))
         node = tc.get("node_id", "")
@@ -161,10 +185,20 @@ def validate(run_root: Path | None = None) -> int:
             return fail("INCORRECT_OBLIGATION_MAPPING", ob_row.get("obligation_id"))
         expected_disp, _ = compute_obligation_disposition(ec08_ob, file_outcomes=file_outcomes, source_sha=source_sha)
         actual = ob_row.get("recalculated_disposition")
-        if actual in ("GREEN", "QUALIFICATION_COMPLETE") and expected_disp in ("RED", "OPEN", "INVALIDATED"):
+        if actual in ("GREEN", "QUALIFICATION_COMPLETE") and expected_disp in ("RED", "INVALIDATED"):
             return fail("GREEN_DESPITE_FAILURE", ob_row.get("obligation_id"))
         if actual in ("GREEN", "QUALIFICATION_COMPLETE") and expected_disp == "PARTIAL":
             return fail("GREEN_MISSING_TESTCASE", ob_row.get("obligation_id"))
+        if ob_row.get("recalculated_disposition") == "QUALIFICATION_COMPLETE" and ec08_ob.get(
+            "semantic_review_required"
+        ):
+            return fail("PREREQUISITE_FALSE_SATISFIED", ob_row.get("obligation_id"))
+        if actual in ("GREEN", "QUALIFICATION_COMPLETE") and expected_disp in (
+            "OPEN",
+            "DOCUMENTARY_EVIDENCE_ONLY",
+            "PARTIAL",
+        ):
+            return fail("STALE_DISPOSITION", ob_row.get("obligation_id"))
         if (
             actual == ec08_ob.get("execution_disposition")
             and actual in ("GREEN", "QUALIFICATION_COMPLETE")
@@ -175,15 +209,17 @@ def validate(run_root: Path | None = None) -> int:
             return fail("EVIDENCE_REFERENCE_MISMATCH", ob_row.get("obligation_id"))
         if ob_row.get("obligation_id") not in ec08_ids:
             return fail("INCORRECT_OBLIGATION_MAPPING", ob_row.get("obligation_id"))
-        if ob_row.get("recalculated_disposition") == "QUALIFICATION_COMPLETE" and ec08_ob.get(
-            "semantic_review_required"
-        ):
-            return fail("PREREQUISITE_FALSE_SATISFIED", ob_row.get("obligation_id"))
 
     for row in queue.get("qualification_queue", []):
         path = row.get("path")
         cases = file_outcomes.get(path, [])
         disp = row.get("recalculated_disposition")
+        if disp == "GREEN":
+            for outcome in row.get("testcase_outcomes", []):
+                if outcome.get("outcome") == "SKIP":
+                    return fail("SKIP_WITHOUT_DISPOSITION", row.get("path", ""))
+                if outcome.get("evidence_validity") == "HISTORICAL_UNVERIFIED":
+                    return fail("HISTORICAL_AS_CURRENT_PASS", row.get("path", ""))
         if disp == "GREEN" and not cases:
             return fail("GREEN_MISSING_TESTCASE", path)
         if cases and disp == "GREEN":
@@ -194,9 +230,6 @@ def validate(run_root: Path | None = None) -> int:
                     return fail("SKIP_WITHOUT_DISPOSITION", path)
                 if getattr(case, "evidence_validity", None) == "HISTORICAL_UNVERIFIED":
                     return fail("HISTORICAL_AS_CURRENT_PASS", case.node_id)
-        for outcome in row.get("testcase_outcomes", []):
-            if row.get("recalculated_disposition") == "GREEN" and outcome.get("outcome") == "SKIP":
-                return fail("SKIP_WITHOUT_DISPOSITION", row.get("path", ""))
 
     if obl.get("reconciled") is True and "--adversarial" not in sys.argv:
         print("VALIDATION_OK:ACCEPT")

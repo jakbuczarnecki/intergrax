@@ -367,13 +367,14 @@ def _class_assign_defaults_on_semantic_fields(
                     continue
                 resolved, unresolved = _resolve_string_constant(default_node, bindings)
                 if unresolved:
+                    const_ref = default_node.id if isinstance(default_node, ast.Name) else ast.dump(default_node)
                     findings.append(
                         SemanticProductionFinding(
                             repo_path=rel,
                             finding_class=SemanticProductionFindingClass.NAMED_CONSTANT_SEMANTIC_BLIND_SPOT,
                             detail=(
                                 f"{node.name}.{target_name} uses unresolved named constant "
-                                f"{default_node.id!r} as semantic default"
+                                f"{const_ref!r} as semantic default"
                             ),
                             concern_id=concern_id,
                         ),
@@ -706,7 +707,7 @@ _FC3_SEMANTIC_PARAM_NAMES: Final[frozenset[str]] = _SEMANTIC_PARAM_NAMES | froze
     {"mode", "slug", "store", "channel"}
 )
 
-_FC3_KNOWN_ENUMS: dict[str, type[StrEnum]] = {}
+_FC3_KNOWN_ENUMS: dict[str, type] = {}
 
 _LAB_SELECTOR_OPT_IN_FQ: Final[str] = "intergrax.integrations.contracts.base.LabSelectorOptIn"
 _LAB_SELECTOR_OPT_IN_SIMPLE: Final[str] = "LabSelectorOptIn"
@@ -1100,7 +1101,7 @@ def discover_fc3_vendor_defaults_in_source(source: str, rel: str) -> tuple[Fc3Ve
     )
 
 
-def _fc3_infer_semantic_field(item: Fc3VendorDefaultFinding) -> str:
+def _fc3_infer_semantic_field(item: _Fc3RawFinding | Fc3VendorDefaultFinding) -> str:
     # placeholder — patched after core rename
     return getattr(item, "semantic_field", "")
 
