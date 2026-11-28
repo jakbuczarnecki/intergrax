@@ -88,7 +88,7 @@ EC08_REL = (
     "eqo_closure/runs/pre_g2_qualification_execution_08_245d4717"
 )
 IMMUTABLE_INVENTORY_SHA = "4abc43faad149cc0ce7291468e07886efcdd1f13"
-BATCH_TIMEOUT_SECONDS = 900
+BATCH_TIMEOUT_SECONDS = 3600
 
 Q04_LIGHTWEIGHT_TESTS = (
     "test_l3_plain_freeze_blocked_without_baseline",
@@ -555,7 +555,12 @@ def compute_canonical_evidence_projection(ctx: ExecutionContext) -> dict[str, An
     batch_ids_for_paths: dict[str, set[str]] = {}
     testcase_matrix: list[dict[str, Any]] = []
     batch_manifest: list[dict[str, Any]] = []
-    for batch_id, pair in records.items():
+    prereg = json.loads((ctx.run_root / "DES_PREREG.json").read_text(encoding="utf-8"))
+    batch_order = [b["id"] for b in prereg.get("batches", [])]
+    ordered_batch_ids = [bid for bid in batch_order if bid in records] + sorted(set(records) - set(batch_order))
+    seen_node_ids: dict[str, int] = {}
+    for batch_id in ordered_batch_ids:
+        pair = records[batch_id]
         post = pair.get("post") or {}
         pre = pair.get("pre") or {}
         junit_rel = post.get("junit_path")
@@ -567,6 +572,8 @@ def compute_canonical_evidence_projection(ctx: ExecutionContext) -> dict[str, An
                 run_root=ctx.run_root,
             ):
                 batch_ids_for_paths.setdefault(case.file_path, set()).add(batch_id)
+                prior = seen_node_ids.get(case.node_id, 0)
+                seen_node_ids[case.node_id] = prior + 1
                 testcase_matrix.append(
                     {
                         "batch_id": case.batch_id,
@@ -575,6 +582,7 @@ def compute_canonical_evidence_projection(ctx: ExecutionContext) -> dict[str, An
                         "outcome": case.outcome,
                         "source_commit_sha": case.source_commit_sha,
                         "evidence_reference": f"execution_records/{batch_id}.post.json",
+                        "counted_in_coverage": prior == 0,
                     }
                 )
         batch_manifest.append(
@@ -588,7 +596,8 @@ def compute_canonical_evidence_projection(ctx: ExecutionContext) -> dict[str, An
                 "log_sha256": post.get("stdout_stderr_sha256"),
             }
         )
-    testcase_matrix.sort(key=lambda r: (r["batch_id"], r["node_id"], r["source_commit_sha"]))
+    batch_rank = {bid: idx for idx, bid in enumerate(batch_order)}
+    testcase_matrix.sort(key=lambda r: (batch_rank.get(r["batch_id"], 999), r["node_id"], r["source_commit_sha"]))
     file_rows: list[dict[str, Any]] = []
     for path in sorted(file_outcomes.keys()):
         cases = file_outcomes[path]

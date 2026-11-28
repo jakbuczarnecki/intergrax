@@ -1,0 +1,131 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_first_candidate_freeze_85_no_accepted_baseline",
+      "outcome": "COLLECTED"
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_laboratory_normal_freeze_85_synthetic_accepted_fixture",
+      "outcome": "COLLECTED"
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_production_normal_freeze_85_after_od_ent_01",
+      "outcome": "COLLECTED"
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_plain_freeze_blocked_without_baseline",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_real_85_cli_certifying",
+      "outcome": "COLLECTED"
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_real_85_fail_on_check_filter",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_not_qualifying_without_opt_in_profile",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_plain_freeze_blocked_without_baseline",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_plain_freeze_blocked_without_baseline",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py::test_l3_plain_freeze_blocked_without_baseline",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_real_85_fail_on_check_filter",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_real_85_fail_on_check_filter",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_real_85_fail_on_check_filter",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_not_qualifying_without_opt_in_profile",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_not_qualifying_without_opt_in_profile",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py::test_l3_full_not_qualifying_without_opt_in_profile",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

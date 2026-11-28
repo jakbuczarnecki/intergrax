@@ -1,20 +1,229 @@
 {
   "batches": [
     {
-      "argv_digest": "d8870168fe635732bfc9bb9c6474457614e3ffdb6a01d67b2350ae211e54a2e4",
-      "batch_id": "fc1_nexus_context",
-      "junit_sha256": "d79552add031c835cb38480b1dd637c36c4012a368a1bdbe6341393619e36c94",
-      "log_sha256": "22fe34d67d15dc6ffb03df5f46385e00b2d27d3d1f3c30c4ac0347b8db7e0da0",
-      "process_returncode": 0,
-      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+      "argv_digest": "5adb8874f9ca07a91eed4d424ede4598cc9d3da5a7e79fbc857cc2104aa7719b",
+      "batch_id": "q01",
+      "junit_sha256": "60ed5ade63c5053c921e62a46026d08d6b9705c4d52548c66e226227d310a740",
+      "log_sha256": "f482997202a53f1cf9229d7d2543bd7df423a4c64ebb52bec5e2fd898ca70ed1",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 1,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
     },
     {
-      "argv_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "batch_id": "synthetic_pass",
-      "junit_sha256": "94a739a416116b85a4f4d48ce039be4c8b03ff8c9cc86ef9207702d47126ede9",
-      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "argv_digest": "d7a7c4e6467e6831cbba5b9063f94864094fc33395ff480b995a902720a14f76",
+      "batch_id": "q02",
+      "junit_sha256": "c88e9bc3f97e1b4811c352cf5c4a081f3e9c4082bf76a59e6b7fc9429ca1a820",
+      "log_sha256": "fccaa6685cfdeb2be8de92e2a809a2f9588ed52e166682b9b9dce44861d38113",
+      "process_exit_disposition": "PROCESS_COMPLETED",
       "process_returncode": 0,
-      "source_commit_sha": "3fcd7241369f21d4676ec9d980eb4cbf6bb8550d"
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "e046f2d1684bbee72ed39662c39c7805c8aee123c3324fc5cea3ff264cfbc019",
+      "batch_id": "q03",
+      "junit_sha256": "6fb4e5b4824d391c097c48d645868b17c3d1a12418a7af157f430fc6539728d3",
+      "log_sha256": "89c2f725e5f19d85e25363e1d6569245e5885b7d94b32e9f6bcaa8868f3a20b0",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "23c97dae352c11d9799dd9f78af40a57a2a968cf5201438d8829341c12a828d1",
+      "batch_id": "q04",
+      "junit_sha256": "b63324adac0f4c32e91ae20e3142e2a9bf71248830c0686b950c592508475614",
+      "log_sha256": "d4a4f1b736718e5922abc9b04d952dca0b5844d8976f446b08be5a15ad152b5d",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "266c56e38b31292a02c622d7e40f946619e2a74e65b4f8ee1bb8712deb78aca4",
+      "batch_id": "q05",
+      "junit_sha256": "fea1e1ab2637b5f4b798ffe2b63a1855943152e083559963a16ac52ca0cb02fb",
+      "log_sha256": "c9825055407f7a926f7947df89e316f3464f7b187db9af5dba593488d1308886",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "35ccd125c54cdef59bdc6683f7a4b8461268d773fa1a3994f9003fa8a9d3a7da",
+      "batch_id": "q06",
+      "junit_sha256": "a7765cb32251ef1223c58260abf21a8f0d10a83d5590a478385c91335f55ce2c",
+      "log_sha256": "fc2f352d2ae56bdb58b32ed667fce98c55611f4724747016ce63f86f8548d6ad",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "6898e4c640fd05fd50f3585c0ceba750d8204d3747dfc30480d5982443a91289",
+      "batch_id": "q07",
+      "junit_sha256": "701091f30001a5f3088cbdd03ac3d5137607c7bf8ba1ecb2c6adcacb4942e38a",
+      "log_sha256": "95b7fecdcc757344e2f5bd4199f811aded80cdbcd436b17c976a48323eb15b01",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 1,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "ee57d953cd76b6f90ca1df8cddc9d2c89286dc9276c84a6f6b9e7bec58c53753",
+      "batch_id": "q08",
+      "junit_sha256": "2bab8a3334cdb728a16df8bbce9b0cf518ad2d1533fed4dcea4dae21d93e0a0b",
+      "log_sha256": "93924c133f1188e049aeb2fc37e2951b3d306bd9aacc1bde8ea90da8c25f9cef",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 1,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "3a8a6d858d087bdd9e60790d9b58d26dd7520426865ca85acb2810f0dba93834",
+      "batch_id": "q09",
+      "junit_sha256": "b4881e0a6d0b15ed77653b539a4c83ca5dd53c5b0553f3b504cf155b18ff32d0",
+      "log_sha256": "bd72026a9074a68c0ab535da300baf42054b0e16977cf954f6c743844ff5b3bf",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "a8c0d88fcb0494d3f2ca0018cae378904f56be79e46804b30cacf0406c756d66",
+      "batch_id": "pkg_g_d01",
+      "junit_sha256": "2df2c192008082c0c1f7ad2a50c3744dfeba935860ba55e814d0398f977a0546",
+      "log_sha256": "b60295ec94da859abce914ebf5c038794be6907e5e80ff603c1de30f5f9d5d91",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "7f78b229cd1a65971d2394663fdd64cc109a3a72d8f9d178a1859e46f2c59c5e",
+      "batch_id": "pkg_g_d02",
+      "junit_sha256": "7f470d2df77282a5377fdeea0bd76df2ae3a95e735f14450f970f78808a83287",
+      "log_sha256": "6539464cca62d0024fdb078233377af6d54f836c79076a528fc0ed77e173a31b",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "b8f38d5276fb66dab4c97e60ae750b1418eebebdcc76d5e8fa84aa0b5e036883",
+      "batch_id": "pkg_g_d03",
+      "junit_sha256": "8ce1e12b5e9d914e954128c3fbc7696ba01c1af1cb3cf9241f1fb5a32802b7d5",
+      "log_sha256": "8b1697037b7d8c29714205b028c89dcc2585213a0f2fcfa8c9f41d04ff0b0a4e",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "bd4cf4bb675c4fcf3caaad8e33a91e33841b458e71f3d4050ca0b989b298a850",
+      "batch_id": "pkg_g_d04",
+      "junit_sha256": "e8a4675242d996372ab31f79305c84594968cecabbc8991e6b18218d1e70fcd8",
+      "log_sha256": "15ddc191a7216157677c57984450072dac5f35606b0a7439873b69d97d3bb49b",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "89c46b95f7fa341ff36cf230376701c1e4e3c9eb0e43d5d4be9d5f53ec67cf74",
+      "batch_id": "pkg_g_d05",
+      "junit_sha256": "c169f7840f05be670dcb745140f72c73491ef03a7ff1a2af089640445d074b9f",
+      "log_sha256": "1a4864e35a096ae4ad67099be93ad6381cb9afd1884afb3c7ade88652a144082",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "463fe72b290b6e0a962e09a8fe2557ca346e306b4f5ff71b023169ff35c446d2",
+      "batch_id": "fc1_nexus_context",
+      "junit_sha256": "ea42a763c7965b9bc45c36266fa7ef6eb6b9534f26cc0a05122ba7a1e45f15ea",
+      "log_sha256": "d0cd581712be116913b40e0d4863ffe09729438d7c2510d067bfcc34a2281e22",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "1eb7dea40872a222cdee0471cc551bd569fe7f61d280497d5f75c01605b78579",
+      "batch_id": "p2c_http_admission",
+      "junit_sha256": "bb618e62b29f9e93e388ec77a231a7135b5a95d1c517f9b052c21175e40943b2",
+      "log_sha256": "74d516a7f09653c55686646440da050998d6a7c184e03d667a3fff0340592e1f",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 1,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "e151da33cd629bb7fc0d9145b9af974fed0c3b41b70dc24b4b04125f01366d2c",
+      "batch_id": "gca_dur_r4",
+      "junit_sha256": "9a5ff2d23bbac45615689254142dedfa9bb14fa324bb75be4362a9de5a665a57",
+      "log_sha256": "1139cd73c085973356fd299d4eec429cb06b244cf6f863ab43f56b6b32bd51ce",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "02ae7c735e5e4a82ed8f1520b4a4a57a39e065e5f532ee529c5a50daf7d3d8ad",
+      "batch_id": "erl_bridge",
+      "junit_sha256": "cf0b62b1a73e7ff942ca25994c5034fe3b82441a61920b47f956063fed1a1e9b",
+      "log_sha256": "06650c627f98b14d8e4729f52cc80307c39a9432b6df69ff5949f1cd612d500d",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "6070e393da69a274e6bc2a7e9a98f2d05889e95a2f6aac0a21b0f7a4548fce25",
+      "batch_id": "trace_x_p3_r1",
+      "junit_sha256": "9b95eb57110cd560a3a34b87ec5f38119a714409164f7457458a5ca6dfe70bea",
+      "log_sha256": "799e3124df0b4f674a0b42ea323d152dab28d6488461b9e0a79de94a5d0741f4",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "51f0ed18c8eac33ded6b944fe3acf544e7cf024e2eaa0404e1264bb7ca89477a",
+      "batch_id": "d4_strict_serving",
+      "junit_sha256": "6a5cac344881f4b54e0d09bb38e4fb1e66be18828f1336558a83ef62313b9cef",
+      "log_sha256": "9ed430c2f16ac1c12b497757ef1906b9f2c8d654c7dc178c8bd8043b297a3e28",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "7674d39470f017741427914b1ec637429d4e01f52950b1e5aecf73728aa8ed55",
+      "batch_id": "gca_smoke",
+      "junit_sha256": "f25041bd07f6126a74227b14c23849942b2de315e9f1564c1ff46ec28e0337fb",
+      "log_sha256": "d60185c9ffaf1dd1c4c08d42dd5e0ba76284b12b8852455893bf20eabdd0c7cc",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 1,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "52624a4064658572443b159180afaca24abfd81607253197518fcacc07169329",
+      "batch_id": "xd12_impact",
+      "junit_sha256": "3de555e73ee6c7e222f29e85acfd573707045deae4446c20128fa67108956027",
+      "log_sha256": "f28a095a29297c7ee806f0515dfd07a9128915a5ab5ad757ddfab885a943132b",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "8bd3c877530ac0300db0367690a914c465b188f64ebc6422900fd9610bc89c6d",
+      "batch_id": "mcp_p4_lifecycle",
+      "junit_sha256": "97ab856c77d6d3011929d5e7fecbd4c5917596fbff161cc027427ccbc4d938df",
+      "log_sha256": "60871ba9c84bb2b755fb3c2125443ab877de57c5f004a5cb4fa566e45d095a32",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "d5242d349c7a8fc61a56def3d7d655bdb0243bf3321c153e0a82fc436acf2c99",
+      "batch_id": "bnd03b_witness",
+      "junit_sha256": "06f3f7ac195b7c2620a3cf80d81d45171ff720b001f87233046c72289cc4c054",
+      "log_sha256": "1b9035157a9fb3432c898e690460f66183fafb270696387e112dbce8fd683c18",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
+    },
+    {
+      "argv_digest": "4852cc976c08384adaffce6fc9c5dc71f1c4c39a5c7756a20d8c86d989b50b6f",
+      "batch_id": "fc3_inbound_fail_closed",
+      "junit_sha256": "96449731d92d7d5bc69d0a80cc48da1ed128724cb76cd25654e2216c94b88b28",
+      "log_sha256": "bb35daca123188e4ef7ceb7b269ed1cf4bf0bbc9da59439a93ef459386d37648",
+      "process_exit_disposition": "PROCESS_COMPLETED",
+      "process_returncode": 0,
+      "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459"
     }
   ],
   "schema": "eqo.batch_manifest.v1"

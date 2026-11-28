@@ -1,0 +1,1301 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py",
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py",
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/rag/vectorstore/test_publication_visibility.py",
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py",
+      "node_id": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/token_optimization/test_receipts.py",
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_foreign_metadata_rejected_with_bound_tenant",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py::test_nt_wf_neg_e3_01_matching_bound_tenant_passes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_mismatched_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_blank_bound_tenant_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_rejects_missing_metadata_tenant_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_from_legacy_rag_hit_binds_matching_tenant_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py::test_compression_receipt_identity_scopes_tenant_attribution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vectorstore_contracts_hybrid_and_soak_have_no_unclassified_hasattr_dispatch",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_vector_store_list_collections_resolves_explicit_cfg_and_default_paths",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_lexical_hybrid_support_fuses_hits_without_payloads_attribute",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py::test_run_beta_adapter_soak_falls_back_to_harness_store_on_non_vectorstore_factory",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_legacy_generationless_record_stays_visible_with_coordinator",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_active_generation_match_is_visible",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_stale_generation_is_hidden",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_unknown_authority_hides_generation_managed_record",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_document_store_coordinator_recovers_active_generation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_reconstructed_document_store_coordinator_preserves_visibility",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_inprocess_empty_state_does_not_disable_fencing",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_tenant_workspace_source_isolation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_forbid_reflection_wiring",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_critical_rag_modules_parse_cleanly",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/rag/vectorstore/test_publication_visibility.py::test_vector_store_declares_list_source_record_ids",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py::test_runtime_tool_invoker_rejects_cross_tenant_invocation_context",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_returns_stable_sha256_hex_digest",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_hash_content_rejects_unsupported_algorithms",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_creates_original_and_optimized_hashes",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_copies_decision_fallback_bypass_from_result",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_measurement_from_result",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_records_protected_region_validation_from_result",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_accepts_injected_receipt_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_derives_receipt_id_deterministically",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_build_compression_receipt_prefers_result_strategy_over_request_strategy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_make_compression_receipt_ref_maps_receipt_fields",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_passes_for_matching_content",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_mismatched_original_content",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_for_missing_required_fields",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_failure_messages_exclude_raw_content",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/token_optimization/test_receipts.py::test_validate_receipt_integrity_fails_when_protected_region_validation_failed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

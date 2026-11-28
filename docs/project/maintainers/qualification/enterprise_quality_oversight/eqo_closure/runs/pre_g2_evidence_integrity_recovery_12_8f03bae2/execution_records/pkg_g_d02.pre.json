@@ -1,0 +1,55 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "pre",
+  "batch_id": "pkg_g_d02",
+  "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "git_worktree_git_dir": "D:/Projekty/intergrax/.git/worktrees/ec-w3-12-qual-6373f45e",
+  "tracked_source_consistency": {
+    "porcelain_empty": true,
+    "porcelain_lines": []
+  },
+  "argv": [
+    "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+    "run",
+    "--no-sync",
+    "--project",
+    "D:\\Projekty\\intergrax",
+    "python",
+    "-m",
+    "pytest",
+    "tests/unit/compat/langchain/test_wf_campaign_b_tenant_bridge.py",
+    "tests/unit/rag/document_loaders/test_legacy_runtime_document_tenant_scope.py",
+    "tests/unit/rag/vectorstore/test_frz_typ04_vectorstore_reflection_gate.py",
+    "tests/unit/rag/vectorstore/test_publication_visibility.py",
+    "tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_cross_tenant.py",
+    "tests/unit/runtime/token_optimization/test_receipts.py",
+    "-vv",
+    "-rA",
+    "--tb=short",
+    "--junitxml=D:\\Projekty\\intergrax\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_evidence_integrity_recovery_12_8f03bae2\\junit\\pkg_g_d02.xml",
+    "-p",
+    "eqo_nodecapture_plugin",
+    "--eqo-node-report=D:\\Projekty\\intergrax\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_evidence_integrity_recovery_12_8f03bae2\\node_reports\\pkg_g_d02_nodes.json",
+    "--eqo-source-root=D:\\Projekty\\_wt\\intergrax\\ec-w3-12-qual-6373f45e"
+  ],
+  "command_digest_sha256": "7f78b229cd1a65971d2394663fdd64cc109a3a72d8f9d178a1859e46f2c59c5e",
+  "environment_profile": {
+    "extras_profile": [
+      "dev-ci",
+      "dev-ci-rag",
+      "mcp",
+      "llm-langchain-ollama",
+      "llm-gemini"
+    ],
+    "fastmcp_import_ok": true,
+    "pyproject_sha256": "9b8b71cbbfef1edd66e996ceafd7e5ca23940e0d62dd5fe8b9b1cf9ea88adfd6",
+    "python_executable": "D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe",
+    "recorded_utc": "2026-11-28T09:44:02Z",
+    "schema": "eqo.environment_manifest.v1",
+    "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+    "uv_executable": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+    "uv_lock_sha256": "783dd48bd50a32db46e6e5b74336c22464e6b8c69a4238090973c7f584d46844"
+  },
+  "started_at_utc": "2026-11-28T10:36:52Z"
+}

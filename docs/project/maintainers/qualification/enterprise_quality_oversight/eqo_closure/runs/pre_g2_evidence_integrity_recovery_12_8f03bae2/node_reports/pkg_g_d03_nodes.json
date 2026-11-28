@@ -1,0 +1,2831 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py",
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_ent.py",
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/security/test_sec_planes_evol.py",
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/runtime/tools/test_tools_side_effect_safety.py",
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_core_isolated_tools_declare_contract_requirement",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_name_is_not_isolation_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_registry_preserves_isolation_requirement",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_provider_fails_before_executor_for_isolated_tool",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_missing_sandbox_never_calls_host_subprocess",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_sandbox_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_unhealthy_provider_fails_before_executor",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_valid_sandbox_reaches_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_non_isolated_tool_works_without_sandbox",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_denied_without_sandbox",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_plugin_isolated_tool_continues_with_valid_sandbox",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_container_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_cloud_tier_without_hosted_backend_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py::test_isolation_requirement_not_weakened_by_missing_task_flag",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_default_side_effect_tool_executes_once_despite_retry_policy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_explicit_retry_safe_side_effect_retries_when_authorized",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_scope_authorization_blocks_retry_when_revoked",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_fresh_sandbox_authorization_blocks_retry_when_unavailable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_side_effect_timeout_does_not_blind_retry",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_plugin_default_side_effect_retry_safety_is_single_attempt",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_retry_limit_is_centrally_enforced",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_p0_safety_8_retry_redelivery_authorization.py::test_idempotency_key_preserved_across_retry_attempts",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_payload_schemas_registered",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_returns_none_without_secrets_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_resolution_error",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_fails_closed_on_conformance_error",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_prebuilt_non_contract_object_is_rejected_by_type_guard",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_not_selected_by_resolver",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_transforms_with_valid_secrets_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_encryption_middleware_leaves_non_restricted_payload_untouched",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_harness_envelope_encryptor_available_for_explicit_lab_use",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_resolve_encryptor_uses_secrets_store_when_resolvable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_register_security_hooks_wires_spine_subscriber",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_defense_middleware_blocks_cross_tenant_scope",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_ent.py::test_security_spine_counters_increment",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_security_bootstrap_discovers_security_defense_entry_point",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_blocked_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_denied_emits_platform_signal",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_encryption_middleware_transforms_restricted_payload",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_secrets_store_encryptor_persists_and_replaces_inline_secret",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_defense_plugin_inspection_timeout_blocks",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/security/test_sec_planes_evol.py::test_platform_security_kinds_are_domain_signals",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_tool_same_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_input_same_tool_key_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_same_canonical_input_replays",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_read_only_tool_retries_per_policy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_without_retry_proof_executes_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_tool_explicit_retry_safe_retries",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_side_effect_timeout_marks_uncertain_and_blocks_replay",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_validation_failure_before_claim_has_no_ledger_state",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_scope_denial_before_claim_leaves_ledger_untouched",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_output_validation_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_mapped_validation_error_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_unknown_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_stale_owner_cannot_mark_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_claim_blocks_concurrent_owner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_completed_replays_with_matching_operation_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_concurrent_governance_allow_executes_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_deny_then_allow_executes_once_without_cached_denial",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_hitl_resume_claims_and_executes_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_invoke_is_canonical_execution_path",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_governance_deny_cannot_bypass_via_invoke",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_cross_operation_same_key_conflicts_on_invoke",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_after_success_does_not_execute_again",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_before_executor_still_executes_and_replays",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_with_executor_failure_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_submit_boundary_set_only_after_successful_submit",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_defensive_pre_submit_failure_finalizes_not_started",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_independent_keys_execute_concurrently",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_trace_failure_after_executor_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_before_effect_completes_not_started",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_escape_after_effect_boundary_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_on_post_claim_exception_after_effect_marks_uncertain",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_claim_success_finalizes_completed_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_shuts_down_execution_pool",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_active_call_completes_during_close",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_close_is_idempotent",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_replay_before_close_preserves_exactly_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/runtime/tools/test_tools_side_effect_safety.py::test_post_close_uncertain_key_replay_is_blocked_without_executor_call",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

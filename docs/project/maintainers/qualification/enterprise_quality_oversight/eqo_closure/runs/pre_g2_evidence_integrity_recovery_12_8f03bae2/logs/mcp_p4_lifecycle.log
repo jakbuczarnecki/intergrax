@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\16260-eb88e5d3\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 5 items
+
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings PASSED [ 20%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools PASSED [ 40%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery PASSED [ 60%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed PASSED [ 80%]
+tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled PASSED [100%]
+
+=================================== PASSES ====================================
+___________ test_exposure_disabled_yields_empty_discovery_bindings ____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\mcp_p4_lifecycle.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_yields_empty_discovery_bindings
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_exposure_disabled_composes_without_tools
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_absent_from_discovery
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_retired_binding_invoke_fails_closed
+PASSED tests/unit/applications/test_mcp_server_p4_lifecycle.py::test_lab_application_omits_mcp_mount_when_disabled
+============================== 5 passed in 7.26s ==============================

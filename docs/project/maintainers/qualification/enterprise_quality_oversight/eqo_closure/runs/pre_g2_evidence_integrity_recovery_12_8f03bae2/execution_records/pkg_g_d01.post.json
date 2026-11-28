@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "pkg_g_d01",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T14:06:47Z",
+  "monotonic_elapsed_seconds": 175.85899999999674,
+  "stdout_stderr_path": "logs/pkg_g_d01.log",
+  "stdout_stderr_sha256": "b60295ec94da859abce914ebf5c038794be6907e5e80ff603c1de30f5f9d5d91",
+  "junit_path": "junit/pkg_g_d01.xml",
+  "junit_sha256": "2df2c192008082c0c1f7ad2a50c3744dfeba935860ba55e814d0398f977a0546",
+  "node_report_path": "node_reports/pkg_g_d01_nodes.json",
+  "node_report_sha256": "eb353dbd811ac3e6e73033d20c45a4fb87a084e90a2619bb4e75b58de06159b8",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

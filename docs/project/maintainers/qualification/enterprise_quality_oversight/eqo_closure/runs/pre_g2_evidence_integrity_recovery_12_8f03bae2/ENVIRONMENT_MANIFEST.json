@@ -9,9 +9,9 @@
   "fastmcp_import_ok": true,
   "pyproject_sha256": "9b8b71cbbfef1edd66e996ceafd7e5ca23940e0d62dd5fe8b9b1cf9ea88adfd6",
   "python_executable": "D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe",
-  "recorded_utc": "2026-11-28T09:33:53Z",
+  "recorded_utc": "2026-11-28T14:19:37Z",
   "schema": "eqo.environment_manifest.v1",
-  "shutil_which_uv": null,
-  "uv_executable": "C:\\Users\\XPS\\.local\\bin\\uv.exe",
+  "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+  "uv_executable": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
   "uv_lock_sha256": "783dd48bd50a32db46e6e5b74336c22464e6b8c69a4238090973c7f584d46844"
 }

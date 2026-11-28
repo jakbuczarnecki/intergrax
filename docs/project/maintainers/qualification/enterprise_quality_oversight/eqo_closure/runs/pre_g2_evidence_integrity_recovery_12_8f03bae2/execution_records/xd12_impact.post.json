@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "xd12_impact",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:56:17Z",
+  "monotonic_elapsed_seconds": 8.639999999955762,
+  "stdout_stderr_path": "logs/xd12_impact.log",
+  "stdout_stderr_sha256": "f28a095a29297c7ee806f0515dfd07a9128915a5ab5ad757ddfab885a943132b",
+  "junit_path": "junit/xd12_impact.xml",
+  "junit_sha256": "3de555e73ee6c7e222f29e85acfd573707045deae4446c20128fa67108956027",
+  "node_report_path": "node_reports/xd12_impact_nodes.json",
+  "node_report_sha256": "32258ee659b86fce5db51499128c352bf7e838b53b566bf15a1e5af17e8b2e93",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

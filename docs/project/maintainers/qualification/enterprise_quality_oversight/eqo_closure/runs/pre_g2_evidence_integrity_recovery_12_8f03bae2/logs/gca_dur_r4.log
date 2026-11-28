@@ -1,0 +1,31 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\50864-fa858afd\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 7 items
+
+tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness PASSED [ 14%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected PASSED [ 28%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store PASSED [ 42%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock PASSED [ 57%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry PASSED [ 71%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store PASSED [ 85%]
+tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory PASSED [100%]
+
+=================================== PASSES ====================================
+___________ test_composition_serialized_seal_store_reaches_harness ____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\gca_dur_r4.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store
+PASSED tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory
+============================== 7 passed in 7.56s ==============================

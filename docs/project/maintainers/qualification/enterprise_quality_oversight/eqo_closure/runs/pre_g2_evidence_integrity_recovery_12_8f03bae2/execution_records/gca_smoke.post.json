@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "gca_smoke",
+  "process_returncode": 1,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:56:07Z",
+  "monotonic_elapsed_seconds": 24.23499999998603,
+  "stdout_stderr_path": "logs/gca_smoke.log",
+  "stdout_stderr_sha256": "d60185c9ffaf1dd1c4c08d42dd5e0ba76284b12b8852455893bf20eabdd0c7cc",
+  "junit_path": "junit/gca_smoke.xml",
+  "junit_sha256": "f25041bd07f6126a74227b14c23849942b2de315e9f1564c1ff46ec28e0337fb",
+  "node_report_path": "node_reports/gca_smoke_nodes.json",
+  "node_report_sha256": "0510d082f244eee4cdf53a324f39213e8789bb2719a6c0d3d514121c90ca3e7d",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

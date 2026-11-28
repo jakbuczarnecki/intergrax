@@ -1,0 +1,18 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "q04",
+  "process_returncode": 0,
+  "process_exit_disposition": "PROCESS_COMPLETED",
+  "finished_at_utc": "2026-11-28T10:03:34Z",
+  "monotonic_elapsed_seconds": 8.235000000044238,
+  "stdout_stderr_path": "logs/q04.log",
+  "stdout_stderr_sha256": "d4a4f1b736718e5922abc9b04d952dca0b5844d8976f446b08be5a15ad152b5d",
+  "junit_path": "junit/q04.xml",
+  "junit_sha256": "b63324adac0f4c32e91ae20e3142e2a9bf71248830c0686b950c592508475614",
+  "node_report_path": "node_reports/q04_nodes.json",
+  "node_report_sha256": "91d8684d416693faaa6a29e933283e0154fcde94850fd4c317de402e3787f3e8",
+  "source_commit_sha_after": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha_after": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "source_changed_during_batch": false
+}

@@ -1,0 +1,2333 @@
+{
+  "collection_errors": [],
+  "exitstatus": 1,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup",
+      "outcome": "SKIPPED",
+      "phases": {
+        "call": {
+          "outcome": "SKIPPED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits",
+      "outcome": "SKIPPED",
+      "phases": {
+        "call": {
+          "outcome": "SKIPPED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualificatio",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\prod_q\\t",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam\n    fixture = _build_strict_http_fixture(\ntests\\qualifi",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup",
+      "outcome": "SKIPPED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits",
+      "outcome": "SKIPPED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualificatio",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\prod_q\\t",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam\n    fixture = _build_strict_http_fixture(\ntests\\qualifi",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

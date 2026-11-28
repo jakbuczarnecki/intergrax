@@ -1,0 +1,123 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\51584-2aaab5b7\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 38 items
+
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [  2%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [  5%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [  7%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 10%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 13%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 15%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 18%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 21%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 23%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 26%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 28%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 31%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 34%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 36%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 39%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1q1_q01_production_delta_zero <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py SKIPPED [ 42%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 44%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 47%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 50%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 52%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 55%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 57%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 60%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 63%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 65%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 68%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 71%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 73%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 76%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2 <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 78%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 81%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 84%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 86%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 89%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 92%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q30_frz_trc_06_readiness_evidence <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py SKIPPED [ 94%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [ 97%]
+tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete <- tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py PASSED [100%]
+
+=================================== PASSES ====================================
+____________________ test_txp3r1_q01_start_head_provenance ____________________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+_________ test_txp3r1r1_q21_reliability_projection_non_authoritative __________
+------------------------------ Captured log call ------------------------------
+ERROR    intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence:provider_invocation_reliability_evidence.py:81 provider invocation reliability evidence observer failed
+Traceback (most recent call last):
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\runtime\enterprise_reliability\provider_invocation_reliability_evidence.py", line 79, in emit_provider_invocation_reliability_fact
+    observer.observe_provider_invocation_reliability_fact(fact)
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\applications\governed_contractor_application\tests\host\test_gr7_a8_r1_early_lifecycle_evidence_wiring.py", line 82, in observe_provider_invocation_reliability_fact
+    raise RuntimeError("sink down")
+RuntimeError: sink down
+ERROR    intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence:provider_invocation_reliability_evidence.py:81 provider invocation reliability evidence observer failed
+Traceback (most recent call last):
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\runtime\enterprise_reliability\provider_invocation_reliability_evidence.py", line 79, in emit_provider_invocation_reliability_fact
+    observer.observe_provider_invocation_reliability_fact(fact)
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\applications\governed_contractor_application\tests\host\test_gr7_a8_r1_early_lifecycle_evidence_wiring.py", line 82, in observe_provider_invocation_reliability_fact
+    raise RuntimeError("sink down")
+RuntimeError: sink down
+ERROR    intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence:provider_invocation_reliability_evidence.py:81 provider invocation reliability evidence observer failed
+Traceback (most recent call last):
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\runtime\enterprise_reliability\provider_invocation_reliability_evidence.py", line 79, in emit_provider_invocation_reliability_fact
+    observer.observe_provider_invocation_reliability_fact(fact)
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\applications\governed_contractor_application\tests\host\test_gr7_a8_r1_early_lifecycle_evidence_wiring.py", line 82, in observe_provider_invocation_reliability_fact
+    raise RuntimeError("sink down")
+RuntimeError: sink down
+ERROR    intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence:provider_invocation_reliability_evidence.py:81 provider invocation reliability evidence observer failed
+Traceback (most recent call last):
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\runtime\enterprise_reliability\provider_invocation_reliability_evidence.py", line 79, in emit_provider_invocation_reliability_fact
+    observer.observe_provider_invocation_reliability_fact(fact)
+  File "D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\applications\governed_contractor_application\tests\host\test_gr7_a8_r1_early_lifecycle_evidence_wiring.py", line 82, in observe_provider_invocation_reliability_fact
+    raise RuntimeError("sink down")
+RuntimeError: sink down
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\trace_x_p3_r1.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q01_start_head_provenance
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q02_scope_trc_04_06_only
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q03_v1_boundary_unchanged
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q04_v1_canonical_bytes_stable
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q05_v2_boundary_schema_exists
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q06_v2_typed_execution_identity
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q08_no_host_exec_uuid_fallback
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q10_ger_v2_carries_attempt_id
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q21_v1_receipt_still_verifiable
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q22_v2_receipt_schema_exists
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q23_v2_receipt_event_pair_valid
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q24_cross_version_pair_rejected
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q25_v2_attestation_schema_id
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q26_persisted_event_parser_versioned
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1_q33_strong_typing_no_any_on_v2_identity
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q1_q1_start_head_provenance
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q2_q2_start_head_provenance
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_q3_start_head_provenance
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q3_evidence_persist_blocker_resolved
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_gate_registry_mechanical_integrity
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_closed_world_inventory_classified
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q01_r1_start_head_ancestry
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q10_ger_v2_tenant_mandatory
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q12_proof_tenant_absence_rejected
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q13_ebe_v2_tenant_mandatory
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q14_ebe_tenant_copied_from_ger
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q15_receipt_preserves_tenant
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q21_reliability_projection_non_authoritative
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q25_governance_not_execution
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q28_no_heuristic_provider_join
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q26_exactly_one_compose_owner
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_q29_frz_trc_04_readiness_evidence
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_pass1_mechanical_nodeid_manifest
+PASSED tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py::test_txp3r1r1_tenant_isolation_audit_complete
+SKIPPED [1] tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py:366: Q1 zero-delta gate is historical after Q2 Branch B wiring
+SKIPPED [1] tests\qualification\trace_x\_trace_x_p3_r1_qualification_tests.py:698: Q30 requires Pass 2 session with Pass 1+2 observed nodeids
+======================== 36 passed, 2 skipped in 7.25s ========================

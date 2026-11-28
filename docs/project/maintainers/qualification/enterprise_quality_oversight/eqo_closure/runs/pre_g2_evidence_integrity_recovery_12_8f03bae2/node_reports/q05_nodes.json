@@ -1,0 +1,1403 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_deny_blocks_catalog_invoke",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_port_permit_control_reaches_invoker",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_side_effect_tool_without_authorization_port_is_denied",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_api_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_invalid_bearer_key_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_missing_credentials_is_unauthorized_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_rejected_identity_provider_token_is_unauthorized",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_catalog_invoke_without_verified_caller_is_missing_caller_identity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_same_tenant_other_user_is_not_the_execution_owner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_10_asgi_ingress_rejects_missing_and_invalid_credentials_with_401",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_catalog_invoke_for_other_tenants_execution_is_wrong_tenant",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_catalog_invoke_is_identity_conflict",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_forged_tenant_on_run_agent_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_two_servers_keep_tenants_separate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_11_concurrent_requests_do_not_bleed_tenants",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_api_key_principal_binds_tenant_and_user_into_the_task",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_bearer_api_key_binds_the_same_principal",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_identity_provider_principal_binds_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_execution_runs_under_the_verified_caller_principal",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_matching_assertion_is_accepted_and_changes_nothing",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_forged_user_assertion_is_rejected_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_tenant_required_without_principal_tenant_is_forbidden",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_explicit_local_dev_mode_trusts_client_assertion_for_loopback_only",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_12_default_mode_refuses_local_dev_state_without_credentials",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_run_agent_payload_carries_valid_task_and_run_ids",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_each_invocation_runs_under_its_own_platform_execution_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_catalog_invoke_correlates_task_run_and_child_execution_ids",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py::test_acc_17_stale_run_id_is_rejected_instead_of_silently_correlated",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_without_assertion_binds_principal_tenant",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_with_matching_tenant_and_user_assertion",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_09_authorized_invoke_via_bearer_identity_binds_token_tenant_and_user",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-x-api-key]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[wrong-bearer]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_invalid_credentials_are_rejected_with_http_401_before_execution[empty-x-api-key]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_missing_credential_is_rejected_with_http_401_and_leaks_no_tool_names",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_tenant_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_forged_user_assertion_is_denied_before_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_10_unknown_bearer_token_is_rejected_by_identity_provider_server",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_principal_cannot_assert_another_tenant_on_one_server",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_concurrent_principals_stay_isolated_on_one_server",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py::test_acc_11_two_hosts_sharing_a_registry_do_not_accept_each_others_credentials",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

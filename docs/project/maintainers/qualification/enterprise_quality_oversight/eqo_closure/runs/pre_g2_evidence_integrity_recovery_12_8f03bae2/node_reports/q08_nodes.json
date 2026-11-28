@@ -1,0 +1,831 @@
+{
+  "collection_errors": [],
+  "exitstatus": 1,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:110: in test_replay_x_prod_delta_empty_since_dup_x\n    assert unscoped == [], f\"{path}: {unscoped}\"\nE   AssertionErr",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:148: in test_replay_x_closure_counters_computed\n    assert by_name[\"historical_evidence_invalidated_by_later_changes",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:160: in test_replay_x_b6_r2_reconciliation_zero\n    assert replay_r2_reconciliation_violations() == ()\nE   Assertion",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_row_count",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_pass_open_split",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_frz_unique_ids",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_ledger_row_count",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_historical_unique_stage_labels",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_c0_roadmap_drift_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_mandatory_docs_present",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_audited_head_in_sha_ladder",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closed_in_roadmap",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_npsc_module_paths_exist",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:110: in test_replay_x_prod_delta_empty_since_dup_x\n    assert unscoped == [], f\"{path}: {unscoped}\"\nE   AssertionErr",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_prod_delta_empty_since_dup_x",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_operator_closure_recorded",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_protocol_03_b6_closed_scoped",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:148: in test_replay_x_closure_counters_computed\n    assert by_name[\"historical_evidence_invalidated_by_later_changes",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_closure_counters_computed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\roadmap_replay_x\\test_roadmap_replay_x_mechanical_exit_gates.py:160: in test_replay_x_b6_r2_reconciliation_zero\n    assert replay_r2_reconciliation_violations() == ()\nE   Assertion",
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_b6_r2_reconciliation_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py::test_replay_x_vbn_seven_artifacts_present",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_net_zero_deleted_path_is_accepted",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_existing_at_head_but_not_in_diff_is_reported",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_added_after_pin_and_still_present_is_in_diff_not_net_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_deleted_after_existing_at_pin_is_not_net_zero",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_path_renamed_away_after_existing_at_pin_is_reported",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_wrong_head_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_missing_disposition_is_still_reported_for_path_in_diff",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py::test_f56_unknown_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

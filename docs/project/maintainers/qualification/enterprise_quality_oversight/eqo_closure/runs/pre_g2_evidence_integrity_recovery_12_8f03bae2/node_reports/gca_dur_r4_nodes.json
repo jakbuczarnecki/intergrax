@@ -1,0 +1,247 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py",
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_composition_serialized_seal_store_reaches_harness",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_conflicting_kwarg_and_composition_store_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_sanctioned_process_app_forwards_composition_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_dur_02_gca_composition_binding.py::test_startup_failure_after_open_does_not_pin_writer_lock",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_activated_registry",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_sanctioned_process_app_fails_closed_without_durable_continuation_store",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/applications/governed_contractor/test_prod_q_r1_r4_production_startup_path.py::test_strict_process_composition_requires_provider_invocation_store_at_factory",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

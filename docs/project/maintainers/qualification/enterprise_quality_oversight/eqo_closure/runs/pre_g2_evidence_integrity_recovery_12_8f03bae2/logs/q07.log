@@ -1,0 +1,251 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\53572-95ad713e\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 68 items
+
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed PASSED [  1%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates PASSED [  2%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified PASSED [  4%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once PASSED [  5%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent PASSED [  7%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape PASSED [  8%]
+tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence PASSED [ 10%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object PASSED [ 11%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33 PASSED [ 13%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite PASSED [ 14%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry PASSED [ 16%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete PASSED [ 17%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker PASSED [ 19%]
+tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite PASSED [ 20%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks PASSED [ 22%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity PASSED [ 23%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology PASSED [ 25%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation PASSED [ 26%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved PASSED [ 27%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction PASSED [ 29%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate PASSED [ 30%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique PASSED [ 32%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path PASSED [ 33%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence PASSED [ 35%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass PASSED [ 36%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition PASSED [ 38%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_owned_pgid_is_popen_pid_without_getpgid_lookup SKIPPEDession) [ 39%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally PASSED [ 41%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful PASSED [ 42%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed PASSED [ 44%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_owned_child_after_parent_exits SKIPPEDOP —
+ARCHITECTURE DECISION REQUIRED))                                         [ 45%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child PASSED [ 47%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process PASSED [ 48%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable PASSED [ 50%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone PASSED [ 51%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution PASSED [ 52%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered PASSED [ 54%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator PASSED [ 55%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete PASSED [ 57%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete PASSED [ 58%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict PASSED [ 60%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged PASSED [ 61%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable PASSED [ 63%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation PASSED [ 64%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary PASSED [ 66%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit PASSED [ 67%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected PASSED [ 69%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner PASSED [ 70%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate PASSED [ 72%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation PASSED [ 73%]
+tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered PASSED [ 75%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder PASSED [ 76%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request PASSED [ 77%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition PASSED [ 79%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits PASSED [ 80%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits PASSED [ 82%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app PASSED [ 83%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root PASSED [ 85%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work PASSED [ 86%]
+tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_r1_lkw_hosted_runtime_rejects_unactivated_composition_before_work PASSED [ 88%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor PASSED [ 89%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity FAILED [ 91%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution FAILED [ 92%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution FAILED [ 94%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure FAILED [ 95%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity FAILED [ 97%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam FAILED [ 98%]
+tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py::test_ig_e01_strict_activation_intent_fail_prepare_no_handoff PASSED [100%]
+
+================================== FAILURES ===================================
+_______________ test_p2c_01_positive_http_admission_continuity ________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+_____________ test_p2c_02_admission_deny_prevents_inner_execution _____________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+_______________ test_p2c_03_release_after_successful_execution ________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+______________ test_p2c_04_release_after_inner_execution_failure ______________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+__________________ test_p2c_05_identity_and_scope_continuity __________________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+__________ test_p2c_06_request_tenant_mismatch_skips_execution_seam ___________
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?
+============================== warnings summary ===============================
+intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166
+  D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e\intergrax\applications\_shared\venv_bundle_runtime_agent_factory_resolver.py:166: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    return _OriginalBuiltinImport(name, globals, locals, fromlist, level)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+_____________ test_prod_q_p0_head_q01_discovery_parse_fail_closed _____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+__________ test_p2_r2_research_cli_run_without_reference_flag_exits ___________
+---------------------------- Captured stderr call -----------------------------
+Research STRICT production requires explicit lifecycle deploy/activate before serving. Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with build_research_reference_lifecycle_input(), then create_research_process_app(process_composition=...) with the same composition.
+_____________ test_p2_r2_lkw_cli_run_without_reference_flag_exits _____________
+---------------------------- Captured stderr call -----------------------------
+Local Workspace STRICT production requires explicit lifecycle deploy/activate before serving. Use run_reference_production() or wire ReferenceProductionLifecycleLauncher with build_local_workspace_reference_lifecycle_input(), then create_local_workspace_process_app(process_composition=...) with the same composition.
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\q07.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q01_discovery_parse_fail_closed
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q02_inventory_covers_all_candidates
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q03_all_pq_families_classified
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q04_frz_exactly_once
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q05_ownership_duplicates_absent
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q06_certification_report_ready_for_audit_shape
+PASSED tests/qualification/prod_q/test_prod_q_p0_current_head.py::test_prod_q_p0_head_q07_provider_qualification_external_evidence
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q01_head_is_git_object
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q02_frz_registry_exact_33
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q03_frz_evidence_states_finite
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q04_historical_evidence_ancestry
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q05_family_registry_complete
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q06_r1_sqlite_disposition_blocker
+PASSED tests/qualification/prod_q/test_prod_q_p0_fast.py::test_prod_q_p0_fast_q07_prd04_linked_to_sqlite
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_unknown_indicator_blocks
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_removed_classification_fails_identity
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_identity_not_index_tautology
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d2_duplicate_candidate_id_mutation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d3_fake_semantic_owner_not_resolved
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d5_tenant_not_static_pass_with_contradiction
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_no_proven_without_gate
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d6_frz_registry_33_unique
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_sqlite_reproduction_not_run_on_fast_path
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_timeout_insufficient_evidence
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_present_as_startup_pass
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_timeout_disposition
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_completes_normally
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_bounded_subprocess_nonzero_exit_faithful
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_http_reproduction_completed_failure_marks_executed
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_terminates_parent_and_child
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_timeout_does_not_terminate_unrelated_process
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d7_continuation_and_admission_tails_distinguishable
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_provider_bundle_not_registered_alone
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_missing_anchor_symbol_fails_resolution
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d9_method_level_health_discovered
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d1_gate_changes_on_unknown_indicator
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_contract_incomplete
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_unresolved_composition_incomplete
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_alternate_contract_conflict
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_distinct_concerns_not_merged
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_concern_identity_order_stable
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_ownership_mutated_state_alters_reconciliation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_readiness_not_auto_auxiliary
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_unresolved_role_explicit
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_false_auxiliary_na_rejected
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_cross_contract_duplicate_owner
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_legal_port_providers_not_duplicate
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_r1_r1_r1_alternate_mechanism_mutation
+PASSED tests/qualification/prod_q/test_prod_q_p0_integrity.py::test_prod_q_p0_int_d8_nonexistent_provider_not_registered
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_uvicorn_module_app_is_strict_placeholder
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_strict_placeholder_fail_closed_on_request
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_factory_entrypoint_requires_activated_composition
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_cli_run_without_reference_flag_exits
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_lkw_cli_run_without_reference_flag_exits
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_research_fresh_composition_fails_closed_for_process_app
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_engine_not_p1_strict_production_root
+PASSED tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py::test_p2_r2_hosting_factory_rejects_non_runtime_before_work

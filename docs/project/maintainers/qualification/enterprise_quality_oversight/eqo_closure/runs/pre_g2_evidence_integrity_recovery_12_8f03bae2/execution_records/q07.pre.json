@@ -1,0 +1,52 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "pre",
+  "batch_id": "q07",
+  "source_commit_sha": "6373f45e84cbf292d24174620187722e53b66459",
+  "source_tree_sha": "09b33bd9e9f36bbce237c30815300efa64d13674",
+  "git_worktree_git_dir": "D:/Projekty/intergrax/.git/worktrees/ec-w3-12-qual-6373f45e",
+  "tracked_source_consistency": {
+    "porcelain_empty": true,
+    "porcelain_lines": []
+  },
+  "argv": [
+    "D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pytest",
+    "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+    "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+    "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+    "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+    "-vv",
+    "-rA",
+    "--tb=short",
+    "--junitxml=D:\\Projekty\\intergrax\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_evidence_integrity_recovery_12_8f03bae2\\junit\\q07.xml",
+    "-p",
+    "no:xdist",
+    "-p",
+    "eqo_nodecapture_plugin",
+    "--eqo-node-report=D:\\Projekty\\intergrax\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_evidence_integrity_recovery_12_8f03bae2\\node_reports\\q07_nodes.json",
+    "--eqo-source-root=D:\\Projekty\\_wt\\intergrax\\ec-w3-12-qual-6373f45e"
+  ],
+  "command_digest_sha256": "6898e4c640fd05fd50f3585c0ceba750d8204d3747dfc30480d5982443a91289",
+  "environment_profile": {
+    "extras_profile": [
+      "dev-ci",
+      "dev-ci-rag",
+      "mcp",
+      "llm-langchain-ollama",
+      "llm-gemini"
+    ],
+    "fastmcp_import_ok": true,
+    "pyproject_sha256": "9b8b71cbbfef1edd66e996ceafd7e5ca23940e0d62dd5fe8b9b1cf9ea88adfd6",
+    "python_executable": "D:\\Projekty\\intergrax\\.venv\\Scripts\\python.exe",
+    "recorded_utc": "2026-11-28T14:19:37Z",
+    "schema": "eqo.environment_manifest.v1",
+    "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+    "uv_executable": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+    "uv_lock_sha256": "783dd48bd50a32db46e6e5b74336c22464e6b8c69a4238090973c7f584d46844"
+  },
+  "started_at_utc": "2026-11-28T14:19:42Z"
+}

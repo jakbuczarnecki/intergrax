@@ -1,7 +1,7 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-12\.venv\Scripts\python.exe
-cachedir: build\pytest\56584-2610bb44\pytest-cache
-rootdir: D:\Projekty\_wt\intergrax\ec-w3-12
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\35584-411cfe54\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
 configfile: pyproject.toml
 plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
 asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
@@ -28,7 +28,7 @@ tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict
 ____________ test_strict_loop_refuses_missing_human_decision_store ____________
 ---------------------------- Captured stdout setup ----------------------------
 Wrote build\agent_fleet_inventory.json (21 agents)
-- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-12\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\fc1_nexus_context.xml -
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\fc1_nexus_context.xml -
 =========================== short test summary info ===========================
 PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_missing_human_decision_store
 PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_accepts_explicit_human_persistence_disable
@@ -46,4 +46,4 @@ PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test
 PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_lab_default_planner_classifier_does_not_force_environment_llm_resolution
 PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_explicit_incomplete_context_manager_remains_fail_closed
 PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_environment_through_tier3_builder_is_refused_without_engine_or_adapter
-============================= 16 passed in 6.18s ==============================
+============================= 16 passed in 7.58s ==============================

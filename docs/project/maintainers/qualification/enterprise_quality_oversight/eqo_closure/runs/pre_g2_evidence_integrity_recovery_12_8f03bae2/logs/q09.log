@@ -1,0 +1,54 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\47072-ebe4c284\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 20 items
+
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip PASSED [  5%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated PASSED [ 10%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess PASSED [ 15%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands PASSED [ 20%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke PASSED [ 25%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives PASSED [ 30%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key PASSED [ 35%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer PASSED [ 40%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process PASSED [ 45%]
+applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process PASSED [ 50%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider PASSED [ 55%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider PASSED [ 60%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed PASSED [ 65%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider PASSED [ 70%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider PASSED [ 75%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider PASSED [ 80%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider PASSED [ 85%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate PASSED [ 90%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt PASSED [ 95%]
+applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger PASSED [100%]
+
+=================================== PASSES ====================================
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\q09.xml -
+=========================== short test summary info ===========================
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process
+PASSED applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt
+PASSED applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger
+======================== 20 passed in 90.45s (0:01:30) ========================

@@ -1,0 +1,349 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_success_admits_external_effect_success",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_definitive_failure_admits_failure_without_ger",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_unknown_admits_uncertainty_case",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_discover_failure_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_contract_reflects_provider_capabilities",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_governance_deny_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_admission_failure_does_not_retry_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_identity_binding",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_runtime_does_not_import_external_work_adapter",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_platform_erl_admission_still_side_effect_free",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_success_admits_external_effect_success",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_success_admits_external_effect_success",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_success_admits_external_effect_success",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_definitive_failure_admits_failure_without_ger",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_definitive_failure_admits_failure_without_ger",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_definitive_failure_admits_failure_without_ger",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_unknown_admits_uncertainty_case",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_unknown_admits_uncertainty_case",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_unknown_admits_uncertainty_case",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_discover_failure_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_discover_failure_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_discover_failure_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_contract_reflects_provider_capabilities",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_contract_reflects_provider_capabilities",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_contract_reflects_provider_capabilities",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_governance_deny_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_governance_deny_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_governance_deny_zero_provider_calls_no_admission",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_admission_failure_does_not_retry_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_admission_failure_does_not_retry_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_admission_failure_does_not_retry_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_identity_binding",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_identity_binding",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_admission_identity_binding",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_runtime_does_not_import_external_work_adapter",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_runtime_does_not_import_external_work_adapter",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_erl_runtime_does_not_import_external_work_adapter",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_platform_erl_admission_still_side_effect_free",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_platform_erl_admission_still_side_effect_free",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py::test_platform_erl_admission_still_side_effect_free",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

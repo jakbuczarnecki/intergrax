@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="7" time="98.245" timestamp="2026-11-28T15:17:31.786617+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_g00_qualification_baseline_ancestor" time="1.018"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_01_positive_http_admission_continuity" time="39.290"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_02_admission_deny_prevents_inner_execution" time="1.904"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_03_release_after_successful_execution" time="1.553"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_04_release_after_inner_execution_failure" time="1.484"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_05_identity_and_scope_continuity" time="1.529"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase><testcase classname="tests.qualification.prod_q.test_prod_q_r1_r7_q_p2_c_http_execution_admission" name="test_p2c_06_request_tenant_mismatch_skips_execution_seam" time="1.820"><properties><property name="eqo_node_id" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam" /><property name="eqo_file_path" value="tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py" /></properties><failure message="AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?">tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam
+    fixture = _build_strict_http_fixture(
+tests\qualification\prod_q\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:333: in _build_strict_http_fixture
+    app = create_governed_contractor_strict_production_asgi_app(
+applications\governed_contractor_application\host\strict_production_serving.py:40: in create_governed_contractor_strict_production_asgi_app
+    app = create_governed_contractor_process_app(
+applications\governed_contractor_application\host\main.py:59: in create_governed_contractor_process_app
+    return create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:433: in create_governed_contractor_backend_app
+    app = create_app(api_cfg)
+          ^^^^^^^^^^^^^^^^^^^
+intergrax\fastapi_core\app_factory.py:107: in create_app
+    app.add_event_handler(
+    ^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'FastAPI' object has no attribute 'add_event_handler'. Did you mean: 'add_exception_handler'?</failure></testcase></testsuite></testsuites>

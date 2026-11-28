@@ -1,0 +1,23 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\43352-21ac7b14\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 3 items
+
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths PASSED [ 33%]
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor PASSED [ 66%]
+tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check PASSED [100%]
+
+=================================== PASSES ====================================
+______________ test_xd12_the_pdc_campaign_touched_product_paths _______________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\xd12_impact.xml -
+=========================== short test summary info ===========================
+PASSED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths
+PASSED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor
+PASSED tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check
+============================== 3 passed in 2.15s ==============================

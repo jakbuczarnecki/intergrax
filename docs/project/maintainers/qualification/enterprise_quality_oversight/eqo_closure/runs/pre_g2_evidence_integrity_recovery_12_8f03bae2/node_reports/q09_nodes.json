@@ -1,0 +1,689 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_roundtrip",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_filesystem_key_resolver_malformed_and_deprecated",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_ascii_safe_inprocess",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_tier0_cli_rejects_governed_contractor_commands",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_cli_help_cp1252_subprocess_smoke",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_verify_key_sources_and_negatives",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_offline_demo_exports_verification_key",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_retry_invalid_execution_and_without_signer",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_signer_failure_recovery_fresh_process",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py::test_demo_then_verify_fresh_process",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_gov1_missing_active_governance_identity_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid1_missing_active_task_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid2_task_mismatch_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_tid3_matching_task_reaches_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten1_none_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten2_blank_tenant_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten3_tenant_mismatch_fails_before_provider",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_ten4_matching_tenant_passes_identity_gate",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_e2e_tenant_continuity_through_receipt",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py::test_cross_tenant_negative_no_provider_and_no_ger",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

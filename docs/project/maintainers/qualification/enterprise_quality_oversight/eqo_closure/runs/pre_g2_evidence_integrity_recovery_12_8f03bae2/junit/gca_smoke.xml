@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="20.492" timestamp="2026-11-28T11:55:45.012885+01:00" hostname="DESKTOP-ICFD1HR"><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_health" time="5.201"><properties><property name="eqo_node_id" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_health" /><property name="eqo_file_path" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py" /></properties><failure message="intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority">applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:108: in test_governed_contractor_backend_health
+    create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:346: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:603: in wire_application_environment
+    assert_manifest_package_closure(
+intergrax\applications\_shared\package_wiring.py:476: in assert_manifest_package_closure
+    package = build_application_package(
+intergrax\applications\_shared\package_wiring.py:356: in build_application_package
+    dependencies = collect_application_dependencies(
+intergrax\applications\_shared\package_wiring.py:269: in collect_application_dependencies
+    contract = resolve_roster_agent_contract(
+intergrax\applications\_shared\roster_agent_contract_authority.py:126: in resolve_roster_agent_contract
+    raise StrictAgentContractAuthorityError("STRICT agent contract resolution requires revision-bound authority")
+E   intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_lists_agents" time="0.347"><properties><property name="eqo_node_id" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_lists_agents" /><property name="eqo_file_path" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py" /></properties><failure message="intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority">applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:124: in test_governed_contractor_backend_lists_agents
+    create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:346: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:603: in wire_application_environment
+    assert_manifest_package_closure(
+intergrax\applications\_shared\package_wiring.py:476: in assert_manifest_package_closure
+    package = build_application_package(
+intergrax\applications\_shared\package_wiring.py:356: in build_application_package
+    dependencies = collect_application_dependencies(
+intergrax\applications\_shared\package_wiring.py:269: in collect_application_dependencies
+    contract = resolve_roster_agent_contract(
+intergrax\applications\_shared\roster_agent_contract_authority.py:126: in resolve_roster_agent_contract
+    raise StrictAgentContractAuthorityError("STRICT agent contract resolution requires revision-bound authority")
+E   intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority</failure></testcase><testcase classname="applications.governed_contractor_application.tests.host.test_governed_contractor_host_smoke" name="test_governed_contractor_backend_run" time="0.466"><properties><property name="eqo_node_id" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py::test_governed_contractor_backend_run" /><property name="eqo_file_path" value="applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py" /></properties><failure message="intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority">applications\governed_contractor_application\tests\host\test_governed_contractor_host_smoke.py:141: in test_governed_contractor_backend_run
+    create_governed_contractor_backend_app(
+applications\governed_contractor_application\host\factory.py:346: in create_governed_contractor_backend_app
+    runtime = build_harness_host_runtime(
+intergrax\applications\_shared\harness_host_runtime.py:396: in build_harness_host_runtime
+    env_wiring = wire_application_environment(
+intergrax\applications\_shared\environment_wiring.py:603: in wire_application_environment
+    assert_manifest_package_closure(
+intergrax\applications\_shared\package_wiring.py:476: in assert_manifest_package_closure
+    package = build_application_package(
+intergrax\applications\_shared\package_wiring.py:356: in build_application_package
+    dependencies = collect_application_dependencies(
+intergrax\applications\_shared\package_wiring.py:269: in collect_application_dependencies
+    contract = resolve_roster_agent_contract(
+intergrax\applications\_shared\roster_agent_contract_authority.py:126: in resolve_roster_agent_contract
+    raise StrictAgentContractAuthorityError("STRICT agent contract resolution requires revision-bound authority")
+E   intergrax.applications._shared.roster_agent_contract_authority.StrictAgentContractAuthorityError: STRICT agent contract resolution requires revision-bound authority</failure></testcase></testsuite></testsuites>

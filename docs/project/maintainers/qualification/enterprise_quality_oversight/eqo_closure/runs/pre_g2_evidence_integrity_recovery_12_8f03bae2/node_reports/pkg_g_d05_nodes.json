@@ -1,0 +1,2219 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1]",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py",
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py",
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_kv_store_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_kv_without_capability_member_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_in_memory_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_document_store_declaring_false_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_redis_without_attestation_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_non_durable_kv_with_durable_document_store_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_non_durable_pinning_store_is_refused",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store0]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1]",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1]",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_explicit_pinning_store_without_or_nonbool_is_durable_is_refused[pinning_store1]",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_document_store_is_accepted",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_strict_durable_kv_double_is_accepted",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_durability_guard.py::test_lab_mode_still_allows_in_memory_stores",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_backends_resolve_to_kv_store_t1",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_both_with_plain_document_store_resolves_to_kv_t2",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_kv_is_write_target_when_both_supplied_t3",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_document_store_only_uses_document_pinning_t4",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_non_conditional_document_only_raises_type_error_t5",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_no_stores_in_production_raises_durable_required_t6",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_explicit_pinning_store_wins_t7",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_leaf_still_rejects_dual_backends_t8",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_execution_pinning_wiring_store_precedence.py::test_reference_strict_composition_shape_resolves_kv",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_snapshot_digest_deterministic",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_same_version_label_different_content_distinct_fingerprints",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_durable_pin_idempotent_and_recovery_without_resolution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_recovery_missing_binding_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cross_tenant_isolation_for_same_execution_id",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflicting_concurrent_bind_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lost_acknowledgement_idempotent_retry",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_storage_read_error_not_treated_as_missing",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_corrupted_storage_record_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_unsupported_schema_version_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_partial_storage_failure_after_failed_cas",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_document_store_pinning_parity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_captured_at_bind",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_registry_replacement_during_active_execution_preserves_history",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_mode_requires_durable_pinning",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_kv_when_available",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_production_wiring_uses_durable_kv_when_available",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_lab_wiring_allows_in_memory",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_concurrent_identical_bind_single_winner",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_trace_payload_does_not_grant_execution_permission",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_wire_skill_execution_pinning_store_rejects_dual_backends",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_empty_composition_bind_recover_and_replay",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_nonempty_composition_rejects_missing_manifests",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_digest_duplicate_and_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_manifest_fingerprint_cannot_pose_as_runtime_content_digest",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_tampered_binding_snapshot_digest_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_forged_explicit_binding_tenant_mismatch_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_missing_pin_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_runtime_content_binding_integrity_version_on_verified_metadata",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_encode_round_trip_preserves_binding",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_fresh_execution_first_bind_via_selection_strategy",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_with_pin_via_explicit_recovery_flag",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resumed_execution_storage_unavailable_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_active_execution_requires_skill_recovery_when_continuation_resumed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_mismatched_historical_digest_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_modified_artifact_same_version_rejected_when_digest_differs",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_incomplete_content_binding_coverage_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_v1_manifest_only_cannot_claim_v2_without_metadata",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_jointly_modified_digest_and_metadata_rejected_against_catalog_witness",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_resolve_skill_execution_recovery_explicit_false_cannot_override_resumed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_continuation_store_query_failure_blocks_recovery_authority",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_raises_before_write_fails_closed",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_cas_committed_ack_lost_idempotent_success",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/skills/test_skill_x_batch_c_versioning_provenance_recovery.py::test_conflict_read_wrong_execution_scope_rejected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

@@ -1,0 +1,111 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_the_pdc_campaign_touched_product_paths",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_changed_since_over_the_pdc_range_never_fails_closed_and_keeps_the_invariant_floor",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py::test_xd12_every_pdc_touched_product_module_maps_to_a_domain_check",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

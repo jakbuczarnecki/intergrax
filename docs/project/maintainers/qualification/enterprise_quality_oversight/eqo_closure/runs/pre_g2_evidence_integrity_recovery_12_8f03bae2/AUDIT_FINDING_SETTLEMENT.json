@@ -1,0 +1,7 @@
+{
+  "finding_disposition_ref": "FINDING_DISPOSITION.json",
+  "recorded_utc": "2026-11-28T14:31:17Z",
+  "schema": "eqo.audit_finding_settlement.v1",
+  "session_name": "INTEGRAX | ENTERPRISE CAMPAIGN EQO | W3 B-1 | EC-W3-12 CONSOLIDATED FINAL QUALIFICATION",
+  "ticket": "governance/tickets/T-IGX-095-A.md"
+}

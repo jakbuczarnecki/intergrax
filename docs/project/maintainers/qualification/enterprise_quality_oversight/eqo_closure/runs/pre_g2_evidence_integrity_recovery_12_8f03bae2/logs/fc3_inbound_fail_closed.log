@@ -1,0 +1,47 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\intergrax\.venv\Scripts\python.exe
+cachedir: build\pytest\3172-b57a3e77\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12-qual-6373f45e
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 12 items
+
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset PASSED [  8%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in PASSED [ 16%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret PASSED [ 25%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled PASSED [ 33%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token PASSED [ 41%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in PASSED [ 50%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier PASSED [ 58%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises PASSED [ 66%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config PASSED [ 75%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config PASSED [ 83%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden PASSED [ 91%]
+tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\..\intergrax\.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Projekty\intergrax\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+_____________ test_nt_fc3_int1_create_inbound_verifier_env_unset ______________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\intergrax\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\fc3_inbound_fail_closed.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int1_create_inbound_verifier_env_unset
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int2_invalid_mode_raises_with_and_without_opt_in
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int3_slack_mode_no_secret
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int4_slack_secret_verify_disabled
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int5_teams_mode_no_token
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int6_explicit_none_without_opt_in
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int7_none_with_opt_in_returns_null_verifier
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int8_intake_service_verifier_none_raises
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int9_wire_strict_without_verifier_config
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int10_wire_product_without_verifier_config
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int11_product_env_lab_opt_in_forbidden
+PASSED tests/unit/runtime/interactions/test_fc3_inbound_verifier_fail_closed.py::test_nt_fc3_int12_strict_blocks_router_lab_accepts_unsigned_json
+======================== 12 passed, 1 warning in 5.61s ========================

@@ -1,0 +1,259 @@
+{
+  "collection_errors": [],
+  "exitstatus": 1,
+  "node_records": [
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualificatio",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\prod_q\\t",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "FAILED",
+      "phases": {
+        "call": {
+          "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam\n    fixture = _build_strict_http_fixture(\ntests\\qualifi",
+          "outcome": "FAILED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:364: in test_p2c_01_positive_http_admission_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:403: in test_p2c_02_admission_deny_prevents_inner_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualificatio",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:429: in test_p2c_03_release_after_successful_execution\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\pro",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:453: in test_p2c_04_release_after_inner_execution_failure\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:490: in test_p2c_05_identity_and_scope_continuity\n    fixture = _build_strict_http_fixture(\ntests\\qualification\\prod_q\\t",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "longrepr_snippet": "tests\\qualification\\prod_q\\test_prod_q_r1_r7_q_p2_c_http_execution_admission.py:652: in test_p2c_06_request_tenant_mismatch_skips_execution_seam\n    fixture = _build_strict_http_fixture(\ntests\\qualifi",
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "FAILED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}

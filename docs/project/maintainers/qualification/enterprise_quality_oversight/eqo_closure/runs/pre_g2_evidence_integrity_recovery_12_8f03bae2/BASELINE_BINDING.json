@@ -1,10 +1,10 @@
 {
   "qualification_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
   "qualification_source_tree_sha": "09b33bd9e9f36bbce237c30815300efa64d13674",
-  "recorded_utc": "2026-11-28T09:33:56Z",
+  "recorded_utc": "2026-11-28T14:19:41Z",
   "required_ancestor": "4aae44a7647a18da740eaa3b8295352294941b85",
   "run_root": "D:/Projekty/intergrax/docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2",
   "schema": "eqo.baseline_binding.v1",
   "source_root": "D:/Projekty/_wt/intergrax/ec-w3-12-qual-6373f45e",
-  "task_start_remote_sha": "6373f45e84cbf292d24174620187722e53b66459"
+  "task_start_remote_sha": "2f8ec5dd5328908295bbcb7a82ae31033d6a0ebb"
 }

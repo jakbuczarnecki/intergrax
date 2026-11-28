@@ -1,0 +1,213 @@
+{
+  "collection_errors": [],
+  "exitstatus": 0,
+  "node_records": [
+    {
+      "file_path": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    },
+    {
+      "file_path": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py",
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged",
+      "outcome": "PASSED",
+      "phases": {
+        "call": {
+          "outcome": "PASSED",
+          "when": "call"
+        },
+        "setup": {
+          "outcome": "PASSED",
+          "when": "setup"
+        },
+        "teardown": {
+          "outcome": "PASSED",
+          "when": "teardown"
+        }
+      }
+    }
+  ],
+  "phase_reports": [
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_product_manifest_registry_has_no_tier3_dynamic_edges",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03b_product_manifest_registry_gate.py::test_negative_control_tier3_literal_detected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_has_no_static_upward_imports",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_tier0_cli_has_no_tier2_tier3_module_strings",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_negative_control_static_upward_import_detected",
+      "outcome": "PASSED",
+      "when": "teardown"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged",
+      "outcome": "PASSED",
+      "when": "setup"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged",
+      "outcome": "PASSED",
+      "when": "call"
+    },
+    {
+      "node_id": "tests/unit/architecture/test_bnd03_tier0_upward_edges_gate.py::test_intergrax_applications_path_not_flagged",
+      "outcome": "PASSED",
+      "when": "teardown"
+    }
+  ],
+  "schema": "eqo.pytest_node_capture.v1"
+}
