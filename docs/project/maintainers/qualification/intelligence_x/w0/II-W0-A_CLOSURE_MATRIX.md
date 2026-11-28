@@ -1,15 +1,39 @@
 # II-W0-A — Consolidated Closure Matrix (II-W0-01..04)
 
-**Ticket:** T-IGX-079-D  
-**Batch:** II-W0-A-ARCHITECTURE-ACCEPTANCE-01  
-**Independent G6:** PENDING (not performed in implementer session)  
+**Ticket:** T-IGX-079-D
+**Batch:** II-W0-A-ARCHITECTURE-ACCEPTANCE-01
+**Correction batch:** II-W0-A-CORRECTIVE-03 (mechanical final settlement); prior batches II-W0-A-CORRECTIVE-01, II-W0-A-CORRECTIVE-02 and original candidate preserved in Git ancestry
+**Review organization:** OD-II-W0-A-AUDIT-01 authorizes pre-publication review in existing ChatGPT orchestration — **explicit review-organization exception**; not proof of separate mandatory G6 session separation.
+**Latest scoped documentary review:** II-W0-A-SCOPED-FINAL-ACCEPTANCE-01 — **DOCUMENTARY_ACCEPTANCE_PASS_SCOPED** (not formal canonical G6)
+**Independent G6:** PENDING — formal session separation not satisfied by scoped documentary acceptance alone
+**Accepted audited candidate:** `00ae3f6b5a882021f500b6424f8213b26263111a`
+**Evidence archive SHA-256:** `416c285e78e80510d6214726f792935fa5f82680d5aa9d3d95190aca470d12e2`
+**Accepted documentary blobs:** II-W0-01 `a16bd1c7718ae2e9ddd2d5becb77dc8d62335dd6`; II-W0-02 `9a9d58e43d1d43b6d883ddda9f8452ee2154a371`; II-W0-03 `e1724a91fd61bf079cd890269acd6fb68bfc2692`; II-W0-04 `2aee4593fdba959e449ba5fa6c6bffe3b53071e2`
+**F-W0A-43 (premature older-candidate publication):** Unaccepted deliverable chain already on `origin/development` before scoped acceptance — deliverable `3a3bfcb707e901798d66aab1a11eddb52998d47a`; qualification record `a3d9700c86a6717b2ca0c2609f8b491f2322bc40`; superseded blobs on remote through `8f03bae217386e26ce1d7804ca673f57f6bfccfc`. Corrective integration II-W0-A-PUBLICATION-01 replaces documentary blobs only; history preserved.
+**F-W0A-44 (evidence limitations):** Scoped acceptance is documentary only; OD-II-W0-A-AUDIT-01 review-organization exception; prior governance smoke at corrective-03 candidate does not transfer to post-reconciliation integration HEAD without mandatory integration checkpoint.
 **Formal package closure authority:** NOT AUTHORIZED
+**Correction scope (this batch):** II-W0-01 technical normalization; II-W0-03 24-row FRZ/ECAP table and routing/capacity bindings; II-W0-04 canonical II-OPR-06 table; matrix/register consistency; II-W0-02 unchanged.
 
-| Package | Original acceptance criterion | Required output | Positive oracle | Negative oracle | Evidence locator | Candidate SHA | Publication SHA | Independent review | Residual findings | Actual lifecycle | Formal closure eligibility |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| II-W0-01 | Layer diagram and classification; Tier-0–Tier-3 unchanged | `II-W0-01_LAYER_TIER_BOUNDARIES.md` | Legal directions; Execution sole admission | Tier insert, reverse import, second root, private scheduler, alt admission | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-01_LAYER_TIER_BOUNDARIES.md` | `3a3bfcb707e901798d66aab1a11eddb52998d47a` | *(pending post-publication bind)* | PENDING | Documentary only; no runtime tier test | T-IGX-079-D `in_progress` | **No** — G6 and Operator closure required |
-| II-W0-02 | Definition, scope, non-goals and adoption contract accepted | `II-W0-02_CAPABILITY_CONTRACT.md` | Deterministic and intelligent examples without authority transfer | Implicit permission, private harness, invented API, consumer lifecycle, duplicated criteria | `.../II-W0-02_CAPABILITY_CONTRACT.md` | `3a3bfcb707e901798d66aab1a11eddb52998d47a` | *(pending)* | PENDING | W1 port mapping not executed | `in_progress` | **No** |
-| II-W0-03 | Traceability to existing invariants; no conflicting authority | `II-W0-03_INVARIANT_TRACEABILITY.md` | 12/12 authority preserved + W1 owners | Weakened controls; unbound claims | `.../II-W0-03_INVARIANT_TRACEABILITY.md` | `3a3bfcb707e901798d66aab1a11eddb52998d47a` | *(pending)* | PENDING | II-INV-05 message owner deferred W1 | `in_progress` | **No** |
-| II-W0-04 | Single owner per concern; overlap matrix | `II-W0-04_SEMANTIC_OWNERSHIP.md` | One owner or explicit block per concern | Duplicate identity/store/recovery/budget/permission planes | `.../II-W0-04_SEMANTIC_OWNERSHIP.md` | `3a3bfcb707e901798d66aab1a11eddb52998d47a` | *(pending)* | PENDING | Cross-domain acceptance record-only | `in_progress` | **No** |
+**Original candidate (preserved):** `1b81169a6dee214abf056cba0650d9892b199e26`
+**Prior deliverable commit:** `3a3bfcb707e901798d66aab1a11eddb52998d47a`
+**Prior corrected deliverable:** `7b5facb193249d0ec88e124b2c65f6d5cd36f361`
+**Erroneous reported SHA (historical discrepancy):** `1b81169a86a6717b2ca0c2609f8b491f2322bc40`
 
-**Note:** Candidate and publication SHA must be bound in a subsequent evidence update after commits exist; no self-referential commit embedded at creation time.
+**Historical review verdicts (preserved):** II-W0-A-PREPUBLICATION-AUDIT-01 `CHANGES_REQUIRED`; II-W0-A-PREPUBLICATION-REAUDIT-01 `TARGETED_CORRECTIONS_REQUIRED`; II-W0-A-PREPUBLICATION-FINAL-REVIEW-01 `LIMITED_CORRECTIONS_REQUIRED`.
+
+**Program gates (unchanged):** `GATE-II-ENTRY`, `GATE-II-ARCH`, `GATE-II-CORE`, `GATE-II-ADAPTIVE`, `GATE-II-ENTERPRISE`, `GATE-INTELLIGENCE-CONSUME` — **NOT_REACHED**. W0 formal package closures **0/6**; total roadmap formal closures **0/69**.
+
+| Package | Original acceptance criterion | Required output | Positive oracle (roadmap definition) | Negative oracle (roadmap definition) | Actual positive oracle result | Actual negative oracle result | Exact evidence locator | Candidate SHA | Publication SHA | Independent review | Residual findings | Actual lifecycle | Formal closure eligibility |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| II-W0-01 | Layer diagram and classification; Tier-0–Tier-3 unchanged | `II-W0-01_LAYER_TIER_BOUNDARIES.md` | Legal directions; Execution sole admission | Tier insert, reverse import, second root, private scheduler, alt admission | **PASS (documentary)** — legal directions and Execution admission (semantic unchanged after normalization) | **PASS (documentary)** — negative cases REJECT | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-01_LAYER_TIER_BOUNDARIES.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | No runtime tier test | T-IGX-079-D `quality_gate` | **No** |
+| II-W0-02 | Definition, scope, non-goals and adoption contract accepted | `II-W0-02_CAPABILITY_CONTRACT.md` | Deterministic and intelligent examples without authority transfer | Implicit permission, private harness, invented API, consumer lifecycle, duplicated criteria | **PASS (documentary)** — representative requests without authority transfer | **PASS (documentary)** — §10 negative cases REJECT | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-02_CAPABILITY_CONTRACT.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | W1 port mapping not executed | `quality_gate` | **No** |
+| II-W0-03 | Traceability to existing invariants; no conflicting authority | `II-W0-03_INVARIANT_TRACEABILITY.md` | 12/12 authority preserved + accountable evidence owners | Weakened controls; unbound claims; duplicate planes | **PASS (documentary)** — 12 rows; 24 explicit FRZ/ECAP bindings; domain sources incl. routing/capacity | **PASS (documentary)** — deferrals documented; no weakened controls | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-03_INVARIANT_TRACEABILITY.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Message-extension owner W1 | `quality_gate` | **No** |
+| II-W0-04 | Single owner per concern; overlap and conflict matrix | `II-W0-04_SEMANTIC_OWNERSHIP.md` | One owner or explicit block per §7.1 concern | Duplicate identity/store/recovery/budget/permission planes | **PASS (documentary)** — 23/23 rows; 17-row canonical II-OPR-06 reproduction | **PASS (documentary)** — negative qualification REJECT | `docs/project/maintainers/qualification/intelligence_x/w0/II-W0-04_SEMANTIC_OWNERSHIP.md` | `00ae3f6b5a882021f500b6424f8213b26263111a` | PENDING post-publication bind | DOCUMENTARY_ACCEPTANCE_PASS_SCOPED | Cross-domain acceptance record-only | `quality_gate` | **No** |
+
+**Oracle separation:** Roadmap definitions remain in the definition columns. **Actual** positive and negative oracle results are documentary qualification outcomes only; they do not imply runtime certification, formal package closure, or publication.
+
+**Corrective publication (II-W0-A-PUBLICATION-01):** Integration base `8f03bae217386e26ce1d7804ca673f57f6bfccfc`; publication commit SHA **PENDING** (no self-referential hash at authoring). Historical premature remote publication distinguished from accepted corrective publication.
+
+**Formal G6:** PENDING — not declared. **Formal closure eligibility:** No for all packages.
+
+No self-referential publication commit SHA embedded at authoring time. Implementer integration qualification does not close packages.
