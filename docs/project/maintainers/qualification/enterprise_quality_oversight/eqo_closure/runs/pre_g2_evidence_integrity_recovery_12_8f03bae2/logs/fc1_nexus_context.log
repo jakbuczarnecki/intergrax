@@ -1,0 +1,49 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- D:\Projekty\_wt\intergrax\ec-w3-12\.venv\Scripts\python.exe
+cachedir: build\pytest\56584-2610bb44\pytest-cache
+rootdir: D:\Projekty\_wt\intergrax\ec-w3-12
+configfile: pyproject.toml
+plugins: anyio-4.12.1, Intergrax-ai-0.1.0, langsmith-0.6.4, asyncio-0.25.3, xdist-3.8.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None
+collecting ... collected 16 items
+
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_missing_human_decision_store PASSED [  6%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_accepts_explicit_human_persistence_disable PASSED [ 12%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_in_memory_human_store PASSED [ 18%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_ignores_ambient_task_memory_env PASSED [ 25%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_ignores_ambient_runtime_events_env PASSED [ 31%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_lab_loop_keeps_env_resolution_and_none_default PASSED [ 37%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_spec_forwards_persistence_arguments PASSED [ 43%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_context_manager_without_engine_or_adapter PASSED [ 50%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_classifier_resolves_llm_for_context PASSED [ 56%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_rules_classifier_resolves_llm PASSED [ 62%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_explicit_llm_adapter_skips_environment_resolution PASSED [ 68%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_without_configured_provider_fail_closed PASSED [ 75%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_without_provider_config_fail_closed PASSED [ 81%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_lab_default_planner_classifier_does_not_force_environment_llm_resolution PASSED [ 87%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_explicit_incomplete_context_manager_remains_fail_closed PASSED [ 93%]
+tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_environment_through_tier3_builder_is_refused_without_engine_or_adapter PASSED [100%]
+
+=================================== PASSES ====================================
+____________ test_strict_loop_refuses_missing_human_decision_store ____________
+---------------------------- Captured stdout setup ----------------------------
+Wrote build\agent_fleet_inventory.json (21 agents)
+- generated xml file: D:\Projekty\_wt\intergrax\ec-w3-12\docs\project\maintainers\qualification\enterprise_quality_oversight\eqo_closure\runs\pre_g2_evidence_integrity_recovery_12_8f03bae2\junit\fc1_nexus_context.xml -
+=========================== short test summary info ===========================
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_missing_human_decision_store
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_accepts_explicit_human_persistence_disable
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_in_memory_human_store
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_ignores_ambient_task_memory_env
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_ignores_ambient_runtime_events_env
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_lab_loop_keeps_env_resolution_and_none_default
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_spec_forwards_persistence_arguments
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_loop_refuses_context_manager_without_engine_or_adapter
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_classifier_resolves_llm_for_context
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_rules_classifier_resolves_llm
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_explicit_llm_adapter_skips_environment_resolution
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_auto_context_default_planner_without_configured_provider_fail_closed
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_without_provider_config_fail_closed
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_lab_default_planner_classifier_does_not_force_environment_llm_resolution
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_explicit_incomplete_context_manager_remains_fail_closed
+PASSED tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py::test_strict_environment_through_tier3_builder_is_refused_without_engine_or_adapter
+============================= 16 passed in 6.18s ==============================

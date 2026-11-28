@@ -1,0 +1,102 @@
+{
+  "application_host_paths": [
+    "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+    "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py"
+  ],
+  "artifacts": {
+    "DES_PREREG.json": {
+      "content_digest_sha256": "196b73e4467dcaf148659cae17241d531a1e137e6c8e138cb7bbe792e73f3d70",
+      "git_blob_sha": "c6eaa923e105aced512393e221a532834bcff4cf",
+      "json_canonical_digest_sha256": "3c492a853cb8e94def3f467a83e4b4ec47dc2a55e836ddf9a6d9a32729ba194c",
+      "path": "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_qualification_execution_08_245d4717/DES_PREREG.json"
+    },
+    "OBLIGATION_EXECUTION_MATRIX.json": {
+      "content_digest_sha256": "d21c71e61475a00142f92747e9e56a2e4fd4f7d44343a923a00249be6f4d3e46",
+      "git_blob_sha": "7e1cd4456c31e4ccf027c4cd7b046da5cf3ce227",
+      "json_canonical_digest_sha256": "1636a414787607a3eeb79c396051c943bc3dfb90f95e4462f12c73e5d6ef5eca",
+      "path": "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_qualification_execution_08_245d4717/OBLIGATION_EXECUTION_MATRIX.json"
+    },
+    "REMAINING_QUALIFICATION_QUEUE.json": {
+      "content_digest_sha256": "4d66e077dd8649ae9814a4be4dc039d7b51ad4e103268b1ba1347d56f48efc5e",
+      "git_blob_sha": "0583b20b0d0cc7712d0099e27c5b94a3ae490f07",
+      "json_canonical_digest_sha256": "95e206807d1e4f4dc52ce7e6c647db2aca6477a4f7eb876badd443e38564aa01",
+      "path": "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_qualification_execution_08_245d4717/REMAINING_QUALIFICATION_QUEUE.json"
+    }
+  },
+  "documentary_obligation_count": 12,
+  "inventory_source": "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_qualification_execution_08_245d4717",
+  "obligation_ids": [
+    "EDER-D-0001",
+    "EDER-D-0002",
+    "EDER-D-0003",
+    "EDER-D-0004",
+    "EDER-D-0005",
+    "EDER-D-0006",
+    "EDER-D-0007",
+    "EDER-D-0008",
+    "EDER-D-0085",
+    "EDER-D-0086",
+    "EDER-F-0016",
+    "EDER-F-0020",
+    "EDER-F-0023",
+    "EDER-F-0059",
+    "EDER-F-0076",
+    "EDER-F-0080",
+    "EDER-F-0084",
+    "EDER-F-0091",
+    "EDER-F-0107",
+    "EDER-F-0116",
+    "EDER-F-0124",
+    "EDER-F-0154",
+    "EDER-F-0158",
+    "EDER-F-0171",
+    "EDER-F-0182",
+    "EDER-F-0186",
+    "EDER-F-0188",
+    "EDER-F-0192",
+    "EDER-F-0200",
+    "EDER-F-0207",
+    "EDER-F-0209",
+    "EDER-F-0210",
+    "EDER-F-0222",
+    "EDER-F-0236"
+  ],
+  "qualification_paths": [
+    "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+    "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+    "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+    "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+    "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py",
+    "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+    "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+    "tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py",
+    "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py",
+    "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py",
+    "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+    "tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py",
+    "tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py",
+    "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py",
+    "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py",
+    "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+    "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+    "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+    "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+    "tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+    "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+    "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+    "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+    "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+    "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+    "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+    "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py"
+  ],
+  "schema": "eqo.inventory_binding.v1",
+  "support_module_paths": [
+    "tests/qualification/ebh_7/_ebh7_scope_residual_register.py",
+    "tests/qualification/ebh_7/_ebh7_skip_disposition_register.py",
+    "tests/qualification/ebh_7/_tenant_unknown_role_dispositions.py",
+    "tests/unit/campaign_b/_pt_t01_matrix.py"
+  ]
+}
