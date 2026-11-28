@@ -641,4 +641,3 @@ No mass EOL conversion in this corrective batch. Historical commits preserved.
 | `docs/project/architecture/PLATFORM_FOUNDATION.md` | 375 | `RELIABILITY_FAILURE_AND_HITL.md#protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18` | `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md` | protocol-v2-persistence-concurrency-multihost-target-invariants-2026-08-18 | FAIL (anchor; baseline-defect) |
 | `docs/project/architecture/RAG.md` | 640 | `../maintainers/plans/RAG.md#protocol-v2-rag-remediation-2026-08-18` | `docs/project/maintainers/plans/RAG.md` | protocol-v2-rag-remediation-2026-08-18 | FAIL (anchor; baseline-defect) |
 | `docs/project/architecture/SKILLS.md` | 505 | `CODE_CRAFT.md#codecraft-safety-boundary` | `docs/project/architecture/CODE_CRAFT.md` | codecraft-safety-boundary | FAIL (anchor; baseline-defect) |
-
