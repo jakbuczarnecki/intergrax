@@ -10,7 +10,9 @@ Tests only, no product path: not ACT-N11 sensitive; outside the EBH-7 identity a
 
 ## Plan digest
 
-Plan digest: 60d2a16a20e23b167bcfebfe7977b72d869e26b09512904d630e93d8c5d303cf
+Plan digest: 204146325aaf01b8a1eda7e391b40f4f1dea2d4a4706078bcc87b69a10e285f9
+
+Previous plan digest (revision 3 / pre OD-AF-W3-FC3-F-01): 60d2a16a20e23b167bcfebfe7977b72d869e26b09512904d630e93d8c5d303cf
 
 Canonical plan: [`governance/tickets/plans/PLAN_T-IGX-043-F.md`](plans/PLAN_T-IGX-043-F.md). The digest was computed with `scripts/governance/plan_digest.py` on the draft; it must be recomputed after any edit of the plan.
 
@@ -49,7 +51,7 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-01`. Authoriza
 | Catalog slug count | 199 |
 | Selector enum `.value` count | 12 |
 | Unique vendor value count | 205 |
-| Vendor value set digest (SHA256) | `4828bbc9f4db83be169adcefe7c4d7e715ac43ca4a5b06914fcc0d79e9aef6a4` |
+| Vendor value set digest (SHA256, reconciled) | `4828bbc9f4db83be169adcefe7c4d7e715ac43ca4a5b06914fcc0d79e9aef6a4` |
 | CONFIG-X inventory paths scanned | 1662 |
 | FC-3 physical paths measured | 9 (plan text: eight functional groups) |
 | Scratch output SHA256 | `903cafef91af71401bb3b120097c2782e03ac8476ba65bd730897abcced96032` |
@@ -127,3 +129,29 @@ Mechanical `discover_semantic_production_findings()` blocking set: **empty** (0 
 4. Three cloud-platform adapter class-field hits outside FC-3: findings for accounting only (Operator ruling §14 item 3).
 
 **F-A2 terminal status:** measurement complete; implementation of `_config_x_semantic_production_scan.py` extension **not started**; FRZ-CFG-08 **not** certified PASS.
+
+**Vendor digest reconciliation (AF-W3-PT-FC3-F-02):** Composer session AF-W3-PT-FC3-F-01 conflated a plan digest with the vendor value digest. Authoritative vendor digest remains `4828bbc9f4db83be169adcefe7c4d7e715ac43ca4a5b06914fcc0d79e9aef6a4` (sorted newline SHA256 over 205 derived values; recomputed at `9efe643045c40255ce868e99400e9468d2fee4f4`). F-A2 artifact SHA256: `903cafef91af71401bb3b120097c2782e03ac8476ba65bd730897abcced96032` (file hash `eb6b5ebff111e8df5a4faec75286980fd7a395e9d3d17b379dcc2dd05cacfd0e`).
+
+## Checkpoint — AF-W3-PT-FC3-F-02 (CONFIG-X scoped vendor gate, 2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-02`. Operator: **OD-AF-W3-FC3-F-01 variant A DECIDED** (recorded in Operator Decision Register). Plan digest: `204146325aaf01b8a1eda7e391b40f4f1dea2d4a4706078bcc87b69a10e285f9`.
+
+| Item | Status |
+|---|---|
+| Scoped physical paths | 9 |
+| EXPECTED_RESIDUAL fingerprints | 3 (`InboundVerifierSettings.mode`, LAB helper returns) |
+| Vision provider identity | `HuggingFaceInferenceVisionAdapter.slug`, `TritonVisionServingAdapter.slug` |
+| Validation-only LAB loads | `_resolve_lab_inmemory_slug` comparison + error message |
+| NT-FC3-CX1..12 + behavioral controls | GREEN at execution SHA (see git) |
+| CONFIG-X directory regression | 96 passed |
+| FRZ-CFG-08 owner regression node | PASS |
+| FC3 behavioral regression (Q5) | 33 passed |
+| Product code delta | NONE |
+| PT-Q02 | PENDING |
+| Independent PASS / FRZ promotion | NONE |
+
+**Outside-scope inventory (record only):** AWS/Azure/GCP cloud platform adapter class `slug` fields.
+
+**RED-first note:** F-A2 scratch RED at `2f38f0031b0e9c1d5b1aba1df7db8b3dfaf31809` preserved; formal NT-FC3 RED at baseline SHA not re-recorded in this pass (GREEN qualification executed on authorized implementation tree).
+
+**Lifecycle:** implementation evidence recorded; approval line remains Operator-only; not a PT-Q02 PASS.
