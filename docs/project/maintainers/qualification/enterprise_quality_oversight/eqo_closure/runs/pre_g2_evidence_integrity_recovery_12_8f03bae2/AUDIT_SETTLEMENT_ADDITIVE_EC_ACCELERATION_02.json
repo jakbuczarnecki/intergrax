@@ -1,0 +1,60 @@
+{
+  "schema": "eqo.audit_settlement_additive.v1",
+  "session_name": "INTEGRAX | ENTERPRISE CAMPAIGN EQO | PRE-FCS | CONSOLIDATED DEFECT SETTLEMENT | EC-ACCELERATION-02",
+  "ticket": "governance/tickets/T-IGX-095-A.md",
+  "recorded_utc": "2026-11-28T15:30:00Z",
+  "baseline_refs": {
+    "verified_development_sha": "b6ed56d138a85a6472e07127da35fcebfe3dbe28",
+    "qualified_product_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
+    "qualified_tree_sha": "09b33bd9e9f36bbce237c30815300efa64d13674",
+    "evidence_run_root": "pre_g2_evidence_integrity_recovery_12_8f03bae2"
+  },
+  "A1_qualification_provenance": {
+    "prior_publication_pending": true,
+    "publication_commit_at_settlement": "pending_candidate_push",
+    "qualification_runner_tooling_sha_per_batch": "provenance_limited: pre/post records bind source_commit_sha at batch execution; tooling digest not uniformly stamped per group in EXECUTION_PUBLICATION_BINDING",
+    "import_source_binding": "confirmed_for_batches_with_matching_pre_source_commit_sha",
+    "provenance_limited_groups": []
+  },
+  "A3_readonly_verification_summary": {
+    "canonical_des_batch_count": 25,
+    "matrix_rows_vs_projection": "recomputed_via_compute_canonical_evidence_projection_at_settlement",
+    "validator_exit_0_not_substitute": true,
+    "integrity_self_digest_violation_checked": "EVIDENCE_INTEGRITY.manifest_sha256 excludes self-entry"
+  },
+  "AUD_11_individual_disposition": {
+    "AUD-11-01": {
+      "disposition": "SETTLED",
+      "evidence_ref": "execution_records/pkg_a_d01.post.json"
+    },
+    "AUD-11-02": {
+      "disposition": "SETTLED",
+      "evidence_ref": "execution_records/pkg_b_adversarial.post.json"
+    },
+    "AUD-11-03": {
+      "disposition": "SETTLED",
+      "evidence_ref": "execution_records/pkg_c_reconcile.post.json"
+    },
+    "AUD-11-04": {
+      "disposition": "SETTLED_WITH_RESIDUAL",
+      "note": "FC3 PARTIAL_VALIDATION witness preserved"
+    },
+    "AUD-11-05": {
+      "disposition": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
+      "note": "ENT L3 heavy node; three Q04 lightweight PASS do not constitute full ENT L3 qualification"
+    },
+    "AUD-11-06": {
+      "disposition": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
+      "note": "ENT L3 heavy node; requires independent formal profile"
+    }
+  },
+  "p2c_actual": {
+    "recorded_historical": "1 PASS / 6 FAIL (add_event_handler)",
+    "post_ec_f16_candidate": "pending_targeted_replay"
+  },
+  "campaign_residuals": {
+    "EC-F12": "OPEN — revision-bound GCA roster qualification fixture missing for product manifest",
+    "EC-F05": "OPEN — COMPAT-X owner reconciliation",
+    "EC-F09": "OPEN — REPLAY-X unscoped delta disposition"
+  }
+}

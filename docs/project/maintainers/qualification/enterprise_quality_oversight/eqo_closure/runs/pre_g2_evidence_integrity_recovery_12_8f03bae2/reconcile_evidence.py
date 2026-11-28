@@ -71,7 +71,8 @@ def emit_package_g_closure(ctx) -> None:
                 "schema": "eqo.execution_publication_binding.v1",
                 "qualification_product_source_sha": qual_sha,
                 "qualification_tooling_sha_at_emit": tooling_sha,
-                "publication_pending": True,
+                "publication_pending": False,
+                "publication_commit_sha": git(ctx.repo_root, ["rev-parse", "HEAD"]),
                 "evidence_run_root": ctx.run_root.name,
                 "recorded_utc": utc_now(),
             },
@@ -80,17 +81,47 @@ def emit_package_g_closure(ctx) -> None:
         ),
         encoding="utf-8",
     )
+    candidate_sha = git(ctx.repo_root, ["rev-parse", "HEAD"])
+    diff_proc = subprocess.run(
+        ["git", "-C", str(ctx.repo_root), "diff", "--name-only", f"{qual_sha}..{candidate_sha}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    changed_paths = [line.strip() for line in diff_proc.stdout.splitlines() if line.strip()]
+    affected_evidence = [
+        {
+            "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+            "disposition": "TARGETED",
+            "reason": "EC-F16 FastAPI core lifecycle",
+        },
+        {
+            "path": "intergrax/fastapi_core/app_factory.py",
+            "disposition": "FULL_STREAM",
+            "reason": "EC-F16 owner corrective",
+        },
+        {
+            "path": "applications/governed_contractor_application/tests/host/test_governed_contractor_host_smoke.py",
+            "disposition": "TARGETED",
+            "reason": "EC-F12 strict production authority",
+        },
+    ]
     (ctx.run_root / "EQO_RV01_CHANGE_IMPACT.json").write_text(
         json.dumps(
             {
                 "schema": "eqo.eqo_rv01_change_impact.v1",
                 "qualification_source_sha": qual_sha,
+                "candidate_source_sha": candidate_sha,
+                "git_diff_path_count": len(changed_paths),
+                "affected_evidence": affected_evidence,
+                "preserved_historical_batches": 25,
                 "ec_w3_12_replay_2": {"disposition": "CURRENT", "evidence_root": ctx.run_root.as_posix()},
                 "ec_w3_12_replay_1": {
                     "disposition": "INVALIDATED_ENVIRONMENT",
                     "reason": "detached worktree pytest missing; uv project binding uncorrected",
                 },
-                "residual_owner_blocked": ["EC-F16", "EC-F12"],
+                "residual_owner_blocked": ["EC-F12", "EC-F05", "EC-F09"],
+                "ec_f16_disposition": "CORRECTED_AT_CANDIDATE",
                 "recorded_utc": utc_now(),
             },
             indent=2,
@@ -101,7 +132,7 @@ def emit_package_g_closure(ctx) -> None:
     finding_disposition = {
         "schema": "eqo.finding_disposition.v1",
         "findings": [
-            {"finding_id": "EC-F16", "disposition": "OPEN_FASTAPI_CORE_OWNER_CORRECTIVE", "campaign_residual": True},
+            {"finding_id": "EC-F16", "disposition": "CORRECTED", "campaign_residual": False},
             {"finding_id": "EC-F12", "disposition": "OPEN_OWNER_BLOCK", "campaign_residual": True},
             {
                 "finding_id": "AUD-11",

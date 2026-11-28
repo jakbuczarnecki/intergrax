@@ -1,0 +1,28 @@
+{
+  "terminal_contract": "EC_PRE_FCS_MAXIMUM_EXECUTABLE_SCOPE_COMPLETED_WITH_EXACT_RESIDUALS",
+  "session_name_applied": "INTEGRAX | ENTERPRISE CAMPAIGN EQO | PRE-FCS | CONSOLIDATED DEFECT SETTLEMENT | EC-ACCELERATION-02",
+  "verified_baseline_sha": "b6ed56d138a85a6472e07127da35fcebfe3dbe28",
+  "qualified_source_sha": "6373f45e84cbf292d24174620187722e53b66459",
+  "candidate_sha_at_report": "pending_commit",
+  "packages": {
+    "A": "PARTIAL — additive AUDIT_SETTLEMENT_ADDITIVE_EC_ACCELERATION_02.json; RV-01 emitter enhanced",
+    "B": "EXECUTED — EC-F16 lifespan corrective T-IGX-097-A",
+    "C": "BLOCKED — EC-F12 owner fixture; T-IGX-097-B checkpoint",
+    "D": "OPEN — OD-EC-02-02",
+    "E": "PARTIAL — lifecycle 6/6 PASS; P2C 3/7 on current tree (4 functional residuals)",
+    "F": "OPEN — W3/W2 matrix not promoted",
+    "G": "OPEN — W4/C/E/X partial; OD packet only",
+    "H": "PARTIAL — this report; no 151-task promotion"
+  },
+  "owner_tickets": ["T-IGX-095-A", "T-IGX-097-A", "T-IGX-097-B", "T-IGX-082-A"],
+  "ec_f16": "CORRECTED",
+  "ec_f12": "BLOCKED revision-bound GCA qualification fixture",
+  "ec_f05_ec_f09": "OPEN owner decision",
+  "reused_evidence_count": 829,
+  "invalidated_evidence_count": 13,
+  "replayed_evidence_count": 0,
+  "targeted_regression": {
+    "fastapi_lifecycle": "6 passed",
+    "p2c_http_admission": "3 passed, 4 failed"
+  }
+}
