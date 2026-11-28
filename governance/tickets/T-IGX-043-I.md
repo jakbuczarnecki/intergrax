@@ -53,7 +53,7 @@ Everything outside the write set above: the check manifest, `manifest.py`, `evid
 
 ## Lifecycle state
 
-plan_approved
+quality_gate
 
 ## Implementer session
 
@@ -73,3 +73,20 @@ This ticket owns no row of the RW CODE_FIX inventory.
 | NT-ROW-018 | A6-008 | WD D01..D06 |
 
 Binding: `docs/project/maintainers/qualification/arch_freeze_program/rw_plan_bindings.v1.json`. Lane, hard predecessors, merge position and mandatory tests of this ticket are in the live plan `docs/project/maintainers/qualification/arch_freeze_program/RW_PLAN.md`.
+
+## AF-W3-PT-WD-01 — consolidated implementation qualification (2026-11-28)
+
+Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WD | AF-W3-PT-WD-01` (Cursor `rename_chat`). Authorization: DP-66, DP-11, DP-58, Q-RW-04, SCOPE=CLOSED; read-only qualification of Parts A–D plus preservation of Part E (`T-IGX-043-M`). Write set: this checkpoint only (`PRODUCT_CODE_CHANGES: NONE`).
+
+**Preflight (TASK-01):** `SCOPE=CLOSED`; baseline ancestor verified; execution SHA `e7a28baecf5bfdba58fbd7bfbdab799c816658e7`. Plan digest verified `4ec30bbd721583c546186c03035dcfb3ed3cd84e397bd6567ebf075b552e2721`. PT-WA/WB predecessors on train; PT-E03 acceptance present (`e0f64ed7f`). M1: operator-confirmed per wave transcription.
+
+| Task | Status |
+|------|--------|
+| Part A–D | ALREADY_IMPLEMENTED_VERIFIED (Q1 WD 45/45 pass) |
+| Wave-diff PDC | ALREADY_IMPLEMENTED_VERIFIED (4 canonical nodes pass; 2× legacy 85-manifest guards fail — owner T-IGX-043-M) |
+| Q2 Tier-1 98 nodes | PARTIAL (`regression_nodes_split2.txt` absent) |
+| Q3 static / TASK-10 gov | DONE (ruff/pyright 0; phase3 0; pre-g2 1; traceability pass; igx_gov pass) |
+| TASK-08 RED-first | record-only (plan + PR #669; no baseline re-run) |
+| TASK-09 preservation | DONE (91 checks; no package delta) |
+
+Pytest log sha256 `B0418231824C91C5B843975C9B9825FCE4131CF28ED283887AB7ABD3A59B3FEA` (115 collected, 113 passed, 2 failed). Residuals unchanged; no independent PASS.
