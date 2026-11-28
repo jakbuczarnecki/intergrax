@@ -1,0 +1,633 @@
+{
+  "application_host_queue": [
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "a85efea4bd8fe87e1d37395793c76014aab4bdc1",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "path": "applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "a85efea4bd8fe87e1d37395793c76014aab4bdc1",
+      "qualification_profile": "APPLICATION_HOST",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "4bd8189e6617c2e50d67c8f956faadae6ce51ae3",
+      "obligation_ids": [
+        "EDER-D-0086"
+      ],
+      "path": "applications/governed_contractor_application/tests/host/test_p3_r1_r1_governed_identity_tenant_gate.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "4bd8189e6617c2e50d67c8f956faadae6ce51ae3",
+      "qualification_profile": "APPLICATION_HOST",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    }
+  ],
+  "application_host_test_file_count": 2,
+  "qualification_queue": [
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "89b4604955ee7b582e3d3506f23779c83403f79a",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_p0_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "89b4604955ee7b582e3d3506f23779c83403f79a",
+      "qualification_profile": "COMPAT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "3eede46e452e6d2342543329d81b4ec700623e25",
+      "obligation_ids": [
+        "EDER-F-0020"
+      ],
+      "path": "tests/qualification/compat_x/test_compat_x_deprecation_r5_shim_reconciliation_pure.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "3eede46e452e6d2342543329d81b4ec700623e25",
+      "qualification_profile": "COMPAT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "334c1958c26453011262e88ee6e0589446640541",
+      "obligation_ids": [
+        "EDER-F-0020",
+        "EDER-F-0080"
+      ],
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_final_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "334c1958c26453011262e88ee6e0589446640541",
+      "qualification_profile": "COMPAT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "91b815474250868559df3ad7ab77fe6fcca73f10",
+      "obligation_ids": [
+        "EDER-F-0080"
+      ],
+      "path": "tests/qualification/compat_x/test_compat_x_persisted_r2_p0_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "91b815474250868559df3ad7ab77fe6fcca73f10",
+      "qualification_profile": "COMPAT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "a6eae2fb1406ad47956f2a19f44fa2cbdf5dd8d9",
+      "obligation_ids": [
+        "EDER-F-0076"
+      ],
+      "path": "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_security_baseline.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "a6eae2fb1406ad47956f2a19f44fa2cbdf5dd8d9",
+      "qualification_profile": "CONTROL_DUP_EBH6",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "d5cb5e1200adcf0b92d54988cdb0bc4aefa80258",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0186"
+      ],
+      "path": "tests/qualification/dup_x/test_dup_x_mechanical_exit_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "d5cb5e1200adcf0b92d54988cdb0bc4aefa80258",
+      "qualification_profile": "CONTROL_DUP_EBH6",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "d356cf0ebdf245c20e9e1de5716a3be62a850244",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "path": "tests/qualification/ebh_6/test_ebh_6_hardcoding_register_integrity.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "d356cf0ebdf245c20e9e1de5716a3be62a850244",
+      "qualification_profile": "CONTROL_DUP_EBH6",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "5c6ea952ef819e4ceaf3ce53b325e692c62a9a7d",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path": "tests/qualification/ebh_7/cross_domain_e2e/test_ebh7_cross_domain_platform_proofs.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "5c6ea952ef819e4ceaf3ce53b325e692c62a9a7d",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "ecafa584d982c15cf1d4e5753a34c6cd66660000",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_platform_tenant_boundary_proofs.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "ecafa584d982c15cf1d4e5753a34c6cd66660000",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "e9aa720fd908a2619b0447393d34a9e6498f3758",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path": "tests/qualification/ebh_7/tenant_platform_e2e/test_ebh7_w1w2_qualification_reconciliation.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "e9aa720fd908a2619b0447393d34a9e6498f3758",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "6ab22e632c05ecb5a3d8b9b228a1d14e37f54259",
+      "obligation_ids": [
+        "EDER-F-0059",
+        "EDER-F-0210"
+      ],
+      "path": "tests/qualification/ebh_7/test_ebh_7_b6_junit_skip_disposition_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "6ab22e632c05ecb5a3d8b9b228a1d14e37f54259",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "3997176d4c8ac35fd404ba878972dba099b7b3d4",
+      "obligation_ids": [
+        "EDER-F-0207"
+      ],
+      "path": "tests/qualification/ebh_7/test_ebh_7_certification_mutation_fail_closed.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "3997176d4c8ac35fd404ba878972dba099b7b3d4",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "ab786646d3738668f4044d27e69d5bbcf4316570",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "path": "tests/qualification/ebh_7/test_ebh_7_mechanical_exit_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "ab786646d3738668f4044d27e69d5bbcf4316570",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "4461749b914e62b2633888e9594898b01f4bca41",
+      "obligation_ids": [
+        "EDER-F-0210"
+      ],
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_behavioral_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "4461749b914e62b2633888e9594898b01f4bca41",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "6177e71ebb6c65f92063e8f3280ab913e1a519c8",
+      "obligation_ids": [
+        "EDER-F-0188"
+      ],
+      "path": "tests/qualification/ebh_7/test_ebh_7_w6_tenant_e2e_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "6177e71ebb6c65f92063e8f3280ab913e1a519c8",
+      "qualification_profile": "EBH-7",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "80160be7545aa0d0edacd9dceaf3a8d862ab34da",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "80160be7545aa0d0edacd9dceaf3a8d862ab34da",
+      "qualification_profile": "ENT-AUDIT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "44a7a264ad40eb73cda551ae20a1160f1fdd4d08",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path": "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "44a7a264ad40eb73cda551ae20a1160f1fdd4d08",
+      "qualification_profile": "ENT-AUDIT-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "ac05f94ce3b227b325df673e5e20889e0f37d75e",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l2_security_trace.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "ac05f94ce3b227b325df673e5e20889e0f37d75e",
+      "qualification_profile": "MCP-SERVER-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "5ba8691c11b9ed718d56fa47aa2bf417cfcb2f9d",
+      "obligation_ids": [
+        "EDER-F-0192"
+      ],
+      "path": "tests/qualification/mcp_server_x/test_mcp_server_x_p7_l3_invoke_security.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "5ba8691c11b9ed718d56fa47aa2bf417cfcb2f9d",
+      "qualification_profile": "MCP-SERVER-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "ac50490c9175eb7269da00440890fb31938be243",
+      "obligation_ids": [
+        "EDER-F-0158"
+      ],
+      "path": "tests/qualification/pdc_x/d3/test_d3_f01_stream_guard.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "ac50490c9175eb7269da00440890fb31938be243",
+      "qualification_profile": "PDC-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "6a36303d82fd7eb0e90737b4ade895ddddb4b2ba",
+      "obligation_ids": [
+        "EDER-F-0171"
+      ],
+      "path": "tests/qualification/pdc_x/xd/test_xd_12_evol_ent_audit.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "6a36303d82fd7eb0e90737b4ade895ddddb4b2ba",
+      "qualification_profile": "PDC-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "9b06b6a8b3d5f3e3a06531972ee206ca2a4e0dff",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_p0_current_head.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "9b06b6a8b3d5f3e3a06531972ee206ca2a4e0dff",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "b2bd6b6020785c3b5614b66757ee6a431783c43f",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_p0_fast.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "b2bd6b6020785c3b5614b66757ee6a431783c43f",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "434a4e4a25e5ef6ec31c496a1eef22909bbb2ce5",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_p0_integrity.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "434a4e4a25e5ef6ec31c496a1eef22909bbb2ce5",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "03d4915ca3531ad93ae68e618ddc2e53de220c34",
+      "obligation_ids": [
+        "EDER-F-0023",
+        "EDER-F-0107"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_p2_r2_research_hosting_strict_reachability.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "03d4915ca3531ad93ae68e618ddc2e53de220c34",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "2790231e1c644541e1b238616ad023c07bb95375",
+      "obligation_ids": [
+        "EDER-F-0107"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "2790231e1c644541e1b238616ad023c07bb95375",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "e92aa51600398bbe1c59ad33a9295549946cd03d",
+      "obligation_ids": [
+        "EDER-F-0023"
+      ],
+      "path": "tests/qualification/prod_q/test_prod_q_r1_r7_q_p3_integration_gate.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "e92aa51600398bbe1c59ad33a9295549946cd03d",
+      "qualification_profile": "PROD-Q",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "9dbce6f1c6d68e341f1636006c4fe6a2f9c61af7",
+      "obligation_ids": [
+        "EDER-F-0059"
+      ],
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_mechanical_exit_gates.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "9dbce6f1c6d68e341f1636006c4fe6a2f9c61af7",
+      "qualification_profile": "ROADMAP-REPLAY-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    },
+    {
+      "candidate_execution_sha": "245d47177c7814234a8d98fc062ed1afce3b735d",
+      "disposition_reason": "no_current_batch",
+      "execution_eligibility": true,
+      "existing_execution_evidence": [
+        "runs/pre_g2_targeted_recovery_c94745b1/"
+      ],
+      "git_blob_id": "2e24d0b54a973222b9e631124752278aa062889c",
+      "obligation_ids": [
+        "EDER-F-0186"
+      ],
+      "path": "tests/qualification/roadmap_replay_x/test_roadmap_replay_x_scoped_path_net_zero.py",
+      "prerequisite_status": "unresolved",
+      "previous_git_blob_id": "2e24d0b54a973222b9e631124752278aa062889c",
+      "qualification_profile": "ROADMAP-REPLAY-X",
+      "recalculated_disposition": "NOT_EXECUTED",
+      "required_environment": "locked_uv_dev_ci_rag_mcp_llm",
+      "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+      "testcase_outcomes": []
+    }
+  ],
+  "qualification_test_file_count": 29,
+  "queue_count": 31,
+  "schema": "eqo.remaining_qualification_queue.v2",
+  "source_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "eqo.execution_record.v1",
+  "phase": "post",
+  "batch_id": "fc1_nexus_context",
+  "process_returncode": 0,
+  "finished_at_utc": "2026-11-28T07:02:39Z",
+  "monotonic_elapsed_seconds": 12.234000000025844,
+  "stdout_stderr_path": "logs/fc1_nexus_context.log",
+  "stdout_stderr_sha256": "22fe34d67d15dc6ffb03df5f46385e00b2d27d3d1f3c30c4ac0347b8db7e0da0",
+  "junit_path": "junit/fc1_nexus_context.xml",
+  "junit_sha256": "d79552add031c835cb38480b1dd637c36c4012a368a1bdbe6341393619e36c94",
+  "source_commit_sha_after": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+  "source_tree_sha_after": "25a014baa889f2c6c79ea8109f94b5900f451c17",
+  "source_changed_during_batch": false
+}

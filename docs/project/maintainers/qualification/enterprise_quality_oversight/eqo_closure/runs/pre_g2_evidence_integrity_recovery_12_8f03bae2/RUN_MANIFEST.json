@@ -1,0 +1,100 @@
+{
+  "batch_count": 1,
+  "batches": [
+    {
+      "batch_id": "fc1_nexus_context",
+      "post": {
+        "batch_id": "fc1_nexus_context",
+        "finished_at_utc": "2026-11-28T07:02:39Z",
+        "junit_path": "junit/fc1_nexus_context.xml",
+        "junit_sha256": "d79552add031c835cb38480b1dd637c36c4012a368a1bdbe6341393619e36c94",
+        "monotonic_elapsed_seconds": 12.234000000025844,
+        "phase": "post",
+        "process_returncode": 0,
+        "schema": "eqo.execution_record.v1",
+        "source_changed_during_batch": false,
+        "source_commit_sha_after": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+        "source_tree_sha_after": "25a014baa889f2c6c79ea8109f94b5900f451c17",
+        "stdout_stderr_path": "logs/fc1_nexus_context.log",
+        "stdout_stderr_sha256": "22fe34d67d15dc6ffb03df5f46385e00b2d27d3d1f3c30c4ac0347b8db7e0da0"
+      },
+      "pre": {
+        "argv": [
+          "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+          "run",
+          "--no-sync",
+          "pytest",
+          "tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py",
+          "-vv",
+          "-rA",
+          "--tb=short",
+          "--junitxml=D:\\Projekty\\_wt\\intergrax\\ec-w3-12\\docs\\project\\maintainers\\qualification\\enterprise_quality_oversight\\eqo_closure\\runs\\pre_g2_evidence_integrity_recovery_12_8f03bae2\\junit\\fc1_nexus_context.xml"
+        ],
+        "batch_id": "fc1_nexus_context",
+        "command_digest_sha256": "d8870168fe635732bfc9bb9c6474457614e3ffdb6a01d67b2350ae211e54a2e4",
+        "environment_profile": {
+          "extras_profile": [
+            "dev-ci",
+            "dev-ci-rag",
+            "mcp",
+            "llm-langchain-ollama",
+            "llm-gemini"
+          ],
+          "fastmcp_import_ok": true,
+          "pyproject_sha256": "9b8b71cbbfef1edd66e996ceafd7e5ca23940e0d62dd5fe8b9b1cf9ea88adfd6",
+          "python_executable": "D:\\Projekty\\_wt\\intergrax\\ec-w3-12\\.venv\\Scripts\\python.exe",
+          "recorded_utc": "2026-11-28T07:02:23Z",
+          "schema": "eqo.environment_manifest.v1",
+          "shutil_which_uv": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+          "uv_executable": "C:\\Users\\XPS\\.local\\bin\\uv.EXE",
+          "uv_lock_sha256": "783dd48bd50a32db46e6e5b74336c22464e6b8c69a4238090973c7f584d46844"
+        },
+        "git_worktree_git_dir": "D:/Projekty/intergrax/.git/worktrees/ec-w3-12",
+        "phase": "pre",
+        "schema": "eqo.execution_record.v1",
+        "source_commit_sha": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
+        "source_tree_sha": "25a014baa889f2c6c79ea8109f94b5900f451c17",
+        "started_at_utc": "2026-11-28T07:02:26Z",
+        "tracked_source_consistency": {
+          "porcelain_empty": false,
+          "porcelain_lines": [
+            "AM docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/BASELINE_BINDING.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/BATCH_MANIFEST.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/DES_PREREG.json",
+            "AM docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/ENVIRONMENT_MANIFEST.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/INVENTORY_BINDING.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/OBLIGATION_EXECUTION_MATRIX.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/REMAINING_QUALIFICATION_QUEUE.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/TESTCASE_EXECUTION_MATRIX.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/_evidence_common.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/evidence_runner.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/reconcile_evidence.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/test_evidence_reconciliation.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validate_reconciliation.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/BASELINE_BINDING.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/BATCH_MANIFEST.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/DES_PREREG.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/ENVIRONMENT_MANIFEST.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/INVENTORY_BINDING.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/OBLIGATION_EXECUTION_MATRIX.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/REMAINING_QUALIFICATION_QUEUE.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/TESTCASE_EXECUTION_MATRIX.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/_evidence_common.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/evidence_runner.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/execution_records/synthetic_pass.pre.json",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/junit/synthetic_pass.xml",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/logs/synthetic_pass.log",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/reconcile_evidence.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/test_evidence_reconciliation.py",
+            "A  docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/validator_fixtures/minimal_valid/validate_reconciliation.py",
+            "A  governance/tickets/T-IGX-095-A.md",
+            "M  tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py",
+            "M  tests/unit/runtime/nexus/test_fc1_nexus_loop_persistence_posture.py"
+          ]
+        }
+      }
+    }
+  ],
+  "recorded_utc": "2026-11-28T07:02:39Z",
+  "schema": "eqo.run_manifest.v1"
+}

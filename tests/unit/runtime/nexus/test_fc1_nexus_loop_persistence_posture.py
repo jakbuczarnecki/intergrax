@@ -23,6 +23,7 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
 )
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterDependencyError
+from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.store import (
     RuntimeEventPersistenceNotConfiguredError,
@@ -265,6 +266,22 @@ def test_strict_explicit_llm_adapter_skips_environment_resolution() -> None:
         )
     assert spec.context_manager is not None
     assert spec.context_manager.llm_adapter is explicit
+
+
+def test_strict_auto_context_default_planner_without_configured_provider_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """EC-F14 supplementary (NT-FC1): canonical resolver fail-closed without ambient LLM selection."""
+    for var in ("INTERGRAX_LLM_PROVIDER", "INTERGRAX_LLM_MODEL"):
+        monkeypatch.delenv(var, raising=False)
+    env = _strict_env("fc1.strict-ctx.no-provider-canonical")
+    env = env.model_copy(update={"llm_profile": None, "llm_routing_profile": None})
+    with pytest.raises(LLMProviderNotConfiguredError):
+        build_host_orchestration_loop_init_spec_from_environment(
+            AgentRegistry(),
+            env=env,
+            **_strict_persistence_kwargs(),
+        )
 
 
 def test_strict_without_provider_config_fail_closed() -> None:

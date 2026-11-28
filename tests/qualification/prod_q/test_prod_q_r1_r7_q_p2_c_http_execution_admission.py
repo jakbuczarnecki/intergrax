@@ -276,6 +276,12 @@ def _build_strict_http_fixture(
     assert err is None, f"integration import blocked: {err}"
     install_diagnostic_cursor_secret(monkeypatch)
     install_host_llm_stub(monkeypatch)
+    monkeypatch.setenv("INTERGRAX_INBOUND_VERIFIER", "slack")
+    monkeypatch.setenv(
+        "INTERGRAX_SLACK_SIGNING_SECRET",
+        "eqo-p2c-synthetic-qualification-secret",
+    )
+    monkeypatch.setenv("INTERGRAX_SLACK_VERIFY_SIGNATURE", "true")
 
     sandbox_root = tmp_path / "p2c-guarded-sandbox"
     sandbox_root.mkdir(parents=True, exist_ok=True)
