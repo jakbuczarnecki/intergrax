@@ -34,13 +34,14 @@
       ]
     },
     {
-      "deferred": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
+      "deferred_nodes": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
       "expected_coverage": "Q04",
       "id": "q04",
       "paths": [
         "tests/qualification/ent_audit_x/l3/test_l3_freeze_real_85.py",
         "tests/qualification/ent_audit_x/l3/test_l3_full_real_85.py"
-      ]
+      ],
+      "pytest_k": "test_l3_plain_freeze_blocked_without_baseline or test_l3_full_real_85_fail_on_check_filter or test_l3_full_not_qualifying_without_opt_in_profile"
     },
     {
       "expected_coverage": "Q05",
@@ -239,9 +240,9 @@
   ],
   "classification": "PRE_G2_EVIDENCE_INTEGRITY_RECOVERY",
   "inventory_source": "runs/pre_g2_qualification_execution_08_245d4717/OBLIGATION_EXECUTION_MATRIX.json",
-  "preregistered_at": "2026-11-28T08:31:04Z",
+  "preregistered_at": "2026-11-28T09:33:39Z",
   "run_id": "ec_w3_12_evidence_integrity_recovery",
   "schema": "eqo.mapped_des_prereg.v2",
-  "source_sha_at_prereg": "3fcd7241369f21d4676ec9d980eb4cbf6bb8550d",
+  "source_sha_at_prereg": "45ec0124588f3cb892ff5d217f02e8356be7c348",
   "ticket": "governance/tickets/T-IGX-095-A.md"
 }

@@ -315,24 +315,27 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description="EC-W3-12 semantic evidence runner")
     parser.add_argument("--source-root", type=Path, default=None)
-    parser.add_argument("--run-root", type=Path, default=RUN_ROOT)
+    parser.add_argument("--run-root", type=Path, default=None)
     parser.add_argument("--qualification-sha", type=str, default=None)
     parser.add_argument("--write-prereg", action="store_true")
     parser.add_argument("--manifests-only", action="store_true")
     parser.add_argument("--batch", type=str, default=None)
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
-    global RUN_ROOT, REPO_ROOT  # noqa: PLW0603
-    RUN_ROOT = args.run_root.resolve()
+    run_root = (args.run_root or Path(__file__).resolve().parent).resolve()
     ctx = resolve_execution_context(
         source_root=args.source_root,
-        run_root=RUN_ROOT,
+        run_root=run_root,
         qualification_sha=args.qualification_sha,
     )
-    REPO_ROOT = ctx.repo_root
+    import sys as _sys
+
+    _mod = _sys.modules[__name__]
+    _mod.RUN_ROOT = ctx.run_root
+    _mod.REPO_ROOT = ctx.repo_root
     if args.write_prereg:
         _write_prereg()
         return 0
-    if not (RUN_ROOT / "DES_PREREG.json").is_file():
+    if not (ctx.run_root / "DES_PREREG.json").is_file():
         _write_prereg()
     write_static_manifests(
         qualification_sha=ctx.qualification_sha,
@@ -341,11 +344,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.manifests_only:
         return 0
-    env_manifest = json.loads((RUN_ROOT / "ENVIRONMENT_MANIFEST.json").read_text(encoding="utf-8"))
+    env_manifest = json.loads((ctx.run_root / "ENVIRONMENT_MANIFEST.json").read_text(encoding="utf-8"))
     if not env_manifest.get("fastmcp_import_ok"):
         print("ENVIRONMENT_BLOCKER: fastmcp not importable", file=sys.stderr)
         return 2
-    prereg = json.loads((RUN_ROOT / "DES_PREREG.json").read_text(encoding="utf-8"))
+    prereg = json.loads((ctx.run_root / "DES_PREREG.json").read_text(encoding="utf-8"))
     batch_results = []
     for batch in prereg["batches"]:
         if args.batch and batch["id"] != args.batch:
@@ -359,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
                 qualification_tree=ctx.qualification_tree_sha,
             )
         )
-    manifest_path = RUN_ROOT / "RUN_MANIFEST.json"
+    manifest_path = ctx.run_root / "RUN_MANIFEST.json"
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     else:
