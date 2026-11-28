@@ -10,7 +10,7 @@ Tests only, no product path: not ACT-N11 sensitive; outside the EBH-7 identity a
 
 ## Plan digest
 
-Plan digest: 204146325aaf01b8a1eda7e391b40f4f1dea2d4a4706078bcc87b69a10e285f9
+Plan digest: b434679cdc9be69d755cda28234a4e543605cd5122ae617800c0f70456dc2707
 
 Previous plan digest (revision 3 / pre OD-AF-W3-FC3-F-01): 60d2a16a20e23b167bcfebfe7977b72d869e26b09512904d630e93d8c5d303cf
 
@@ -179,3 +179,263 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-CORRECTIVE-01`
 | PT-Q02 / FRZ promotion | NONE |
 
 **Note:** RED corrective assertions landed before detector GREEN in separate commits on `development`; approval line unchanged (Operator-only).
+
+
+## Checkpoint — AF-W3-PT-FC3-F-CORRECTIVE-02 (2026-11-28)
+
+Execution session: INTEGRAX | ARCH-FREEZE | W3 | PT-FC3-F | AF-W3-PT-FC3-F-CORRECTIVE-02.
+SESSION_NAME_APPLIED=NO: cursor-app-control.rename_chat unavailable; the Codex equivalent
+returned a truncated title, confirmed by read_thread. The exact required name was provided
+inline for manual setting; no exact-title application is claimed.
+Base: 36ff100d313ddb5e209d3b3e4f9901d728208e6e. Authorization: OD-AF-W3-FC3-F-01 variant A.
+Implementation/qualification evidence only; personal approval PENDING, lifecycle draft, PT-Q02 PENDING.
+
+The Operator explicitly authorized one exception after the first RED: correct only the overly strict
+global AST equality assertion, preserve semantics and Pyright 0, and document new RED/GREEN.
+The corrected test normalizes exactly the pre-existing typing-only const_ref guard and compares all
+30 original function ASTs. The guard is semantically identical because unresolved is returned only
+for ast.Name; the test also checks this fact. All other assertions are unchanged.
+
+Initial RED: db82ca86db0b846a3e5aa8c1925a9a2f542cbeb0; test blob
+72d9b2408c1392125c4ef4dc51f13c1426b95736; exit 1; 49 failed, 63 passed;
+log SHA256 8fee8f696ebbe85ab596da7439412169327f6601b2c2386022f3d61ab8407031.
+An earlier collection SyntaxError was discarded and is not mechanism-aligned RED evidence.
+
+Refreshed RED: 0682143083d107e5afcd6e28a5601334a4445cab; test blob 26eaa88f3a439b1f0e083fa81fa98c1e01beaf46; exit 1;
+log SHA256 fb0305c5c0e9707e7e1caf461538af8d2b6417752e3ed69b978eb18090b21f5c.
+RED started at 0682143083d107e5afcd6e28a5601334a4445cab; ended at 367cbbabd3264e329d411f043e675c2dd08a3c5e after a concurrent foreign
+adapter setup commit. The CONFIG-X tree is identical across both SHAs (git diff exit 0).
+JUnit start timestamp 2026-11-28T11:16:17.509563+01:00; foreign commit timestamp 2026-11-28T11:19:48+01:00.
+The original post-execution SHA record is retained; its start/end identity was explicitly settled.
+GREEN execution: 460982a4e347923927fdd5d3c2a03727153f4954; test blob 26eaa88f3a439b1f0e083fa81fa98c1e01beaf46; exit 0;
+log SHA256 4db3735a3f87ac4d3582a83a4eb8b4c98e8d6ad238fca83657b56c9893a99acf. Test blob identity: TRUE.
+Full batch: 226 passed, 0 failed, 0 skipped.
+Ruff exit=0; Ruff format --check exit=0;
+Pyright exit=0 (0 errors, 0 warnings, 0 informations).
+All tests used D:/Projekty/_wt/_locks/pytest.lock, serial execution.
+
+Actual RED/GREEN summaries:
+
+```text
+================== 48 failed, 64 passed in 358.67s (0:05:58) ==================
+================= 226 passed, 2 warnings in 487.05s (0:08:07) =================
+```
+
+Actual RED assertions:
+
+```text
+test_corrective_lab[LAB-08]
+AssertionError: []
+assert not [] is False
+
+test_corrective_validation[VAL-06]
+AssertionError: [Fc3VendorDefaultFinding(repo_path='synthetic/validation.py', enclosing_symbol='f', semantic_field='_LAB_X', expression='_LAB_X', normalized_expression='_LAB_X', resolved_vendor_value='inmemory', detection_mechanism='lab_named_constant', disposition=<Fc3VendorDisposition.VALIDATION_ONLY: 'validation_only'>, source_line=5, detail='validation_only_lab_load')]
+assert False
+ +  where False = all(<generator object test_corrective_validation.<locals>.<genexpr> at 0x0000029CB0E0F440>)
+
+test_corrective_identity[ID-05]
+assert True is False
+ +  where True = any(<generator object test_corrective_identity.<locals>.<genexpr> at 0x0000029CB0B9C2B0>)
+
+test_corrective_lab_imports[LABIMPORT-03]
+AssertionError: ()
+assert 0 == 1
+ +  where 0 = len(())
+
+test_corrective_environment[ENV-02]
+AssertionError: assert [] == [('f', 'provi...ing_literal')]
+
+  Right contains one more item: ('f', 'provider', 'ollama', 'env_get_default:string_literal')
+
+  Full diff:
+  + []
+  - [
+  -     (...
+
+  ...Full output truncated (6 lines hidden), use '-vv' to show
+```
+
+MULTI-07 originally raised SyntaxError from the deliberately invalid input source;
+that exception is not claimed as mechanism-aligned assertion RED. Its final acceptance
+executes the same evaluator and explicitly checks ok is False. Counter was already
+implemented and the baseline GREEN controls are retained without fabricated RED.
+
+### Mandatory acceptance cases (87)
+
+| Case | Exact pytest node ID | Expected | Actual | Result |
+|---|---|---|---|---|
+| LAB-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-01] | Exempt | Exempt | PASS |
+| LAB-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-02] | Refused | Refused | PASS |
+| LAB-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-03] | Exempt | Exempt | PASS |
+| LAB-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-04] | Refused | Refused | PASS |
+| LAB-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-05] | Exempt | Exempt | PASS |
+| LAB-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-06] | Refused | Refused | PASS |
+| LAB-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-07] | Refused | Refused | PASS |
+| LAB-08 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-08] | Refused | Refused | PASS |
+| LAB-09 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-09] | Refused | Refused | PASS |
+| LAB-10 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-10] | Refused | Refused | PASS |
+| LAB-11 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-11] | Refused | Refused | PASS |
+| LAB-12 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-12] | Refused | Refused | PASS |
+| LAB-13 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab[LAB-13] | Exempt | Exempt | PASS |
+| VAL-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-01] | VALIDATION_ONLY | VALIDATION_ONLY | PASS |
+| VAL-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-02] | VALIDATION_ONLY | VALIDATION_ONLY | PASS |
+| VAL-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-03] | Refused | Refused | PASS |
+| VAL-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-04] | Refused | Refused | PASS |
+| VAL-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-05] | Refused | Refused | PASS |
+| VAL-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-06] | Refused | Refused | PASS |
+| VAL-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-07] | Refused | Refused | PASS |
+| VAL-08 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-08] | Refused | Refused | PASS |
+| VAL-09 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-09] | Refused | Refused | PASS |
+| VAL-10 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-10] | Refused | Refused | PASS |
+| VAL-11 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_validation[VAL-11] | Refused | Refused | PASS |
+| ID-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-01] | Identity | Identity | PASS |
+| ID-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-02] | Identity | Identity | PASS |
+| ID-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-03] | Identity | Identity | PASS |
+| ID-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-04] | Identity | Identity | PASS |
+| ID-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-05] | Refused | Refused | PASS |
+| ID-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-06] | Refused | Refused | PASS |
+| ID-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-07] | Refused | Refused | PASS |
+| ID-08 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-08] | Refused | Refused | PASS |
+| ID-09 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-09] | Refused | Refused | PASS |
+| ID-10 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_identity[ID-10] | provider=ollama detected | provider=ollama detected | PASS |
+| MULTI-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-01] | ok=True | ok=True | PASS |
+| MULTI-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-02] | ok=False | ok=False | PASS |
+| MULTI-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-03] | ok=False | ok=False | PASS |
+| MULTI-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-04] | ok=False | ok=False | PASS |
+| MULTI-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-05] | ok=False | ok=False | PASS |
+| MULTI-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-06] | ok=False | ok=False | PASS |
+| MULTI-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_multiset[MULTI-07] | ok=False | ok=False | PASS |
+| LABIMPORT-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-01] | LAB_REFUSED; ollama; resolved | LAB_REFUSED; ollama; resolved | PASS |
+| LABIMPORT-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-02] | LAB_REFUSED; ollama; resolved | LAB_REFUSED; ollama; resolved | PASS |
+| LABIMPORT-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-03] | LAB_REFUSED; ollama; resolved | LAB_REFUSED; ollama; resolved | PASS |
+| LABIMPORT-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-04] | LAB_REFUSED; ollama; resolved | LAB_REFUSED; ollama; resolved | PASS |
+| LABIMPORT-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-05] | LAB_REFUSED; unresolved | LAB_REFUSED; unresolved | PASS |
+| LABIMPORT-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-06] | __all__ export refused | __all__ export refused | PASS |
+| LABIMPORT-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-07] | unresolved outside-scope included | unresolved outside-scope included | PASS |
+| LABIMPORT-08 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_lab_imports[LABIMPORT-08] | one unguarded load refused | one unguarded load refused | PASS |
+| CAT-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-01] | custom entry preserved | custom entry preserved | PASS |
+| CAT-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-02] | full snapshot identical | full snapshot identical | PASS |
+| CAT-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-03] | revision/generation unchanged | revision/generation unchanged | PASS |
+| CAT-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-04] | bootstrap flag unchanged | bootstrap flag unchanged | PASS |
+| CAT-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-05] | parent state preserved on child failure | parent state preserved on child failure | PASS |
+| CAT-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-06] | deterministic repeated derivation | deterministic repeated derivation | PASS |
+| CAT-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_catalog[CAT-07] | state preserved in actual test order; reset fixture absent | state preserved in actual test order; reset fixture absent | PASS |
+| ENV-01 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-01] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-02 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-02] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-03 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-03] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-04 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-04] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-05 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-05] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-06 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-06] | f/provider/ollama/env_or_fallback:string_literal | f/provider/ollama/env_or_fallback:string_literal | PASS |
+| ENV-07 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-07] | f/provider/ollama/env_or_fallback:string_literal | f/provider/ollama/env_or_fallback:string_literal | PASS |
+| ENV-08 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-08] | C/provider/ollama/env_get_default:string_literal | C/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-09 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-09] | <module>/provider/ollama/env_get_default:string_literal | <module>/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-10 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-10] | f/provider/ollama/env_get_default:string_literal | f/provider/ollama/env_get_default:string_literal | PASS |
+| ENV-11 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-11] | f/mode/none/positional_default:string_literal | f/mode/none/positional_default:string_literal | PASS |
+| ENV-12 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-12] | f/channel/stub/keyword_only_default:string_literal | f/channel/stub/keyword_only_default:string_literal | PASS |
+| ENV-13 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-13] | no finding | no finding | PASS |
+| ENV-14 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-14] | no finding | no finding | PASS |
+| ENV-15 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-15] | no canonical enum finding | no canonical enum finding | PASS |
+| ENV-16 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-16] | f/mode/none/positional_default:enum_member | f/mode/none/positional_default:enum_member | PASS |
+| ENV-17 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-17] | ollama local enum; second module unresolved | ollama local enum; second module unresolved | PASS |
+| ENV-18 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-18] | backend=log; channel=stub; <return:4>=none | backend=log; channel=stub; <return:4>=none | PASS |
+| ENV-19 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_corrective_environment[ENV-19] | one outer.inner/provider/ollama finding | one outer.inner/provider/ollama finding | PASS |
+| NT-FC3-CX1 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx1_os_getenv_vendor_default | environment default detected | environment default detected | PASS |
+| NT-FC3-CX2 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx2_enum_class_field_default | enum field detected | enum field detected | PASS |
+| NT-FC3-CX3 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx3_os_environ_get_enum_value | enum environment default detected | enum environment default detected | PASS |
+| NT-FC3-CX4 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx4_module_level_selector_scanned | resolve_settings/provider/ollama/env_get_default:string_literal | resolve_settings/provider/ollama/env_get_default:string_literal | PASS |
+| NT-FC3-CX5 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx5_semantic_parameter_defaults_including_positional_only | mode=none; backend=log; channel=stub; required provider absent | mode=none; backend=log; channel=stub; required provider absent | PASS |
+| NT-FC3-CX6 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx6_catalog_slug_vs_non_slug | provider ollama detected; provider non-vendor absent | provider ollama detected; provider non-vendor absent | PASS |
+| NT-FC3-CX7 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx7_repo_scoped_gate_expected_residual_inventory | ok=True; exact three residuals | ok=True; exact three residuals | PASS |
+| NT-FC3-CX8 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx8_synthetic_embedding_vendor_default_refused | mutated real profile.py; evaluator ok=False | mutated real profile.py; evaluator ok=False | PASS |
+| NT-FC3-CX9 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx9_guarded_lab_constant_not_blocking | Exempt | Exempt | PASS |
+| NT-FC3-CX10 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx10_unguarded_lab_constant_blocking | Refused | Refused | PASS |
+| NT-FC3-CX11 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx11_mixed_guarded_and_unguarded_lab_loads | unguarded local load and actual cross-module import refused | unguarded local load and actual cross-module import refused | PASS |
+| NT-FC3-CX12 | tests/qualification/config_x/test_config_x_fc3_vendor_slug_defaults.py::test_nt_fc3_cx12_unguarded_default_in_lab_named_module | stub detected without path exemption | stub detected without path exemption | PASS |
+
+### Qualification and outside scope
+
+Scoped gate ok=True; expected residual multiset match=True;
+three residuals, unexpected=0. No expected-residual expansion.
+Global semantic-I blockers=[]; named-constant blind spots=[];
+unclassified provider surfaces=[].
+
+| Path:line | Symbol | Field | Expression | Value | Mechanism | Disposition |
+|---|---|---|---|---|---|---|
+| intergrax/integrations/providers/cloud_platform/aws/adapter.py:29 | _AwsCloudPlatform | slug | "aws" | aws | class_field_default:string_literal | outside_scope_record |
+| intergrax/integrations/providers/cloud_platform/azure/adapter.py:30 | _AzureCloudPlatform | slug | "azure" | azure | class_field_default:string_literal | outside_scope_record |
+| intergrax/integrations/providers/cloud_platform/gcp/adapter.py:30 | _GcpCloudPlatform | slug | "gcp" | gcp | class_field_default:string_literal | outside_scope_record |
+
+The original regression_nodes_F.txt was not found in the tracked repository; the canonical obligations
+map to these actual executed node IDs (all passed):
+
+- tests/qualification/config_x/test_config_x_final_reconciliation_gates.py::test_frz_cfg_02_missing_integration_config_fails_closed
+- tests/qualification/config_x/test_config_x_final_reconciliation_gates.py::test_frz_cfg_05_semantic_production_selection_closed_world_zero
+- tests/qualification/config_x/test_config_x_final_reconciliation_gates.py::test_frz_cfg_06_activation_families_no_bypasses
+- tests/qualification/config_x/test_config_x_final_reconciliation_gates.py::test_frz_cfg_08_regression_protects_current_closed_world_classification
+- tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q01_concern_inventory_closed_world
+- tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q16_mechanical_concern_classification_covers_inventory
+- tests/qualification/config_x/test_config_x_qualification_gates.py::test_cx_q18_frz_cfg_05_semantic_selection_gate
+- tests/qualification/config_x/test_config_x_r1_r1_r1_semantic_constant_resolution.py::test_named_constant_localhost_resolves_to_sanctioned_on_vector_store_surface
+- tests/qualification/config_x/test_config_x_r1_r1_r1_semantic_constant_resolution.py::test_named_constant_localhost_unsanctioned_surface_is_hard_coded_selection
+- tests/qualification/config_x/test_config_x_r1_r1_r1_semantic_constant_resolution.py::test_unresolved_named_constant_semantic_default_is_blind_spot
+- tests/qualification/config_x/test_config_x_adversarial_cx_gates.py::test_cx_a_missing_required_integration_config_fails_closed
+
+NT-CFG-08: tests/unit/architecture/test_nt_ent_iso_red_first_probes.py::test_nt_cfg_08_embedding_profile_must_not_hardcode_provider_getenv_default — passed.
+The final batch included complete CONFIG-X plus inbound, embedding, vectorstore and vision behavioral controls.
+
+### Governance integrity
+
+Previous current ticket digest: 204146325aaf01b8a1eda7e391b40f4f1dea2d4a4706078bcc87b69a10e285f9; preserved here as history.
+Actual plan digest before BOM removal: 66ee11930a45177ced36e4a4fdf8d9acfa973a57fb3e713e2a8c64b96d32c101.
+Current plan digest: b434679cdc9be69d755cda28234a4e543605cd5122ae617800c0f70456dc2707. Only BOM removed; amendments retained, no new plan amendment.
+Two real build_rw_plan.py runs: semantic reproducibility=True.
+Canonical owner/negative bindings, merge order, hard predecessors, serialization and OP-B inventory retained.
+Historical generator metadata correction: [{"frz_id": "FRZ-BND-06", "before": [{"nt_id": "NT-BND-06-1", "node": "tests/unit/architecture/test_rw_gates_transport_semantics.py", "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.", "owner_ticket": "T-IGX-043-J", "file_state_at_pin": "exists"}], "after": [{"nt_id": "NT-BND-06-1", "node": "tests/unit/architecture/test_rw_gates_transport_semantics.py", "mechanism": "A hosting, queue, MCP or HTTP transport adapter that constructs or interprets a RuntimeEvent turns the transport-semantics gate red. GREEN with AF-W3-PT-FC3-F-CORRECTIVE-01 (28 tests; F01–F08 closed) The versioned plan v21 row table assigns this file to node T-AF2-RW-GATES; the matrix inventory owner is T-IGX-043-J. The file is not in the write set extracted for T-IGX-043-J; the owner plan has to add it.", "owner_ticket": "T-IGX-043-J", "file_state_at_pin": "absent"}]}].
+
+Source digests checked=38;
+matched=37;
+mismatched=1.
+Unauthorized historical mismatch not refreshed:
+- continuation/RED_FIRST_GA2R_RESULT.md: expected 9adf3e0b09a2dc8aa60663afe523cae76d4c6adefba79cf4a16028795e361cae; actual b9cdc341832a00810afdbb51a7de14a0277728b9a8c48df750fdeb2e5e927c2f
+
+phase check3 exit=0; pre-G2 exit=1 (11 OP-B);
+traceability exit=0; igx_gov ticket exit=0.
+Governance console recovery: Both builds completed and governance.py passed first==second (excluding generated_at), then completed all child validators. Console printing of ticket output raised UnicodeEncodeError after its actual exit 0 and after persisting the raw log. No validator/test was rerun for recovery.
+
+```text
+phase:
+PLAN_STRUCTURE=PASS
+CODE_FIX_OWNERSHIP=39/39
+NAMED_NEGATIVE_TESTS=39/39
+RED_FIRST_EVIDENCE=INCOMPLETE
+RW_PLAN_AUDIT=NOT_PERFORMED
+CHECK3_STRUCTURE_GREEN=YES
+
+pre_g2:
+PRE_G2_OP_B_SETTLEMENT=FAIL
+PLAN_STRUCTURE=PASS
+CODE_FIX_OWNERSHIP=39/39
+NAMED_NEGATIVE_TESTS=39/39
+RED_FIRST_EVIDENCE=INCOMPLETE
+RW_PLAN_AUDIT=NOT_PERFORMED
+CHECK3_STRUCTURE_GREEN=YES
+
+traceability:
+[OK] verify_arch_freeze_plan_traceability: all checks passed
+
+ticket:
+PASSED job=push-fast (3.9s)
+PASS  push-fast                     exit=0  3.9s
+[INFO] igx_gov ticket: OK
+```
+
+Historical FRZ-CFG-08 red-first and F-A2 artifact identity mismatch retained; F-A2 was not repeated.
+Personal approval belongs to governance/tickets/T-IGX-043-F.md, section ## Approved,
+format: Approved: operator @ <ISO8601 timestamp with timezone offset>. No signature written.
+
+Preserved state: RED_AT_PREFIX=22; EVIDENCE_MISSING=11; RED_FIRST_OUT=5;
+RED_FIRST_LATER_WAVE=1; OP_B_PENDING=11; RED_FIRST_EVIDENCE=INCOMPLETE;
+FRZ_EXE_02=EVIDENCE_MISSING; FRZ_PLG_05=EVIDENCE_MISSING; STRICT_HOST_AUTHORITY=OPEN_RESIDUAL;
+SCOPE=CLOSED; PT_Q02=PENDING; G2=OPEN; RB2=NOT_PERFORMED; FRZ_PROMOTION=NONE.
+
+MANUAL_ATTACHMENT_REQUIRED=NO. No independent PASS or FRZ promotion is claimed.

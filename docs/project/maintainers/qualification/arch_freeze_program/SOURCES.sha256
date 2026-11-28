@@ -46,13 +46,13 @@ e20a2b263460c989a5cd2e213b56c97ff24e8f3c11ce2fdfc9f34159eda8d68a  known_red_regi
 # digest refreshed 2026-11-26 (T-IGX-078-A); records content, not approval. Previous c458c854 was stale at base: changed by ebe45c269 and 3bb5fefb4.
 # added 2026-11-27 (T-IGX-078-B, RW-PLAN-AUDIT finding L9): RW plan, its reviewed input, binding record and GA.2R red-first record.
 # Digests record content, not approval. RW_PLAN.md and rw_plan.v1.json are generator output: refresh both entries after every regeneration.
-071eb437dd3b8d5135467f711463a0f0bd4932af1e385e822b876638389cc78e  RW_PLAN.md
+b3b71a9cacb47bdd9152199181f6ef1bdb50a3b7e2d52881afc6afada7346c91  RW_PLAN.md
 # refreshed AF-W2-GATE-BIND-01; was c4e93a940ffd1f36b0c798375533974d7f02ec271b35710fbe05bb49da25f157
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-5eda95ff0e0a8ba8f4dd67c5ecd98d92941651f2abcd729a9d5cfdd994e109f2  rw_plan.v1.json
+26c6922c345cfb5f218f860baa1fbb797f99e70a60157c99c976f8be111621d2  rw_plan.v1.json
 # refreshed AF-W2-GATE-BIND-01; was 28039dfa703293458d4c6559909f19df2c79e30d5facd17d262ce91c16765cea
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
-89d2d0f6ec783df310f3fc93272583af812003f5ee1bbe5d5f983eedf16c3888  rw_plan_bindings.v1.json
+a2212fe7f7f6f3e12e49c341e50eb2fce948350976c00da8d14fd24e2196656b  rw_plan_bindings.v1.json
 # refreshed AF-W2-GATE-BIND-01; was bc1754618c2a43e05c12f4fd73dd128b6a9a345f2660d5b4aebfb749f993cd6c
 # digest refreshed 2026-11-27 (AF-W2-CLOSURE-03)
 d8815f3f66ba3309894fefaa2dea09b371a0e2513702a5404042d69011b83d11  rw_plan_binding_record/INDEX.md

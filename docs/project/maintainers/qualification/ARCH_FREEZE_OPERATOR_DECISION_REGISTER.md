@@ -176,3 +176,15 @@ OD-AF-23 was decided on 2026-11-26; its row stays in this table to keep row hist
 MEP-AF2 v2.1 section M1 lists the following as decided, to be published as record-only: OD-PDC-X-CLOSE, OD-ROUTE-DS3, OD-QUALX-ACCEPT-2026-11-07, IIAC-OD-PDC-X-P8-ACT-N11, the Path B authorization of 2026-10-22 (with DP-34/DP-35) and OD-PDC-ARCHF-01. ("C10/C15 kept" is recorded through DP-62 in the DS-6 row above.) Their text was not part of the source files used for this batch, so no rows are written for them yet and no status is asserted here.
 
 Other items stay open by design: per-wave ticket `Approved:` lines and every AR/AB authorization not listed above.
+
+
+### Execution evidence — AF-W3-PT-FC3-F-CORRECTIVE-02 (2026-11-28)
+
+Under OD-AF-W3-FC3-F-01 variant A, the Operator explicitly allowed correction of the
+overly strict global AST comparison assertion after RED, preserving semantics and Pyright 0.
+The refreshed immutable RED is 0682143083d107e5afcd6e28a5601334a4445cab; qualified implementation execution is 460982a4e347923927fdd5d3c2a03727153f4954.
+The same test blob 26eaa88f3a439b1f0e083fa81fa98c1e01beaf46 was executed at both.
+Full details and the 87-case matrix are in governance/tickets/T-IGX-043-F.md,
+checkpoint AF-W3-PT-FC3-F-CORRECTIVE-02. Personal approval remains PENDING in ## Approved;
+PT-Q02 remains PENDING; FRZ promotion NONE. This records execution evidence and the explicit test
+exception, without changing architecture, authority, gate scope, DAG or existing decision status.
