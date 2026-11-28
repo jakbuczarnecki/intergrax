@@ -179,6 +179,12 @@ _SQLITE_TOUCHPOINTS: Final[tuple[SqliteTouchpointRecord, ...]] = (
         "",
     ),
     SqliteTouchpointRecord(
+        "intergrax/runtime/adaptive/agent_design_search/sqlite_archive.py",
+        SqliteTouchpointClassification.INTERNAL,
+        None,
+        "ADAS W1 LAB candidate archive — no production persistence authority",
+    ),
+    SqliteTouchpointRecord(
         "intergrax/agent_distribution/sqlite_stores.py",
         SqliteTouchpointClassification.FIXED_SUBSTRATE,
         "platform.single_node_profile_v1.sqlite_triad",
