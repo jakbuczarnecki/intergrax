@@ -2,8 +2,8 @@
 **Program bridge (architecture ratified under OD-INTELLIGENCE-01):** [`../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (`INTELLIGENCE-X`) maps this reference vision to roadmap qualification gates, reference workloads (REF-II-01..06), and acceptance criteria — complete runtime implementation and qualification **not established**.
 # Ideal Harness AI Architecture
 
-**Status:** reference document (target architecture)  
-**Purpose:** a benchmark for evaluating Integrax implementation against the target Harness AI model  
+**Status:** reference document (target architecture)
+**Purpose:** a benchmark for evaluating Integrax implementation against the target Harness AI model
 **Scope:** operating-system-grade architecture for agents, from LLMs and policies to observability and reliability
 
 ---
@@ -419,7 +419,7 @@ Score each area from 0 to 4:
 - Developer Experience
 - Testing/Quality Engineering
 
-`Global score = min(critical areas) + average(all areas)`  
+`Global score = min(critical areas) + average(all areas)`
 Critical areas: Policy/Governance, Reliability/Runtime, Observability/Operations.
 
 ### 12.3 Compliance rule

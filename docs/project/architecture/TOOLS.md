@@ -513,9 +513,9 @@ Unified Execution Boundary integration; resolve `bounded_react` vs UAEP loop own
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Clear Tool / Skill / Integration separation; stable `ToolContract` + `ToolRuntime`; layered selection/policy/invocation architecture; adjacent-domain boundaries validated; side-effect and governance boundaries documented honestly.
@@ -581,11 +581,11 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 
 ---
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 11  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 11
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Last updated:** 2026-08-26 - **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
 
@@ -974,8 +974,8 @@ Resolution: `resolve_invocation_pattern` in `tool_invocation_pattern.py` · runt
 
 ### Phase TOOL-PRODUCT-ROI - Catalog extension by product value (Planned)
 
-**Status:** Architecture & plan only - **not shipped**  
-**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) - Phase TOOL-PRODUCT-ROI  
+**Status:** Architecture & plan only - **not shipped**
+**Plan (1:1):** [`plan/TOOLS.md`](../maintainers/plans/TOOLS.md) - Phase TOOL-PRODUCT-ROI
 **Policy:** One implementation ID per PR; register planned `tool_id`s only in matching task PRs.
 
 **Purpose:** Extend the mature tool catalog (**200 shipped `tool_id`s**, **49** bundles, Full Harness LC **Done**) with **missing, high-ROI tools** for coding agents and change-audit agents - **not** general-purpose catalog padding. Existing families (RAG, filesystem, workspace, database, websearch, observability, eval, HITL, workflow, etc.) remain sufficient; add only gaps that improve **repository understanding** and **change safety**.

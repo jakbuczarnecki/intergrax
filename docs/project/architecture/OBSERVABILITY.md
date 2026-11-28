@@ -1134,12 +1134,12 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) - LKW Core Platf
 
 ## Maintainer metadata
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 21, 30  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 21, 30
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Last updated:** 2026-08-26 - UE-DOC-0.6 identity/DIAG alignment with frozen UEA · DIAG-5C-A-R1 preserved · TRACE-BITEMP-3 K-only **Done** · TRACE-ASOF-2 **Done** · TRACE-BITEMP-2 provider **Planned / In Review** · TRACE-1C **Done**
 
 ## Cursor read scope (token budget)
@@ -2512,7 +2512,7 @@ Metrics are **third** in priority (canon §42.24): derived from events/trace, no
 ## 5. Canonical execution identity (TRACE-ARCH-SYNC-1 · UE-DOC-0.6)
 
 **Status:** Frozen five-ID hierarchy **CURRENT** on canonical `RuntimeEvent` (UEA + `runtime_event.py`) · emit-path certification **OBS-COVERAGE-1** · TRACE-1A–1C event spine **Done / Closed**
-**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) - Phase TRACE  
+**Plan:** [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) - Phase TRACE
 **Cross-layer:** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.8 (identity ownership)
 
 ### 5.1 Identity hierarchy

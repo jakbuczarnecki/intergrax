@@ -387,9 +387,9 @@ Token Optimization consumes tokenizer-consistent counts, context window, usage e
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Stable provider-neutral ABI; routing/catalog/failover model; adjacent-domain boundaries; extension model documented; ADR-LLM-001..003; provider limitations represented in conformance and audit register.
@@ -456,13 +456,13 @@ Retry, failure classification, recovery and HITL semantics beyond what this docu
 
 ## Engineering canon
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Last updated:** 2026-08-26 - **UE-DOC-0.8** streaming semantics alignment with frozen UEA
-**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)  
+**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)
 **ADR:** [ADR-LLM-001](../technical/adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../technical/adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog) · [ADR-LLM-003](../technical/adr/entries/2026-06-19/ADR-LLM-003.md) (routing rules)
 
 ### Cursor read scope (token budget)
@@ -556,7 +556,7 @@ for tc in completion.tool_calls:
     plan_args = tc.arguments_json
 ```
 
-Build helpers: `intergrax/llm_adapters/_shared/adapter_response_builders.py`.  
+Build helpers: `intergrax/llm_adapters/_shared/adapter_response_builders.py`.
 Call lifecycle: `LLMCallLifecycle` in `intergrax/llm_adapters/_shared/call_lifecycle.py`.
 
 ### Trace and replay bridge (M-LLM-R.7.2)

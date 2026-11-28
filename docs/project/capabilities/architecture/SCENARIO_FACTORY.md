@@ -1,9 +1,9 @@
 # Scenario Factory — architecture (multi-layer feature)
 
-**Status:** **Proposed** — documentation only; no product code. Implementation (SFX-P5+) is gated by `ARCH-FREEZE` = CLOSED and `GATE-SFX-ENTRY`.  
-**Pair:** [plan/SCENARIO_FACTORY.md](../plan/SCENARIO_FACTORY.md)  
-**Stage:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory · roadmap `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY` ([roadmap](../../maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3, §3.0.7b)  
-**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12) — this page is a summary; the SSOT wins on any difference.  
+**Status:** **Proposed** — documentation only; no product code. Implementation (SFX-P5+) is gated by `ARCH-FREEZE` = CLOSED and `GATE-SFX-ENTRY`.
+**Pair:** [plan/SCENARIO_FACTORY.md](../plan/SCENARIO_FACTORY.md)
+**Stage:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory · roadmap `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY` ([roadmap](../../maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3, §3.0.7b)
+**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12) — this page is a summary; the SSOT wins on any difference.
 **Dossier:** [`SFX_INDEX.md`](../../maintainers/qualification/scenario_factory_x/SFX_INDEX.md)
 **Public overview (reader-facing, planned status):** [`overview/SCENARIO_FACTORY.md`](../../overview/SCENARIO_FACTORY.md)
 

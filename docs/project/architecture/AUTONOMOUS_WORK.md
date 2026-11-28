@@ -717,7 +717,7 @@ Autonomous work needs risk-aware capability growth.
 
 Normative direction:
 
-> **SELF-EXTENDING CAPABILITY: conditionally allowed.**  
+> **SELF-EXTENDING CAPABILITY: conditionally allowed.**
 > **SELF-EXTENDING AUTHORITY: forbidden.**
 
 See [extended depth — A0–A4 capability autonomy tiers](satellites/AUTONOMOUS_WORK_extended_depth.md#a0-a4-capability-autonomy-tiers) for per-tier isolation, governance, HITL and persistence rules.
@@ -1046,8 +1046,8 @@ Minimum metrics:
 
 ## Product vocabulary
 
-Canonical technical domain: **Autonomous Work**.  
-Primary product abstraction: **Virtual Worker**.  
+Canonical technical domain: **Autonomous Work**.
+Primary product abstraction: **Virtual Worker**.
 Future multi-worker product/cross-layer positioning: **Virtual Workforce**.
 
 Use `Virtual Employee` only as explanatory market language where useful; do not make it the canonical type/domain name.

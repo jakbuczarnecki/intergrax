@@ -164,9 +164,9 @@ Tier routing via `RagProfile` is **cost/latency routing**, not autonomous MIME-b
 
 ## Current maturity
 
-Architecture maturity: **A5**  
-Implementation maturity: **I4**  
-Production readiness: **P3**  
+Architecture maturity: **A5**
+Implementation maturity: **I4**
+Production readiness: **P3**
 Evidence maturity: **E4**
 
 - **A5** - Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants - global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below). Protocol v2 audit (2026-08-18) documents **accepted residual contract gaps** on canonical `RetrievalService` scope authority, `RetrievalHit` ABI enforcement, and resource-policy validation - target invariants in [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18); **not** a maturity-axis downgrade of bounded qualification evidence.

@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multi-layer Feature Documentation
 
-**Status:** Canonical documentation structure  
+**Status:** Canonical documentation structure
 **Purpose:** Document cross-layer Intergrax capabilities that cut across multiple architecture domains while preserving the existing `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` 1:1 layer rule.
 
 ---

@@ -349,9 +349,9 @@ Catalog size proves composition-model scale - not P4/E4 platform maturity.
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Clear Skill / Tool / Agent / Integration boundary; stable `SkillManifest`; catalog vs registry vs profile split; deterministic resolver; dependency semantics; plugin/import model; adjacent-domain boundaries validated.
@@ -446,13 +446,13 @@ The sibling stores that still return a literal `True` for `is_durable` (profile 
 
 ---
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-08-20 - Protocol v2 SKILLS audit target invariants; gate-tested **153** skills · **43** bundles (authoritative register); SK-BRIDGE helpers partial  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**  
-**Audit layers:** 12  
+**Status:** Canonical architecture (domain pair 1:1)
+**Last updated:** 2026-08-20 - Protocol v2 SKILLS audit target invariants; gate-tested **153** skills · **43** bundles (authoritative register); SK-BRIDGE helpers partial
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**
+**Audit layers:** 12
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 
 ## Cursor read scope (token budget)
@@ -546,7 +546,7 @@ Agent bind time (Tier-1)
 | Prompt/policy bridge | `applications/_shared/skill_bridge_wiring.py` | `skill_prompt_metadata`, `merge_skill_policy_fragments` (helpers) |
 | Dynamic selection | `applications/_shared/skill_selection_wiring.py` | `resolve_skill_selection_hook()` |
 
-**Shipped bundles (43):** `agent`, `billing`, `browser`, `cache`, `catalog`, `cloud_platform`, `code`, `codecraft`, `collaboration`, `context`, `cost`, `crm`, `data`, `dev`, `eval`, `filesystem`, `gitlab`, `graph`, `harness`, `health`, `hitl`, `http`, `identity`, `interaction`, `jira`, `knowledge`, `legal`, `local`, `memory`, `message_bus`, `metrics`, `ml`, `modality`, `notify`, `openai`, `ops`, `platform`, `rag`, `research`, `sandbox`, `storage`, `vector_store`, `workspace` - registered via `skills/registry/shipped_plugins.py`.  
+**Shipped bundles (43):** `agent`, `billing`, `browser`, `cache`, `catalog`, `cloud_platform`, `code`, `codecraft`, `collaboration`, `context`, `cost`, `crm`, `data`, `dev`, `eval`, `filesystem`, `gitlab`, `graph`, `harness`, `health`, `hitl`, `http`, `identity`, `interaction`, `jira`, `knowledge`, `legal`, `local`, `memory`, `message_bus`, `metrics`, `ml`, `modality`, `notify`, `openai`, `ops`, `platform`, `rag`, `research`, `sandbox`, `storage`, `vector_store`, `workspace` - registered via `skills/registry/shipped_plugins.py`.
 `knowledge` remains **BETA**; all other shipped bundles **STABLE**.
 
 ---
@@ -602,7 +602,7 @@ wire_application_environment(manifest, env)
 | `tags` | Discovery / governance labels |
 | `requires_skills` | Other `skill_id`s merged **before** this skill (transitive; cycle → error) |
 
-Package: `intergrax/skills/core/contracts.py`  
+Package: `intergrax/skills/core/contracts.py`
 Plugin protocol: `intergrax/skills/core/plugin.py` (`SkillPlugin`, entry point `intergrax.skills`)
 
 ---

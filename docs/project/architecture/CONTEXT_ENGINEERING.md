@@ -302,9 +302,9 @@ Uniform CE path for all agentic model iterations; Execution-boundary context req
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I3**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I3**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Canonical domain pair with normative contracts (`ContextFragment`, `ContextAssemblyRequest`, assembly pipeline), [ADR-CTX-001](../technical/adr/entries/2026-06-12/ADR-CTX-001.md), mapped boundaries to Memory, RAG, and UCL; CE-EXT and CE-ALIGN closeouts ([plan](../maintainers/plans/CONTEXT_ENGINEERING.md)).
@@ -365,16 +365,16 @@ Retry, failure classification, recovery and HITL semantics beyond what this docu
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1); UCL **EPHEMERAL_ASSEMBLY** integrated per **CTX-UCL-CLOSEOUT-1**; **CTX-UCL-3** CE milestone historical - see [CE vs UCL](#context-engineering-vs-unified-context-lifecycle) chronology; **`DURABLE_COMPACTION` not implemented**  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16  
-**Audit layer:** 16 (Context Engineering)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**ADR:** [`ADR-CTX-001`](../technical/adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
-**Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) (single budget authority + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix L  
-**Third-party extension / developer guide:** [`guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) (implementation workflow) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) (catalog routing)  
-**Implementation (as-built):** `intergrax/context` · `intergrax/runtime/nexus/context` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
+**Status:** Canonical architecture (domain pair 1:1); UCL **EPHEMERAL_ASSEMBLY** integrated per **CTX-UCL-CLOSEOUT-1**; **CTX-UCL-3** CE milestone historical - see [CE vs UCL](#context-engineering-vs-unified-context-lifecycle) chronology; **`DURABLE_COMPACTION` not implemented**
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16
+**Audit layer:** 16 (Context Engineering)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+**ADR:** [`ADR-CTX-001`](../technical/adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)
+**Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) (single budget authority + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix L
+**Third-party extension / developer guide:** [`guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md) (implementation workflow) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) (catalog routing)
+**Implementation (as-built):** `intergrax/context` · `intergrax/runtime/nexus/context` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`
 **Last architecture pass:** 2026-08-26 - **UE-DOC-0.8** iterative tool feedback alignment with frozen UEA
 
 ### Cursor read scope (token budget)

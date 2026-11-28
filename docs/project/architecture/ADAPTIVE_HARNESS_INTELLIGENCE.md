@@ -469,12 +469,12 @@ Historical **W-ADAPT 70/70 Done** marks implementation-campaign completion - **n
 
 ## Engineering canon
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** L4 AHI  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** L4 AHI
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Last updated:** 2026-08-18 - DOC-3S design-system modernization; AdaptationExecutor reconciliation; A/I/P/E boundary
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
@@ -765,7 +765,7 @@ ADAS extends the profile adaptation lifecycle to **agent candidates** - scaffold
 | Mutation | No direct production agent mutation |
 | Strategy | MAS is one replaceable `AgentDesignStrategy` |
 
-**Canonical detail:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**Canonical detail:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
 **ADR:** [ADR-ADAPT-002](../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)
 
 ---

@@ -1,9 +1,9 @@
 # INTERGRAX Architecture Principles
 
-**Status:** Canonical platform governance architecture  
-**Owner:** Intergrax Platform Architecture  
-**Audience:** Platform architects, domain owners, application authors, reviewers, AI coding agents  
-**Scope:** Evolution, ownership, adoption, proof, and governance of reusable Intergrax capabilities  
+**Status:** Canonical platform governance architecture
+**Owner:** Intergrax Platform Architecture
+**Audience:** Platform architects, domain owners, application authors, reviewers, AI coding agents
+**Scope:** Evolution, ownership, adoption, proof, and governance of reusable Intergrax capabilities
 **Applies to:** All existing and future platform domains, Tier-3 applications, product roadmaps, and implementation plans
 
 ---

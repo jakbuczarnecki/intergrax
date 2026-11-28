@@ -1,7 +1,7 @@
 # Autonomous Organization Roadmap
 
-**Document type:** Program outcome roadmap (no calendar dates)  
-**Initiative SSOT:** [`AUTONOMOUS_ORGANIZATION_INITIATIVE.md`](AUTONOMOUS_ORGANIZATION_INITIATIVE.md)  
+**Document type:** Program outcome roadmap (no calendar dates)
+**Initiative SSOT:** [`AUTONOMOUS_ORGANIZATION_INITIATIVE.md`](AUTONOMOUS_ORGANIZATION_INITIATIVE.md)
 **Frozen scenarios:** [`AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md`](AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md)
 
 Roadmap entries are **outcome gates**, not release promises. Progress is measured by **qualified Scenario Proofs** and resolved **platform gaps**, not by documentation alone.

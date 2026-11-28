@@ -130,14 +130,14 @@ Gate green does **not** substitute for closed tier-enforcement qualification or 
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
+**Status:** Canonical architecture (domain pair 1:1)
 
 **Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; runtime qualification not established):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — intelligent composition of Tier-0–Tier-3 foundation mechanisms; import boundaries and tier ownership in this document remain authoritative.
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 1–2, 32  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 1–2, 32
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) - platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
 
 ### Cursor read scope (token budget)
@@ -317,8 +317,8 @@ This note describes the target state decided by the Operator. The code and gate 
 
 ### Tier-boundary enforcement qualification
 
-**Audit snapshot:** `4c92e0a08f92341f559408c234d213a8ac482d76`  
-**Verdict:** `CONDITIONALLY SOUND - ENFORCEMENT REMEDIATION REQUIRED`  
+**Audit snapshot:** `4c92e0a08f92341f559408c234d213a8ac482d76`
+**Verdict:** `CONDITIONALLY SOUND - ENFORCEMENT REMEDIATION REQUIRED`
 No confirmed current upward Tier-3 import violation was found in the audited scope.
 
 The Tier-0..3 dependency direction above remains canonical and strict. This subsection qualifies **enforcement and proof quality** only - it is **not** a redesign of the tier model.

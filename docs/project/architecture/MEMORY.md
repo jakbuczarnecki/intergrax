@@ -214,9 +214,9 @@ Execution-bound memory write policy for tool loops; explicit vs ephemeral tool-r
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Canonical domain pair with normative store/lifecycle contracts, ADRs (MEM-001, MEM-002), and mapped cross-layer boundaries (CE, RAG, UCL); Post-L3 audit baseline **32/32 L3** and AUDIT-IDEAL memory rows closed ([plan](../maintainers/plans/MEMORY.md)).
@@ -271,17 +271,17 @@ Retry, failure classification, recovery and HITL semantics beyond what this docu
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layer:** 15 (Memory)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
-**Unified lifecycle:** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) · [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) · [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) - `ConversationLedger`, `SessionContextRevision`, `OptimizationArtifactRepository`, `InMemoryOptimizationArtifactRepository` (CTX-UCL-2 reference), single-flight `ArtifactCreationReservation`, CAS activation; separates retention from model-facing compaction; reuse-before-create  
-**Related:** [`architecture/RAG.md`](RAG.md) - Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
-**Third-party extension / developer guide:** [`guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) (factory protocols, bootstrap semantics, wiring) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9 (routing)  
-**ADR:** [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layer:** 15 (Memory)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)
+**Unified lifecycle:** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) · [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) · [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) - `ConversationLedger`, `SessionContextRevision`, `OptimizationArtifactRepository`, `InMemoryOptimizationArtifactRepository` (CTX-UCL-2 reference), single-flight `ArtifactCreationReservation`, CAS activation; separates retention from model-facing compaction; reuse-before-create
+**Related:** [`architecture/RAG.md`](RAG.md) - Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.
+**Third-party extension / developer guide:** [`guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) (factory protocols, bootstrap semantics, wiring) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9 (routing)
+**ADR:** [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)
 **Last updated:** 2026-08-26 - **UE-DOC-0.8** tool-result/memory boundary alignment with frozen UEA
 
 ### Cursor read scope (token budget)
@@ -564,7 +564,7 @@ Consolidation (`SessionMemoryConsolidationService`) remains the path for **cross
 
 ## 7. Read path - context assembly (moved)
 
-> **Canonical spec:** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §7–§14.  
+> **Canonical spec:** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §7–§14.
 > This section retains a **summary** for MEMORY↔CE navigation only.
 
 ## 7.1 Read path - context assembly today (summary)
