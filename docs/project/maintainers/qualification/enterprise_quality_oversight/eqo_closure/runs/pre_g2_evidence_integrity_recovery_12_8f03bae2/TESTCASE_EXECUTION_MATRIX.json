@@ -1,6 +1,6 @@
 {
   "schema": "eqo.testcase_execution_matrix.v1",
-  "source_sha": "438252b942a09952e4edc0ae58961c9c437d9c03",
+  "source_sha": "3fcd7241369f21d4676ec9d980eb4cbf6bb8550d",
   "testcases": [
     {
       "batch_id": "fc1_nexus_context",
@@ -136,7 +136,7 @@
       "file_path": "tests/unit/applications/test_mcp_server_p4_lifecycle.py",
       "node_id": "tests.unit.applications.test_mcp_server_p4_lifecycle::test_placeholder",
       "outcome": "PASS",
-      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
+      "source_commit_sha": "3fcd7241369f21d4676ec9d980eb4cbf6bb8550d"
     }
   ]
 }

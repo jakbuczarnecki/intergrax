@@ -206,7 +206,10 @@ def emit() -> None:
 def main() -> int:
     subprocess.run([sys.executable, str(RUN_ROOT / "validate_reconciliation.py"), "--pre-check"], check=False)
     emit()
-    proc = subprocess.run([sys.executable, str(RUN_ROOT / "validate_reconciliation.py")], check=False)
+    proc = subprocess.run(
+        [sys.executable, str(RUN_ROOT / "validate_reconciliation.py"), "--mode", "PARTIAL_VALIDATION"],
+        check=False,
+    )
     if proc.returncode != 0:
         _die("validator failed after reconciliation")
     return 0

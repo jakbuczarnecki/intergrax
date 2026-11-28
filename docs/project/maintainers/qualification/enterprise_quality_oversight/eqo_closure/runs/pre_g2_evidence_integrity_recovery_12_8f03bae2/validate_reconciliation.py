@@ -16,9 +16,18 @@ from _evidence_common import (
     ec08_dir,
     git,
     inventory_binding,
-    parse_junit_cases,
+    merge_junit_with_node_capture,
     repo_root_from_run,
     sha256_file,
+)
+from validation_execution import (
+    validate_disposition_reconciliation,
+    validate_evidence_references,
+    validate_execution_inventory,
+    validate_immutable_inventory,
+    validate_queue_exact,
+    validate_synthetic_isolation,
+    validate_testcase_node_ids,
 )
 
 RUN_ROOT = Path(__file__).resolve().parent
@@ -34,9 +43,14 @@ def fail(reason: str, detail: str = "") -> int:
     return 1
 
 
-def validate(run_root: Path | None = None) -> int:
+def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") -> int:
     root = run_root or RUN_ROOT
     repo_root = repo_root_from_run(root)
+    final_mode = mode == "FINAL_VALIDATION"
+    if final_mode:
+        rc = validate_synthetic_isolation(root, fail)
+        if rc:
+            return rc
     required = [
         "DES_PREREG.json",
         "BASELINE_BINDING.json",
@@ -66,12 +80,11 @@ def validate(run_root: Path | None = None) -> int:
     if obl.get("source_sha") and obl.get("source_sha") != source_sha:
         return fail("SOURCE_SHA_MISMATCH", "obligation matrix source_sha")
     tree_sha = baseline.get("qualification_source_tree_sha")
-    if (
-        not adversarial
-        and tree_sha
-        and baseline.get("qualification_source_tree_sha") != git(repo_root, ["rev-parse", "HEAD^{tree}"])
-    ):
-        return fail("SOURCE_TREE_MISMATCH", "baseline tree drift")
+    qual_sha = baseline.get("qualification_source_sha") or source_sha
+    if tree_sha and qual_sha:
+        pinned = git(repo_root, ["rev-parse", f"{qual_sha}^{{tree}}"])
+        if tree_sha != pinned:
+            return fail("SOURCE_TREE_MISMATCH", "baseline tree vs qualification sha")
     obl_ids = [o["obligation_id"] for o in obl.get("obligations", [])]
     if len(set(obl_ids)) != len(obl_ids):
         return fail("DUPLICATE_OBLIGATION_ID", "matrix duplicate")
@@ -97,6 +110,9 @@ def validate(run_root: Path | None = None) -> int:
     rec_dir = root / "execution_records"
     if rec_dir.is_dir():
         for post_path in rec_dir.glob("*.post.json"):
+            batch_id = post_path.name.replace(".post.json", "")
+            if final_mode and batch_id.startswith("synthetic_"):
+                continue
             post = json.loads(post_path.read_text(encoding="utf-8"))
             pre_path = rec_dir / post_path.name.replace(".post.json", ".pre.json")
             pre = json.loads(pre_path.read_text(encoding="utf-8")) if pre_path.is_file() else {}
@@ -117,8 +133,12 @@ def validate(run_root: Path | None = None) -> int:
                 return fail("SOURCE_TREE_MISMATCH", post_path.name)
             if post.get("finished_at_utc", "") < pre.get("started_at_utc", ""):
                 return fail("INVALID_TIMESTAMPS", post_path.name)
-            if post.get("process_returncode") not in (0, 1, 2, 4, 5) and post.get("process_returncode") is None:
+            rc = post.get("process_returncode")
+            disp = post.get("process_exit_disposition") or "PROCESS_COMPLETED"
+            if disp == "PROCESS_EXIT_UNRESOLVED" or rc is None:
                 return fail("PROCESS_EXIT_UNRESOLVED", post_path.name)
+            if disp == "EXECUTION_TIMEOUT":
+                return fail("INCOMPLETE_EXECUTION_RECORD", post_path.name)
             log_rel = post.get("stdout_stderr_path")
             junit_rel = post.get("junit_path")
             if log_rel and not (root / log_rel).is_file():
@@ -138,8 +158,11 @@ def validate(run_root: Path | None = None) -> int:
                 if post.get("junit_sha256") and sha256_file(root / junit_rel) != post.get("junit_sha256"):
                     return fail("RAW_DIGEST_MISMATCH", junit_rel)
                 batch_id = post_path.name.replace(".post.json", "")
-                for case in parse_junit_cases(
-                    root / junit_rel, batch_id=batch_id, source_sha=pre.get("source_commit_sha", source_sha)
+                for case in merge_junit_with_node_capture(
+                    root / junit_rel,
+                    batch_id=batch_id,
+                    source_sha=pre.get("source_commit_sha", source_sha),
+                    run_root=root,
                 ):
                     file_outcomes.setdefault(case.file_path, []).append(case)
     testcase_doc = (
@@ -231,9 +254,40 @@ def validate(run_root: Path | None = None) -> int:
                 if getattr(case, "evidence_validity", None) == "HISTORICAL_UNVERIFIED":
                     return fail("HISTORICAL_AS_CURRENT_PASS", case.node_id)
 
-    if obl.get("reconciled") is True and "--adversarial" not in sys.argv:
-        print("VALIDATION_OK:ACCEPT")
-        return 0
+    baseline = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
+    qual_sha = baseline.get("qualification_source_sha") or source_sha
+    qual_tree = baseline.get("qualification_source_tree_sha") or tree_sha
+    adversarial = "--adversarial" in sys.argv
+
+    if final_mode:
+        for step, fn, kwargs in (
+            ("synthetic", validate_synthetic_isolation, {}),
+            ("inventory", validate_immutable_inventory, {"adversarial": adversarial}),
+            ("queue", validate_queue_exact, {}),
+            ("references", validate_evidence_references, {}),
+            ("execution", validate_execution_inventory, {"qualification_tree": qual_tree}),
+            ("dispositions", validate_disposition_reconciliation, {}),
+            ("node_ids", validate_testcase_node_ids, {}),
+        ):
+            if fn == validate_immutable_inventory:
+                rc = fn(root, repo_root, qual_sha, adversarial=adversarial, fail=fail)
+            elif fn in (validate_queue_exact, validate_evidence_references):
+                rc = (
+                    fn(root, repo_root, qual_sha, fail=fail)
+                    if fn == validate_queue_exact
+                    else fn(root, repo_root, fail=fail)
+                )
+            elif fn == validate_execution_inventory:
+                rc = fn(root, repo_root, qualification_sha=qual_sha, qualification_tree=qual_tree, fail=fail)
+            elif fn == validate_disposition_reconciliation:
+                rc = fn(root, repo_root, qual_sha, fail=fail)
+            elif fn == validate_testcase_node_ids:
+                rc = fn(root, fail=fail)
+            else:
+                rc = fn(root, fail=fail)
+            if rc:
+                return rc
+
     print("VALIDATION_OK:ACCEPT")
     return 0
 
@@ -243,10 +297,30 @@ def main() -> int:
     parser.add_argument("--run-root", type=Path, default=RUN_ROOT)
     parser.add_argument("--pre-check", action="store_true")
     parser.add_argument("--adversarial", action="store_true")
+    parser.add_argument(
+        "--mode",
+        choices=("PARTIAL_VALIDATION", "FINAL_VALIDATION"),
+        default=None,
+        help="PARTIAL_VALIDATION for adversarial fixtures; FINAL_VALIDATION for campaign acceptance.",
+    )
     args = parser.parse_args()
+    mode = args.mode
+    if mode is None:
+        mode = "PARTIAL_VALIDATION" if args.adversarial else "FINAL_VALIDATION"
     if args.pre_check:
+        required = ["DES_PREREG.json", "BASELINE_BINDING.json", "ENVIRONMENT_MANIFEST.json"]
+        root = args.run_root
+        for name in required:
+            if not (root / name).is_file():
+                print(f"PRE_CHECK_FAIL:missing {name}", file=sys.stderr)
+                return 1
+        env = json.loads((root / "ENVIRONMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        if not env.get("fastmcp_import_ok"):
+            print("PRE_CHECK_FAIL:fastmcp", file=sys.stderr)
+            return 1
+        print("PRE_CHECK_OK")
         return 0
-    return validate(args.run_root)
+    return validate(args.run_root, mode=mode)
 
 
 if __name__ == "__main__":

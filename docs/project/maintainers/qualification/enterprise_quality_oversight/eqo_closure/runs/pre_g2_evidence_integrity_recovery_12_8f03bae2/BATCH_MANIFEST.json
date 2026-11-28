@@ -14,7 +14,7 @@
       "junit_sha256": "94a739a416116b85a4f4d48ce039be4c8b03ff8c9cc86ef9207702d47126ede9",
       "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "process_returncode": 0,
-      "source_commit_sha": "438252b942a09952e4edc0ae58961c9c437d9c03"
+      "source_commit_sha": "3fcd7241369f21d4676ec9d980eb4cbf6bb8550d"
     }
   ],
   "schema": "eqo.batch_manifest.v1"

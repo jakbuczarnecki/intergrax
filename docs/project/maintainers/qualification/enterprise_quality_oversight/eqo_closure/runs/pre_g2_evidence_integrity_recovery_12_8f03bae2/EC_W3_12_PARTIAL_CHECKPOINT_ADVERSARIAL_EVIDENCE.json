@@ -1,0 +1,125 @@
+{
+  "schema": "eqo.adversarial_checkpoint.v1",
+  "session_name": "INTEGRAX | ENTERPRISE CAMPAIGN EQO | W3 B-1 | EC-W3-12 CHECKPOINT PUBLICATION",
+  "ticket": "governance/tickets/T-IGX-095-A.md",
+  "task_start_remote_sha": "d713fae9c4eed22672489f5fc53ff85c532890c8",
+  "pytest_node_prefix": "docs/project/maintainers/qualification/enterprise_quality_oversight/eqo_closure/runs/pre_g2_evidence_integrity_recovery_12_8f03bae2/test_evidence_reconciliation.py::test_adversarial_validator_control",
+  "suite_summary": {
+    "total_controls": 40,
+    "pytest_pass": 31,
+    "pytest_fail": 9,
+    "reconciled_prior_report": "31 PASS / 9 FAIL; failing pytest nodes 29-35, 37, 40 (11 adversarial cases, 9 pytest FAIL — cases 33-34 fail in _mutate before validator invocation)"
+  },
+  "recorded_utc": "2026-11-28T08:40:00Z",
+  "full_pytest_log_path": ".tmp/proof/ec-w3-12-checkpoint/adversarial_full_run.log",
+  "controls": [
+    {"id": "01", "case": "01_valid_complete_pass", "pytest_result": "PASS", "expected_validator": "ACCEPT exit 0"},
+    {"id": "02", "case": "02_valid_with_red_disposition", "pytest_result": "PASS", "expected_validator": "ACCEPT exit 0"},
+    {"id": "03", "case": "03_valid_deferred", "pytest_result": "PASS", "expected_validator": "ACCEPT exit 0"},
+    {"id": "04", "case": "04_missing_obligation_id", "pytest_result": "PASS", "expected_reason": "MISSING_OBLIGATION_ID"},
+    {"id": "05", "case": "05_duplicate_obligation_id", "pytest_result": "PASS", "expected_reason": "DUPLICATE_OBLIGATION_ID"},
+    {"id": "06", "case": "06_replacement_obligation_id", "pytest_result": "PASS", "expected_reason": "REPLACEMENT_OBLIGATION_ID"},
+    {"id": "07", "case": "07_replacement_qualification_path", "pytest_result": "PASS", "expected_reason": "REPLACEMENT_QUALIFICATION_PATH"},
+    {"id": "08", "case": "08_green_despite_junit_failure", "pytest_result": "PASS", "expected_reason": "GREEN_DESPITE_FAILURE"},
+    {"id": "09", "case": "09_green_missing_testcase", "pytest_result": "PASS", "expected_reason": "GREEN_MISSING_TESTCASE"},
+    {"id": "10", "case": "10_missing_raw_log", "pytest_result": "PASS", "expected_reason": "MISSING_RAW_LOG"},
+    {"id": "11", "case": "11_missing_raw_junit", "pytest_result": "PASS", "expected_reason": "MISSING_RAW_JUNIT"},
+    {"id": "12", "case": "12_raw_digest_mismatch", "pytest_result": "PASS", "expected_reason": "RAW_DIGEST_MISMATCH"},
+    {"id": "13", "case": "13_source_sha_mismatch", "pytest_result": "PASS", "expected_reason": "SOURCE_SHA_MISMATCH"},
+    {"id": "14", "case": "14_source_tree_mismatch", "pytest_result": "PASS", "expected_reason": "SOURCE_TREE_MISMATCH"},
+    {"id": "15", "case": "15_source_changed_during_execution", "pytest_result": "PASS", "expected_reason": "SOURCE_CHANGED_DURING_EXECUTION"},
+    {"id": "16", "case": "16_invalid_timestamps", "pytest_result": "PASS", "expected_reason": "INVALID_TIMESTAMPS"},
+    {"id": "17", "case": "17_nonzero_exit_as_success", "pytest_result": "PASS", "expected_reason": "NONZERO_EXIT_AS_SUCCESS"},
+    {"id": "18", "case": "18_unmapped_testcase", "pytest_result": "PASS", "expected_reason": "UNMAPPED_TESTCASE"},
+    {"id": "19", "case": "19_duplicate_testcase_coverage", "pytest_result": "PASS", "expected_reason": "DUPLICATE_TESTCASE_COVERAGE"},
+    {"id": "20", "case": "20_stale_disposition", "pytest_result": "PASS", "expected_reason": "STALE_DISPOSITION"},
+    {"id": "21", "case": "21_incorrect_obligation_mapping", "pytest_result": "PASS", "expected_reason": "INCORRECT_OBLIGATION_MAPPING"},
+    {"id": "22", "case": "22_xfail_as_pass", "pytest_result": "PASS", "expected_reason": "XFAIL_AS_PASS"},
+    {"id": "23", "case": "23_collection_error_misrepresented", "pytest_result": "PASS", "expected_reason": "COLLECTION_ERROR_MISREPRESENTED"},
+    {"id": "24", "case": "24_historical_as_current_pass", "pytest_result": "PASS", "expected_reason": "HISTORICAL_AS_CURRENT_PASS"},
+    {"id": "25", "case": "25_validator_mutated_input", "pytest_result": "PASS", "expected_reason": "VALIDATOR_MUTATED_INPUT"},
+    {"id": "26", "case": "26_prerequisite_false_satisfied", "pytest_result": "PASS", "expected_reason": "PREREQUISITE_FALSE_SATISFIED"},
+    {"id": "27", "case": "27_skip_without_disposition", "pytest_result": "PASS", "expected_reason": "SKIP_WITHOUT_DISPOSITION"},
+    {"id": "28", "case": "28_evidence_reference_mismatch", "pytest_result": "PASS", "expected_reason": "EVIDENCE_REFERENCE_MISMATCH"},
+    {
+      "id": "29",
+      "case": "29_empty_execution_inventory",
+      "pytest_result": "FAIL",
+      "expected_reason": "EMPTY_EXECUTION_INVENTORY",
+      "actual_validator_output": "VALIDATION_FAIL:INVALID_EVIDENCE_REFERENCE:EDER-F-0016",
+      "assertion": "reason in output",
+      "pytest_node_id": "[29_empty_execution_inventory-False-EMPTY_EXECUTION_INVENTORY]"
+    },
+    {
+      "id": "30",
+      "case": "30_missing_mandatory_batch",
+      "pytest_result": "FAIL",
+      "expected_reason": "MISSING_MANDATORY_BATCH",
+      "actual_validator_output": "VALIDATION_FAIL:INVALID_EVIDENCE_REFERENCE:EDER-F-0016",
+      "assertion": "reason in output"
+    },
+    {
+      "id": "31",
+      "case": "31_missing_pre_record",
+      "pytest_result": "FAIL",
+      "expected_reason": "MISSING_PRE_RECORD",
+      "actual_validator_output": "VALIDATION_FAIL:INVALID_EVIDENCE_REFERENCE:EDER-F-0016",
+      "assertion": "reason in output"
+    },
+    {
+      "id": "32",
+      "case": "32_missing_post_record",
+      "pytest_result": "FAIL",
+      "expected_reason": "MISSING_POST_RECORD",
+      "actual_validator_output": "VALIDATION_FAIL:INVALID_EVIDENCE_REFERENCE:EDER-F-0016",
+      "assertion": "reason in output"
+    },
+    {
+      "id": "33",
+      "case": "33_missing_source_binding_fields",
+      "pytest_result": "FAIL",
+      "expected_reason": "MISSING_SOURCE_BINDING_FIELDS",
+      "actual_result": "FileNotFoundError during _mutate: execution_records/fc1_nexus_context.pre.json missing in minimal_valid fixture",
+      "traceback_tail": "pathlib.py:1013 FileNotFoundError"
+    },
+    {
+      "id": "34",
+      "case": "34_qualification_sha_mismatch",
+      "pytest_result": "FAIL",
+      "expected_reason": "QUALIFICATION_SHA_MISMATCH",
+      "actual_result": "FileNotFoundError during _mutate: execution_records/fc1_nexus_context.pre.json missing in minimal_valid fixture",
+      "traceback_tail": "pathlib.py:1013 FileNotFoundError"
+    },
+    {
+      "id": "35",
+      "case": "35_duplicate_queue_path",
+      "pytest_result": "FAIL",
+      "expected_reason": "DUPLICATE_QUEUE_PATH",
+      "actual_validator_output": "VALIDATION_FAIL:REPLACEMENT_QUALIFICATION_PATH:queue_count mismatch",
+      "assertion": "reason in output"
+    },
+    {"id": "36", "case": "36_unsupported_green_host_queue", "pytest_result": "PASS", "expected_reason": "UNSUPPORTED_GREEN_HOST_QUEUE"},
+    {
+      "id": "37",
+      "case": "37_incorrect_disposition_green",
+      "pytest_result": "FAIL",
+      "expected_reason": "INCORRECT_DISPOSITION_GREEN",
+      "actual_validator_output": "VALIDATION_FAIL:STALE_DISPOSITION:EDER-F-0016",
+      "assertion": "reason in output"
+    },
+    {"id": "38", "case": "38_invalid_evidence_reference", "pytest_result": "PASS", "expected_reason": "INVALID_EVIDENCE_REFERENCE"},
+    {"id": "39", "case": "39_synthetic_in_final_qualification", "pytest_result": "PASS", "expected_reason": "SYNTHETIC_IN_FINAL_QUALIFICATION"},
+    {
+      "id": "40",
+      "case": "40_testcase_node_id_mismatch",
+      "pytest_result": "FAIL",
+      "expected_reason": "TESTCASE_NODE_ID_MISMATCH",
+      "actual_validator_output": "VALIDATION_FAIL:INVALID_EVIDENCE_REFERENCE:EDER-F-0016",
+      "assertion": "reason in output"
+    }
+  ],
+  "semantic_reconciliation": "OPEN",
+  "validator_acceptance": "NOT_GRANTED",
+  "formal_closure": false,
+  "terminal_state": "EC_W3_12_PARTIAL_VALIDATOR_CHECKPOINT_PUBLISHED_FOR_INDEPENDENT_AUDIT"
+}

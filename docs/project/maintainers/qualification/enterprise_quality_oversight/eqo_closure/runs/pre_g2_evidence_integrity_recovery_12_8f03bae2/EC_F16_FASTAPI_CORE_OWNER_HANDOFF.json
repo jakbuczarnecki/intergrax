@@ -1,0 +1,27 @@
+{
+  "schema": "eqo.owner_handoff.v1",
+  "finding_id": "EC-F16",
+  "title": "FASTAPI_CORE_LEGACY_SHUTDOWN_REGISTRATION",
+  "disposition": "OPEN_FASTAPI_CORE_OWNER_CORRECTIVE",
+  "ticket_scope": "OUT_OF_SCOPE_T-IGX-095-A",
+  "affected_path": "intergrax/fastapi_core/app_factory.py",
+  "root_cause": "create_app() registers shutdown via app.add_event_handler (removed in current FastAPI); duplicate shutdown registration risk with lifespan/MCP mount.",
+  "architecture_decision": "Migrate to native FastAPI lifespan; preserve execution_adapter ownership and shutdown(wait=False); no monkeypatch or dependency downgrade.",
+  "invariants": [
+    "explicit_execution_adapter: shutdown exactly once",
+    "default_factory_execution_adapter: shutdown exactly once",
+    "run_service_without_explicit_adapter: no foreign adapter create/teardown"
+  ],
+  "p2c_nodes": [
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_g00_qualification_baseline_ancestor",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_01_positive_http_admission_continuity",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_02_admission_deny_prevents_inner_execution",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_03_release_after_successful_execution",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_04_release_after_inner_execution_failure",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_05_identity_and_scope_continuity",
+    "tests/qualification/prod_q/test_prod_q_r1_r7_q_p2_c_http_execution_admission.py::test_p2c_06_request_tenant_mismatch_skips_execution_seam"
+  ],
+  "fastapi_version": "0.163.2",
+  "starlette_version": "1.3.1",
+  "recorded_utc": "2026-11-28T08:35:00Z"
+}

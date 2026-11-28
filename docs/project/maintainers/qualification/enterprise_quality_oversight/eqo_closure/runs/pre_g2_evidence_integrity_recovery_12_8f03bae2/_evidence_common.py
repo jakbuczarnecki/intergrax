@@ -55,6 +55,20 @@ VALIDATOR_REASONS = (
     "EVIDENCE_REFERENCE_MISMATCH",
     "INVENTORY_BINDING_MISMATCH",
     "STRUCTURAL_INCONSISTENCY",
+    "EMPTY_EXECUTION_INVENTORY",
+    "MISSING_MANDATORY_BATCH",
+    "MISSING_PRE_RECORD",
+    "MISSING_POST_RECORD",
+    "MISSING_SOURCE_BINDING_FIELDS",
+    "QUALIFICATION_SHA_MISMATCH",
+    "DUPLICATE_QUEUE_PATH",
+    "UNSUPPORTED_GREEN_HOST_QUEUE",
+    "INCORRECT_DISPOSITION_GREEN",
+    "INVALID_EVIDENCE_REFERENCE",
+    "SYNTHETIC_IN_FINAL_QUALIFICATION",
+    "TESTCASE_NODE_ID_MISMATCH",
+    "PROCESS_EXIT_UNRESOLVED",
+    "INCOMPLETE_EXECUTION_RECORD",
 )
 
 
@@ -98,6 +112,42 @@ def sha256_json_canonical(obj: Any) -> str:
 
 def git(repo_root: Path, args: list[str]) -> str:
     return subprocess.check_output(["git", "-C", str(repo_root), *args], text=True).strip()
+
+
+def inventory_binding_at_sha(repo_root: Path, sha: str) -> dict[str, Any]:
+    """EC-W3-08 inventory pinned to qualification source commit (not moving HEAD)."""
+    ec08_rel = EC08_REL
+    files_rel = {
+        "OBLIGATION_EXECUTION_MATRIX.json": f"{ec08_rel}/OBLIGATION_EXECUTION_MATRIX.json",
+        "REMAINING_QUALIFICATION_QUEUE.json": f"{ec08_rel}/REMAINING_QUALIFICATION_QUEUE.json",
+        "DES_PREREG.json": f"{ec08_rel}/DES_PREREG.json",
+    }
+    out: dict[str, Any] = {
+        "schema": "eqo.inventory_binding.v1",
+        "inventory_source": ec08_rel,
+        "qualification_source_sha": sha,
+        "artifacts": {},
+    }
+    payloads: dict[str, Any] = {}
+    for name, rel in files_rel.items():
+        blob = git(repo_root, ["rev-parse", f"{sha}:{rel}"])
+        raw = git(repo_root, ["show", f"{sha}:{rel}"])
+        payload = json.loads(raw)
+        payloads[name] = payload
+        out["artifacts"][name] = {
+            "path": rel,
+            "git_blob_sha": blob,
+            "content_digest_sha256": sha256_bytes(raw.encode("utf-8")),
+            "json_canonical_digest_sha256": sha256_json_canonical(payload),
+        }
+    obl = payloads["OBLIGATION_EXECUTION_MATRIX.json"]
+    queue = payloads["REMAINING_QUALIFICATION_QUEUE.json"]
+    out["obligation_ids"] = sorted(o["obligation_id"] for o in obl["obligations"])
+    out["qualification_paths"] = sorted(q["path"] for q in queue.get("qualification_queue", []))
+    out["application_host_paths"] = sorted(q["path"] for q in queue.get("application_host_queue", []))
+    out["support_module_paths"] = sorted({m for o in obl["obligations"] for m in o.get("support_modules", []) if m})
+    out["documentary_obligation_count"] = sum(1 for o in obl["obligations"] if not o.get("mapped_test_file_paths"))
+    return out
 
 
 def inventory_binding(repo_root: Path) -> dict[str, Any]:
@@ -256,3 +306,45 @@ def compute_obligation_disposition(
     if limitations:
         return "GREEN_WITH_LIMITS", limitations
     return "GREEN", limitations
+
+
+def load_node_capture(run_root: Path, batch_id: str) -> dict[str, Any] | None:
+    path = run_root / "logs" / f"{batch_id}_nodes.json"
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def merge_junit_with_node_capture(
+    junit_path: Path,
+    *,
+    batch_id: str,
+    source_sha: str,
+    run_root: Path,
+) -> list[TestcaseRecord]:
+    records = parse_junit_cases(junit_path, batch_id=batch_id, source_sha=source_sha)
+    capture = load_node_capture(run_root, batch_id)
+    if not capture:
+        return records
+    by_classname: dict[str, str] = {}
+    for rec in capture.get("node_records", []):
+        nid = rec.get("node_id")
+        if nid:
+            by_classname[nid.rsplit("::", 1)[-1] if "::" in nid else nid] = nid
+    merged: list[TestcaseRecord] = []
+    for rec in records:
+        cap_id = by_classname.get(rec.name)
+        if cap_id and "::" in cap_id:
+            merged.append(
+                TestcaseRecord(
+                    node_id=cap_id,
+                    file_path=rec.file_path,
+                    name=rec.name,
+                    outcome=rec.outcome,
+                    batch_id=rec.batch_id,
+                    source_commit_sha=rec.source_commit_sha,
+                )
+            )
+        else:
+            merged.append(rec)
+    return merged

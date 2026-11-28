@@ -17,12 +17,13 @@ if str(RUN_ROOT) not in sys.path:
     sys.path.insert(0, str(RUN_ROOT))
 
 
-def _run_validator(run_root: Path) -> tuple[int, str]:
-    proc = subprocess.run(
-        [sys.executable, str(RUN_ROOT / "validate_reconciliation.py"), "--run-root", str(run_root), "--adversarial"],
-        capture_output=True,
-        text=True,
-    )
+def _run_validator(run_root: Path, *, case_id: str = "") -> tuple[int, str]:
+    argv = [sys.executable, str(RUN_ROOT / "validate_reconciliation.py"), "--run-root", str(run_root)]
+    if case_id.split("_", 1)[0].isdigit() and int(case_id.split("_", 1)[0]) >= 29:
+        argv.extend(["--mode", "FINAL_VALIDATION", "--adversarial"])
+    else:
+        argv.append("--adversarial")
+    proc = subprocess.run(argv, capture_output=True, text=True)
     text = (proc.stderr or "") + (proc.stdout or "")
     return proc.returncode, text.strip()
 
@@ -87,44 +88,20 @@ def _sync_synthetic_records(baseline: Path) -> None:
 
 @pytest.fixture(scope="module")
 def ensure_baseline_fixture() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
+    """Use frozen validator fixtures only (V09: no tracked RUN_ROOT mutation)."""
     baseline = FIXTURES / "minimal_valid"
-    if not baseline.is_dir():
-        baseline.mkdir(parents=True)
-    # built during module setup from live repo inventory
-    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--write-prereg"], check=True, cwd=RUN_ROOT)
-    subprocess.run([sys.executable, str(RUN_ROOT / "evidence_runner.py"), "--manifests-only"], check=True, cwd=RUN_ROOT)
-    if not (baseline / "BASELINE_BINDING.json").is_file():
-        for artifact in (
-            "DES_PREREG.json",
-            "BASELINE_BINDING.json",
-            "ENVIRONMENT_MANIFEST.json",
-            "INVENTORY_BINDING.json",
-            "OBLIGATION_EXECUTION_MATRIX.json",
-            "REMAINING_QUALIFICATION_QUEUE.json",
-            "BATCH_MANIFEST.json",
-            "TESTCASE_EXECUTION_MATRIX.json",
-        ):
-            src = RUN_ROOT / artifact
-            if src.is_file():
-                shutil.copy(src, baseline / artifact)
-    _sync_synthetic_records(RUN_ROOT)
-    subprocess.run([sys.executable, str(RUN_ROOT / "reconcile_evidence.py")], cwd=RUN_ROOT, check=True)
-    for rel in (
+    required = (
         "DES_PREREG.json",
         "BASELINE_BINDING.json",
-        "ENVIRONMENT_MANIFEST.json",
-        "INVENTORY_BINDING.json",
         "OBLIGATION_EXECUTION_MATRIX.json",
         "REMAINING_QUALIFICATION_QUEUE.json",
-        "BATCH_MANIFEST.json",
         "TESTCASE_EXECUTION_MATRIX.json",
-    ):
-        src = RUN_ROOT / rel
-        if src.is_file():
-            shutil.copy(src, baseline / rel)
-    _sync_synthetic_records(baseline)
-    subprocess.run([sys.executable, str(RUN_ROOT / "reconcile_evidence.py")], cwd=RUN_ROOT, check=True)
+    )
+    missing = [name for name in required if not (baseline / name).is_file()]
+    if missing:
+        raise RuntimeError(f"validator fixture incomplete: {missing}")
+    if not (baseline / "execution_records" / "fc1_nexus_context.post.json").is_file():
+        _sync_synthetic_records(baseline)
 
 
 def _refresh_batch_digests(root: Path, batch_id: str = "synthetic_pass") -> None:
@@ -206,10 +183,29 @@ ADVERSARIAL_CASES = [
     ("26_prerequisite_false_satisfied", False, "PREREQUISITE_FALSE_SATISFIED"),
     ("27_skip_without_disposition", False, "SKIP_WITHOUT_DISPOSITION"),
     ("28_evidence_reference_mismatch", False, "EVIDENCE_REFERENCE_MISMATCH"),
+    ("29_empty_execution_inventory", False, "EMPTY_EXECUTION_INVENTORY"),
+    ("30_missing_mandatory_batch", False, "MISSING_MANDATORY_BATCH"),
+    ("31_missing_pre_record", False, "MISSING_PRE_RECORD"),
+    ("32_missing_post_record", False, "MISSING_POST_RECORD"),
+    ("33_missing_source_binding_fields", False, "MISSING_SOURCE_BINDING_FIELDS"),
+    ("34_qualification_sha_mismatch", False, "QUALIFICATION_SHA_MISMATCH"),
+    ("35_duplicate_queue_path", False, "DUPLICATE_QUEUE_PATH"),
+    ("36_unsupported_green_host_queue", False, "UNSUPPORTED_GREEN_HOST_QUEUE"),
+    ("37_incorrect_disposition_green", False, "INCORRECT_DISPOSITION_GREEN"),
+    ("38_invalid_evidence_reference", False, "INVALID_EVIDENCE_REFERENCE"),
+    ("39_synthetic_in_final_qualification", False, "SYNTHETIC_IN_FINAL_QUALIFICATION"),
+    ("40_testcase_node_id_mismatch", False, "TESTCASE_NODE_ID_MISMATCH"),
 ]
 
 
 def _mutate(case_id: str, root: Path) -> None:
+    prefix = case_id.split("_", 1)[0]
+    if prefix.isdigit() and int(prefix) >= 29:
+        prereg = json.loads((root / "DES_PREREG.json").read_text(encoding="utf-8"))
+        prereg["batches"] = [b for b in prereg.get("batches", []) if b.get("id") == "fc1_nexus_context"]
+        (root / "DES_PREREG.json").write_text(json.dumps(prereg, indent=2), encoding="utf-8")
+        for syn in root.glob("execution_records/synthetic_pass*"):
+            syn.unlink(missing_ok=True)
     if case_id.startswith("01"):
         return
     if case_id.startswith("02"):
@@ -367,6 +363,54 @@ def _mutate(case_id: str, root: Path) -> None:
             }
         ]
         (root / "TESTCASE_EXECUTION_MATRIX.json").write_text(json.dumps(tc, indent=2), encoding="utf-8")
+    elif case_id.startswith("29"):
+        import shutil as _shutil
+
+        rec = root / "execution_records"
+        if rec.is_dir():
+            _shutil.rmtree(rec)
+        rec.mkdir(parents=True)
+    elif case_id.startswith("30"):
+        (root / "execution_records" / "fc1_nexus_context.post.json").unlink(missing_ok=True)
+    elif case_id.startswith("31"):
+        (root / "execution_records" / "fc1_nexus_context.pre.json").unlink(missing_ok=True)
+    elif case_id.startswith("32"):
+        (root / "execution_records" / "fc1_nexus_context.post.json").unlink(missing_ok=True)
+    elif case_id.startswith("33"):
+        pre = root / "execution_records" / "fc1_nexus_context.pre.json"
+        data = json.loads(pre.read_text(encoding="utf-8"))
+        data.pop("source_commit_sha", None)
+        pre.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    elif case_id.startswith("34"):
+        pre = root / "execution_records" / "fc1_nexus_context.pre.json"
+        data = json.loads(pre.read_text(encoding="utf-8"))
+        data["source_commit_sha"] = "0" * 40
+        pre.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    elif case_id.startswith("35"):
+        row = queue["qualification_queue"][-1]
+        dup = dict(row)
+        queue["qualification_queue"].append(dup)
+    elif case_id.startswith("36"):
+        hosts = queue.setdefault("application_host_queue", [])
+        if hosts:
+            hosts[0]["recalculated_disposition"] = "GREEN"
+    elif case_id.startswith("37"):
+        for row in queue.get("qualification_queue", []):
+            row["recalculated_disposition"] = "OPEN"
+        for ob in obl.get("obligations", []):
+            ob["recalculated_disposition"] = "GREEN"
+    elif case_id.startswith("38"):
+        obl["obligations"][0]["evidence_reference"] = "not_a_real_batch_record"
+    elif case_id.startswith("39"):
+        rec = root / "execution_records"
+        rec.mkdir(parents=True, exist_ok=True)
+        (rec / "synthetic_pass.pre.json").write_text('{"batch_id":"synthetic_pass"}', encoding="utf-8")
+        (rec / "synthetic_pass.post.json").write_text('{"batch_id":"synthetic_pass"}', encoding="utf-8")
+    elif case_id.startswith("40"):
+        tc = json.loads((root / "TESTCASE_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
+        if tc.get("testcases"):
+            tc["testcases"][0]["node_id"] = "forged::node"
+        (root / "TESTCASE_EXECUTION_MATRIX.json").write_text(json.dumps(tc, indent=2), encoding="utf-8")
     elif case_id.startswith("28"):
         obl["obligations"][0]["evidence_reference"] = "unrelated_batch"
     (root / "OBLIGATION_EXECUTION_MATRIX.json").write_text(json.dumps(obl, indent=2), encoding="utf-8")
@@ -388,7 +432,7 @@ def test_adversarial_validator_control(
     root = tmp_path / case_id
     shutil.copytree(FIXTURES / "minimal_valid", root)
     _mutate(case_id, root)
-    code, output = _run_validator(root)
+    code, output = _run_validator(root, case_id=case_id)
     if accept:
         assert code == 0, output
         assert "ACCEPT" in output
