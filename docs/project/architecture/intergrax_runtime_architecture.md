@@ -38,7 +38,7 @@ Current feature pairs:
 |---------|--------------|------|
 | `TOKEN_OPTIMIZATION` | [`../capabilities/architecture/TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) | [`../capabilities/plan/TOKEN_OPTIMIZATION.md`](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 | `LANGCHAIN_INDEPENDENCE` | [`../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md`](../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md) | [`../capabilities/plan/LANGCHAIN_INDEPENDENCE.md`](../capabilities/plan/LANGCHAIN_INDEPENDENCE.md) |
-| `INTEGRAX_INTELLIGENCE` | [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) | [`../capabilities/plan/INTEGRAX_INTELLIGENCE.md`](../capabilities/plan/INTEGRAX_INTELLIGENCE.md) | **Architecture ratified (OD-INTELLIGENCE-01)** — `INTELLIGENCE-X`; WBS owned by [`INTELLIGENCE-X-MASTER-PLAN.md`](../../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md); execution status in plan register |
+| `INTEGRAX_INTELLIGENCE` | [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) | [`../capabilities/plan/INTEGRAX_INTELLIGENCE.md`](../capabilities/plan/INTEGRAX_INTELLIGENCE.md) | **Architecture ratified (OD-INTELLIGENCE-01)** — `INTELLIGENCE-X`; WBS owned by [`INTELLIGENCE-X-MASTER-PLAN.md`](../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md); execution status in plan register |
 | `ARTIFACT_LIFECYCLE` | [`../capabilities/architecture/ARTIFACT_LIFECYCLE.md`](../capabilities/architecture/ARTIFACT_LIFECYCLE.md) | [`../capabilities/plan/ARTIFACT_LIFECYCLE.md`](../capabilities/plan/ARTIFACT_LIFECYCLE.md) |
 
 ---
