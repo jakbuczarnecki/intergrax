@@ -243,7 +243,11 @@ def validate_disposition_reconciliation(
     *,
     fail: FailFn,
 ) -> int:
-    from _evidence_common import compute_obligation_disposition, merge_junit_with_node_capture
+    from _evidence_common import (
+        compute_obligation_disposition,
+        compute_queue_row_disposition,
+        merge_junit_with_node_capture,
+    )
 
     obl = json.loads((run_root / "OBLIGATION_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
     ec08 = json.loads((ec08_dir(repo_root) / "OBLIGATION_EXECUTION_MATRIX.json").read_text(encoding="utf-8"))
@@ -267,31 +271,27 @@ def validate_disposition_reconciliation(
         ):
             file_outcomes.setdefault(case.file_path, []).append(case)
     queue = json.loads((run_root / "REMAINING_QUALIFICATION_QUEUE.json").read_text(encoding="utf-8"))
+    for row in queue.get("application_host_queue", []):
+        path = row.get("path", "")
+        disp = row.get("recalculated_disposition")
+        cases = file_outcomes.get(path, [])
+        expected, _ = compute_queue_row_disposition(path, cases)
+        if disp != expected:
+            if disp == "GREEN" and expected != "GREEN":
+                return fail("UNSUPPORTED_GREEN_HOST_QUEUE", path)
+            return fail("INCORRECT_DISPOSITION_GREEN", path)
     for row in queue.get("qualification_queue", []):
         path = row.get("path", "")
         disp = row.get("recalculated_disposition")
         cases = file_outcomes.get(path, [])
-        if disp == "GREEN" and not any(getattr(c, "outcome", None) == "PASS" for c in cases):
+        expected, _ = compute_queue_row_disposition(path, cases)
+        if disp != expected:
             return fail("INCORRECT_DISPOSITION_GREEN", path or row.get("obligation_id", ""))
-    for row in queue.get("application_host_queue", []):
-        if row.get("recalculated_disposition") != "GREEN":
-            continue
-        path = row.get("path", "")
-        cases = file_outcomes.get(path, [])
-        ok = False
-        for case in cases:
-            if case.outcome in ("PASS",) and getattr(case, "wasxfail", None) not in ("xpass",):
-                ok = True
-                break
-        if not ok:
-            return fail("UNSUPPORTED_GREEN_HOST_QUEUE", path)
     for row, ec08_ob in zip(obl.get("obligations", []), ec08.get("obligations", []), strict=False):
         expected, _ = compute_obligation_disposition(ec08_ob, file_outcomes=file_outcomes, source_sha=qualification_sha)
         actual = row.get("recalculated_disposition")
-        if actual == "GREEN" and expected in ("RED", "OPEN", "PARTIAL", "INVALIDATED"):
-            return fail("INCORRECT_DISPOSITION_GREEN", row.get("obligation_id", ""))
-        if actual in ("RED", "OPEN") and expected == "GREEN":
-            return fail("INCORRECT_DISPOSITION_GREEN", row.get("obligation_id", ""))
+        if actual != expected:
+            return fail("STALE_DISPOSITION", row.get("obligation_id", ""))
     return 0
 
 

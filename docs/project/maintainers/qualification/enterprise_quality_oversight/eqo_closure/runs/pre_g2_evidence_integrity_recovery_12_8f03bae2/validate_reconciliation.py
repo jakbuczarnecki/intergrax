@@ -43,7 +43,12 @@ def fail(reason: str, detail: str = "") -> int:
     return 1
 
 
-def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") -> int:
+def validate(
+    run_root: Path | None = None,
+    *,
+    mode: str = "PARTIAL_VALIDATION",
+    adversarial_fixture: bool = False,
+) -> int:
     root = run_root or RUN_ROOT
     repo_root = repo_root_from_run(root)
     final_mode = mode == "FINAL_VALIDATION"
@@ -60,7 +65,7 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
             return fail("STRUCTURAL_INCONSISTENCY", f"missing {name}")
 
     binding_disk = json.loads((root / "INVENTORY_BINDING.json").read_text(encoding="utf-8"))
-    adversarial = "--adversarial" in sys.argv
+    adversarial = adversarial_fixture and mode == "PARTIAL_VALIDATION"
     expected_binding = binding_disk if adversarial else inventory_binding(repo_root)
     if binding_disk.get("obligation_ids") != expected_binding["obligation_ids"]:
         return fail("INVENTORY_BINDING_MISMATCH", "obligation id set")
@@ -107,7 +112,7 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
         baseline = json.loads((root / "BASELINE_BINDING.json").read_text(encoding="utf-8"))
         qual_sha = baseline.get("qualification_source_sha") or source_sha
         qual_tree = baseline.get("qualification_source_tree_sha") or tree_sha
-        adversarial = "--adversarial" in sys.argv
+        adversarial_inv = False
         final_steps = (
             ("synthetic", validate_synthetic_isolation),
             ("inventory", validate_immutable_inventory),
@@ -119,7 +124,7 @@ def validate(run_root: Path | None = None, *, mode: str = "PARTIAL_VALIDATION") 
         )
         for _name, fn in final_steps:
             if fn is validate_immutable_inventory:
-                rc = fn(root, repo_root, qual_sha, adversarial=adversarial, fail=fail)
+                rc = fn(root, repo_root, qual_sha, adversarial=adversarial_inv, fail=fail)
             elif fn is validate_execution_inventory:
                 rc = fn(
                     root,
@@ -320,7 +325,11 @@ def main() -> int:
             return 1
         print("PRE_CHECK_OK")
         return 0
-    return validate(args.run_root, mode=mode)
+    adversarial_fixture = bool(args.adversarial) and mode == "PARTIAL_VALIDATION"
+    if mode == "FINAL_VALIDATION" and args.adversarial:
+        print("VALIDATION_FAIL:STRUCTURAL_INCONSISTENCY:adversarial_not_allowed_in_final", file=sys.stderr)
+        return 1
+    return validate(args.run_root, mode=mode, adversarial_fixture=adversarial_fixture)
 
 
 if __name__ == "__main__":

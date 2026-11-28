@@ -6,18 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-_PLUGIN = None
-_REPORT_PATH: Path | None = None
-
-
-def pytest_configure(config) -> None:  # noqa: ANN001
-    global _PLUGIN, _REPORT_PATH
-    path = config.option.eqo_node_report
-    if not path:
-        return
-    _REPORT_PATH = Path(path)
-    _PLUGIN = _EqoNodeCapture(_REPORT_PATH)
-    config.pluginmanager.register(_PLUGIN, "eqo_nodecapture")
+_PLUGIN: _EqoNodeCapture | None = None
 
 
 def pytest_addoption(parser) -> None:  # noqa: ANN001
@@ -27,52 +16,89 @@ def pytest_addoption(parser) -> None:  # noqa: ANN001
         default=None,
         help="Path for eqo pytest node capture JSON (read-only sidecar).",
     )
+    parser.addoption(
+        "--eqo-source-root",
+        action="store",
+        default=None,
+        help="Repository root for repository-relative test paths in node capture.",
+    )
+
+
+def pytest_configure(config) -> None:  # noqa: ANN001
+    global _PLUGIN
+    path = config.option.eqo_node_report
+    if not path:
+        return
+    source_root = config.option.eqo_source_root
+    src = Path(source_root).resolve() if source_root else Path.cwd().resolve()
+    _PLUGIN = _EqoNodeCapture(Path(path), source_root=src)
+    config.pluginmanager.register(_PLUGIN, "eqo_nodecapture")
+
+
+def _rel_test_path(item_path: Path, source_root: Path) -> str:
+    try:
+        return item_path.resolve().relative_to(source_root).as_posix()
+    except ValueError:
+        return item_path.as_posix()
 
 
 class _EqoNodeCapture:
-    def __init__(self, report_path: Path) -> None:
+    def __init__(self, report_path: Path, *, source_root: Path) -> None:
         self.report_path = report_path
-        self.records: list[dict[str, Any]] = []
+        self.source_root = source_root
+        self.collected: list[dict[str, Any]] = []
+        self.phase_reports: list[dict[str, Any]] = []
         self.collection_errors: list[dict[str, Any]] = []
+        self._nodes: dict[str, dict[str, Any]] = {}
 
     def pytest_collection_modifyitems(self, session, config, items) -> None:  # noqa: ANN001
+        self.collected = []
         for item in items:
-            self.records.append(
-                {
-                    "node_id": item.nodeid,
-                    "file_path": str(item.path).replace("\\", "/").split("tests/", 1)[-1],
-                    "file_path_resolved": item.path.as_posix(),
-                    "outcome": "COLLECTED",
-                }
-            )
+            file_path = _rel_test_path(item.path, self.source_root)
+            entry = {
+                "node_id": item.nodeid,
+                "file_path": file_path,
+                "outcome": "COLLECTED",
+            }
+            self.collected.append(entry)
+            self._nodes[item.nodeid] = entry
+
+    def pytest_runtest_makereport(self, item, call) -> None:  # noqa: ANN001
+        if call.when == "call":
+            item.user_properties.append(("eqo_node_id", item.nodeid))
+            item.user_properties.append(("eqo_file_path", _rel_test_path(item.path, self.source_root)))
 
     def pytest_runtest_logreport(self, report) -> None:  # noqa: ANN001
-        if report.when != "call":
-            return
         nodeid = report.nodeid
-        outcome = report.outcome.upper()
-        skip = getattr(report, "wasxfail", None)
-        meta: dict[str, Any] = {}
-        if skip:
-            meta["wasxfail"] = str(skip)
+        when = report.when
+        outcome = report.outcome.upper() if report.outcome else "UNKNOWN"
+        meta: dict[str, Any] = {"when": when, "outcome": outcome}
+        if getattr(report, "wasxfail", None):
+            meta["wasxfail"] = str(report.wasxfail)
         if report.longrepr and outcome in ("FAILED", "ERROR"):
             meta["longrepr_snippet"] = str(report.longrepr)[:200]
-        for rec in self.records:
-            if rec["node_id"] == nodeid:
-                rec["outcome"] = outcome
-                rec.update(meta)
-                return
-        self.records.append({"node_id": nodeid, "outcome": outcome, **meta})
+        self.phase_reports.append({"node_id": nodeid, **meta})
+        node = self._nodes.get(nodeid)
+        if node is None:
+            node = {"node_id": nodeid, "file_path": "", "outcome": outcome}
+            self._nodes[nodeid] = node
+        phases = node.setdefault("phases", {})
+        phases[when] = meta
+        if when == "call":
+            node["outcome"] = outcome
+            if meta.get("wasxfail"):
+                node["wasxfail"] = meta["wasxfail"]
 
     def pytest_collection_finish(self, session) -> None:  # noqa: ANN001
-        if session.testsfailed and not self.records:
+        if session.testsfailed and not self.collected:
             self.collection_errors.append({"message": "collection_failed", "failed": session.testsfailed})
 
     def pytest_sessionfinish(self, session, exitstatus) -> None:  # noqa: ANN001
         payload = {
             "schema": "eqo.pytest_node_capture.v1",
             "exitstatus": exitstatus,
-            "node_records": self.records,
+            "node_records": list(self._nodes.values()) if self._nodes else self.collected,
+            "phase_reports": self.phase_reports,
             "collection_errors": self.collection_errors,
         }
         self.report_path.parent.mkdir(parents=True, exist_ok=True)

@@ -15,10 +15,13 @@ from pathlib import Path
 from typing import Any
 
 from _evidence_common import (
+    BATCH_TIMEOUT_SECONDS,
+    Q04_LIGHTWEIGHT_TESTS,
     ec08_dir,
     extract_pytest_paths_from_command,
     git,
-    inventory_binding,
+    inventory_binding_at_sha,
+    resolve_execution_context,
     sha256_bytes,
     sha256_file,
     utc_now,
@@ -26,6 +29,7 @@ from _evidence_common import (
 
 RUN_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = RUN_ROOT.parents[7]
+PLUGIN_PATH = RUN_ROOT / "eqo_nodecapture_plugin.py"
 
 
 def _uv() -> str:
@@ -36,6 +40,23 @@ def _uv() -> str:
     if fallback.is_file():
         return str(fallback)
     raise RuntimeError("uv executable not found")
+
+
+def _child_env(uv_exe: str) -> dict[str, str]:
+    child_env = os.environ.copy()
+    child_env["PYTHONUTF8"] = "1"
+    uv_dir = str(Path(uv_exe).resolve().parent)
+    path = child_env.get("PATH", "")
+    if uv_dir not in path.split(os.pathsep):
+        child_env["PATH"] = f"{uv_dir}{os.pathsep}{path}"
+    for key in (
+        "INTERGRAX_INBOUND_VERIFIER",
+        "INTERGRAX_SLACK_SIGNING_SECRET",
+        "INTERGRAX_SLACK_VERIFY_SIGNATURE",
+    ):
+        child_env.pop(key, None)
+    child_env["PYTHONPATH"] = os.pathsep.join(p for p in (child_env.get("PYTHONPATH", ""), str(RUN_ROOT)) if p)
+    return child_env
 
 
 def _tracked_consistency(repo_root: Path) -> dict[str, Any]:
@@ -60,15 +81,16 @@ def _write_prereg() -> None:
     if w311.is_file():
         supplementary = json.loads(w311.read_text(encoding="utf-8")).get("batches", [])
     batches: list[dict[str, Any]] = []
-    q_skip = {"Q04"}
+    q04_k = " or ".join(Q04_LIGHTWEIGHT_TESTS)
     for cmd in ec08_des["commands"]:
         cmd_id = cmd["cmd_id"]
-        if cmd_id in q_skip:
+        if cmd_id == "Q04":
             batches.append(
                 {
-                    "id": cmd_id.lower(),
+                    "id": "q04",
                     "paths": extract_pytest_paths_from_command(cmd["command"]),
-                    "deferred": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
+                    "pytest_k": q04_k,
+                    "deferred_nodes": "DEFERRED_FORMAL_QUALIFICATION_PROFILE",
                     "expected_coverage": cmd_id,
                 }
             )
@@ -149,8 +171,15 @@ def _environment_manifest() -> dict[str, Any]:
     return manifest
 
 
-def run_batch(batch: dict[str, Any], *, env_manifest: dict[str, Any]) -> dict[str, Any]:
-    if batch.get("deferred"):
+def run_batch(
+    batch: dict[str, Any],
+    *,
+    env_manifest: dict[str, Any],
+    source_root: Path,
+    qualification_sha: str,
+    qualification_tree: str,
+) -> dict[str, Any]:
+    if batch.get("deferred") and not batch.get("pytest_k"):
         return {
             "batch_id": batch["id"],
             "deferred": batch["deferred"],
@@ -158,20 +187,32 @@ def run_batch(batch: dict[str, Any], *, env_manifest: dict[str, Any]) -> dict[st
         }
     batch_id = batch["id"]
     paths = batch["paths"]
-    pre_sha = git(REPO_ROOT, ["rev-parse", "HEAD"])
-    pre_tree = git(REPO_ROOT, ["rev-parse", "HEAD^{tree}"])
-    worktree = git(REPO_ROOT, ["rev-parse", "--git-dir"])
+    pre_sha = qualification_sha
+    pre_tree = qualification_tree
+    worktree = git(source_root, ["rev-parse", "--git-dir"])
+    node_report = (RUN_ROOT / "node_reports" / f"{batch_id}_nodes.json").resolve()
+    junit_path = RUN_ROOT / "junit" / f"{batch_id}.xml"
+    log_path = RUN_ROOT / "logs" / f"{batch_id}.log"
+    uv_exe = _uv()
     argv = [
-        _uv(),
+        uv_exe,
         "run",
         "--no-sync",
+        "python",
+        "-m",
         "pytest",
         *paths,
         "-vv",
         "-rA",
         "--tb=short",
-        f"--junitxml={RUN_ROOT / 'junit' / (batch_id + '.xml')}",
+        f"--junitxml={junit_path}",
+        "-p",
+        "eqo_nodecapture_plugin",
+        f"--eqo-node-report={node_report}",
+        f"--eqo-source-root={source_root}",
     ]
+    if batch.get("pytest_k"):
+        argv.extend(["-k", batch["pytest_k"]])
     digest = _command_digest(argv)
     record_pre = {
         "schema": "eqo.execution_record.v1",
@@ -188,40 +229,55 @@ def run_batch(batch: dict[str, Any], *, env_manifest: dict[str, Any]) -> dict[st
     }
     rec_dir = RUN_ROOT / "execution_records"
     rec_dir.mkdir(parents=True, exist_ok=True)
-    junit_dir = RUN_ROOT / "junit"
-    logs_dir = RUN_ROOT / "logs"
-    junit_dir.mkdir(parents=True, exist_ok=True)
-    logs_dir.mkdir(parents=True, exist_ok=True)
-    junit_path = junit_dir / f"{batch_id}.xml"
-    log_path = logs_dir / f"{batch_id}.log"
+    (RUN_ROOT / "junit").mkdir(parents=True, exist_ok=True)
+    (RUN_ROOT / "logs").mkdir(parents=True, exist_ok=True)
+    (RUN_ROOT / "node_reports").mkdir(parents=True, exist_ok=True)
     (rec_dir / f"{batch_id}.pre.json").write_text(json.dumps(record_pre, indent=2), encoding="utf-8")
-    child_env = os.environ.copy()
-    child_env["PYTHONUTF8"] = "1"
-    for key in (
-        "INTERGRAX_INBOUND_VERIFIER",
-        "INTERGRAX_SLACK_SIGNING_SECRET",
-        "INTERGRAX_SLACK_VERIFY_SIGNATURE",
-    ):
-        child_env.pop(key, None)
+    child_env = _child_env(uv_exe)
     started = time.monotonic()
+    proc: subprocess.CompletedProcess[bytes] | None = None
+    timed_out = False
     with log_path.open("wb") as log:
-        proc = subprocess.run(argv, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT, env=child_env)
+        try:
+            proc = subprocess.run(
+                argv,
+                cwd=source_root,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                env=child_env,
+                timeout=BATCH_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            timed_out = True
     elapsed = time.monotonic() - started
-    log_bytes = log_path.read_bytes()
+    log_bytes = log_path.read_bytes() if log_path.is_file() else b""
     junit_bytes = junit_path.read_bytes() if junit_path.is_file() else b""
-    post_sha = git(REPO_ROOT, ["rev-parse", "HEAD"])
-    post_tree = git(REPO_ROOT, ["rev-parse", "HEAD^{tree}"])
+    node_bytes = node_report.read_bytes() if node_report.is_file() else b""
+    post_sha = git(source_root, ["rev-parse", "HEAD"])
+    post_tree = git(source_root, ["rev-parse", "HEAD^{tree}"])
+    if timed_out:
+        disposition = "EXECUTION_TIMEOUT"
+        returncode: int | None = 124
+    elif proc is None:
+        disposition = "PROCESS_EXIT_UNRESOLVED"
+        returncode = None
+    else:
+        disposition = "PROCESS_COMPLETED"
+        returncode = proc.returncode
     record_post = {
         "schema": "eqo.execution_record.v1",
         "phase": "post",
         "batch_id": batch_id,
-        "process_returncode": proc.returncode,
+        "process_returncode": returncode,
+        "process_exit_disposition": disposition,
         "finished_at_utc": utc_now(),
         "monotonic_elapsed_seconds": elapsed,
         "stdout_stderr_path": log_path.relative_to(RUN_ROOT).as_posix(),
         "stdout_stderr_sha256": sha256_bytes(log_bytes),
         "junit_path": junit_path.relative_to(RUN_ROOT).as_posix() if junit_path.is_file() else None,
         "junit_sha256": sha256_bytes(junit_bytes) if junit_bytes else None,
+        "node_report_path": node_report.relative_to(RUN_ROOT).as_posix() if node_report.is_file() else None,
+        "node_report_sha256": sha256_bytes(node_bytes) if node_bytes else None,
         "source_commit_sha_after": post_sha,
         "source_tree_sha_after": post_tree,
         "source_changed_during_batch": post_sha != pre_sha or post_tree != pre_tree,
@@ -230,8 +286,8 @@ def run_batch(batch: dict[str, Any], *, env_manifest: dict[str, Any]) -> dict[st
     return {"batch_id": batch_id, "pre": record_pre, "post": record_post}
 
 
-def write_static_manifests() -> None:
-    binding = inventory_binding(REPO_ROOT)
+def write_static_manifests(*, qualification_sha: str, qualification_tree: str, source_root: Path) -> None:
+    binding = inventory_binding_at_sha(REPO_ROOT, qualification_sha)
     (RUN_ROOT / "INVENTORY_BINDING.json").write_text(
         json.dumps(binding, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -243,27 +299,47 @@ def write_static_manifests() -> None:
     )
     baseline = {
         "schema": "eqo.baseline_binding.v1",
-        "required_ancestor": "8f03bae217386e26ce1d7804ca673f57f6bfccfc",
-        "published_tree": "25a014baa889f2c6c79ea8109f94b5900f451c17",
-        "implementation_commit_ec_w3_11": "b716ecfef7e62c4edbaa16b9d2fc522bea777cd7",
-        "implementation_tree_ec_w3_11": "05637e5a76c3d1bf9124c4c687a3ce2543b3f274",
+        "required_ancestor": "4aae44a7647a18da740eaa3b8295352294941b85",
         "task_start_remote_sha": git(REPO_ROOT, ["rev-parse", "origin/development"]),
-        "qualification_source_sha": git(REPO_ROOT, ["rev-parse", "HEAD"]),
-        "qualification_source_tree_sha": git(REPO_ROOT, ["rev-parse", "HEAD^{tree}"]),
+        "qualification_source_sha": qualification_sha,
+        "qualification_source_tree_sha": qualification_tree,
+        "source_root": source_root.as_posix(),
+        "run_root": RUN_ROOT.as_posix(),
         "recorded_utc": utc_now(),
     }
     (RUN_ROOT / "BASELINE_BINDING.json").write_text(json.dumps(baseline, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = argv if argv is not None else sys.argv[1:]
-    if "--write-prereg" in args:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="EC-W3-12 semantic evidence runner")
+    parser.add_argument("--source-root", type=Path, default=None)
+    parser.add_argument("--run-root", type=Path, default=RUN_ROOT)
+    parser.add_argument("--qualification-sha", type=str, default=None)
+    parser.add_argument("--write-prereg", action="store_true")
+    parser.add_argument("--manifests-only", action="store_true")
+    parser.add_argument("--batch", type=str, default=None)
+    args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+    global RUN_ROOT, REPO_ROOT  # noqa: PLW0603
+    RUN_ROOT = args.run_root.resolve()
+    ctx = resolve_execution_context(
+        source_root=args.source_root,
+        run_root=RUN_ROOT,
+        qualification_sha=args.qualification_sha,
+    )
+    REPO_ROOT = ctx.repo_root
+    if args.write_prereg:
         _write_prereg()
         return 0
     if not (RUN_ROOT / "DES_PREREG.json").is_file():
         _write_prereg()
-    write_static_manifests()
-    if "--manifests-only" in args:
+    write_static_manifests(
+        qualification_sha=ctx.qualification_sha,
+        qualification_tree=ctx.qualification_tree_sha,
+        source_root=ctx.source_root,
+    )
+    if args.manifests_only:
         return 0
     env_manifest = json.loads((RUN_ROOT / "ENVIRONMENT_MANIFEST.json").read_text(encoding="utf-8"))
     if not env_manifest.get("fastmcp_import_ok"):
@@ -271,21 +347,27 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     prereg = json.loads((RUN_ROOT / "DES_PREREG.json").read_text(encoding="utf-8"))
     batch_results = []
-    only = None
-    for i, a in enumerate(args):
-        if a == "--batch" and i + 1 < len(args):
-            only = args[i + 1]
     for batch in prereg["batches"]:
-        if only and batch["id"] != only:
+        if args.batch and batch["id"] != args.batch:
             continue
-        batch_results.append(run_batch(batch, env_manifest=env_manifest))
-    manifest = {
-        "schema": "eqo.run_manifest.v1",
-        "recorded_utc": utc_now(),
-        "batch_count": len(batch_results),
-        "batches": batch_results,
-    }
-    (RUN_ROOT / "RUN_MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+        batch_results.append(
+            run_batch(
+                batch,
+                env_manifest=env_manifest,
+                source_root=ctx.source_root,
+                qualification_sha=ctx.qualification_sha,
+                qualification_tree=ctx.qualification_tree_sha,
+            )
+        )
+    manifest_path = RUN_ROOT / "RUN_MANIFEST.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    else:
+        manifest = {"schema": "eqo.run_manifest.v1", "execution_attempts": []}
+    manifest["recorded_utc"] = utc_now()
+    manifest["batch_count"] = len(batch_results)
+    manifest["batches"] = batch_results
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
     return 0
 
 

@@ -20,7 +20,7 @@ if str(RUN_ROOT) not in sys.path:
 def _run_validator(run_root: Path, *, case_id: str = "") -> tuple[int, str]:
     argv = [sys.executable, str(RUN_ROOT / "validate_reconciliation.py"), "--run-root", str(run_root)]
     if case_id.split("_", 1)[0].isdigit() and int(case_id.split("_", 1)[0]) >= 29:
-        argv.extend(["--mode", "FINAL_VALIDATION", "--adversarial"])
+        argv.extend(["--mode", "FINAL_VALIDATION"])
     else:
         argv.append("--adversarial")
     proc = subprocess.run(argv, capture_output=True, text=True)
