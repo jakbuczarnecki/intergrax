@@ -14,7 +14,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_serializer, field_validator, model_validator
 
 from intergrax.contracts.canonical_payload_hash import canonical_json_bytes
 from intergrax.contracts.orchestration_enums import MergeStrategy
@@ -379,6 +379,52 @@ class StructuredSearchStopReason(BaseModel):
         return _non_blank(value, field="reason_code")
 
 
+class AdasW1LabStopKind(str, Enum):  # noqa: UP042
+    PRE_EXECUTION_REJECTION = "pre_execution_rejection"
+    POST_GATE_ADMISSION_REJECTION = "post_gate_admission_rejection"
+    EXECUTION_FAILURE = "execution_failure"
+    EXECUTION_CANCELLATION = "execution_cancellation"
+
+
+class AdasW1LabStopEvidence(BaseModel):
+    """Typed W1 LAB terminal stop evidence bound to archive scope."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: AdasW1LabStopKind
+    candidate_id: str
+    search_run_id: str
+    tenant_id: str
+    workspace_id: str
+    execution_ref: AdasExecutionReference | None = None
+    structured_stop_reason: StructuredSearchStopReason | None = None
+    detail: str | None = None
+
+    @field_validator("candidate_id", "search_run_id", "tenant_id", "workspace_id")
+    @classmethod
+    def _ids(cls, value: str) -> str:
+        return _non_blank(value, field="field")
+
+    @model_validator(mode="after")
+    def _kind_rules(self) -> Self:
+        if self.kind is AdasW1LabStopKind.PRE_EXECUTION_REJECTION:
+            if self.execution_ref is not None:
+                raise ValueError("pre-execution rejection must not claim execution")
+            if self.detail is None or not self.detail.strip():
+                raise ValueError("pre-execution rejection requires explicit detail")
+        if self.kind is AdasW1LabStopKind.POST_GATE_ADMISSION_REJECTION:
+            if self.execution_ref is not None:
+                raise ValueError("post-gate rejection must not fabricate execution")
+            if self.detail is None or not self.detail.strip():
+                raise ValueError("post-gate rejection requires explicit detail")
+        if self.kind in {AdasW1LabStopKind.EXECUTION_FAILURE, AdasW1LabStopKind.EXECUTION_CANCELLATION}:
+            if self.execution_ref is None:
+                raise ValueError("execution outcome requires execution reference")
+            if self.structured_stop_reason is None:
+                raise ValueError("execution outcome requires structured stop reason")
+        return self
+
+
 class AdasOperationalEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -443,15 +489,17 @@ class AggregateResourceLimits(BaseModel):
     aggregate_monetary_allowance: float
     deadline_at: datetime
 
-    @field_validator("max_candidates", "max_search_iterations", "max_root_executions")
+    @field_validator("max_candidates", "max_search_iterations", "max_root_executions", mode="before")
     @classmethod
-    def _w1_limits(cls, value: int) -> int:
+    def _w1_limits(cls, value: object) -> int:
+        if type(value) is not int:
+            raise ValueError("limit must be a strict integer")
         return _finite_non_negative_int(value, field="limit")
 
-    @field_validator("aggregate_token_allowance", "aggregate_monetary_allowance")
+    @field_validator("aggregate_token_allowance", "aggregate_monetary_allowance", mode="before")
     @classmethod
-    def _budgets(cls, value: float) -> float:
-        return _finite_non_negative(value, field="budget")
+    def _budgets(cls, value: object) -> float:
+        return _validate_measured_scalar(value, label="budget")
 
     @field_validator("deadline_at")
     @classmethod
@@ -516,19 +564,114 @@ class ResourceAccountingEvidence(BaseModel):
     monetary_consumed: float | None = None
     root_executions_consumed: int | None = None
 
-    @field_validator("tokens_consumed", "monetary_consumed")
+    @field_validator("tokens_consumed", "monetary_consumed", mode="before")
     @classmethod
-    def _measured_floats(cls, value: float | None) -> float | None:
+    def _measured_floats(cls, value: object) -> float | None:
         if value is None:
             return None
-        return _finite_non_negative(value, field="consumption")
+        return _validate_measured_scalar(value, label="consumption")
 
-    @field_validator("root_executions_consumed")
+    @field_validator("root_executions_consumed", mode="before")
     @classmethod
-    def _measured_int(cls, value: int | None) -> int | None:
+    def _measured_int(cls, value: object) -> int | None:
         if value is None:
             return None
-        return _finite_non_negative_int(value, field="root_executions_consumed")
+        return _validate_measured_root_executions(value)
+
+
+class AdasW1SelectionAccountingEvidence(BaseModel):
+    """Frozen W1 selection accounting representation (cost_report payload authority)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    accounting_evidence_ref: str
+    completeness: str
+    tokens_consumed: float
+    monetary_consumed: float
+    root_executions_consumed: int
+    candidate_id: str
+    objective_id: str
+    search_run_id: str
+    tenant_id: str
+    workspace_id: str
+    baseline_execution_ref: AdasExecutionReference
+    candidate_execution_ref: AdasExecutionReference
+    aggregate_limits: AggregateResourceLimits
+    accepted_scope_ref: str
+
+    @field_validator(
+        "accounting_evidence_ref",
+        "completeness",
+        "candidate_id",
+        "objective_id",
+        "search_run_id",
+        "tenant_id",
+        "workspace_id",
+        "accepted_scope_ref",
+    )
+    @classmethod
+    def _non_blank_accounting_identity(cls, value: str) -> str:
+        return _non_blank(value, field="accounting identity")
+
+    @field_validator("tokens_consumed", "monetary_consumed", mode="before")
+    @classmethod
+    def _accounting_amounts(cls, value: object) -> float:
+        return _validate_measured_scalar(value, label="accounting measurement")
+
+    @field_validator("root_executions_consumed", mode="before")
+    @classmethod
+    def _accounting_roots(cls, value: object) -> int:
+        return _validate_measured_root_executions(value)
+
+    @model_validator(mode="after")
+    def _w1_accounting_shape(self) -> Self:
+        if self.completeness != "complete":
+            raise ValueError("SELECT_CANDIDATE requires complete accounting status")
+        if self.root_executions_consumed != 2:
+            raise ValueError("SELECT_CANDIDATE requires exactly two root executions")
+        if self.baseline_execution_ref.execution_id.strip() == self.candidate_execution_ref.execution_id.strip():
+            raise ValueError("baseline and candidate execution identities must be distinct")
+        measured = ResourceAccountingEvidence(
+            tokens_consumed=self.tokens_consumed,
+            monetary_consumed=self.monetary_consumed,
+            root_executions_consumed=self.root_executions_consumed,
+        )
+        _ = measured
+        return self
+
+
+class AdasW1BaselineRetentionProvenance(BaseModel):
+    """Immutable baseline evaluation provenance for RETAIN_BASELINE selection."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    baseline_version_id: str
+    baseline_configuration_digest: str
+    candidate_id: str
+    objective_id: str
+    search_run_id: str
+    tenant_id: str
+    workspace_id: str
+    baseline_execution_ref: AdasExecutionReference
+    evaluation_ref: str
+
+    @field_validator(
+        "baseline_version_id",
+        "candidate_id",
+        "objective_id",
+        "search_run_id",
+        "tenant_id",
+        "workspace_id",
+        "evaluation_ref",
+    )
+    @classmethod
+    def _non_blank_provenance(cls, value: str) -> str:
+        return _non_blank(value, field="baseline provenance")
+
+    @field_validator("baseline_configuration_digest")
+    @classmethod
+    def _digest(cls, value: str) -> str:
+        return _validate_sha256_digest(value)
 
 
 class AgentDesignObjective(BaseModel):
@@ -834,6 +977,7 @@ class AgentCandidateRecord(BaseModel):
     eval_suite_id: str | None = None
     static_gate_result: Mapping[str, AdasJsonValue] | None = None
     evaluation_result: Mapping[str, AdasJsonValue] | None = None
+    w1_lab_stop_evidence: AdasW1LabStopEvidence | None = None
     utility_score: float | None = None
     baseline_utility_score: float | None = None
     utility_delta: float | None = None
@@ -878,6 +1022,26 @@ class AgentCandidateRecord(BaseModel):
             return None
         return _aware_datetime(value)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_stop_evidence(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        gate = data.get("static_gate_result")
+        nested = None
+        if isinstance(gate, Mapping):
+            plain = adas_json_to_plain(gate)
+            if isinstance(plain, dict) and "w1_lab_stop_evidence" in plain:
+                gate_copy = dict(plain)
+                nested = gate_copy.pop("w1_lab_stop_evidence")
+                data["static_gate_result"] = gate_copy
+        first_class = data.get("w1_lab_stop_evidence")
+        if nested is not None and first_class is not None and nested != first_class:
+            raise ValueError("competing embedded and first-class stop evidence")
+        if nested is not None and data.get("w1_lab_stop_evidence") is None:
+            data["w1_lab_stop_evidence"] = nested
+        return data
+
     @field_validator(
         "agent_contract_snapshot",
         "static_gate_result",
@@ -909,6 +1073,22 @@ class AgentCandidateRecord(BaseModel):
     def _record_scope(self) -> Self:
         if self.envelope.tenant_id != self.tenant_id or self.envelope.workspace_id != self.workspace_id:
             raise ValueError("envelope scope must match record scope")
+        return self
+
+    @model_validator(mode="after")
+    def _w1_record_stop_and_gate_shape(self) -> Self:
+        if self.static_gate_result is not None:
+            plain = adas_json_to_plain(self.static_gate_result)
+            if "w1_lab_stop_evidence" in plain:
+                raise ValueError("static_gate_result must not embed execution stop evidence")
+        if self.w1_lab_stop_evidence is not None:
+            stop = self.w1_lab_stop_evidence
+            if stop.candidate_id != self.candidate_id:
+                raise ValueError("stop evidence candidate mismatch")
+            if stop.search_run_id != self.search_run_id:
+                raise ValueError("stop evidence search run mismatch")
+            if stop.tenant_id != self.tenant_id or stop.workspace_id != self.workspace_id:
+                raise ValueError("stop evidence scope mismatch")
         return self
 
     @field_validator(
@@ -1034,6 +1214,266 @@ class AgentCandidateEvaluationResult(BaseModel):
         return self
 
 
+def _evidence_values_compatible(prior: AdasJsonValue, incoming: AdasJsonValue) -> bool:
+    if prior == incoming:
+        return True
+    if isinstance(prior, dict) and isinstance(incoming, dict):
+        for key, value in prior.items():
+            if key not in incoming:
+                return False
+            if not _evidence_values_compatible(value, incoming[key]):
+                return False
+        return True
+    if isinstance(prior, list) and isinstance(incoming, list):
+        if len(prior) > len(incoming):
+            return False
+        for index, value in enumerate(prior):
+            if not _evidence_values_compatible(value, incoming[index]):
+                return False
+        return True
+    return False
+
+
+def _lab_stop_payload(stop: AdasW1LabStopEvidence) -> dict[str, AdasJsonValue]:
+    return stop.model_dump(mode="json")  # type: ignore[return-value]
+
+
+def parse_w1_lab_stop_from_record(record: AgentCandidateRecord) -> AdasW1LabStopEvidence | None:
+    return record.w1_lab_stop_evidence
+
+
+def _validate_measured_root_executions(raw: object) -> int:
+    if type(raw) is not int:
+        raise ValueError("root_executions_consumed must be a strict integer")
+    if raw < 0 or raw > 2:
+        raise ValueError("root_executions_consumed must be between 0 and 2")
+    return raw
+
+
+def _validate_measured_scalar(raw: object, *, label: str) -> float:
+    if type(raw) is bool or not isinstance(raw, (int, float)):
+        raise ValueError(label)
+    value = float(raw)
+    if not math.isfinite(value) or value < 0.0:
+        raise ValueError(label)
+    return value
+
+
+def parse_w1_selection_accounting(payload: Mapping[str, AdasJsonValue]) -> AdasW1SelectionAccountingEvidence:
+    plain = adas_json_to_plain(payload)
+    if not isinstance(plain, dict):
+        raise ValueError("accounting payload must be an object")
+    try:
+        return AdasW1SelectionAccountingEvidence.model_validate(plain)
+    except ValidationError as exc:
+        raise ValueError("invalid W1 selection accounting representation") from exc
+
+
+def validate_w1_baseline_retention(
+    *,
+    provenance: AdasW1BaselineRetentionProvenance,
+    record: AgentCandidateRecord,
+    baseline_evaluation: AgentCandidateEvaluationResult,
+) -> None:
+    if not baseline_evaluation.passed:
+        raise ValueError("RETAIN_BASELINE requires passed baseline evaluation")
+    if provenance.baseline_version_id != record.baseline.baseline_version_id:
+        raise ValueError("baseline version identity mismatch")
+    if provenance.baseline_configuration_digest != record.baseline.baseline_configuration_digest:
+        raise ValueError("baseline configuration digest mismatch")
+    for field_name, expected in (
+        ("candidate_id", record.candidate_id),
+        ("objective_id", record.objective_id),
+        ("search_run_id", record.search_run_id),
+        ("tenant_id", record.tenant_id),
+        ("workspace_id", record.workspace_id),
+    ):
+        if getattr(provenance, field_name) != expected:
+            raise ValueError("baseline provenance scope mismatch")
+    base_exec = baseline_evaluation.baseline_execution_ref
+    if base_exec is None:
+        raise ValueError("baseline evaluation requires baseline execution reference")
+    if provenance.baseline_execution_ref.execution_id != base_exec.execution_id:
+        raise ValueError("contradictory baseline execution identity")
+    if baseline_evaluation.evaluation_ref != provenance.evaluation_ref:
+        raise ValueError("baseline provenance evaluation identity mismatch")
+    if baseline_evaluation.candidate_id != record.candidate_id:
+        raise ValueError("baseline evaluation must bind to archived candidate context")
+
+
+def validate_w1_candidate_record_state(record: AgentCandidateRecord) -> None:
+    """Authoritative W1 record state / evidence semantics (archive ingress)."""
+    gate_passed: bool | None = None
+    if record.static_gate_result is not None:
+        gate_plain = adas_json_to_plain(record.static_gate_result)
+        if record.status is not AgentCandidateStatus.DRAFT:
+            gate_passed = adas_static_gate_verdict(gate_plain)
+
+    stop = record.w1_lab_stop_evidence
+    if stop is not None and (
+        stop.candidate_id != record.candidate_id
+        or stop.search_run_id != record.search_run_id
+        or stop.tenant_id != record.tenant_id
+        or stop.workspace_id != record.workspace_id
+    ):
+        raise ValueError("stop evidence scope mismatch")
+
+    if record.status is AgentCandidateStatus.DRAFT:
+        if record.static_gate_result is not None:
+            raise ValueError("DRAFT must not contain static gate payload")
+        if record.evaluation_result is not None:
+            raise ValueError("DRAFT must not contain completed evaluation evidence")
+        if stop is not None:
+            raise ValueError("DRAFT must not contain terminal stop evidence")
+        return
+
+    if record.status is AgentCandidateStatus.STATIC_GATE_PASSED:
+        if record.static_gate_result is None or gate_passed is not True:
+            raise ValueError("STATIC_GATE_PASSED requires successful static gate evidence")
+        if record.evaluation_result is not None:
+            raise ValueError("STATIC_GATE_PASSED must not contain completed evaluation")
+        if stop is not None:
+            raise ValueError("STATIC_GATE_PASSED must not contain terminal stop evidence")
+        return
+
+    if record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
+        if record.static_gate_result is None or gate_passed is not False:
+            raise ValueError("STATIC_GATE_FAILED requires failed static gate evidence")
+        if record.evaluation_result is not None:
+            raise ValueError("STATIC_GATE_FAILED must not contain fabricated evaluation")
+        if stop is not None and (
+            stop.execution_ref is not None
+            or stop.kind
+            in {
+                AdasW1LabStopKind.POST_GATE_ADMISSION_REJECTION,
+                AdasW1LabStopKind.EXECUTION_FAILURE,
+                AdasW1LabStopKind.EXECUTION_CANCELLATION,
+            }
+        ):
+            raise ValueError("STATIC_GATE_FAILED must not contain later execution evidence")
+        if not record.rejection_reason or not record.rejection_reason.strip():
+            raise ValueError("STATIC_GATE_FAILED requires rejection evidence")
+        return
+
+    if record.status is AgentCandidateStatus.EVALUATED:
+        if gate_passed is not True:
+            raise ValueError("EVALUATED requires successful static gate evidence")
+        if record.evaluation_result is None:
+            raise ValueError("EVALUATED requires evaluation evidence references")
+        validate_evaluation_mapping_for_record(
+            record.evaluation_result,
+            candidate_id=record.candidate_id,
+        )
+        if stop is not None:
+            raise ValueError("EVALUATED must not contain contradictory stop evidence")
+        return
+
+    if record.status is AgentCandidateStatus.REJECTED:
+        if not record.rejection_reason or not record.rejection_reason.strip():
+            raise ValueError("REJECTED requires explicit rejection evidence")
+        if record.evaluation_result is not None:
+            validate_evaluation_mapping_for_record(
+                record.evaluation_result,
+                candidate_id=record.candidate_id,
+            )
+            if gate_passed is not True:
+                raise ValueError("evaluated REJECTED requires passing static gate evidence")
+            if stop is not None and stop.kind in {
+                AdasW1LabStopKind.PRE_EXECUTION_REJECTION,
+                AdasW1LabStopKind.EXECUTION_FAILURE,
+                AdasW1LabStopKind.EXECUTION_CANCELLATION,
+            }:
+                raise ValueError("completed evaluation cannot be reinterpreted as pre-eval stop")
+            return
+        if gate_passed is False:
+            raise ValueError("pre-execution rejection must not fabricate failed static gate evidence")
+        if gate_passed is True:
+            if stop is None or stop.kind not in {
+                AdasW1LabStopKind.POST_GATE_ADMISSION_REJECTION,
+                AdasW1LabStopKind.EXECUTION_FAILURE,
+                AdasW1LabStopKind.EXECUTION_CANCELLATION,
+            }:
+                raise ValueError("post-gate REJECTED requires post-gate admission or execution stop evidence")
+            return
+        if stop is None or stop.kind is not AdasW1LabStopKind.PRE_EXECUTION_REJECTION:
+            raise ValueError("pre-execution REJECTED requires typed PRE_EXECUTION_REJECTION stop evidence")
+        return
+
+    if record.status is AgentCandidateStatus.ARCHIVED:
+        if record.archived_at is None:
+            raise ValueError("ARCHIVED requires archival timestamp")
+        if record.evaluation_result is not None:
+            validate_evaluation_mapping_for_record(
+                record.evaluation_result,
+                candidate_id=record.candidate_id,
+            )
+        return
+
+
+def validate_w1_selection_cost_report(
+    cost_report: Mapping[str, AdasJsonValue],
+    *,
+    record: AgentCandidateRecord,
+    evaluation: AgentCandidateEvaluationResult | None = None,
+    baseline_evaluation: AgentCandidateEvaluationResult | None = None,
+) -> None:
+    accounting = parse_w1_selection_accounting(cost_report)
+    for field_name, expected in (
+        ("candidate_id", record.candidate_id),
+        ("objective_id", record.objective_id),
+        ("search_run_id", record.search_run_id),
+        ("tenant_id", record.tenant_id),
+        ("workspace_id", record.workspace_id),
+    ):
+        if getattr(accounting, field_name) != expected:
+            raise ValueError("accounting evidence scope mismatch")
+    if accounting.accepted_scope_ref != record.envelope.accepted_scope_ref:
+        raise ValueError("accepted scope reference mismatch")
+    limits = accounting.aggregate_limits
+    if accounting.tokens_consumed > limits.aggregate_token_allowance:
+        raise ValueError("token consumption exceeds aggregate token allowance")
+    if accounting.monetary_consumed > limits.aggregate_monetary_allowance:
+        raise ValueError("monetary consumption exceeds aggregate monetary allowance")
+    if accounting.root_executions_consumed > limits.max_root_executions:
+        raise ValueError("root execution count exceeds admitted root limit")
+    if evaluation is None:
+        raise ValueError("SELECT_CANDIDATE requires evaluation context for accounting")
+    if not evaluation.passed:
+        raise ValueError("SELECT_CANDIDATE requires successful evaluation")
+    eval_base = evaluation.baseline_execution_ref
+    eval_candidate = evaluation.execution_ref
+    if eval_base is None:
+        raise ValueError("evaluation requires baseline execution reference")
+    if eval_candidate is None or not str(eval_candidate).strip():
+        raise ValueError("evaluation requires candidate execution reference")
+    if accounting.baseline_execution_ref.execution_id != eval_base.execution_id:
+        raise ValueError("baseline execution reference mismatch")
+    cand_exec_id = eval_candidate if isinstance(eval_candidate, str) else getattr(eval_candidate, "execution_id", None)
+    if cand_exec_id is None or accounting.candidate_execution_ref.execution_id != str(cand_exec_id):
+        raise ValueError("candidate execution reference mismatch")
+    if evaluation.total_tokens is not None and accounting.tokens_consumed < float(evaluation.total_tokens):
+        raise ValueError("aggregate tokens below candidate evaluation tokens")
+    combined = float(evaluation.total_tokens or 0)
+    if baseline_evaluation is not None:
+        base_ref = (
+            baseline_evaluation.baseline_execution_ref.execution_id
+            if baseline_evaluation.baseline_execution_ref is not None
+            else baseline_evaluation.execution_ref
+        )
+        if base_ref is None or base_ref != accounting.baseline_execution_ref.execution_id:
+            raise ValueError("baseline evaluation execution reference mismatch")
+        if (
+            baseline_evaluation.baseline_execution_ref is not None
+            and baseline_evaluation.execution_ref is not None
+            and baseline_evaluation.execution_ref != accounting.baseline_execution_ref.execution_id
+        ):
+            raise ValueError("baseline evaluation execution reference mismatch")
+        if baseline_evaluation.total_tokens is not None and base_ref != str(cand_exec_id):
+            combined += float(baseline_evaluation.total_tokens)
+    if accounting.tokens_consumed < combined:
+        raise ValueError("aggregate token allowance below recorded measurements")
+
+
 def adas_static_gate_verdict(plain: Mapping[str, AdasJsonValue]) -> bool:
     if "passed" not in plain:
         raise ValueError("static gate evidence must declare passed")
@@ -1057,7 +1497,12 @@ def validate_evaluation_mapping_for_record(
         raise ValueError("evaluation candidate identity mismatch")
     body: dict[str, object] = dict(plain)
     body["candidate_id"] = candidate_id
-    return AgentCandidateEvaluationResult.model_validate(body)
+    result = AgentCandidateEvaluationResult.model_validate(body)
+    if result.execution_ref is None or result.evaluation_ref is None:
+        raise ValueError("completed evaluation requires execution and evaluation references")
+    if not result.passed and not result.failure_reasons:
+        raise ValueError("negative evaluation requires failure reasons")
+    return result
 
 
 def infer_w1_terminal_evidence_outcome(
@@ -1070,10 +1515,24 @@ def infer_w1_terminal_evidence_outcome(
         record.status is AgentCandidateStatus.REJECTED and has_evaluation
     ):
         return W1TerminalEvidenceOutcome.EVALUATION_COMPLETE
-    if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+    try:
+        stop = parse_w1_lab_stop_from_record(record)
+    except ValueError:
+        stop = None
+    if stop is not None and stop.kind in {
+        AdasW1LabStopKind.EXECUTION_FAILURE,
+        AdasW1LabStopKind.EXECUTION_CANCELLATION,
+    }:
+        return W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED
+    if record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
         return W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION
     if gate_passed is False and not has_evaluation:
-        return W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED
+        if stop is not None and stop.kind in {
+            AdasW1LabStopKind.EXECUTION_FAILURE,
+            AdasW1LabStopKind.EXECUTION_CANCELLATION,
+        }:
+            return W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED
+        return W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION
     if has_evaluation:
         return W1TerminalEvidenceOutcome.EVALUATION_COMPLETE
     return W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION
@@ -1081,6 +1540,20 @@ def infer_w1_terminal_evidence_outcome(
 
 class AgentCandidateEvidenceBundle(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_gate_embedded_stop(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        gate = data.get("static_gate_result")
+        if isinstance(gate, Mapping):
+            plain = adas_json_to_plain(gate)
+            if isinstance(plain, dict) and "w1_lab_stop_evidence" in plain:
+                gate_copy = dict(plain)
+                gate_copy.pop("w1_lab_stop_evidence", None)
+                data["static_gate_result"] = gate_copy
+        return data
 
     bundle_id: str
     candidate_id: str
@@ -1102,8 +1575,10 @@ class AgentCandidateEvidenceBundle(BaseModel):
     candidate_configuration_digest: str
     selection_outcome: SearchSelectionOutcome | None = None
     terminal_evidence_outcome: W1TerminalEvidenceOutcome | None = None
+    w1_lab_stop_evidence: AdasW1LabStopEvidence | None = None
     candidate_record: AgentCandidateRecord
     baseline_evaluation_result: AgentCandidateEvaluationResult | None = None
+    w1_baseline_retention_provenance: AdasW1BaselineRetentionProvenance | None = None
     evaluation_result: AgentCandidateEvaluationResult | None = None
     static_gate_result: Mapping[str, AdasJsonValue] | None = None
     policy_gate_result: Mapping[str, AdasJsonValue] | None = None
@@ -1212,19 +1687,22 @@ def validate_sealed_terminal_evidence_bundle(bundle: AgentCandidateEvidenceBundl
     record = bundle.candidate_record
     has_gate = bundle.static_gate_result is not None
     has_eval = bundle.evaluation_result is not None
-    if not has_gate and not has_eval:
+    has_stop = bundle.w1_lab_stop_evidence is not None
+    if not has_gate and not has_eval and not has_stop:
         raise ValueError("sealed bundle requires terminal evidence shape")
     gate_passed: bool | None = None
     if has_gate:
         gate_plain = adas_json_to_plain(bundle.static_gate_result)  # type: ignore[arg-type]
         gate_passed = adas_static_gate_verdict(gate_plain)
-    if record.static_gate_result is not None:
-        if not has_gate:
-            raise ValueError("bundle must carry static gate evidence for archived gate state")
+    elif record.static_gate_result is not None:
+        raise ValueError("bundle must carry static gate evidence for archived gate state")
+    if record.static_gate_result is not None and has_gate:
         record_gate = adas_json_to_plain(record.static_gate_result)
         bundle_gate = adas_json_to_plain(bundle.static_gate_result)  # type: ignore[arg-type]
-        if record_gate != bundle_gate:
+        if not _evidence_values_compatible(record_gate, bundle_gate):
             raise ValueError("bundle static gate must match archived snapshot")
+    elif record.static_gate_result is not None:
+        raise ValueError("bundle must carry static gate evidence for archived gate state")
     if record.evaluation_result is not None:
         record_eval = validate_evaluation_mapping_for_record(
             record.evaluation_result,
@@ -1234,28 +1712,65 @@ def validate_sealed_terminal_evidence_bundle(bundle: AgentCandidateEvidenceBundl
             raise ValueError("bundle must carry evaluation evidence for evaluated snapshot")
         if bundle.evaluation_result != record_eval:
             raise ValueError("bundle evaluation must match archived snapshot")
-    elif has_eval and record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
-        raise ValueError("static rejection must not contain fabricated evaluation results")
+    elif has_eval and record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+        raise ValueError("terminal state must not contain fabricated evaluation results")
+    archived_stop = record.w1_lab_stop_evidence
+    if archived_stop is not None:
+        if not has_stop or bundle.w1_lab_stop_evidence is None:
+            raise ValueError("sealed bundle requires archived stop evidence")
+        if bundle.w1_lab_stop_evidence.model_dump() != archived_stop.model_dump():
+            raise ValueError("bundle stop evidence must match archived record")
+    elif has_stop and bundle.w1_lab_stop_evidence is not None:
+        raise ValueError("bundle must not invent stop evidence absent from archived record")
+    if has_stop and bundle.w1_lab_stop_evidence is not None:
+        stop = bundle.w1_lab_stop_evidence
+        if (
+            stop.candidate_id != record.candidate_id
+            or stop.search_run_id != record.search_run_id
+            or stop.tenant_id != record.tenant_id
+            or stop.workspace_id != record.workspace_id
+        ):
+            raise ValueError("terminal stop evidence scope mismatch")
     outcome = bundle.terminal_evidence_outcome
     if outcome is None:
         raise ValueError("sealed bundle requires terminal_evidence_outcome")
     expected = infer_w1_terminal_evidence_outcome(record, has_evaluation=has_eval, gate_passed=gate_passed)
     if outcome is not expected:
         raise ValueError("terminal_evidence_outcome must match archived terminal state")
+    selection = bundle.selection_outcome
+    if (
+        record.status is AgentCandidateStatus.STATIC_GATE_FAILED
+        and selection is SearchSelectionOutcome.SELECT_CANDIDATE
+    ):
+        raise ValueError("failed gate must not claim candidate selection")
     if outcome is W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION:
-        if gate_passed is not False:
-            raise ValueError("static rejection requires failed static gate evidence")
-        if has_eval and bundle.evaluation_result is not None and bundle.evaluation_result.passed:
-            raise ValueError("static rejection must not claim successful evaluation")
+        if record.status is AgentCandidateStatus.STATIC_GATE_FAILED and gate_passed is not False:
+            raise ValueError("static gate rejection requires failed static gate evidence")
+        if record.status is AgentCandidateStatus.REJECTED and record.static_gate_result is None:
+            if has_gate:
+                raise ValueError("pre-execution rejection must not fabricate static gate evidence")
+            if not has_stop or bundle.w1_lab_stop_evidence is None:
+                raise ValueError("pre-execution rejection requires typed stop evidence")
+            if bundle.w1_lab_stop_evidence.kind is not AdasW1LabStopKind.PRE_EXECUTION_REJECTION:
+                raise ValueError("pre-execution rejection requires matching stop evidence")
+    if outcome is W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED:
+        if selection is SearchSelectionOutcome.SELECT_CANDIDATE:
+            raise ValueError("failed or cancelled execution must not claim successful candidate selection")
+        if (
+            not has_stop
+            or bundle.w1_lab_stop_evidence is None
+            or bundle.w1_lab_stop_evidence.kind
+            not in {AdasW1LabStopKind.EXECUTION_FAILURE, AdasW1LabStopKind.EXECUTION_CANCELLATION}
+        ):
+            raise ValueError("execution failure requires typed stop evidence")
     if outcome is W1TerminalEvidenceOutcome.EVALUATION_COMPLETE and not has_eval:
         raise ValueError("evaluated outcome requires genuine evaluation evidence")
-    if outcome is W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED and bundle.selection_outcome in {
-        SearchSelectionOutcome.SELECT_CANDIDATE,
-    }:
-        raise ValueError("failed or cancelled execution must not claim successful candidate selection")
-    selection = bundle.selection_outcome
     if selection is SearchSelectionOutcome.SELECT_CANDIDATE:
-        if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+        if record.status in {
+            AgentCandidateStatus.STATIC_GATE_FAILED,
+            AgentCandidateStatus.REJECTED,
+            AgentCandidateStatus.ARCHIVED,
+        }:
             raise ValueError("failed or rejected candidates cannot be selected")
         if gate_passed is not True:
             raise ValueError("SELECT_CANDIDATE requires successful static gate evidence")
@@ -1263,14 +1778,22 @@ def validate_sealed_terminal_evidence_bundle(bundle: AgentCandidateEvidenceBundl
             raise ValueError("SELECT_CANDIDATE requires successful evaluation evidence")
         if bundle.cost_report is None:
             raise ValueError("SELECT_CANDIDATE requires accounting evidence")
-    if selection in {SearchSelectionOutcome.RETAIN_BASELINE, SearchSelectionOutcome.ABSTAIN}:
-        if record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
-            raise ValueError("STATIC_GATE_FAILED cannot be selected")
-    status = record.status
-    if status is AgentCandidateStatus.EVALUATED and not has_eval:
-        raise ValueError("evaluated terminal bundle requires evaluation evidence")
-    if status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED} and not has_gate:
-        raise ValueError("rejected terminal bundle requires static gate evidence")
+        validate_w1_selection_cost_report(
+            bundle.cost_report,
+            record=record,
+            evaluation=bundle.evaluation_result,
+            baseline_evaluation=bundle.baseline_evaluation_result,
+        )  # type: ignore[arg-type]
+    if selection is SearchSelectionOutcome.RETAIN_BASELINE:
+        if bundle.baseline_evaluation_result is None:
+            raise ValueError("RETAIN_BASELINE requires baseline acceptance evidence")
+        if bundle.w1_baseline_retention_provenance is None:
+            raise ValueError("RETAIN_BASELINE requires baseline retention provenance")
+        validate_w1_baseline_retention(
+            provenance=bundle.w1_baseline_retention_provenance,
+            record=record,
+            baseline_evaluation=bundle.baseline_evaluation_result,
+        )
 
 
 def canonical_record_json(model: BaseModel) -> dict[str, Any]:

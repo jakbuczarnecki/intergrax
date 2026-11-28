@@ -13,11 +13,11 @@ from pydantic import ValidationError
 from intergrax.runtime.adaptive.agent_design_search.archive import (
     AgentDesignArchiveError,
     AgentDesignArchiveScopeError,
-    _ensure_global_candidate_scope,
     freeze_candidate_record,
     freeze_evidence_bundle,
     require_archive_read_scope,
     validate_evidence_bundle_against_archive,
+    validate_new_selection,
     validate_parent_link,
     validate_transition,
 )
@@ -209,6 +209,18 @@ class SQLiteAgentDesignArchive:
                 (frozen.snapshot_id,),
             ).fetchone()
             if existing_row is not None:
+                scope_row_existing = conn.execute(
+                    """
+                    SELECT tenant_id, workspace_id FROM adas_candidate_snapshots
+                    WHERE snapshot_id = ?
+                    """,
+                    (frozen.snapshot_id,),
+                ).fetchone()
+                if scope_row_existing is not None and (
+                    scope_row_existing["tenant_id"] != tenant_id or scope_row_existing["workspace_id"] != workspace_id
+                ):
+                    _rollback_if_active(conn)
+                    raise AgentDesignArchiveScopeError("candidate identity scope mismatch")
                 existing = AgentCandidateRecord.model_validate_json(existing_row["payload_json"])
                 if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
                     _rollback_if_active(conn)
@@ -216,7 +228,6 @@ class SQLiteAgentDesignArchive:
                 _rollback_if_active(conn)
                 raise AgentDesignArchiveError("conflicting snapshot identity")
 
-            _ensure_global_candidate_scope({}, frozen, tenant_id=tenant_id, workspace_id=workspace_id)
             prior = self._fetch_prior_snapshot(
                 conn,
                 candidate_id=frozen.candidate_id,
@@ -260,6 +271,18 @@ class SQLiteAgentDesignArchive:
                 (frozen.snapshot_id,),
             ).fetchone()
             if existing_row is not None:
+                scope_row_existing = conn.execute(
+                    """
+                    SELECT tenant_id, workspace_id FROM adas_candidate_snapshots
+                    WHERE snapshot_id = ?
+                    """,
+                    (frozen.snapshot_id,),
+                ).fetchone()
+                if scope_row_existing is not None and (
+                    scope_row_existing["tenant_id"] != tenant_id or scope_row_existing["workspace_id"] != workspace_id
+                ):
+                    _rollback_if_active(conn)
+                    raise AgentDesignArchiveScopeError("candidate identity scope mismatch")
                 existing = AgentCandidateRecord.model_validate_json(existing_row["payload_json"])
                 if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
                     return existing
@@ -304,12 +327,7 @@ class SQLiteAgentDesignArchive:
             (candidate_id, tenant_id, workspace_id),
         ).fetchall()
         if not rows:
-            foreign = conn.execute(
-                "SELECT 1 FROM adas_candidate_snapshots WHERE candidate_id = ? LIMIT 1",
-                (candidate_id,),
-            ).fetchone()
-            if foreign is not None:
-                return []
+            return []
         return [AgentCandidateRecord.model_validate_json(row["payload_json"]) for row in rows]
 
     def list_candidates_for_objective(
@@ -415,9 +433,28 @@ class SQLiteAgentDesignArchive:
             payload["bundle_digest"] = digest
             frozen = freeze_evidence_bundle(AgentCandidateEvidenceBundle.model_validate(payload))
             verify_evidence_bundle_digest(frozen)
-            existing_row = conn.execute(
-                "SELECT payload_json FROM adas_evidence_bundles WHERE bundle_id = ?",
+            existing_scope = conn.execute(
+                """
+                SELECT tenant_id, workspace_id
+                FROM adas_evidence_bundles
+                WHERE bundle_id = ?
+                """,
                 (frozen.bundle_id,),
+            ).fetchone()
+            if existing_scope is not None and (
+                existing_scope["tenant_id"] != tenant_id or existing_scope["workspace_id"] != workspace_id
+            ):
+                _rollback_if_active(conn)
+                raise AgentDesignArchiveScopeError("bundle identity scope mismatch")
+            existing_row = conn.execute(
+                """
+                SELECT payload_json
+                FROM adas_evidence_bundles
+                WHERE bundle_id = ?
+                  AND tenant_id = ?
+                  AND workspace_id = ?
+                """,
+                (frozen.bundle_id, tenant_id, workspace_id),
             ).fetchone()
             if existing_row is not None:
                 existing = AgentCandidateEvidenceBundle.model_validate_json(existing_row["payload_json"])
@@ -426,6 +463,15 @@ class SQLiteAgentDesignArchive:
                     return existing
                 _rollback_if_active(conn)
                 raise AgentDesignArchiveError("conflicting evidence bundle identity")
+            validate_new_selection(
+                frozen,
+                self._fetch_prior_snapshot(
+                    conn,
+                    candidate_id=frozen.candidate_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                ),
+            )
             conn.execute(
                 """
                 INSERT INTO adas_evidence_bundles (bundle_id, tenant_id, workspace_id, payload_json, created_at)

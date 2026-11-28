@@ -16,11 +16,13 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AgentCandidateRecord,
     AgentCandidateStatus,
     SearchSelectionOutcome,
+    _evidence_values_compatible,
     adas_json_to_plain,
     adas_static_gate_verdict,
     compute_evidence_bundle_digest,
     validate_evaluation_mapping_for_record,
     validate_sealed_terminal_evidence_bundle,
+    validate_w1_candidate_record_state,
     verify_evidence_bundle_digest,
 )
 
@@ -260,36 +262,15 @@ def _validate_accumulated_evidence(
     for key, value in prior.items():
         if key not in incoming:
             raise AgentDesignArchiveError(f"successor removed established {label} field")
-        if incoming[key] != value:
+        if not _evidence_values_compatible(value, incoming[key]):
             raise AgentDesignArchiveError(f"contradictory {label} evidence")
 
 
 def validate_status_evidence(record: AgentCandidateRecord) -> None:
-    if record.status is AgentCandidateStatus.STATIC_GATE_PASSED and not _gate_passed_payload(record):
-        raise AgentDesignArchiveError("STATIC_GATE_PASSED requires successful static gate evidence")
-    if record.status is AgentCandidateStatus.STATIC_GATE_FAILED and (
-        not _gate_failed_payload(record) or not _has_rejection_evidence(record)
-    ):
-        raise AgentDesignArchiveError("STATIC_GATE_FAILED requires failed static gate evidence and rejection reason")
-    if record.status is AgentCandidateStatus.EVALUATED:
-        if record.evaluation_result is None:
-            raise AgentDesignArchiveError("EVALUATED requires evaluation evidence references")
-        try:
-            validate_evaluation_mapping_for_record(
-                record.evaluation_result,
-                candidate_id=record.candidate_id,
-            )
-        except (ValueError, ValidationError) as exc:
-            raise AgentDesignArchiveError("EVALUATED requires valid typed evaluation evidence") from exc
-    if record.static_gate_result is not None:
-        try:
-            adas_static_gate_verdict(adas_json_to_plain(record.static_gate_result))
-        except ValueError as exc:
-            raise AgentDesignArchiveError("static gate evidence must declare boolean verdict") from exc
-    if record.status is AgentCandidateStatus.REJECTED and not _has_rejection_evidence(record):
-        raise AgentDesignArchiveError("REJECTED requires explicit rejection evidence")
-    if record.status is AgentCandidateStatus.ARCHIVED and record.archived_at is None:
-        raise AgentDesignArchiveError("ARCHIVED requires archival timestamp")
+    try:
+        validate_w1_candidate_record_state(record)
+    except ValueError as exc:
+        raise AgentDesignArchiveError(str(exc)) from exc
 
 
 def _frozen_evidence_plain(value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
@@ -304,6 +285,15 @@ def validate_transition(
 ) -> None:
     if incoming.status in _FORBIDDEN_W1_TARGETS:
         raise AgentDesignArchiveError("W1 archive profile forbids this status transition target")
+    if prior is not None and incoming.status is AgentCandidateStatus.ARCHIVED:
+        for field in (
+            "static_gate_result",
+            "evaluation_result",
+            "w1_lab_stop_evidence",
+            "rejection_reason",
+        ):
+            if getattr(prior, field) is None and getattr(incoming, field) is not None:
+                raise AgentDesignArchiveError("archival must not fabricate terminal evidence")
     if prior is not None and prior.static_gate_result is not None:
         if incoming.static_gate_result is None:
             raise AgentDesignArchiveError("successor must preserve static gate evidence")
@@ -322,6 +312,28 @@ def validate_transition(
             incoming=_frozen_evidence_plain(incoming.evaluation_result),
             label="evaluation",
         )
+    if prior is not None and prior.w1_lab_stop_evidence is not None:
+        if incoming.w1_lab_stop_evidence is None:
+            raise AgentDesignArchiveError("successor must preserve terminal stop evidence")
+        if prior.w1_lab_stop_evidence.model_dump(mode="json") != incoming.w1_lab_stop_evidence.model_dump(mode="json"):
+            raise AgentDesignArchiveError("contradictory terminal stop evidence")
+    if incoming.evaluation_result is not None and prior is not None:
+        if (
+            prior.status not in {AgentCandidateStatus.EVALUATED, AgentCandidateStatus.REJECTED}
+            and incoming.status is AgentCandidateStatus.REJECTED
+        ):
+            raise AgentDesignArchiveError("rejection must not fabricate evaluation results")
+    if incoming.status is AgentCandidateStatus.REJECTED and prior is not None:
+        if prior.status is AgentCandidateStatus.DRAFT:
+            if incoming.static_gate_result is not None:
+                raise AgentDesignArchiveError("pre-execution rejection must not fabricate static gate results")
+            if incoming.evaluation_result is not None:
+                raise AgentDesignArchiveError("pre-execution rejection must not fabricate evaluation results")
+        if prior.status is AgentCandidateStatus.STATIC_GATE_PASSED and incoming.evaluation_result is not None:
+            raise AgentDesignArchiveError("execution rejection must not fabricate evaluation results")
+    if prior is not None and prior.rejection_reason is not None:
+        if incoming.rejection_reason != prior.rejection_reason:
+            raise AgentDesignArchiveError("successor must preserve rejection evidence")
     if prior is None:
         if incoming.status is not AgentCandidateStatus.DRAFT or incoming.sequence != 0:
             raise AgentDesignArchiveError("first snapshot must be DRAFT at sequence 0")
@@ -370,8 +382,24 @@ def validate_evidence_bundle_against_archive(
         except ValueError as exc:
             raise AgentDesignArchiveError(str(exc)) from exc
         if bundle.selection_outcome is SearchSelectionOutcome.SELECT_CANDIDATE:
-            if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+            if record.status in {
+                AgentCandidateStatus.STATIC_GATE_FAILED,
+                AgentCandidateStatus.REJECTED,
+                AgentCandidateStatus.ARCHIVED,
+            }:
                 raise AgentDesignArchiveError("failed or rejected candidates cannot be selected")
+
+
+def validate_new_selection(
+    bundle: AgentCandidateEvidenceBundle,
+    latest: AgentCandidateRecord | None,
+) -> None:
+    if bundle.selection_outcome is SearchSelectionOutcome.SELECT_CANDIDATE and (
+        latest is None
+        or latest.status is not AgentCandidateStatus.EVALUATED
+        or latest.snapshot_id != bundle.candidate_record.snapshot_id
+    ):
+        raise AgentDesignArchiveError("new selection requires current evaluated snapshot")
 
 
 def freeze_evidence_bundle(bundle: AgentCandidateEvidenceBundle) -> AgentCandidateEvidenceBundle:
@@ -430,6 +458,8 @@ class InMemoryAgentDesignArchive:
         prior = self._history.get(frozen.candidate_id, [None])[-1]  # type: ignore[list-item]
         if frozen.snapshot_id in self._snapshots:
             existing = self._snapshots[frozen.snapshot_id]
+            if existing.tenant_id != tenant_id or existing.workspace_id != workspace_id:
+                raise AgentDesignArchiveScopeError("candidate identity scope mismatch")
             if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
                 return existing
             raise AgentDesignArchiveError("conflicting snapshot identity")
@@ -557,9 +587,19 @@ class InMemoryAgentDesignArchive:
         verify_evidence_bundle_digest(frozen)
         if bundle.bundle_id in self._bundles:
             existing = self._bundles[bundle.bundle_id]
+            if existing.tenant_id != tenant_id or existing.workspace_id != workspace_id:
+                raise AgentDesignArchiveScopeError("bundle identity scope mismatch")
             if existing.model_dump(mode="json") == frozen.model_dump(mode="json"):
                 return existing
             raise AgentDesignArchiveError("conflicting evidence bundle identity")
+        validate_new_selection(
+            frozen,
+            self.get_latest_candidate_snapshot(
+                frozen.candidate_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            ),
+        )
         self._bundles[bundle.bundle_id] = frozen
         return frozen
 

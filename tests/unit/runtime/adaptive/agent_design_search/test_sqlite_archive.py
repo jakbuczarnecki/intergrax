@@ -9,7 +9,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from intergrax.runtime.adaptive.agent_design_search.archive import AgentDesignArchiveError
+from intergrax.runtime.adaptive.agent_design_search.archive import (
+    AgentDesignArchiveError,
+    AgentDesignArchiveScopeError,
+)
 from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AdasJsonValue,
     AgentCandidateEvidenceBundle,
@@ -80,20 +83,128 @@ def test_sqlite_sealed_bundle_persistence(tmp_path: Path) -> None:
 
 
 def test_q16_import_side_effects_isolated(tmp_path: Path) -> None:
-    workdir = str(tmp_path).replace("\\", "\\\\")
-    script = (
-        "import os, sqlite3; "
-        f"os.chdir('{workdir}'); "
-        "original = sqlite3.connect; "
-        "sqlite3.connect = lambda *a, **k: (_ for _ in ()).throw(AssertionError('sqlite import side effect')); "
-        "import intergrax.runtime.adaptive.agent_design_search as adas; "
-        "sqlite3.connect = original; "
-        "assert adas.__all__; "
-        "assert 'SQLiteAgentDesignArchive' in adas.__all__; "
-        "assert list(os.listdir('.')) == []"
+    pure_dir = tmp_path / "pure"
+    guard_dir = tmp_path / "guard"
+    pure_dir.mkdir()
+    guard_dir.mkdir()
+    workdir = str(pure_dir).replace("\\", "\\\\")
+    guard_workdir = str(guard_dir).replace("\\", "\\\\")
+    pure_import_script = f"""
+import os
+import socket
+import sqlite3
+import subprocess
+import sys
+import urllib.request
+
+os.chdir({workdir!r})
+side_effects = {{}}
+profiled_calls = []
+before = set(sys.modules)
+
+def _deny_sqlite(*_a, **_k):
+    side_effects['sqlite_connect'] = side_effects.get('sqlite_connect', 0) + 1
+    raise AssertionError('sqlite import side effect')
+
+def _deny_subprocess_run(*_a, **_k):
+    side_effects['subprocess'] = side_effects.get('subprocess', 0) + 1
+    raise AssertionError('subprocess import side effect')
+
+class _GuardPopen(subprocess.Popen):
+    def __init__(self, *args, **kwargs):
+        side_effects['subprocess'] = side_effects.get('subprocess', 0) + 1
+        raise AssertionError('subprocess import side effect')
+
+def _deny_network(*_a, **_k):
+    side_effects['network'] = side_effects.get('network', 0) + 1
+    raise AssertionError('network import side effect')
+
+sqlite3.connect = _deny_sqlite
+subprocess.Popen = _GuardPopen
+subprocess.run = _deny_subprocess_run
+socket.create_connection = _deny_network
+urllib.request.urlopen = _deny_network
+
+def _profiler(frame, event, arg):
+    if event == 'call':
+        mod = frame.f_globals.get('__name__', '')
+        fn = frame.f_code.co_name
+        if (
+            mod.startswith('intergrax.providers')
+            or (
+                mod == 'intergrax.runtime.task.unified_task_runner'
+                and fn in {{'run_task', 'run_runtime_request', '__init__'}}
+            )
+            or (mod == 'intergrax.runtime.adaptive.profile_promotion' and fn == 'evaluate_profile_promotion')
+        ):
+            profiled_calls.append((mod, fn))
+
+sys.setprofile(_profiler)
+try:
+    import intergrax.runtime.adaptive.agent_design_search as adas  # noqa: E402
+finally:
+    sys.setprofile(None)
+
+assert adas.__all__
+assert 'SQLiteAgentDesignArchive' in adas.__all__
+assert side_effects == {{}}, side_effects
+assert profiled_calls == [], profiled_calls
+after = set(sys.modules)
+delta = after - before
+assert 'intergrax.providers' not in after
+assert 'intergrax.runtime.promotion' not in after
+assert not any(name.startswith('intergrax.providers') for name in delta)
+assert list(os.listdir('.')) == []
+"""
+    import os
+    from pathlib import Path as PathLib
+
+    repo_root = str(PathLib(__file__).resolve().parents[5])
+    env = {**os.environ, "PYTHONPATH": repo_root}
+    pure_completed = subprocess.run(
+        [sys.executable, "-c", pure_import_script], check=False, capture_output=True, text=True, env=env
     )
-    completed = subprocess.run([sys.executable, "-c", script], check=False, capture_output=True, text=True)
-    assert completed.returncode == 0, completed.stderr
+    assert pure_completed.returncode == 0, pure_completed.stderr or pure_completed.stdout
+
+    guard_script = f"""
+import os
+import sys
+
+os.chdir({guard_workdir!r})
+side_effects = {{}}
+
+def _deny_dispatch(*_a, **_k):
+    side_effects['dispatch'] = side_effects.get('dispatch', 0) + 1
+    raise AssertionError('dispatch import side effect')
+
+def _deny_promotion(*_a, **_k):
+    side_effects['promotion'] = side_effects.get('promotion', 0) + 1
+    raise AssertionError('promotion import side effect')
+
+import intergrax.runtime.task.unified_task_runner as utr  # noqa: E402
+import intergrax.runtime.adaptive.profile_promotion as pp  # noqa: E402
+
+utr.UnifiedTaskRunner.run_task = _deny_dispatch
+utr.UnifiedTaskRunner.run_runtime_request = _deny_dispatch
+pp.evaluate_profile_promotion = _deny_promotion
+
+import intergrax.runtime.adaptive.agent_design_search as adas  # noqa: E402
+
+assert adas.__all__
+assert side_effects == {{}}, side_effects
+
+calibration_caught = False
+try:
+    pp.evaluate_profile_promotion()
+except AssertionError:
+    calibration_caught = True
+assert calibration_caught, 'guard calibration failed'
+assert side_effects.get('promotion') == 1, side_effects
+"""
+    guard_completed = subprocess.run(
+        [sys.executable, "-c", guard_script], check=False, capture_output=True, text=True, env=env
+    )
+    assert guard_completed.returncode == 0, guard_completed.stderr or guard_completed.stdout
 
 
 def test_two_instances_observe_committed_updates(tmp_path: Path) -> None:
@@ -335,3 +446,63 @@ def test_q15_failed_append_leaves_rows_unchanged(tmp_path: Path) -> None:
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
         )
+
+
+def test_q15_connection_reuse_after_rejected_transaction(tmp_path: Path) -> None:
+    db_path = tmp_path / "adas-retry.sqlite3"
+    archive = SQLiteAgentDesignArchive(db_path)
+    archive._connect()
+    record = sample_record()
+    archive.append_candidate_snapshot(record, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(AgentDesignArchiveError):
+        archive.append_candidate_snapshot(
+            sample_record(sequence=2, status=AgentCandidateStatus.EVALUATED),
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    archive.append_candidate_snapshot(
+        sample_record(sequence=1, status=AgentCandidateStatus.STATIC_GATE_PASSED, static_gate_result={"passed": True}),
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    archive.close()
+
+
+def test_sqlite_foreign_snapshot_collision_rejected_before_deserialize(tmp_path: Path) -> None:
+    db_path = tmp_path / "adas-scope.sqlite3"
+    record = sample_record(snapshot_id="snap-shared")
+    foreign = sample_record(snapshot_id="snap-shared", candidate_id="foreign-cand").model_copy(
+        update={
+            "tenant_id": "tenant-b",
+            "envelope": sample_record().envelope.model_copy(update={"tenant_id": "tenant-b"}),
+        }
+    )
+    with SQLiteAgentDesignArchive(db_path) as foreign_archive:
+        foreign_archive.append_candidate_snapshot(foreign, tenant_id="tenant-b", workspace_id=_WORKSPACE)
+    archive = SQLiteAgentDesignArchive(db_path)
+    with pytest.raises(AgentDesignArchiveScopeError):
+        archive.append_candidate_snapshot(record, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    archive.close()
+
+
+def test_sqlite_parent_child_lineage_survives_reopen(tmp_path: Path) -> None:
+    db_path = tmp_path / "adas-lineage.sqlite3"
+    parent = sample_record(candidate_id="parent-1", sequence=0)
+    child = sample_record(candidate_id="child-1", sequence=0).model_copy(
+        update={"parent_candidate_id": "parent-1", "lineage_id": "line-child"},
+    )
+    with SQLiteAgentDesignArchive(db_path) as archive:
+        archive.append_candidate_snapshot(parent, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        archive.append_candidate_snapshot(child, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with SQLiteAgentDesignArchive(db_path) as reopened:
+        got_parent = reopened.get_parent_candidate("child-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        assert got_parent is not None and got_parent.candidate_id == "parent-1"
+        kids = reopened.get_child_candidates("parent-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        assert [k.candidate_id for k in kids] == ["child-1"]
+        parent_hist = reopened.get_candidate_history("parent-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        child_hist = reopened.get_candidate_history("child-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        assert len(parent_hist) == 1 and len(child_hist) == 1
+        reopened.append_candidate_snapshot(parent, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        reopened.append_candidate_snapshot(child, tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        assert len(reopened.get_candidate_history("parent-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 1
+        assert len(reopened.get_candidate_history("child-1", tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 1

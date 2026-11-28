@@ -11,6 +11,8 @@ from intergrax.runtime.adaptive.agent_design_search.archive import (
 from intergrax.runtime.adaptive.agent_design_search.contracts import (
     ADAS_CONTRACT_SCHEMA_VERSION,
     AdasOperationalEnvelope,
+    AdasW1BaselineRetentionProvenance,
+    AdasW1SelectionAccountingEvidence,
     AgentCandidateDraft,
     AgentCandidateEvaluationResult,
     AgentCandidateEvidenceBundle,
@@ -43,6 +45,8 @@ __all__ = [
     "AgentDesignArchiveScopeError",
     "AgentDesignObjective",
     "AgentDesignSearchRun",
+    "AdasW1BaselineRetentionProvenance",
+    "AdasW1SelectionAccountingEvidence",
     "AggregateResourceLimits",
     "BaselineConfigurationRef",
     "ConfigurationDelta",

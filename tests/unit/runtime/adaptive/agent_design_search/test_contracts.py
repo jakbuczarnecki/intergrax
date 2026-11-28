@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -14,6 +14,7 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AdasExecutionReference,
     AdasJsonValue,
     AdasOperationalEnvelope,
+    AdasW1LabStopEvidence,
     AgentCandidateDraft,
     AgentCandidateEvaluationResult,
     AgentCandidateEvidenceBundle,
@@ -95,6 +96,73 @@ def sample_delta() -> ConfigurationDelta:
     return ConfigurationDelta(prior_value=MergeStrategy.CONCAT, replacement_value=MergeStrategy.LAST_WINS)
 
 
+def sample_w1_cost_report(**overrides: Any) -> dict[str, AdasJsonValue]:
+    base: dict[str, AdasJsonValue] = {
+        "accounting_evidence_ref": "acct-ref-1",
+        "completeness": "complete",
+        "tokens_consumed": 100.0,
+        "monetary_consumed": 0.0,
+        "root_executions_consumed": 2,
+        "candidate_id": "cand-1",
+        "objective_id": "obj-1",
+        "search_run_id": "run-1",
+        "tenant_id": "tenant-a",
+        "workspace_id": "ws-a",
+        "baseline_execution_ref": {"execution_id": "base-exec-1"},
+        "candidate_execution_ref": {"execution_id": "exec-1"},
+        "aggregate_limits": sample_limits().model_dump(mode="json"),
+        "accepted_scope_ref": "scope/lab",
+    }
+    base.update(overrides)
+    return base
+
+
+def sample_w1_baseline_retention_provenance(**overrides: Any) -> dict[str, object]:
+    base = {
+        "baseline_version_id": "baseline-v1",
+        "baseline_configuration_digest": _DIGEST,
+        "candidate_id": "cand-1",
+        "objective_id": "obj-1",
+        "search_run_id": "run-1",
+        "tenant_id": "tenant-a",
+        "workspace_id": "ws-a",
+        "baseline_execution_ref": {"execution_id": "base-exec-1"},
+        "evaluation_ref": "base-eval-1",
+    }
+    base.update(overrides)
+    return base
+
+
+def sample_w1_lab_stop_pre_execution(record: AgentCandidateRecord) -> dict[str, AdasJsonValue]:
+    return {
+        "kind": "pre_execution_rejection",
+        "candidate_id": record.candidate_id,
+        "search_run_id": record.search_run_id,
+        "tenant_id": record.tenant_id,
+        "workspace_id": record.workspace_id,
+        "detail": "budget admission refused",
+    }
+
+
+def sample_w1_execution_stop_gate(
+    record: AgentCandidateRecord,
+    *,
+    kind: str = "execution_failure",
+) -> dict[str, AdasJsonValue]:
+    return {
+        "passed": True,
+        "w1_lab_stop_evidence": {
+            "kind": kind,
+            "candidate_id": record.candidate_id,
+            "search_run_id": record.search_run_id,
+            "tenant_id": record.tenant_id,
+            "workspace_id": record.workspace_id,
+            "execution_ref": {"execution_id": "exec-fail-1"},
+            "structured_stop_reason": {"reason_code": "execution_failed", "detail": "worker stopped"},
+        },
+    }
+
+
 def sample_evaluation_mapping(
     *,
     passed: bool = False,
@@ -135,6 +203,7 @@ def sample_record(
     evaluation_result: dict[str, AdasJsonValue] | None = None,
     rejection_reason: str | None = None,
     archived_at: datetime | None = None,
+    w1_lab_stop_evidence: AdasW1LabStopEvidence | None = None,
 ) -> AgentCandidateRecord:
     return AgentCandidateRecord(
         snapshot_id=snapshot_id or f"snap-{candidate_id}-{sequence}",
@@ -156,6 +225,7 @@ def sample_record(
         evaluation_result=evaluation_result,
         rejection_reason=rejection_reason,
         archived_at=archived_at,
+        w1_lab_stop_evidence=w1_lab_stop_evidence,
     )
 
 
@@ -667,17 +737,637 @@ def test_q03_accepts_valid_signed_utility_delta_on_record() -> None:
     assert record.utility_delta == -0.02
 
 
-@pytest.mark.parametrize(
-    "status_value",
-    [member.value for member in AgentCandidateStatus],
-)
-def test_q01_all_candidate_status_values(status_value: str) -> None:
-    assert AgentCandidateStatus(status_value).value == status_value
+def test_q01_all_candidate_status_values() -> None:
+    expected = {
+        "DRAFT": "draft",
+        "SCAFFOLDED": "scaffolded",
+        "STATIC_GATE_FAILED": "static_gate_failed",
+        "STATIC_GATE_PASSED": "static_gate_passed",
+        "EVALUATED": "evaluated",
+        "REJECTED": "rejected",
+        "SHADOW": "shadow",
+        "CANARY": "canary",
+        "PROMOTED": "promoted",
+        "RETIRED": "retired",
+        "ARCHIVED": "archived",
+    }
+    assert len(AgentCandidateStatus) == 11
+    for name, value in expected.items():
+        assert AgentCandidateStatus[name].value == value
+
+
+def test_q01_selection_outcome_values() -> None:
+    expected = {
+        "SELECT_CANDIDATE": "select_candidate",
+        "RETAIN_BASELINE": "retain_baseline",
+        "ABSTAIN": "abstain",
+    }
+    assert len(SearchSelectionOutcome) == 3
+    for name, value in expected.items():
+        assert SearchSelectionOutcome[name].value == value
+
+
+def test_c06_eight_adas_contract_field_inventories() -> None:
+    from intergrax.runtime.adaptive.agent_design_search.contracts import (
+        AdasOperationalEnvelope,
+        AdasW1SelectionAccountingEvidence,
+        AggregateResourceLimits,
+        BaselineConfigurationRef,
+        ConfigurationDelta,
+    )
+
+    expected_fields: dict[type, set[str]] = {
+        AdasOperationalEnvelope: {
+            "schema_version",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "tenant_id",
+            "workspace_id",
+            "accepted_scope_ref",
+            "lab_only_posture",
+            "approved_by",
+            "approval_id",
+            "policy_context_id",
+            "correlation_id",
+            "trace_id",
+            "idempotency_key",
+            "artifact_hash",
+            "source_hash",
+            "evaluation_bundle_id",
+            "risk_class",
+            "retention_policy",
+        },
+        AggregateResourceLimits: {
+            "max_candidates",
+            "max_search_iterations",
+            "max_root_executions",
+            "aggregate_token_allowance",
+            "aggregate_monetary_allowance",
+            "deadline_at",
+        },
+        BaselineConfigurationRef: {
+            "baseline_version_id",
+            "baseline_configuration_digest",
+            "artifact_type",
+        },
+        ConfigurationDelta: {
+            "admitted_field",
+            "prior_value",
+            "replacement_value",
+        },
+        ResourceAccountingEvidence: {
+            "tokens_consumed",
+            "monetary_consumed",
+            "root_executions_consumed",
+        },
+        AgentDesignObjective: {
+            "objective_id",
+            "tenant_id",
+            "workspace_id",
+            "application_id",
+            "task_class",
+            "target_capability",
+            "envelope",
+            "baseline",
+            "baseline_agent_id",
+            "baseline_candidate_id",
+            "goal_summary",
+            "success_metric",
+            "dataset_id",
+            "dataset_content_digest",
+            "acceptance_criteria_ref",
+            "allowed_patterns",
+            "allowed_tools",
+            "forbidden_tools",
+            "admitted_configuration_surface",
+            "allowed_merge_strategies",
+            "max_candidates",
+            "max_iterations",
+            "max_generation_cost",
+            "max_eval_cost",
+            "min_utility_delta",
+            "aggregate_limits",
+            "require_human_approval",
+            "external_effects_prohibited",
+            "created_by",
+            "created_at",
+        },
+        AgentDesignSearchRun: {
+            "search_run_id",
+            "objective_id",
+            "tenant_id",
+            "workspace_id",
+            "task_class",
+            "envelope",
+            "strategy_name",
+            "status",
+            "baseline",
+            "generated_candidate_ids",
+            "promoted_candidate_id",
+            "selection_outcome",
+            "total_generation_cost",
+            "total_evaluation_cost",
+            "resource_accounting",
+            "accounting_evidence",
+            "baseline_execution_ref",
+            "candidate_execution_ref",
+            "eval_run_ref",
+            "eval_comparison_ref",
+            "stop_reason",
+            "structured_stop_reason",
+            "started_at",
+            "completed_at",
+        },
+        AgentCandidateDraft: {
+            "candidate_id",
+            "objective_id",
+            "search_run_id",
+            "tenant_id",
+            "workspace_id",
+            "lineage_id",
+            "parent_candidate_id",
+            "generated_by",
+            "generation_strategy",
+            "design_rationale",
+            "baseline",
+            "candidate_configuration_digest",
+            "configuration_delta",
+            "scaffold_pattern",
+            "scaffold_output_ref",
+            "source_artifact_ref",
+            "contract_draft",
+            "prompt_assets",
+            "tool_policy",
+            "state_schema",
+            "capabilities",
+            "created_at",
+        },
+        AgentCandidateRecord: {
+            "snapshot_id",
+            "sequence",
+            "candidate_id",
+            "objective_id",
+            "search_run_id",
+            "tenant_id",
+            "workspace_id",
+            "lineage_id",
+            "parent_candidate_id",
+            "envelope",
+            "status",
+            "baseline",
+            "candidate_configuration_digest",
+            "configuration_delta",
+            "scaffold_pattern",
+            "scaffold_output_ref",
+            "source_artifact_ref",
+            "agent_contract_snapshot",
+            "static_gate_result",
+            "eval_suite_id",
+            "evaluation_result",
+            "utility_score",
+            "baseline_utility_score",
+            "utility_delta",
+            "novelty_score",
+            "complexity_score",
+            "generation_cost",
+            "evaluation_cost",
+            "rejection_reason",
+            "w1_lab_stop_evidence",
+            "promotion_request_id",
+            "created_by",
+            "created_at",
+            "archived_at",
+        },
+        AgentCandidateEvaluationResult: {
+            "candidate_id",
+            "baseline_agent_id",
+            "passed",
+            "quality_score",
+            "cost_normalized",
+            "latency_ms",
+            "total_tokens",
+            "step_count",
+            "tool_calls",
+            "llm_calls",
+            "hitl_interventions",
+            "regression_flags",
+            "utility_score",
+            "baseline_utility_score",
+            "utility_delta",
+            "golden_pass_rate",
+            "negative_pass_rate",
+            "adversarial_pass_rate",
+            "failure_reasons",
+            "execution_ref",
+            "evaluation_ref",
+            "baseline_execution_ref",
+            "eval_run_ref",
+            "eval_comparison_ref",
+            "evidence_complete",
+        },
+        AgentCandidateEvidenceBundle: {
+            "bundle_id",
+            "candidate_id",
+            "objective_id",
+            "tenant_id",
+            "workspace_id",
+            "search_run_id",
+            "schema_version",
+            "created_at",
+            "created_by",
+            "correlation_id",
+            "trace_id",
+            "evaluation_bundle_id",
+            "risk_class",
+            "retention_policy",
+            "bundle_digest",
+            "artifact_hash",
+            "baseline_configuration_digest",
+            "candidate_configuration_digest",
+            "selection_outcome",
+            "terminal_evidence_outcome",
+            "w1_lab_stop_evidence",
+            "candidate_record",
+            "baseline_evaluation_result",
+            "w1_baseline_retention_provenance",
+            "evaluation_result",
+            "static_gate_result",
+            "policy_gate_result",
+            "cost_report",
+            "security_adversarial_result",
+            "approval_record",
+            "promotion_decision",
+            "rollback_pointer",
+            "assembled_at",
+            "sealed",
+        },
+        AdasW1SelectionAccountingEvidence: {
+            "accounting_evidence_ref",
+            "completeness",
+            "tokens_consumed",
+            "monetary_consumed",
+            "root_executions_consumed",
+            "candidate_id",
+            "objective_id",
+            "search_run_id",
+            "tenant_id",
+            "workspace_id",
+            "baseline_execution_ref",
+            "candidate_execution_ref",
+            "aggregate_limits",
+            "accepted_scope_ref",
+        },
+    }
+    for model_cls, expected in expected_fields.items():
+        assert set(model_cls.model_fields) == expected
+    assert AgentCandidateStatus.DRAFT.value == "draft"
 
 
 @pytest.mark.parametrize(
-    "outcome_value",
-    [member.value for member in SearchSelectionOutcome],
+    "bad",
+    [
+        {"tokens_consumed": True},
+        {"monetary_consumed": False},
+        {"root_executions_consumed": "2"},
+        {"root_executions_consumed": 2.0},
+    ],
+    ids=["tokens_bool", "monetary_bool", "roots_str", "roots_float"],
 )
-def test_q01_selection_outcome_values(outcome_value: str) -> None:
-    assert SearchSelectionOutcome(outcome_value).value == outcome_value
+def test_ia21_strict_accounting_model_and_json_boundaries(bad: dict[str, object]) -> None:
+    import json
+
+    from intergrax.runtime.adaptive.agent_design_search.contracts import (
+        AdasW1SelectionAccountingEvidence,
+        parse_w1_selection_accounting,
+    )
+
+    payload = sample_w1_cost_report(**bad)
+    with pytest.raises((ValidationError, ValueError)):
+        AdasW1SelectionAccountingEvidence.model_validate(payload)
+    with pytest.raises((ValidationError, ValueError)):
+        AdasW1SelectionAccountingEvidence.model_validate_json(json.dumps(payload))
+    with pytest.raises((ValidationError, ValueError)):
+        parse_w1_selection_accounting(payload)
+    with pytest.raises((ValidationError, ValueError)):
+        ResourceAccountingEvidence.model_validate(bad)
+
+
+def test_ia21_strict_limits_reject_bool_and_coerced_counts() -> None:
+    for bad in (
+        {"max_candidates": True},
+        {"max_search_iterations": "1"},
+        {"max_root_executions": 2.0},
+        {"aggregate_token_allowance": True},
+        {"aggregate_monetary_allowance": "10.0"},
+    ):
+        with pytest.raises((ValidationError, ValueError)):
+            sample_limits().model_copy()
+            from intergrax.runtime.adaptive.agent_design_search.contracts import AggregateResourceLimits
+
+            AggregateResourceLimits.model_validate({**sample_limits().model_dump(mode="json"), **bad})
+
+
+def test_ia21_baseline_consumption_reconciliation_and_no_double_count() -> None:
+    from intergrax.runtime.adaptive.agent_design_search.contracts import validate_w1_selection_cost_report
+
+    record = sample_record(
+        sequence=2,
+        status=AgentCandidateStatus.EVALUATED,
+        static_gate_result={"passed": True},
+        evaluation_result=sample_evaluation_mapping(passed=True),
+    )
+    cand_eval = AgentCandidateEvaluationResult(
+        candidate_id=record.candidate_id, **sample_evaluation_mapping(passed=True)
+    )
+    base_eval = AgentCandidateEvaluationResult(
+        candidate_id=record.candidate_id,
+        baseline_agent_id="baseline-1",
+        passed=True,
+        quality_score=0.8,
+        cost_normalized=0.0,
+        latency_ms=10,
+        total_tokens=20,
+        utility_score=0.8,
+        golden_pass_rate=1.0,
+        negative_pass_rate=1.0,
+        adversarial_pass_rate=1.0,
+        execution_ref="base-exec-1",
+        evaluation_ref="base-eval-1",
+        baseline_execution_ref={"execution_id": "base-exec-1"},
+        eval_run_ref={"eval_run_id": "base-run-1"},
+        eval_comparison_ref={"comparison_id": "base-cmp-1"},
+        evidence_complete=True,
+    )
+    # sample_evaluation_mapping has total_tokens=100; 100 (cand) + 20 (base) = 120
+    with pytest.raises(ValueError, match="aggregate"):
+        validate_w1_selection_cost_report(
+            sample_w1_cost_report(tokens_consumed=110.0, root_executions_consumed=2),
+            record=record,
+            evaluation=cand_eval,
+            baseline_evaluation=base_eval,
+        )
+    validate_w1_selection_cost_report(
+        sample_w1_cost_report(tokens_consumed=120.0, root_executions_consumed=2),
+        record=record,
+        evaluation=cand_eval,
+        baseline_evaluation=base_eval,
+    )
+
+
+def test_q12_utc_offset_equivalence_on_timestamp() -> None:
+    instant = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+    offset_equiv = instant.astimezone(timezone(timedelta(hours=2)))
+    assert instant == offset_equiv
+    assert instant.utcoffset() != offset_equiv.utcoffset()
+    record = sample_record(
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        rejection_reason="x",
+        static_gate_result={"passed": False, "reason": "x"},
+    )
+    gate_payload: dict[str, AdasJsonValue] = {"passed": False, "reason": "x"}
+    common = {
+        "bundle_id": "bundle-offset",
+        "candidate_id": record.candidate_id,
+        "objective_id": record.objective_id,
+        "tenant_id": record.tenant_id,
+        "workspace_id": record.workspace_id,
+        "created_at": instant,
+        "created_by": "operator",
+        "baseline_configuration_digest": _DIGEST,
+        "candidate_configuration_digest": record.candidate_configuration_digest,
+        "candidate_record": record,
+        "terminal_evidence_outcome": W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        "static_gate_result": gate_payload,
+        "assembled_at": instant,
+        "sealed": True,
+    }
+    bundle_a = AgentCandidateEvidenceBundle(**common)
+    bundle_b = AgentCandidateEvidenceBundle.model_validate(
+        {**common, "created_at": offset_equiv, "assembled_at": offset_equiv}
+    )
+    dumped_a = canonical_record_json(bundle_a)
+    dumped_b = canonical_record_json(bundle_b)
+    assert dumped_a["created_at"] == dumped_b["created_at"]
+    assert compute_evidence_bundle_digest(bundle_a) == compute_evidence_bundle_digest(bundle_b)
+
+
+# --- C10 qualification witness corrections (Q01.04, Q02, Q03, Q12.08) ---
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "created_at",
+        "created_by",
+        "tenant_id",
+        "workspace_id",
+        "accepted_scope_ref",
+        "policy_context_id",
+        "correlation_id",
+        "trace_id",
+        "retention_policy",
+    ],
+)
+def test_q01_04_envelope_mandatory_field_omission_rejected(field: str) -> None:
+    from intergrax.runtime.adaptive.agent_design_search.contracts import AdasOperationalEnvelope
+
+    payload = sample_envelope().model_dump()
+    del payload[field]
+    with pytest.raises(ValidationError):
+        AdasOperationalEnvelope.model_validate(payload)
+
+
+def test_q01_04_envelope_schema_version_defaults_to_canonical() -> None:
+    from intergrax.runtime.adaptive.agent_design_search.contracts import AdasOperationalEnvelope
+
+    payload = sample_envelope().model_dump()
+    del payload["schema_version"]
+    env = AdasOperationalEnvelope.model_validate(payload)
+    assert env.schema_version == ADAS_CONTRACT_SCHEMA_VERSION == "1.0"
+
+
+def test_q02_03_unsupported_merge_strategy_rejected() -> None:
+    with pytest.raises(ValidationError):
+        AgentDesignObjective.model_validate(
+            {
+                **sample_objective().model_dump(),
+                "allowed_merge_strategies": (
+                    MergeStrategy.LAST_WINS,
+                    MergeStrategy.STRUCTURED_JSON,
+                ),
+            }
+        )
+
+
+def test_q02_06_lab_only_posture_false_rejected() -> None:
+    with pytest.raises(ValidationError):
+        AgentDesignObjective.model_validate(
+            {
+                **sample_objective().model_dump(),
+                "envelope": sample_envelope().model_dump(),
+            }
+            | {"envelope": {**sample_envelope().model_dump(), "lab_only_posture": False}}
+        )
+
+
+def test_q02_07_external_effects_prohibited_false_rejected() -> None:
+    with pytest.raises(ValidationError):
+        AgentDesignObjective.model_validate(
+            {
+                **sample_objective().model_dump(),
+                "external_effects_prohibited": False,
+            }
+        )
+
+
+def _w1_draft_valid_payload() -> dict[str, Any]:
+    draft = AgentCandidateDraft(
+        candidate_id="cand-1",
+        objective_id="obj-1",
+        search_run_id="run-1",
+        tenant_id="tenant-a",
+        workspace_id="ws-a",
+        lineage_id="line-1",
+        generated_by="lab",
+        generation_strategy="rule",
+        design_rationale="test",
+        baseline=sample_baseline(),
+        candidate_configuration_digest="b" * 64,
+        configuration_delta=sample_delta(),
+        created_at=_NOW,
+    )
+    return draft.model_dump()
+
+
+def test_q02_08_draft_valid_fixture_serializes_and_validates() -> None:
+    AgentCandidateDraft.model_validate(_w1_draft_valid_payload())
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("contract_draft", {"tool": "x"}),
+        ("prompt_assets", {"system": "x"}),
+        ("tool_policy", {"allow": ["t"]}),
+        ("capabilities", ["cap-x"]),
+    ],
+)
+def test_q02_08_draft_nonempty_w1_scaffold_field_rejected(field: str, value: object) -> None:
+    payload = _w1_draft_valid_payload()
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        AgentCandidateDraft.model_validate(payload)
+
+
+def _running_search_run_valid_payload() -> dict[str, Any]:
+    run = AgentDesignSearchRun(
+        search_run_id="run-1",
+        objective_id="obj-1",
+        tenant_id="tenant-a",
+        workspace_id="ws-a",
+        task_class="t",
+        envelope=sample_envelope(),
+        strategy_name="rule",
+        status="running",
+        baseline=sample_baseline(),
+        resource_accounting=ResourceAccountingEvidence(),
+        started_at=_NOW,
+    )
+    return run.model_dump()
+
+
+def test_q03_06_running_search_run_fixture_validates() -> None:
+    AgentDesignSearchRun.model_validate(_running_search_run_valid_payload())
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "search_run_id",
+        "objective_id",
+        "tenant_id",
+        "workspace_id",
+        "task_class",
+        "strategy_name",
+        "status",
+    ],
+)
+def test_q03_06_blank_reference_identities_rejected(field: str) -> None:
+    payload = _running_search_run_valid_payload()
+    payload[field] = "   "
+    with pytest.raises(ValidationError):
+        AgentDesignSearchRun.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["tenant_id", "workspace_id", "created_by", "policy_context_id"],
+)
+def test_q03_06_blank_supplied_envelope_reference_identities_rejected(field: str) -> None:
+    payload = _running_search_run_valid_payload()
+    AgentDesignSearchRun.model_validate(payload)
+    payload["envelope"] = {**payload["envelope"], field: "   "}
+    with pytest.raises(ValidationError):
+        AgentDesignSearchRun.model_validate(payload)
+
+
+def test_q03_06_blank_generated_candidate_id_rejected() -> None:
+    payload = _running_search_run_valid_payload()
+    payload["generated_candidate_ids"] = ("cand-1", "   ")
+    with pytest.raises(ValidationError):
+        AgentDesignSearchRun.model_validate(payload)
+
+
+def test_q03_07_timezone_naive_datetime_rejected() -> None:
+    naive = datetime(2025, 6, 1, 12, 0, 0)
+    from intergrax.runtime.adaptive.agent_design_search.contracts import AdasOperationalEnvelope
+
+    envelope_payload = sample_envelope().model_dump()
+    envelope_payload["created_at"] = naive
+    with pytest.raises(ValidationError):
+        AdasOperationalEnvelope.model_validate(envelope_payload)
+    with pytest.raises(ValidationError):
+        AgentDesignSearchRun.model_validate(
+            {
+                "search_run_id": "run-1",
+                "objective_id": "obj-1",
+                "tenant_id": "tenant-a",
+                "workspace_id": "ws-a",
+                "task_class": "t",
+                "envelope": sample_envelope().model_dump(),
+                "strategy_name": "rule",
+                "status": "running",
+                "baseline": sample_baseline().model_dump(),
+                "resource_accounting": ResourceAccountingEvidence().model_dump(),
+                "started_at": naive,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"nested": {"x": float("nan")}},
+        {"nested": {"x": float("inf")}},
+        {"nested": {"x": float("-inf")}},
+        {"items": [float("nan")]},
+        {"items": [float("inf")]},
+        {"items": [float("-inf")]},
+        {"items": [object()]},
+    ],
+    ids=[
+        "map_nan",
+        "map_pos_inf",
+        "map_neg_inf",
+        "array_nan",
+        "array_pos_inf",
+        "array_neg_inf",
+        "array_non_json_object",
+    ],
+)
+def test_q12_08_nested_nonfinite_json_rejected(bad: dict[str, object]) -> None:
+    payload = sample_record().model_dump(mode="python")
+    payload["agent_contract_snapshot"] = bad
+    with pytest.raises((ValidationError, ValueError, TypeError)):
+        AgentCandidateRecord.model_validate(payload)
