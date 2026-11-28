@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from intergrax.fastapi_core.auth.provider import AuthProvider
@@ -14,6 +17,7 @@ from intergrax.fastapi_core.budget.noop_policy import NoOpBudgetPolicy
 from intergrax.fastapi_core.budget.policy import BudgetPolicy
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
+from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.adapters.default_adapter import DefaultExecutionAdapter
 from intergrax.fastapi_core.middleware.request_context import RequestContextMiddleware
 from intergrax.fastapi_core.rate_limit.dependency import NoOpRateLimitPolicy
@@ -24,6 +28,21 @@ from intergrax.fastapi_core.runs.router import runs_router
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
+
+
+def build_execution_adapter_shutdown_lifespan(
+    shutdown_adapter: ExecutionAdapter,
+):
+    """Lifespan that shuts down a factory-owned execution adapter exactly once."""
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            shutdown_adapter.shutdown(wait=False)
+
+    return _lifespan
 
 
 def create_app(config: ApiConfig) -> FastAPI:
@@ -38,12 +57,30 @@ def create_app(config: ApiConfig) -> FastAPI:
 
     is_prod: bool = config.environment == ApiEnvironment.PROD
 
+    run_store = config.run_store if config.run_store is not None else InMemoryRunStore()
+
+    shutdown_adapter: ExecutionAdapter | None = None
+    if config.run_service is not None:
+        run_service = config.run_service
+    else:
+        execution_adapter = (
+            config.execution_adapter if config.execution_adapter is not None else DefaultExecutionAdapter()
+        )
+        run_service = DefaultRunService(
+            run_store,
+            execution_adapter,
+        )
+        shutdown_adapter = config.execution_adapter if config.execution_adapter is not None else execution_adapter
+
+    lifespan = build_execution_adapter_shutdown_lifespan(shutdown_adapter) if shutdown_adapter is not None else None
+
     app = FastAPI(
         title="Intergrax Service",
         version="0.1.0",
         docs_url=None if is_prod else "/docs",
         redoc_url=None if is_prod else "/redoc",
         openapi_url=None if is_prod else "/openapi.json",
+        lifespan=lifespan,
     )
 
     # --- Core middleware & handlers ---
@@ -69,53 +106,12 @@ def create_app(config: ApiConfig) -> FastAPI:
 
     app.dependency_overrides[BudgetPolicy] = lambda: budget_policy
 
-
-    # --- Run store ---
-    run_store = (
-        config.run_store
-        if config.run_store is not None
-        else InMemoryRunStore()
-    )
     app.dependency_overrides[RunStore] = lambda: run_store
-
-    # --- Run service ---
-    if config.run_service is not None:
-        run_service = config.run_service
-    else:
-        execution_adapter = (
-            config.execution_adapter
-            if config.execution_adapter is not None
-            else DefaultExecutionAdapter()
-        )
-
-        run_service = DefaultRunService(
-            run_store,
-            execution_adapter,
-        )
-
-    # Always register shutdown for explicitly provided execution_adapter
-    # (critical for tests and advanced DI setups).
-    if config.execution_adapter is not None:
-        app.add_event_handler(
-            "shutdown",
-            lambda: config.execution_adapter.shutdown(wait=False),
-        )
-    else:
-        # If adapter was created implicitly above, it is referenced by run_service wiring
-        # and must be shut down as well.
-        if config.run_service is None:
-            app.add_event_handler(
-                "shutdown",
-                lambda: execution_adapter.shutdown(wait=False),  # type: ignore[name-defined]
-            )
-
-
     app.dependency_overrides[RunService] = lambda: run_service
-        
 
     # --- Auth provider wiring ---
     auth_providers: list[AuthProvider] = []
-    
+
     # Explicit override (advanced / tests / enterprise)
     if config.auth_provider is not None:
         auth_providers.append(config.auth_provider)
@@ -135,4 +131,3 @@ def create_app(config: ApiConfig) -> FastAPI:
     app.dependency_overrides[AuthProvider] = lambda: auth_provider
 
     return app
-

@@ -11,6 +11,8 @@ FastAPI routes at ``/``.
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -38,6 +40,19 @@ from intergrax.applications._shared.harness_auth import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+
+
+def _mounted_inner_app_lifespan(fastapi_app: FastAPI) -> LifespanFn:
+    """Run the inner FastAPI lifespan exactly once while serving the MCP wrapper."""
+
+    inner_context = fastapi_app.router.lifespan_context
+
+    @asynccontextmanager
+    async def _lifespan(_wrapper: FastAPI) -> AsyncIterator[None]:
+        async with inner_context(fastapi_app):
+            yield
+
+    return _lifespan
 
 
 def _normalize_mount_path(mount_path: str) -> str:
@@ -68,6 +83,7 @@ def couple_fastapi_with_mcp(
     inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
 
     lifespans: list[LifespanFn] = list(extra_lifespans or [])
+    lifespans.insert(0, _mounted_inner_app_lifespan(fastapi_app))
     lifespans.append(mcp_app.lifespan)
     combined = combine_lifespans(*lifespans) if len(lifespans) > 1 else mcp_app.lifespan
 
