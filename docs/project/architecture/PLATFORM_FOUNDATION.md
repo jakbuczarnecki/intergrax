@@ -132,7 +132,7 @@ Gate green does **not** substitute for closed tier-enforcement qualification or 
 
 **Status:** Canonical architecture (domain pair 1:1)  
 
-**Integrax Intelligence (PROPOSED cross-domain capability):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — intelligent composition of Tier-0–Tier-3 foundation mechanisms; import boundaries and tier ownership in this document remain authoritative.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; runtime qualification not established):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — intelligent composition of Tier-0–Tier-3 foundation mechanisms; import boundaries and tier ownership in this document remain authoritative.
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  

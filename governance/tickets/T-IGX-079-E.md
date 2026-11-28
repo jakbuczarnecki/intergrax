@@ -10,7 +10,14 @@ Plan digest: b40163343535234fc2c241faa4f2b423232147e0463e4e6d77cb7f35bce9632c
 
 ## Approved
 
-_(pending: Operator; implementing session does not write this line)_
+Approved: operator @ 2026-11-28T09:54:58+01:00
+
+**Decision ID:** OD-II-W0-B-01 — APPROVED (observed recording time; not an independently verified chat submission timestamp). Transcription of the Operator decision under explicit repository-write authority; not approval by the implementing agent.
+
+**Operator statement (chat):** „Zatwierdzam OD-II-W0-B-01 w przedstawionym zakresie. Akceptuję PLAN_T-IGX-079-E o digescie b40163343535234fc2c241faa4f2b423232147e0463e4e6d77cb7f35bce9632c. Autoryzuję implementację II-W0-05 w zakresie 50 ścieżek, utworzenie pięciu deliverables, commit kandydata i kwalifikację Phase A.”
+
+**Scope bound:** Plan digest `b40163343535234fc2c241faa4f2b423232147e0463e4e6d77cb7f35bce9632c` only. Candidate commit and Phase A qualification authorized; publication, Phase B baseline acceptance, formal G6 and formal package closure require separate authority.
+
 
 ## Test contract
 
@@ -22,7 +29,7 @@ II-W0-06 roadmap dependency amendments; protected architecture and master roadma
 
 ## Lifecycle state
 
-plan_pending
+in_progress
 
 ## Checkpoint
 
@@ -33,3 +40,4 @@ plan_pending
 **II-W0-B-PREP-FINAL-01 (2026-11-28):** Final preparation correction: `F-W0B-07` promoted `docs/project/maintainers/qualification/README.md` into enumerated 50-path execution write-set (`STATUS_RECONCILIATION` / `LINK_ONLY`); `F-W0B-08` bound EVOL-X via `evol_x_change_workflow.py` with `EVOL_X_ACCEPTED_BASELINE_UNAVAILABLE` prerequisite; `F-W0B-09` bound ENT-AUDIT-X via `run_enterprise_audit.py` CHANGED-SINCE (removed formal-closure preflight binding); `F-W0B-10` historical session-naming deviation. Final digest `0e13374852951f72818910fb1980211465bfc49e79919faf9ad9bfea875ebd8b` (blob `745926deddedf5cf4d4c953da03deefd8669eef8`; commit `d713fae9c4eed22672489f5fc53ff85c532890c8`); no `Approved:` line; terminal state `W0_B_FINAL_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`.
 
 **II-W0-B-QUALIFICATION-SETTLEMENT-01 (2026-11-28):** Recorded orchestrator-confirmed `F-W0B-11` (EVOL-X qualification lifecycle limitation: inventory/graph digest binding, T1/T2 freshness, A8 fail-closed). Bound two-phase candidate qualification (Phase A diagnostic/evidence; Phase B independently accepted manifest at exact candidate SHA). Corrected Q07/Q08 ordering (candidate before candidate-bound tests; Phase B after Phase A). Corrected digest `b40163343535234fc2c241faa4f2b423232147e0463e4e6d77cb7f35bce9632c`; no `Approved:` line; lifecycle `plan_pending`; terminal state `W0_B_QUALIFICATION_CONTRACT_SETTLED_PENDING_OPERATOR_APPROVAL`. No II-W0-05 implementation; no accepted baseline creation; 50-path write-set and five deliverables unchanged.
+**II-W0-B-DOCUMENTATION-ADOPTION-01 (2026-11-28):** Operator approval OD-II-W0-B-01 recorded; lifecycle `plan_pending` → `plan_approved` → `in_progress`; documentation adoption on base `4aae44a7647a18da740eaa3b8295352294941b85`.

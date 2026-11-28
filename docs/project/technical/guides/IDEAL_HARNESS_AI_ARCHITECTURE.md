@@ -1,5 +1,5 @@
 
-**Program bridge (PROPOSED):** [`../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (`INTELLIGENCE-X`) maps this reference vision to proposed qualification gates, reference workloads (REF-II-01..06), and acceptance criteria — not current implementation.
+**Program bridge (architecture ratified under OD-INTELLIGENCE-01):** [`../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (`INTELLIGENCE-X`) maps this reference vision to roadmap qualification gates, reference workloads (REF-II-01..06), and acceptance criteria — complete runtime implementation and qualification **not established**.
 # Ideal Harness AI Architecture
 
 **Status:** reference document (target architecture)  

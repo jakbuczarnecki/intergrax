@@ -14,7 +14,7 @@ This model describes **what a self-organizing virtual organization must be able 
 
 Atomic capability inventories may grow in later program stages; v1 keeps **domains**, **critical capabilities**, **fourteen gap clusters**, and the **dependency spine**.
 
-**Integrax Intelligence reuse (PROPOSED):** [../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — prefer shared qualified intelligence mechanisms over duplicate organizational harnesses; domain ownership unchanged.
+**Integrax Intelligence reuse (architecture ratified; qualification pending):** [../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — prefer shared qualified intelligence mechanisms over duplicate organizational harnesses when authorized; domain ownership unchanged.
 
 ---
 
