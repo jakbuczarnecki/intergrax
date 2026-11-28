@@ -2,7 +2,7 @@
 
 ## Scope
 
-Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C is `closed` under OD-II-W0-CLOSURE-01 with formal scoped G6 `II-W0-R31-FORMAL-G6-01` and documented non-blocking limitations preserved; II-FIND-11/12 remain W0-06 obligations. W0-A execution under OD-II-W0-A-01; formal package closure not authorized. Preparation remote baseline for identifier check: `4142575fa035ec19f91def3e3236c6e27c6efa7b` (`origin/development` at II-W0-A-PREP-FINAL-RECOVERY-01 integration). No II-W0-05, II-W0-06, executable W1, product code, gate opening or normative D1/D2 edits.
+Consolidated W0-A documentary acceptance batch for packages II-W0-01, II-W0-02, II-W0-03 and II-W0-04 per [PLAN_T-IGX-079-D.md](plans/PLAN_T-IGX-079-D.md). Normative architecture v1.1 R3.1 and Master Roadmap v1.0 R3 are ratified under OD-INTELLIGENCE-01 (`4637c7fa6295a37ad155fbff9d4a9718646c9cf8`). T-IGX-079-C is `closed` under OD-II-W0-CLOSURE-01 with formal scoped G6 `II-W0-R31-FORMAL-G6-01` and documented non-blocking limitations preserved; II-FIND-11/12 remain W0-06 obligations. W0-A execution under OD-II-W0-A-01; formal package and ticket closure under OD-II-W0-A-CLOSURE-01 after formal independent G6 `II-W0-A-FORMAL-G6-01`. Preparation remote baseline for identifier check: `4142575fa035ec19f91def3e3236c6e27c6efa7b` (`origin/development` at II-W0-A-PREP-FINAL-RECOVERY-01 integration). No II-W0-05, II-W0-06 execution, executable W1, product code, gate opening or normative D1/D2 edits in this closure batch.
 
 ## Plan digest
 
@@ -24,6 +24,12 @@ Approved: operator @ 2026-11-27T17:08:12+01:00
 
 **Scope bound:** Lifecycle `quality_gate` → `ready_for_audit` and formal independent G6 for II-W0-01..04 only. No formal package closure, ticket closure, W0-05, W0-06, W1, product implementation or gate opening.
 
+**Decision ID:** OD-II-W0-A-CLOSURE-01 — APPROVED (observed recording time 2026-11-28T08:31:58+01:00; not an independently verified chat submission timestamp). Transcription under explicit Operator authorization; not approval by the implementing agent.
+
+**Operator statement (chat):** „Zatwierdzam OD-II-W0-A-CLOSURE-01 w przedstawionym zakresie. Akceptuję formalny werdykt G6 oraz udokumentowane ograniczenia nieblokujące. Autoryzuję formalne zamknięcie II-W0-01–04 i ticketu T-IGX-079-D oraz publikację zmian na development.”
+
+**Scope bound:** Formal documentary package closure for II-W0-01..04 within accepted blobs; lifecycle `ready_for_audit` → `closed`; Closure Matrix and Execution Register reconciliation only. Binds independent audit `II-W0-A-FORMAL-G6-01` record `91ab1df1aea6e7a4976fc8b5d05c4c2fac91a585`; accepted publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; plan digest `ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81`; accepted documentary blobs II-W0-01..04; documented non-blocking limitations F-W0A-43..48. No W0-05/06 execution, W1, product implementation, gate opening, FRZ promotion or runtime qualification.
+
 ## Test contract
 
 See linked plan Qualification contract (Q01–Q08); execute actual validators sequentially in authorized workspace after plan approval only; preserve command, exit code and evidence.
@@ -34,7 +40,7 @@ II-W0-05, II-W0-06, W0-B/C/D batches beyond this plan, executable W1 qualificati
 
 ## Lifecycle state
 
-ready_for_audit
+closed
 
 ## Checkpoint
 
@@ -99,6 +105,8 @@ ready_for_audit
 - **F-W0A-47:** `VERIFIED_RESOLVED_BY_IMMUTABLE_GIT_RECONSTRUCTION (NON-BLOCKING)` — `settlement_commit_diff.patch` has BOM+CRLF; `git diff --check 74a5ff479^ 74a5ff479` exits 0.
 - **F-W0A-48:** `VERIFIED_RESOLVED_BY_SUBSEQUENT_AND_INDEPENDENT_CHECKS (NON-BLOCKING)` — earlier `validation_results.txt` errors superseded by passing validators and independent checks.
 
-### Closure and gate boundaries (unchanged)
+### Closure and gate boundaries (formal W0-A closure recorded)
 
-Lifecycle remains `ready_for_audit`. Formal package closure (`0/4` W0-A, `0/6` W0, `0/69` total roadmap) requires separate Operator closure authority and is not granted here. All `GATE-II-*` and `GATE-INTELLIGENCE-CONSUME` remain `NOT_REACHED`. Local audit dossier: `.tmp/proof/II-W0-A-FORMAL-G6-01/`.
+Under OD-II-W0-A-CLOSURE-01 (2026-11-28T08:31:58+01:00, observed), lifecycle `ready_for_audit` → `closed`. W0-A formal package closures **4/4**; W0 formal package closures **4/6** (II-W0-05, II-W0-06 remain Open); total roadmap formal closures **4/69**. Deferred obligations preserved: `II-INV-05` message-extension owner (W1); II-W0-04 row 9 (W1); II-W0-04 row 23 / F-W0A-10 (record-only pending W0-05/06 adoption); runtime qualification and FRZ promotion outside W0-A scope; II-FIND-11/12 and C11 under W0-06. `EXIT-W0` incomplete; `FOUNDATION-ACCEPTED` unsatisfied unless established under separate authority. All `GATE-II-*` and `GATE-INTELLIGENCE-CONSUME` remain `NOT_REACHED`. W1 executable qualification **NOT_AUTHORIZED**. Local audit dossier: `.tmp/proof/II-W0-A-FORMAL-G6-01/`; formal audit record commit `91ab1df1aea6e7a4976fc8b5d05c4c2fac91a585`.
+
+**II-W0-A-FORMAL-CLOSURE-01 (2026-11-28T08:31:58+01:00, observed):** Session `INTEGRAX INTELLIGENCE | W0 | W0-A | II-W0-A-FORMAL-CLOSURE-01`; Operator OD-II-W0-A-CLOSURE-01; three-path write-set only (`T-IGX-079-D.md`, `II-W0-A_CLOSURE_MATRIX.md`, `INTEGRAX_INTELLIGENCE.md` plan register); no product delta; terminal state `W0_A_FORMALLY_CLOSED_AND_REMOTE_VERIFIED` pending verified `origin/development` publication of this batch.
