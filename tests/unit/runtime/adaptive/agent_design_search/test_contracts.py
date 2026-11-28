@@ -12,6 +12,7 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     AdasEvalComparisonReference,
     AdasEvalRunReference,
     AdasExecutionReference,
+    AdasJsonValue,
     AdasOperationalEnvelope,
     AgentCandidateDraft,
     AgentCandidateEvaluationResult,
@@ -25,6 +26,7 @@ from intergrax.runtime.adaptive.agent_design_search.contracts import (
     ConfigurationDelta,
     ResourceAccountingEvidence,
     SearchSelectionOutcome,
+    W1TerminalEvidenceOutcome,
     _FrozenAdasJsonObject,
     canonical_record_json,
     compute_evidence_bundle_digest,
@@ -93,14 +95,44 @@ def sample_delta() -> ConfigurationDelta:
     return ConfigurationDelta(prior_value=MergeStrategy.CONCAT, replacement_value=MergeStrategy.LAST_WINS)
 
 
+def sample_evaluation_mapping(
+    *,
+    passed: bool = False,
+) -> dict[str, AdasJsonValue]:
+    if not passed:
+        return {
+            "passed": False,
+            "execution_ref": "exec-1",
+            "evaluation_ref": "eval-1",
+            "failure_reasons": ["policy"],
+        }
+    return {
+        "passed": True,
+        "quality_score": 0.9,
+        "cost_normalized": 0.1,
+        "latency_ms": 10,
+        "total_tokens": 100,
+        "utility_score": 0.8,
+        "golden_pass_rate": 1.0,
+        "negative_pass_rate": 1.0,
+        "adversarial_pass_rate": 1.0,
+        "execution_ref": "exec-1",
+        "evaluation_ref": "eval-1",
+        "evidence_complete": True,
+        "baseline_execution_ref": {"execution_id": "base-exec-1"},
+        "eval_run_ref": {"eval_run_id": "run-eval-1"},
+        "eval_comparison_ref": {"comparison_id": "cmp-1"},
+    }
+
+
 def sample_record(
     *,
     sequence: int = 0,
     status: AgentCandidateStatus = AgentCandidateStatus.DRAFT,
     candidate_id: str = "cand-1",
     snapshot_id: str | None = None,
-    static_gate_result: dict[str, object] | None = None,
-    evaluation_result: dict[str, object] | None = None,
+    static_gate_result: dict[str, AdasJsonValue] | None = None,
+    evaluation_result: dict[str, AdasJsonValue] | None = None,
     rejection_reason: str | None = None,
     archived_at: datetime | None = None,
 ) -> AgentCandidateRecord:
@@ -201,19 +233,25 @@ def test_invalid_digest_and_no_op_delta() -> None:
 
 
 def test_deep_immutability_and_input_alias_isolation() -> None:
-    alias = {"nested": {"k": "v"}}
+    alias: dict[str, AdasJsonValue] = {"items": [{"k": "v"}], "mapping": {"x": 1}}
     payload = sample_record().model_dump(mode="python")
     payload["agent_contract_snapshot"] = alias
     record = AgentCandidateRecord.model_validate(payload)
     assert isinstance(record.agent_contract_snapshot, _FrozenAdasJsonObject)
     with pytest.raises(TypeError):
-        record.agent_contract_snapshot["nested"]["k"] = "mutated"  # type: ignore[index]
-    alias["nested"]["k"] = "external"
-    reloaded = sample_record()
-    payload = reloaded.model_dump(mode="python")
-    payload["agent_contract_snapshot"] = {"nested": {"k": "v"}}
-    reloaded = AgentCandidateRecord.model_validate(payload)
-    assert canonical_record_json(reloaded)["agent_contract_snapshot"] == {"nested": {"k": "v"}}
+        record.agent_contract_snapshot["items"][0]["k"] = "mutated"  # type: ignore[index]
+    alias_items = alias["items"]
+    assert isinstance(alias_items, list)
+    alias_mapping = alias_items[0]
+    assert isinstance(alias_mapping, dict)
+    alias_mapping["k"] = "external"
+    assert canonical_record_json(record)["agent_contract_snapshot"]["items"][0]["k"] == "v"
+    serialized = record.model_dump_json()
+    import json as _json
+
+    detached = _json.loads(serialized)
+    detached["agent_contract_snapshot"]["mapping"]["x"] = 99
+    assert canonical_record_json(record)["agent_contract_snapshot"]["mapping"]["x"] == 1
 
 
 def test_evaluation_unknown_metrics_and_passed_requires_evidence() -> None:
@@ -257,7 +295,11 @@ def test_evaluation_unknown_metrics_and_passed_requires_evidence() -> None:
 
 
 def test_evidence_digest_and_rejected_after_evaluation_preservation() -> None:
-    record = sample_record(status=AgentCandidateStatus.REJECTED, rejection_reason="policy")
+    record = sample_record(
+        status=AgentCandidateStatus.REJECTED,
+        rejection_reason="policy",
+        static_gate_result={"passed": False, "reason": "rejected"},
+    )
     bundle = AgentCandidateEvidenceBundle(
         bundle_id="bundle-1",
         candidate_id=record.candidate_id,
@@ -270,6 +312,7 @@ def test_evidence_digest_and_rejected_after_evaluation_preservation() -> None:
         candidate_configuration_digest="b" * 64,
         candidate_record=record,
         static_gate_result={"passed": False, "reason": "rejected"},
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
         assembled_at=_NOW,
         sealed=True,
     )
@@ -462,9 +505,94 @@ def test_q10_rejects_foreign_evaluation_candidate_id() -> None:
 
 
 def test_q12_evidence_digest_key_order_invariant() -> None:
-    record = sample_record(status=AgentCandidateStatus.STATIC_GATE_FAILED, rejection_reason="x")
+    record = sample_record(
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        rejection_reason="x",
+        static_gate_result={"passed": False, "reason": "x"},
+    )
+    gate_a: dict[str, AdasJsonValue] = {}
+    gate_a["passed"] = False
+    gate_a["reason"] = "x"
+    gate_b: dict[str, AdasJsonValue] = {}
+    gate_b["reason"] = "x"
+    gate_b["passed"] = False
+    common = {
+        "bundle_id": "bundle-1",
+        "candidate_id": record.candidate_id,
+        "objective_id": record.objective_id,
+        "tenant_id": record.tenant_id,
+        "workspace_id": record.workspace_id,
+        "created_at": _NOW,
+        "created_by": "operator",
+        "baseline_configuration_digest": _DIGEST,
+        "candidate_configuration_digest": record.candidate_configuration_digest,
+        "candidate_record": record,
+        "terminal_evidence_outcome": W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+        "assembled_at": _NOW,
+        "sealed": True,
+    }
+    bundle_a = AgentCandidateEvidenceBundle(**common, static_gate_result=gate_a)
+    bundle_b = AgentCandidateEvidenceBundle(**common, static_gate_result=gate_b)
+    assert compute_evidence_bundle_digest(bundle_a) == compute_evidence_bundle_digest(bundle_b)
+    instant = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
+    offset_equiv = instant.astimezone(UTC)
+    bundle_t1 = AgentCandidateEvidenceBundle(
+        **{**common, "static_gate_result": gate_a, "created_at": instant, "assembled_at": instant}
+    )
+    bundle_t2 = AgentCandidateEvidenceBundle(
+        **{**common, "static_gate_result": gate_b, "created_at": offset_equiv, "assembled_at": offset_equiv}
+    )
+    assert compute_evidence_bundle_digest(bundle_t1) == compute_evidence_bundle_digest(bundle_t2)
+
+
+def test_c02_duplicate_allowed_merge_alternatives_rejected() -> None:
+    with pytest.raises(ValidationError, match="duplicate merge strategy"):
+        AgentDesignObjective(
+            **{
+                **sample_objective().model_dump(),
+                "allowed_merge_strategies": (
+                    MergeStrategy.LAST_WINS,
+                    MergeStrategy.CONCAT,
+                    MergeStrategy.CONCAT,
+                ),
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "bad_value"),
+    [
+        ("max_generation_cost", -1.0),
+        ("max_generation_cost", float("inf")),
+        ("max_eval_cost", -0.01),
+        ("max_eval_cost", float("nan")),
+    ],
+)
+def test_c02_invalid_optional_objective_budgets(field_name: str, bad_value: float) -> None:
+    with pytest.raises(ValidationError):
+        AgentDesignObjective(**{**sample_objective().model_dump(), field_name: bad_value})
+
+
+def test_c02_mutable_json_wrapper_backing_blocked() -> None:
+    payload = sample_record().model_dump(mode="python")
+    payload["agent_contract_snapshot"] = {"marker": {"k": "v"}}
+    record = AgentCandidateRecord.model_validate(payload)
+    wrapper = record.agent_contract_snapshot
+    assert isinstance(wrapper, _FrozenAdasJsonObject)
+    with pytest.raises(TypeError):
+        wrapper["marker"] = {"k": "z"}  # type: ignore[index]
+    with pytest.raises(TypeError):
+        setattr(wrapper, "marker", {})
+
+
+def test_c02_invalid_bundle_digest_rejected_at_construction() -> None:
+    record = sample_record(
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        rejection_reason="x",
+        static_gate_result={"passed": False, "reason": "x"},
+    )
     bundle = AgentCandidateEvidenceBundle(
-        bundle_id="bundle-1",
+        bundle_id="bundle-x",
         candidate_id=record.candidate_id,
         objective_id=record.objective_id,
         tenant_id=record.tenant_id,
@@ -475,7 +603,81 @@ def test_q12_evidence_digest_key_order_invariant() -> None:
         candidate_configuration_digest=record.candidate_configuration_digest,
         candidate_record=record,
         static_gate_result={"passed": False, "reason": "x"},
+        terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
         assembled_at=_NOW,
         sealed=True,
     )
-    assert compute_evidence_bundle_digest(bundle) == compute_evidence_bundle_digest(bundle.model_copy())
+    with pytest.raises(ValidationError, match="bundle_digest mismatch"):
+        AgentCandidateEvidenceBundle(**{**bundle.model_dump(), "bundle_digest": "c" * 64})
+
+
+def test_c02_search_run_mismatch_in_sealed_bundle() -> None:
+    record = sample_record(
+        status=AgentCandidateStatus.STATIC_GATE_FAILED,
+        rejection_reason="x",
+        static_gate_result={"passed": False, "reason": "x"},
+    )
+    with pytest.raises(ValidationError, match="search_run_id"):
+        AgentCandidateEvidenceBundle(
+            bundle_id="bundle-sr",
+            candidate_id=record.candidate_id,
+            objective_id=record.objective_id,
+            tenant_id=record.tenant_id,
+            workspace_id=record.workspace_id,
+            search_run_id="other-run",
+            created_at=_NOW,
+            created_by="operator",
+            baseline_configuration_digest=_DIGEST,
+            candidate_configuration_digest=record.candidate_configuration_digest,
+            candidate_record=record,
+            static_gate_result={"passed": False, "reason": "x"},
+            terminal_evidence_outcome=W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION,
+            assembled_at=_NOW,
+            sealed=True,
+        )
+
+
+def test_c02_incomplete_terminal_static_gate_shape() -> None:
+    record = sample_record(status=AgentCandidateStatus.STATIC_GATE_FAILED, rejection_reason="x")
+    with pytest.raises(ValidationError, match="passed"):
+        AgentCandidateEvidenceBundle(
+            bundle_id="bundle-shape",
+            candidate_id=record.candidate_id,
+            objective_id=record.objective_id,
+            tenant_id=record.tenant_id,
+            workspace_id=record.workspace_id,
+            created_at=_NOW,
+            created_by="operator",
+            baseline_configuration_digest=_DIGEST,
+            candidate_configuration_digest=record.candidate_configuration_digest,
+            candidate_record=record,
+            static_gate_result={"detail": "missing passed"},
+            assembled_at=_NOW,
+            sealed=True,
+        )
+
+
+def test_q03_rejects_negative_min_utility_delta() -> None:
+    with pytest.raises(ValidationError):
+        AgentDesignObjective(**{**sample_objective().model_dump(), "min_utility_delta": -0.01})
+
+
+def test_q03_accepts_valid_signed_utility_delta_on_record() -> None:
+    record = sample_record().model_copy(update={"utility_delta": -0.02})
+    assert record.utility_delta == -0.02
+
+
+@pytest.mark.parametrize(
+    "status_value",
+    [member.value for member in AgentCandidateStatus],
+)
+def test_q01_all_candidate_status_values(status_value: str) -> None:
+    assert AgentCandidateStatus(status_value).value == status_value
+
+
+@pytest.mark.parametrize(
+    "outcome_value",
+    [member.value for member in SearchSelectionOutcome],
+)
+def test_q01_selection_outcome_values(outcome_value: str) -> None:
+    assert SearchSelectionOutcome(outcome_value).value == outcome_value

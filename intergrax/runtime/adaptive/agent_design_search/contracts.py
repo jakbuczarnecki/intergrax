@@ -11,6 +11,7 @@ import re
 from collections.abc import Iterator, Mapping
 from datetime import UTC, datetime
 from enum import Enum
+from types import MappingProxyType
 from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
@@ -88,6 +89,9 @@ class _FrozenAdasJsonArray:
     def __init__(self, items: list[AdasJsonValue]) -> None:
         object.__setattr__(self, "_items", tuple(_freeze_adas_json_value(item) for item in items))
 
+    def __setattr__(self, name: str, value: object) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
+
     def __getitem__(self, index: int | slice) -> AdasJsonValue | _FrozenAdasJsonArray:
         result = self._items[index]
         if isinstance(index, slice):
@@ -121,30 +125,30 @@ class _FrozenAdasJsonArray:
 
 
 class _FrozenAdasJsonObject:
-    __slots__ = ("_items",)
+    __slots__ = ("_proxy",)
 
     def __init__(self, value: dict[str, AdasJsonValue]) -> None:
-        object.__setattr__(
-            self,
-            "_items",
-            {key: _freeze_adas_json_value(child) for key, child in value.items()},
-        )
+        frozen_inner = {key: _freeze_adas_json_value(child) for key, child in value.items()}
+        object.__setattr__(self, "_proxy", MappingProxyType(frozen_inner))
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise TypeError(_ADAS_JSON_MUTATION_ERROR)
 
     def __getitem__(self, key: str) -> AdasJsonValue:
-        return self._items[key]
+        return self._proxy[key]
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self._items)
+        return iter(self._proxy)
 
     def __len__(self) -> int:
-        return len(self._items)
+        return len(self._proxy)
 
     def __contains__(self, key: object) -> bool:
-        return key in self._items
+        return key in self._proxy
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, _FrozenAdasJsonObject):
-            return self._items == other._items
+            return self.to_plain() == other.to_plain()
         if isinstance(other, Mapping):
             return self.to_plain() == dict(other)
         return NotImplemented
@@ -153,19 +157,19 @@ class _FrozenAdasJsonObject:
         return repr(self.to_plain())
 
     def keys(self) -> Iterator[str]:
-        return iter(self._items.keys())
+        return iter(self._proxy.keys())
 
     def values(self) -> Iterator[AdasJsonValue]:
-        return iter(self._items.values())
+        return iter(self._proxy.values())
 
     def items(self) -> Iterator[tuple[str, AdasJsonValue]]:
-        return iter(self._items.items())
+        return iter(self._proxy.items())
 
     def get(self, key: str, default: AdasJsonValue | None = None) -> AdasJsonValue | None:
-        return self._items.get(key, default)
+        return self._proxy.get(key, default)
 
     def to_plain(self) -> dict[str, AdasJsonValue]:
-        return {key: _json_value_to_plain(child) for key, child in self._items.items()}
+        return {key: _json_value_to_plain(child) for key, child in self._proxy.items()}
 
     def __setitem__(self, key: str, value: object) -> None:
         raise TypeError(_ADAS_JSON_MUTATION_ERROR)
@@ -309,6 +313,12 @@ class SearchSelectionOutcome(str, Enum):  # noqa: UP042
     SELECT_CANDIDATE = "select_candidate"
     RETAIN_BASELINE = "retain_baseline"
     ABSTAIN = "abstain"
+
+
+class W1TerminalEvidenceOutcome(str, Enum):  # noqa: UP042
+    STATIC_PRE_EXECUTION_REJECTION = "static_pre_execution_rejection"
+    EXECUTION_FAILED_OR_CANCELLED = "execution_failed_or_cancelled"
+    EVALUATION_COMPLETE = "evaluation_complete"
 
 
 class AdasExecutionReference(BaseModel):
@@ -579,6 +589,20 @@ class AgentDesignObjective(BaseModel):
     def _dataset_digest(cls, value: str) -> str:
         return _validate_sha256_digest(value)
 
+    @field_validator("max_generation_cost", "max_eval_cost")
+    @classmethod
+    def _optional_cost_budgets(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        return _finite_non_negative(value, field="objective cost budget")
+
+    @field_validator("min_utility_delta")
+    @classmethod
+    def _min_utility_delta(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("min_utility_delta must be finite and non-negative")
+        return value
+
     @field_validator("created_at")
     @classmethod
     def _created(cls, value: datetime) -> datetime:
@@ -594,6 +618,8 @@ class AgentDesignObjective(BaseModel):
             raise ValueError("W1 objectives must prohibit external effects")
         if not self.require_human_approval:
             raise ValueError("W1 objectives require human approval")
+        if len(self.allowed_merge_strategies) != len(set(self.allowed_merge_strategies)):
+            raise ValueError("duplicate merge strategy alternatives rejected")
         if set(self.allowed_merge_strategies) != _W1_MERGE_STRATEGIES:
             raise ValueError("W1 allows only last_wins and concat merge strategies")
         if tuple(self.admitted_configuration_surface) != ("merge_strategy",):
@@ -604,8 +630,6 @@ class AgentDesignObjective(BaseModel):
             raise ValueError("max_iterations must match aggregate search iteration limit")
         if self.max_candidates != self.aggregate_limits.max_candidates:
             raise ValueError("max_candidates must match aggregate candidate limit")
-        if not math.isfinite(self.min_utility_delta):
-            raise ValueError("min_utility_delta must be finite")
         return self
 
 
@@ -944,9 +968,15 @@ class AgentCandidateEvaluationResult(BaseModel):
     def _candidate(cls, value: str) -> str:
         return _non_blank(value, field="candidate_id")
 
+    @field_validator("cost_normalized")
+    @classmethod
+    def _cost_normalized(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        return _finite_non_negative(value, field="cost_normalized")
+
     @field_validator(
         "quality_score",
-        "cost_normalized",
         "utility_score",
         "baseline_utility_score",
         "utility_delta",
@@ -1004,6 +1034,51 @@ class AgentCandidateEvaluationResult(BaseModel):
         return self
 
 
+def adas_static_gate_verdict(plain: Mapping[str, AdasJsonValue]) -> bool:
+    if "passed" not in plain:
+        raise ValueError("static gate evidence must declare passed")
+    verdict = plain.get("passed")
+    if not isinstance(verdict, bool):
+        raise ValueError("static gate verdict must be a boolean")
+    return verdict
+
+
+def validate_evaluation_mapping_for_record(
+    payload: Mapping[str, AdasJsonValue],
+    *,
+    candidate_id: str,
+) -> AgentCandidateEvaluationResult:
+    plain = adas_json_to_plain(payload)
+    passed = plain.get("passed")
+    if not isinstance(passed, bool):
+        raise ValueError("evaluation verdict must be a boolean")
+    embedded = plain.get("candidate_id")
+    if embedded is not None and embedded != candidate_id:
+        raise ValueError("evaluation candidate identity mismatch")
+    body: dict[str, object] = dict(plain)
+    body["candidate_id"] = candidate_id
+    return AgentCandidateEvaluationResult.model_validate(body)
+
+
+def infer_w1_terminal_evidence_outcome(
+    record: AgentCandidateRecord,
+    *,
+    has_evaluation: bool,
+    gate_passed: bool | None,
+) -> W1TerminalEvidenceOutcome:
+    if record.status is AgentCandidateStatus.EVALUATED or (
+        record.status is AgentCandidateStatus.REJECTED and has_evaluation
+    ):
+        return W1TerminalEvidenceOutcome.EVALUATION_COMPLETE
+    if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+        return W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION
+    if gate_passed is False and not has_evaluation:
+        return W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED
+    if has_evaluation:
+        return W1TerminalEvidenceOutcome.EVALUATION_COMPLETE
+    return W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION
+
+
 class AgentCandidateEvidenceBundle(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -1026,6 +1101,7 @@ class AgentCandidateEvidenceBundle(BaseModel):
     baseline_configuration_digest: str
     candidate_configuration_digest: str
     selection_outcome: SearchSelectionOutcome | None = None
+    terminal_evidence_outcome: W1TerminalEvidenceOutcome | None = None
     candidate_record: AgentCandidateRecord
     baseline_evaluation_result: AgentCandidateEvaluationResult | None = None
     evaluation_result: AgentCandidateEvaluationResult | None = None
@@ -1115,18 +1191,86 @@ class AgentCandidateEvidenceBundle(BaseModel):
             raise ValueError("evaluation result candidate identity must match bundle")
         if self.baseline_evaluation_result is not None and self.baseline_evaluation_result.baseline_agent_id is None:
             raise ValueError("baseline evaluation requires baseline agent identity")
+        if self.search_run_id is not None and self.search_run_id != record.search_run_id:
+            raise ValueError("bundle search_run_id must match candidate record search_run_id")
         if self.sealed:
-            has_gate = self.static_gate_result is not None
-            has_eval = self.evaluation_result is not None
-            if not has_gate and not has_eval:
-                raise ValueError("sealed bundle requires terminal evidence shape")
+            validate_sealed_terminal_evidence_bundle(self)
         if (
             self.artifact_hash is not None
             and self.bundle_digest is not None
             and self.artifact_hash == self.bundle_digest
         ):
             raise ValueError("artifact_hash must not substitute bundle_digest")
+        if self.bundle_digest is not None:
+            recomputed = compute_evidence_bundle_digest(self)
+            if self.bundle_digest != recomputed:
+                raise ValueError("bundle_digest mismatch")
         return self
+
+
+def validate_sealed_terminal_evidence_bundle(bundle: AgentCandidateEvidenceBundle) -> None:
+    record = bundle.candidate_record
+    has_gate = bundle.static_gate_result is not None
+    has_eval = bundle.evaluation_result is not None
+    if not has_gate and not has_eval:
+        raise ValueError("sealed bundle requires terminal evidence shape")
+    gate_passed: bool | None = None
+    if has_gate:
+        gate_plain = adas_json_to_plain(bundle.static_gate_result)  # type: ignore[arg-type]
+        gate_passed = adas_static_gate_verdict(gate_plain)
+    if record.static_gate_result is not None:
+        if not has_gate:
+            raise ValueError("bundle must carry static gate evidence for archived gate state")
+        record_gate = adas_json_to_plain(record.static_gate_result)
+        bundle_gate = adas_json_to_plain(bundle.static_gate_result)  # type: ignore[arg-type]
+        if record_gate != bundle_gate:
+            raise ValueError("bundle static gate must match archived snapshot")
+    if record.evaluation_result is not None:
+        record_eval = validate_evaluation_mapping_for_record(
+            record.evaluation_result,
+            candidate_id=record.candidate_id,
+        )
+        if not has_eval:
+            raise ValueError("bundle must carry evaluation evidence for evaluated snapshot")
+        if bundle.evaluation_result != record_eval:
+            raise ValueError("bundle evaluation must match archived snapshot")
+    elif has_eval and record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
+        raise ValueError("static rejection must not contain fabricated evaluation results")
+    outcome = bundle.terminal_evidence_outcome
+    if outcome is None:
+        raise ValueError("sealed bundle requires terminal_evidence_outcome")
+    expected = infer_w1_terminal_evidence_outcome(record, has_evaluation=has_eval, gate_passed=gate_passed)
+    if outcome is not expected:
+        raise ValueError("terminal_evidence_outcome must match archived terminal state")
+    if outcome is W1TerminalEvidenceOutcome.STATIC_PRE_EXECUTION_REJECTION:
+        if gate_passed is not False:
+            raise ValueError("static rejection requires failed static gate evidence")
+        if has_eval and bundle.evaluation_result is not None and bundle.evaluation_result.passed:
+            raise ValueError("static rejection must not claim successful evaluation")
+    if outcome is W1TerminalEvidenceOutcome.EVALUATION_COMPLETE and not has_eval:
+        raise ValueError("evaluated outcome requires genuine evaluation evidence")
+    if outcome is W1TerminalEvidenceOutcome.EXECUTION_FAILED_OR_CANCELLED and bundle.selection_outcome in {
+        SearchSelectionOutcome.SELECT_CANDIDATE,
+    }:
+        raise ValueError("failed or cancelled execution must not claim successful candidate selection")
+    selection = bundle.selection_outcome
+    if selection is SearchSelectionOutcome.SELECT_CANDIDATE:
+        if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+            raise ValueError("failed or rejected candidates cannot be selected")
+        if gate_passed is not True:
+            raise ValueError("SELECT_CANDIDATE requires successful static gate evidence")
+        if not has_eval or bundle.evaluation_result is None or not bundle.evaluation_result.passed:
+            raise ValueError("SELECT_CANDIDATE requires successful evaluation evidence")
+        if bundle.cost_report is None:
+            raise ValueError("SELECT_CANDIDATE requires accounting evidence")
+    if selection in {SearchSelectionOutcome.RETAIN_BASELINE, SearchSelectionOutcome.ABSTAIN}:
+        if record.status is AgentCandidateStatus.STATIC_GATE_FAILED:
+            raise ValueError("STATIC_GATE_FAILED cannot be selected")
+    status = record.status
+    if status is AgentCandidateStatus.EVALUATED and not has_eval:
+        raise ValueError("evaluated terminal bundle requires evaluation evidence")
+    if status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED} and not has_gate:
+        raise ValueError("rejected terminal bundle requires static gate evidence")
 
 
 def canonical_record_json(model: BaseModel) -> dict[str, Any]:

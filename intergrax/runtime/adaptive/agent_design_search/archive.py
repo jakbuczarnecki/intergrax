@@ -5,14 +5,22 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from typing import Protocol
 
+from pydantic import ValidationError
+
 from intergrax.runtime.adaptive.agent_design_search.contracts import (
+    AdasJsonValue,
     AgentCandidateEvidenceBundle,
     AgentCandidateRecord,
     AgentCandidateStatus,
+    SearchSelectionOutcome,
     adas_json_to_plain,
+    adas_static_gate_verdict,
     compute_evidence_bundle_digest,
+    validate_evaluation_mapping_for_record,
+    validate_sealed_terminal_evidence_bundle,
     verify_evidence_bundle_digest,
 )
 
@@ -171,7 +179,7 @@ def validate_parent_link(
         raise AgentDesignArchiveError("parent candidate unavailable")
     parent = history[-1]
     if parent.tenant_id != record.tenant_id or parent.workspace_id != record.workspace_id:
-        raise AgentDesignArchiveScopeError("cross-scope lineage rejected")
+        raise AgentDesignArchiveError("parent candidate unavailable")
     if parent.objective_id != record.objective_id:
         raise AgentDesignArchiveError("cross-objective lineage rejected")
     if would_create_lineage_cycle(records_by_candidate, record.candidate_id, parent_id):
@@ -201,7 +209,10 @@ def _gate_passed_payload(record: AgentCandidateRecord) -> bool:
     if payload is None:
         return False
     plain = adas_json_to_plain(payload)
-    return bool(plain.get("passed") is True)
+    try:
+        return adas_static_gate_verdict(plain) is True
+    except ValueError:
+        return False
 
 
 def _gate_failed_payload(record: AgentCandidateRecord) -> bool:
@@ -209,7 +220,10 @@ def _gate_failed_payload(record: AgentCandidateRecord) -> bool:
     if payload is None:
         return False
     plain = adas_json_to_plain(payload)
-    return plain.get("passed") is False
+    try:
+        return adas_static_gate_verdict(plain) is False
+    except ValueError:
+        return False
 
 
 def _has_rejection_evidence(record: AgentCandidateRecord) -> bool:
@@ -223,8 +237,31 @@ def _has_rejection_evidence(record: AgentCandidateRecord) -> bool:
 def _has_evaluation_evidence(record: AgentCandidateRecord) -> bool:
     if record.evaluation_result is None:
         return False
-    plain = adas_json_to_plain(record.evaluation_result)
-    return "passed" in plain and bool(plain.get("execution_ref") or plain.get("evaluation_ref"))
+    try:
+        result = validate_evaluation_mapping_for_record(
+            record.evaluation_result,
+            candidate_id=record.candidate_id,
+        )
+    except (ValueError, ValidationError):
+        return False
+    return bool(result.execution_ref or result.evaluation_ref or result.failure_reasons)
+
+
+def _validate_accumulated_evidence(
+    *,
+    prior: dict[str, AdasJsonValue] | None,
+    incoming: dict[str, AdasJsonValue] | None,
+    label: str,
+) -> None:
+    if prior is None:
+        return
+    if incoming is None:
+        raise AgentDesignArchiveError(f"successor must preserve {label}")
+    for key, value in prior.items():
+        if key not in incoming:
+            raise AgentDesignArchiveError(f"successor removed established {label} field")
+        if incoming[key] != value:
+            raise AgentDesignArchiveError(f"contradictory {label} evidence")
 
 
 def validate_status_evidence(record: AgentCandidateRecord) -> None:
@@ -234,12 +271,31 @@ def validate_status_evidence(record: AgentCandidateRecord) -> None:
         not _gate_failed_payload(record) or not _has_rejection_evidence(record)
     ):
         raise AgentDesignArchiveError("STATIC_GATE_FAILED requires failed static gate evidence and rejection reason")
-    if record.status is AgentCandidateStatus.EVALUATED and not _has_evaluation_evidence(record):
-        raise AgentDesignArchiveError("EVALUATED requires evaluation evidence references")
+    if record.status is AgentCandidateStatus.EVALUATED:
+        if record.evaluation_result is None:
+            raise AgentDesignArchiveError("EVALUATED requires evaluation evidence references")
+        try:
+            validate_evaluation_mapping_for_record(
+                record.evaluation_result,
+                candidate_id=record.candidate_id,
+            )
+        except (ValueError, ValidationError) as exc:
+            raise AgentDesignArchiveError("EVALUATED requires valid typed evaluation evidence") from exc
+    if record.static_gate_result is not None:
+        try:
+            adas_static_gate_verdict(adas_json_to_plain(record.static_gate_result))
+        except ValueError as exc:
+            raise AgentDesignArchiveError("static gate evidence must declare boolean verdict") from exc
     if record.status is AgentCandidateStatus.REJECTED and not _has_rejection_evidence(record):
         raise AgentDesignArchiveError("REJECTED requires explicit rejection evidence")
     if record.status is AgentCandidateStatus.ARCHIVED and record.archived_at is None:
         raise AgentDesignArchiveError("ARCHIVED requires archival timestamp")
+
+
+def _frozen_evidence_plain(value: Mapping[str, AdasJsonValue] | None) -> dict[str, AdasJsonValue] | None:
+    if value is None:
+        return None
+    return adas_json_to_plain(value)
 
 
 def validate_transition(
@@ -248,14 +304,24 @@ def validate_transition(
 ) -> None:
     if incoming.status in _FORBIDDEN_W1_TARGETS:
         raise AgentDesignArchiveError("W1 archive profile forbids this status transition target")
-    if (
-        prior is not None
-        and prior.status is AgentCandidateStatus.EVALUATED
-        and incoming.status is AgentCandidateStatus.REJECTED
-        and prior.evaluation_result is not None
-        and incoming.evaluation_result is None
-    ):
-        raise AgentDesignArchiveError("rejected successor must preserve evaluation evidence")
+    if prior is not None and prior.static_gate_result is not None:
+        if incoming.static_gate_result is None:
+            raise AgentDesignArchiveError("successor must preserve static gate evidence")
+        _validate_accumulated_evidence(
+            prior=_frozen_evidence_plain(prior.static_gate_result),
+            incoming=_frozen_evidence_plain(incoming.static_gate_result),
+            label="static gate",
+        )
+    if prior is not None and prior.evaluation_result is not None:
+        if incoming.evaluation_result is None:
+            if prior.status is AgentCandidateStatus.EVALUATED and incoming.status is AgentCandidateStatus.REJECTED:
+                raise AgentDesignArchiveError("rejected successor must preserve evaluation evidence")
+            raise AgentDesignArchiveError("successor must preserve evaluation evidence")
+        _validate_accumulated_evidence(
+            prior=_frozen_evidence_plain(prior.evaluation_result),
+            incoming=_frozen_evidence_plain(incoming.evaluation_result),
+            label="evaluation",
+        )
     if prior is None:
         if incoming.status is not AgentCandidateStatus.DRAFT or incoming.sequence != 0:
             raise AgentDesignArchiveError("first snapshot must be DRAFT at sequence 0")
@@ -288,6 +354,8 @@ def validate_evidence_bundle_against_archive(
         raise AgentDesignArchiveError("evidence bundle candidate mismatch")
     if record.model_dump(mode="json") != bundle.candidate_record.model_dump(mode="json"):
         raise AgentDesignArchiveError("evidence bundle must bind to archived candidate snapshot")
+    if bundle.search_run_id is not None and bundle.search_run_id != record.search_run_id:
+        raise AgentDesignArchiveError("evidence bundle search run mismatch")
     terminal = record.status in {
         AgentCandidateStatus.STATIC_GATE_FAILED,
         AgentCandidateStatus.REJECTED,
@@ -296,8 +364,14 @@ def validate_evidence_bundle_against_archive(
     }
     if bundle.sealed and not terminal:
         raise AgentDesignArchiveError("sealed bundle requires terminal candidate status")
-    if bundle.sealed and bundle.static_gate_result is None and bundle.evaluation_result is None:
-        raise AgentDesignArchiveError("sealed bundle requires terminal evidence shape")
+    if bundle.sealed:
+        try:
+            validate_sealed_terminal_evidence_bundle(bundle)
+        except ValueError as exc:
+            raise AgentDesignArchiveError(str(exc)) from exc
+        if bundle.selection_outcome is SearchSelectionOutcome.SELECT_CANDIDATE:
+            if record.status in {AgentCandidateStatus.STATIC_GATE_FAILED, AgentCandidateStatus.REJECTED}:
+                raise AgentDesignArchiveError("failed or rejected candidates cannot be selected")
 
 
 def freeze_evidence_bundle(bundle: AgentCandidateEvidenceBundle) -> AgentCandidateEvidenceBundle:

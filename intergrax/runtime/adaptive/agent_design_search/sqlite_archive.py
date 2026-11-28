@@ -8,6 +8,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from intergrax.runtime.adaptive.agent_design_search.archive import (
     AgentDesignArchiveError,
     AgentDesignArchiveScopeError,
@@ -92,18 +94,47 @@ class SQLiteAgentDesignArchive:
     def __exit__(self, *_: Any) -> None:
         self.close()
 
-    def _history_map(self, conn: sqlite3.Connection) -> dict[str, list[AgentCandidateRecord]]:
+    def _load_scoped_candidate_history(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        candidate_id: str,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[AgentCandidateRecord]:
         rows = conn.execute(
             """
             SELECT payload_json FROM adas_candidate_snapshots
-            ORDER BY candidate_id, sequence, created_at, snapshot_id
-            """
+            WHERE candidate_id = ? AND tenant_id = ? AND workspace_id = ?
+            ORDER BY sequence, created_at, snapshot_id
+            """,
+            (candidate_id, tenant_id, workspace_id),
         ).fetchall()
-        history: dict[str, list[AgentCandidateRecord]] = {}
-        for row in rows:
-            record = AgentCandidateRecord.model_validate_json(row["payload_json"])
-            history.setdefault(record.candidate_id, []).append(record)
-        return history
+        return [AgentCandidateRecord.model_validate_json(row["payload_json"]) for row in rows]
+
+    def _lineage_history_map_for_parent_validation(
+        self,
+        conn: sqlite3.Connection,
+        record: AgentCandidateRecord,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> dict[str, list[AgentCandidateRecord]]:
+        histories: dict[str, list[AgentCandidateRecord]] = {}
+        current: str | None = record.parent_candidate_id
+        while current is not None:
+            if current not in histories:
+                histories[current] = self._load_scoped_candidate_history(
+                    conn,
+                    candidate_id=current,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+            parent_hist = histories.get(current)
+            if not parent_hist:
+                break
+            current = parent_hist[-1].parent_candidate_id
+        return histories
 
     def _fetch_scoped_snapshot(
         self,
@@ -185,15 +216,20 @@ class SQLiteAgentDesignArchive:
                 _rollback_if_active(conn)
                 raise AgentDesignArchiveError("conflicting snapshot identity")
 
-            history = self._history_map(conn)
-            _ensure_global_candidate_scope(history, frozen, tenant_id=tenant_id, workspace_id=workspace_id)
+            _ensure_global_candidate_scope({}, frozen, tenant_id=tenant_id, workspace_id=workspace_id)
             prior = self._fetch_prior_snapshot(
                 conn,
                 candidate_id=frozen.candidate_id,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
             )
-            validate_parent_link(history, frozen)
+            lineage = self._lineage_history_map_for_parent_validation(
+                conn,
+                frozen,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            validate_parent_link(lineage, frozen)
             validate_transition(prior, frozen)
             conn.execute(
                 """
@@ -432,7 +468,10 @@ class SQLiteAgentDesignArchive:
         ).fetchone()
         if row is None:
             return None
-        bundle = AgentCandidateEvidenceBundle.model_validate_json(row["payload_json"])
+        try:
+            bundle = AgentCandidateEvidenceBundle.model_validate_json(row["payload_json"])
+        except ValidationError as exc:
+            raise AgentDesignArchiveError("persisted bundle integrity violation") from exc
         if bundle.tenant_id != tenant_id or bundle.workspace_id != workspace_id:
             return None
         if bundle.bundle_digest is None:
