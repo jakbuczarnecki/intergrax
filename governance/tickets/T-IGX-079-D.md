@@ -69,3 +69,36 @@ ready_for_audit
 **II-W0-A-PUBLICATION-SETTLEMENT-01 (2026-11-28):** Governance reconciliation and G6 handoff prep; lifecycle `quality_gate`; no `ready_for_audit` without Operator authority.
 
 **II-W0-A-G6-HANDOFF-01 (2026-11-28T08:04:24+01:00):** Session INTEGRAX INTELLIGENCE | W0 | W0-A | II-W0-A-G6-HANDOFF-01; Operator OD-II-W0-A-G6-01; lifecycle `quality_gate` → `ready_for_audit`; publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`; settlement `74a5ff47956d48497368797dac406547924a2216`; implementer checkpoint `.tmp/proof/II-W0-A-G6-HANDOFF-01/igx_gov_ticket_checkpoint.log` (igx_gov ticket --profile fast); qualification binding at integration SHA `a6e3a6e` (1894/45/1w per recovered smoke); formal G6 **pending** in separate `independent-quality-auditor` session; terminal state `W0_A_READY_FOR_INDEPENDENT_FORMAL_G6`.
+
+## Formal independent audit — II-W0-A-FORMAL-G6-01
+
+**Audit ID:** `II-W0-A-FORMAL-G6-01`
+**Session:** `INTEGRAX INTELLIGENCE | W0 | W0-A | INDEPENDENT AUDITOR | II-W0-A-FORMAL-G6-01` (`40380302-00b7-4c0e-bf4e-e48d122f45be`)
+**Role:** `independent-quality-auditor` (separate Operator-authorized session under `OD-II-W0-A-G6-01`)
+**Verdict:** `SCOPED PASS WITH DOCUMENTED NON-BLOCKING LIMITATIONS`
+**Scope:** Documentary architecture acceptance and governance qualification only for W0-A packages `II-W0-01` through `II-W0-04` at accepted candidate `00ae3f6b5a882021f500b6424f8213b26263111a`, publication `a6e3a6e631d1e72aaeb779a189fa331fc5542938`, settlement `74a5ff47956d48497368797dac406547924a2216`, handoff `bba351252599b47bb8377ec8cdae9aaf75f931e0`.
+**Blocking findings:** 0 (`NONE`)
+**New findings:** `NONE`
+
+### Package and qualification verdicts
+
+| Item | Verdict | Notes |
+|---|---|---|
+| `II-W0-01` (`a16bd1c7718ae2e9ddd2d5becb77dc8d62335dd6`) | `PASS (DOCUMENTARY)` | Tier-0–Tier-3 preserved; Execution sole admission; Nexus private; 5 negative oracles REJECT |
+| `II-W0-02` (`9a9d58e43d1d43b6d883ddda9f8452ee2154a371`) | `PASS (DOCUMENTARY)` | 12/12 II-OPR-01, 9 logical records, §13.2 consumers, 6 REF-II families; W1 mapping pending |
+| `II-W0-03` (`e1724a91fd61bf079cd890269acd6fb68bfc2692`) | `PASS (DOCUMENTARY WITH W1 DEFERRAL)` | 12/12 II-INV rows, 24 FRZ/ECAP rows (no promotion), 18/18 source blobs verified; `II-INV-05` message-extension owner deferred to W1 |
+| `II-W0-04` (`2aee4593fdba959e449ba5fa6c6bffe3b53071e2`) | `PASS (DOCUMENTARY WITH W1 DEFERRAL)` | 23/23 §7.1 concerns, 17/17 II-OPR-06 failure classes; row 9 (`W1`) & row 23 (`F-W0A-10` record-only) preserved |
+| `Q01`–`Q08` | `PASS` (Q01–Q05 documentary; Q06–Q08 governance/evidence with documented non-blocking limitations) | Plan digest `ab6d4f9dcfea86bdebfaa8235749199e8de6c2f61e79e71c97146193a04dcb81`, `verify_plan_approval`, `verify_ticket_lifecycle --plan`, `check_docs_domain_pairs` (23/8), `test_p6r_feature_docs.py` (4 passed), immutable `git diff --check` exit 0 |
+
+### Finding dispositions (F-W0A-43..48)
+
+- **F-W0A-43:** `RESOLVED_WITH_HISTORICAL_RECORD_PRESERVED (NON-BLOCKING)` — corrective publication `a6e3a6e6` verified on `origin/development`; historical commits preserved.
+- **F-W0A-44:** `PARTIALLY_RESOLVED_WITH_HISTORICAL_NON_RECONSTRUCTABLE_LIMITATIONS (NON-BLOCKING)` — immutable Git diffs clean; historical workspace preservation non-reconstructable.
+- **F-W0A-45:** `VERIFIED_HISTORICAL_NON_RECONSTRUCTABLE_LIMITATION (NON-BLOCKING)` — `igx_gov_smoke_rebase.log` binds `9efe64304..HEAD` without printing 40-char HEAD SHA; corroborated by `a6e3a6e6` attribution and independent checks.
+- **F-W0A-46:** `VERIFIED_RESOLVED_BY_IMMUTABLE_GIT_RECONSTRUCTION (NON-BLOCKING)` — `integration_range_a6e3a6e.patch` flattened to 1 line; reconstructed directly from `9efe64304..a6e3a6e6` (7-path write-set, `diff --check` exit 0).
+- **F-W0A-47:** `VERIFIED_RESOLVED_BY_IMMUTABLE_GIT_RECONSTRUCTION (NON-BLOCKING)` — `settlement_commit_diff.patch` has BOM+CRLF; `git diff --check 74a5ff479^ 74a5ff479` exits 0.
+- **F-W0A-48:** `VERIFIED_RESOLVED_BY_SUBSEQUENT_AND_INDEPENDENT_CHECKS (NON-BLOCKING)` — earlier `validation_results.txt` errors superseded by passing validators and independent checks.
+
+### Closure and gate boundaries (unchanged)
+
+Lifecycle remains `ready_for_audit`. Formal package closure (`0/4` W0-A, `0/6` W0, `0/69` total roadmap) requires separate Operator closure authority and is not granted here. All `GATE-II-*` and `GATE-INTELLIGENCE-CONSUME` remain `NOT_REACHED`. Local audit dossier: `.tmp/proof/II-W0-A-FORMAL-G6-01/`.
