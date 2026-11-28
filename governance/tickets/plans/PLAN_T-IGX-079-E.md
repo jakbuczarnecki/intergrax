@@ -19,12 +19,17 @@ Prepare and, after Operator approval, execute **II-W0-05 — Main architecture d
 - Previous plan digest: `3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481`
 - Independent preparation review verdict: `PLAN_CORRECTIONS_REQUIRED` (`F-W0B-01` through `F-W0B-06` resolved in `II-W0-B-PREP-CORRECTIVE-01`).
 
-**Corrected preparation baseline (II-W0-B-PREP-CORRECTIVE-01; subject to II-W0-B-PREP-FINAL-01 settlement):**
+**Corrected preparation baseline (II-W0-B-PREP-CORRECTIVE-01; historical):**
 
 - Previous preparation commit: `3fcd7241369f21d4676ec9d980eb4cbf6bb8550d`
 - Previous plan blob: `fe7bd9aaec3d6fc9b0b22c1d72e5c1cef3deb21e`
 - Previous plan digest: `2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89`
 
+**Final preparation baseline (II-W0-B-PREP-FINAL-01; historical after II-W0-B-QUALIFICATION-SETTLEMENT-01):**
+
+- Previous preparation commit: `d713fae9c4eed22672489f5fc53ff85c532890c8`
+- Previous plan blob: `745926deddedf5cf4d4c953da03deefd8669eef8`
+- Previous plan digest: `0e13374852951f72818910fb1980211465bfc49e79919faf9ad9bfea875ebd8b`
 
 **Preconditions:** Operator approval of this exact corrected plan digest; accepted prerequisites II-W0-02, II-W0-03, II-W0-04; ticket lifecycle transitions per Q08; no gate opening; no W1; no ENV-QUALIFIED declaration; no product delta.
 
@@ -377,6 +382,22 @@ The subsequent `II-W0-05_ENVIRONMENT_TRIAL_SPECIFICATION.md` MUST define: dispos
 - External approved digests and plans: no digest-amending edits in II-W0-05.
 - Historical `T-IGX-079-A`: `in_progress` without approval preserved; no formal supersession or closure without separate Operator authority.
 
+
+
+## F-W0B-11 — EVOL-X qualification lifecycle limitation (orchestrator-confirmed)
+
+**Disposition:** Qualification lifecycle issue only. No permission to weaken EVOL-X code, tests, trigger definitions, baseline registries, or canonical qualification rules.
+
+**Root cause (canonical mechanisms):**
+
+1. `testing_support/change_safety/discovery/closed_world.py` — `ClosedWorldInventory.inventory_digest` includes `source_commit_sha` and `source_tree_id` in the digest payload.
+2. `testing_support/change_safety/graph/builder.py` — `SemanticGraph.digest` binds the semantic graph digest to `inventory_digest`.
+3. `testing_support/change_safety/assess/triggers.py` — `evaluate_freshness` compares accepted and actual digests for T1..T9 (`tests/qualification/evol_x/data/requalification_triggers.v1.json`: **T1** `graph_digest`, **T2** `inventory_digest`).
+4. Any new immutable candidate commit changes inventory digest inputs even for documentation-only deltas; T1 and T2 therefore detect graph/inventory freshness changes against an older accepted manifest.
+5. `testing_support/change_safety/workflow.py` — stage **A8** fails when no accepted baseline manifest is supplied or when freshness triggers fire; overall EVOL-X PASS requires actual A8 PASS and all other mandatory stages satisfied.
+
+**Consequence:** Merely retrieving an older accepted manifest cannot guarantee A8 PASS for a new candidate without a candidate-scoped acceptance procedure under competent authority (Phase B below). Phase A may still collect diagnostic and preparatory evidence using the actual candidate.
+
 ## Qualification contract (after plan approval; canonical CLI)
 
 ### Q01 — Authority and scope integrity
@@ -418,18 +439,35 @@ Execute sequentially at execution baseline using `uv run` (if `uv` is unavailabl
 
 **Pre-implementation governance commands (preserved):** Execute the `uv run` validators above at the execution integration base before candidate work and again over the immutable candidate range after the candidate commit.
 
-**Future implementation qualification sequence (candidate-bound; Q07 extension):**
+**Two-phase candidate qualification (replaces historical accepted-baseline-only assumption; F-W0B-11):**
 
-1. Pre-commit document and governance checks (plan digest, lifecycle, domain pairs, PDC inventory, smoke profile as applicable before staging).
-2. Candidate commit and exact committed-range checks (`git diff --check` over `BASE_SHA..CANDIDATE_SHA`; no reuse of evidence from a different SHA).
-3. EVOL-X candidate-range qualification (binding below; prerequisite: accepted baseline manifest).
-4. ENT-AUDIT-X affected-change qualification (binding below; dry-run selection evidence then certifying CHANGED-SINCE run at candidate).
-5. Canonical governance smoke (`uv run python -m scripts.governance.igx_gov ticket --profile smoke`).
-6. Independent pre-publication review where required.
-7. Authorized publication.
-8. Operator-authorized formal G6 handoff (`ready_for_audit` only with separate authority).
+### Phase A — Candidate qualification and freshness assessment (after Operator approval)
 
-If subsequent qualification requires candidate changes, invalidate affected evidence and requalify the changed scope.
+1. Execute authorized documentation adoption within the 50-path write-set.
+2. Run pre-commit document and governance checks (plan digest, lifecycle, domain pairs, PDC inventory, applicable smoke commands before staging).
+3. Produce an immutable implementation candidate commit (`Ref: governance/tickets/T-IGX-079-E.md`); keep candidate identity separate from subsequent governance-only record commits.
+4. Execute exact candidate-range validation (`git diff --check` over `BASE_SHA..CANDIDATE_SHA`; no evidence reuse across SHAs).
+5. Execute Q01–Q06 and all applicable Q07 document and governance commands over the actual candidate range.
+6. Execute EVOL-X via `scripts/qualification/evol_x_change_workflow.py` using the actual `CANDIDATE_SHA` and an existing authorized baseline manifest when available.
+7. If no accepted baseline exists for this candidate, execute EVOL-X with `--baseline` omitted **for diagnostic assessment only**; preserve actual A1–A8 outputs and non-zero exit code; expect **A8 FAIL** — `no accepted baseline manifest supplied`; do **not** claim overall EVOL-X PASS; do not suppress the non-zero exit.
+8. Investigate and resolve any failure outside the explicitly identified freshness prerequisite under proper authority. A4 SKIPPED is acceptable only when no contract changes exist and actual evidence supports that disposition.
+9. Execute ENT-AUDIT-X affected-change qualification using the CHANGED-SINCE binding below (dry-run selection evidence, then certifying run at candidate).
+10. Execute canonical governance smoke once at the final implementation candidate (`uv run python -m scripts.governance.igx_gov ticket --profile smoke`).
+
+### Phase B — Independently reviewed candidate baseline acceptance (only after Phase A evidence is complete)
+
+1. Calculate the proposed candidate digest set using existing canonical EVOL-X mechanisms (`compute_actual_digests` / workflow outputs at `CANDIDATE_SHA`).
+2. Bind all T1–T9 digest values to the exact candidate SHA.
+3. Produce a proposed `AcceptedBaselineManifest`, clearly marked **NOT_ACCEPTED** in surrounding evidence.
+4. Independently review candidate scope, qualification, changed digests, and evidence integrity.
+5. Obtain explicit acceptance from the competent Operator or delegated EVOL-X authority.
+6. Materialize the accepted manifest only after that authority is recorded (not via `--write-baseline` as a substitute for authorization).
+7. Re-execute EVOL-X against the **same immutable candidate** and the properly accepted manifest.
+8. Require actual **A8 PASS** and all other mandatory stages satisfied before claiming overall EVOL-X PASS.
+
+The candidate manifest is scoped to qualification of the exact candidate only. It is **not** automatic authority to replace any global EVOL-X accepted baseline. Do not promote a global baseline. Do not use self-comparison of a newly generated accepted manifest as the sole evidence of qualification. Preserve all independent Phase A evidence. If applicable canonical governance does not permit candidate-scoped baseline acceptance, report the exact authority conflict; do not invent authority.
+
+If subsequent qualification requires candidate changes, invalidate affected evidence and requalify the changed scope. Do not repeat full smoke solely because administrative lifecycle records change, unless mandatory or affected evidence becomes invalid.
 
 **EVOL-X execution binding (F-W0B-08)** — `docs/project/capabilities/architecture/EVOL_X_CHANGE_SAFETY.md`; canonical CLI `scripts/qualification/evol_x_change_workflow.py` (verified arguments: `--base-sha`, `--head-sha`, `--baseline`, `--out-dir`). Documentation adoption only; not EVOL-X formal closure; no `--write-baseline` to manufacture accepted baseline authority; no `--authorize-surface` without a signed authorization record.
 
@@ -448,7 +486,8 @@ uv run python scripts/qualification/evol_x_change_workflow.py --base-sha BASE_SH
 | Accepted baseline SHA | — |
 | Authority record | EVOL-X formal closure `FORMAL_CLOSURE_PUBLICATION_SHA` `be77b3a5fb97f10a3bd2df6ee038cb92aad77eca` (`docs/project/maintainers/qualification/evol_x/EVOL_X_SHA_LADDER.md`); does not publish a separate accepted change-workflow baseline manifest for this scope |
 | Manifest identity | — |
-| Usable for II-W0-05 candidate A8 | **No** — locate or establish an operator-accepted manifest before claiming EVOL-X PASS; do not waive A8 |
+| Usable for II-W0-05 Phase A diagnostic | **Limited** — workflow may run without baseline; A8 expected FAIL; overall PASS prohibited |
+| Usable for II-W0-05 Phase B / final A8 PASS | **No** until candidate-scoped manifest is independently accepted under Phase B authority; do not waive A8 |
 
 **ENT-AUDIT-X affected-change binding (F-W0B-09)** — routine documentation adoption audit via `scripts/enterprise_audit/run_enterprise_audit.py` (not `scripts/qualification/ent_audit_x_formal_closure_preflight.py`, which governs formal ENT-AUDIT-X closure only). No baseline promotion, FREEZE mode, FRZ/IIAC promotion, or ENT-AUDIT-X formal closure in this batch.
 
@@ -466,21 +505,25 @@ uv run python scripts/enterprise_audit/run_enterprise_audit.py run --mode CHANGE
 
 Record actual selected check IDs, executed results, deferred controls and blocking findings. Relevant controls when in changed scope (from canonical ENT-AUDIT-X definitions): **ENT-A-DOC-01** (canonical docs present), **ENT-A-DOC-02** (ownership manifest drift), **ENT-A-DOC-03** (roadmap/checklist sync), **VBN-INVENTORY-DRIFT** where applicable. If a mandatory applicable documentation control is not selected automatically, retain its explicit existing validation requirement from the preserved pre-commit governance commands; do not claim execution merely because a control appears in the matrix.
 
-### Q08 — Independent review and closure (mandatory lifecycle sequence)
+### Q08 — Independent review and closure (mandatory lifecycle sequence; Q07/Q08 ordering corrected)
 
 1. Actual Operator approval bound to the exact corrected plan digest.
 2. Canonical lifecycle transition: `plan_pending` → `plan_approved` → `in_progress`.
 3. Authorized implementation within the 50-path write-set.
-4. Actual qualification (Q01–Q07).
-5. Candidate commit (`Ref: governance/tickets/T-IGX-079-E.md`) and canonical `quality_gate` checkpoint.
-6. Independent pre-publication review where required.
-7. Authorized publication (`git push origin development`) and remote SHA verification.
-8. Operator-authorized `ready_for_audit` handoff.
-9. Formal independent G6 in a separate Operator-authorized `independent-quality-auditor` session.
-10. Separate Operator closure authority.
-11. Final closure and Execution Register reconciliation.
+4. Pre-commit qualification (governance validators before staging).
+5. Immutable implementation candidate commit (`Ref: governance/tickets/T-IGX-079-E.md`).
+6. Candidate-bound Phase A qualification (Q01–Q07 including EVOL-X diagnostic / ENT-AUDIT-X / smoke at candidate).
+7. Independent pre-publication evidence review where required.
+8. Separate accepted-manifest authority where required (Phase B).
+9. Phase B freshness qualification (re-execute EVOL-X with accepted manifest; A8 PASS mandatory for EVOL-X PASS claim).
+10. Canonical `quality_gate` checkpoint and authorized publication.
+11. Remote publication verification.
+12. Operator-authorized `ready_for_audit` transition.
+13. Formal independent G6 in a separate Operator-authorized `independent-quality-auditor` session.
+14. Separate Operator closure authority.
+15. Final register reconciliation.
 
-No transition to `ready_for_audit` before implementation and qualification. No implementer self-certification. Maintain current lifecycle at `plan_pending` throughout preparation correction. Preserve W0 formal closure counts (`4/6`) and total roadmap closures (`4/69`) until proper authority closes II-W0-05.
+Do not require candidate-bound tests before the candidate exists. No transition to `ready_for_audit` before implementation and qualification. No implementer self-certification. Maintain current lifecycle at `plan_pending` throughout preparation settlement. Preserve W0 formal closure counts (`4/6`) and total roadmap closures (`4/69`) until proper authority closes II-W0-05.
 
 ## Rollback
 
