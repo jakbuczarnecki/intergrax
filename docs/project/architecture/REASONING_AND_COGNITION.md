@@ -363,9 +363,9 @@ Planning, classification, and decision transitions emit trace/events through the
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Canonical domain pair; three-plane model; typed contracts; adjacent-domain boundaries (Orchestration, Nexus, UER, Critic, Tools); `ReasoningFailureKind` taxonomy; Post-L3 audit baseline and AUDIT-IDEAL Band 7 rows closed ([plan](../maintainers/plans/REASONING_AND_COGNITION.md)).
@@ -423,11 +423,11 @@ Backlog and phase trackers: [plan](../maintainers/plans/REASONING_AND_COGNITION.
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
-**Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5
+**Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 
 ### Cursor read scope (token budget)
@@ -634,4 +634,4 @@ Remediation: **RPL-FIX-C/D/E/F** in [`plan/REASONING_AND_COGNITION.md`](../maint
 - Skip `DecisionRecord` emission on governed decision paths
 - Hardcode planner prompts when registry ids exist for the host profile
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

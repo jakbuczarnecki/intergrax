@@ -357,7 +357,7 @@ Planner/classifier wiring; graph-spec seeding; parallel caps; strategy catalog; 
 
 Architecture maturity: **A4** *(UEA-aligned target)*
 Implementation maturity: **I3–I4** *(CURRENT harness I4)*
-Production readiness: **P2**  
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - ORCH-INV closure; topology vs Execution Tree on hub; UEA alignment.
@@ -470,13 +470,13 @@ Accepted topology contract separate from `NexusPlan` seed; decouple nodes from a
 ---
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref satellite §50)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref satellite §50)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)
 **Last updated:** 2026-08-26 - UE-DOC-0.5 alignment with frozen UEA (ORCH-INV, OrchestrationDefinition)
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) (infra capacity signals and scaling - **not** graph scheduling, agent topology or orchestration brain)
 
@@ -939,4 +939,4 @@ Long-running tasks require:
 
 ---
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

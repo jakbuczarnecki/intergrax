@@ -201,9 +201,9 @@ UCL is not a public plugin marketplace. Extension surfaces are architecture cont
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I3**  
-Production readiness: **P2**  
+Architecture maturity: **A4**
+Implementation maturity: **I3**
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4** - Accepted [ADR-UCL-001](../technical/adr/entries/2026-08-01/ADR-UCL-001.md), closed CTX-UCL-1…6D + CLOSEOUT-1, explicit ownership and invariants in this hub; bounded **DURABLE_COMPACTION** runtime delivered under **TOKEN-10E**.
@@ -275,11 +275,11 @@ None cited for the UCL domain - do not claim **P4** or **E5**.
 
 ## Maintainer and Cursor context
 
-**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**; **TOKEN-10E-1…4** and **TOKEN-10E** **ACCEPTED / CLOSED**  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md)  
-**Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)  
-**ADR:** [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler - superseded where UCL conflicts)  
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**; **TOKEN-10E-1…4** and **TOKEN-10E** **ACCEPTED / CLOSED**
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md)
+**Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
+**ADR:** [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) · [`ADR-MEM-001`](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler - superseded where UCL conflicts)
 **Last architecture/runtime pass:** 2026-08-17 - **TOKEN-10E-1…4** and **TOKEN-10E** accepted/closed; bounded **DURABLE_COMPACTION** runtime synchronized with Token Optimization canon; rollback execution remains out of scope
 
 ### Cursor read scope (token budget)
@@ -1388,4 +1388,4 @@ Remediation tracked as **UCL-GOVERNED-REVIEW-INTEGRITY** (findings 01–02), **U
 
 ---
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

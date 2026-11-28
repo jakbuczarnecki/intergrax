@@ -1,9 +1,9 @@
 # Scenario Factory — architecture (multi-layer feature)
 
-**Status:** **Proposed** — documentation only; no product code. Implementation (SFX-P5+) is gated by `ARCH-FREEZE` = CLOSED and `GATE-SFX-ENTRY`.  
-**Pair:** [plan/SCENARIO_FACTORY.md](../plan/SCENARIO_FACTORY.md)  
-**Stage:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory · roadmap `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY` ([roadmap](../../maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3, §3.0.7b)  
-**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12) — this page is a summary; the SSOT wins on any difference.  
+**Status:** **Proposed** — documentation only; no product code. Implementation (SFX-P5+) is gated by `ARCH-FREEZE` = CLOSED and `GATE-SFX-ENTRY`.
+**Pair:** [plan/SCENARIO_FACTORY.md](../plan/SCENARIO_FACTORY.md)
+**Stage:** `SCENARIO-FACTORY-X` (SFX) — Enterprise Scenario Factory · roadmap `PLANNED / MANDATORY / POST-ARCH-FREEZE PRIORITY` ([roadmap](../../maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) §3, §3.0.7b)
+**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12) — this page is a summary; the SSOT wins on any difference.
 **Dossier:** [`SFX_INDEX.md`](../../maintainers/qualification/scenario_factory_x/SFX_INDEX.md)
 **Public overview (reader-facing, planned status):** [`overview/SCENARIO_FACTORY.md`](../../overview/SCENARIO_FACTORY.md)
 
@@ -145,4 +145,4 @@ One line per area (as of 2026-11-26 @ `646e63953`); "not applicable" lines state
 ## Related domain architecture
 
 Coordinates, does not override: [`COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md), [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md), [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](../../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md), [`APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md), [`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md), [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md). Architecture principles: [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
-**Integrax Intelligence consumer (PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](INTEGRAX_INTELLIGENCE.md) — Scenario Factory is the first strategic product consumer of qualified shared intelligence. **PROPOSED** additional SFX-P5+ entry: scoped `GATE-INTELLIGENCE-CONSUME` after `INTELLIGENCE-X` (pending operator ratification of `SFX-MASTER-PLAN.md`; does not alter SFX-P0..P4 preparatory work).
+**Integrax Intelligence consumer (architecture ratified under OD-INTELLIGENCE-01):** [`INTEGRAX_INTELLIGENCE.md`](INTEGRAX_INTELLIGENCE.md) — Scenario Factory is the first strategic product consumer of qualified shared intelligence once runtime qualification exists. **PROPOSED / DEFERRED_PENDING_AUTHORITY** additional SFX-P5+ entry: scoped `GATE-INTELLIGENCE-CONSUME` (pending amendment of approved `SFX-MASTER-PLAN.md` digest; does not alter SFX-P0..P4 preparatory work).

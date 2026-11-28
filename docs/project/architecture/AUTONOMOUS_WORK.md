@@ -717,7 +717,7 @@ Autonomous work needs risk-aware capability growth.
 
 Normative direction:
 
-> **SELF-EXTENDING CAPABILITY: conditionally allowed.**  
+> **SELF-EXTENDING CAPABILITY: conditionally allowed.**
 > **SELF-EXTENDING AUTHORITY: forbidden.**
 
 See [extended depth — A0–A4 capability autonomy tiers](satellites/AUTONOMOUS_WORK_extended_depth.md#a0-a4-capability-autonomy-tiers) for per-tier isolation, governance, HITL and persistence rules.
@@ -1046,10 +1046,10 @@ Minimum metrics:
 
 ## Product vocabulary
 
-Canonical technical domain: **Autonomous Work**.  
-Primary product abstraction: **Virtual Worker**.  
+Canonical technical domain: **Autonomous Work**.
+Primary product abstraction: **Virtual Worker**.
 Future multi-worker product/cross-layer positioning: **Virtual Workforce**.
 
 Use `Virtual Employee` only as explanatory market language where useful; do not make it the canonical type/domain name.
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

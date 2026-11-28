@@ -30,9 +30,9 @@ Primary audience: external architects, Principal or Staff engineers, CTOs, and t
 | **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
 
 
-## Strategic platform layers (proposed)
+## Strategic platform layers (ratified architecture)
 
-Beyond the responsibility boundaries above, the proposed strategic architecture sequence is **Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem**. [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) describes the horizontal Integrax Intelligence capability (`INTELLIGENCE-X`, **PROPOSED / not qualified**). It composes existing domain mechanisms into goal-driven execution without adding a physical tier or competing execution authority.
+Beyond the responsibility boundaries above, the ratified strategic architecture sequence is **Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem**. [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) describes the horizontal Integrax Intelligence capability (`INTELLIGENCE-X`, **architecture and Master Roadmap ratified under OD-INTELLIGENCE-01**; **runtime qualification not established**). It composes existing domain mechanisms into goal-driven execution without adding a physical tier or competing execution authority.
 
 ## Why this foundation exists
 

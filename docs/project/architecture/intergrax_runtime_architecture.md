@@ -7,7 +7,7 @@
 **Target:** [`../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Features:** [`../capabilities/README.md`](../capabilities/README.md)
-**Strategic cross-domain capability (PROPOSED):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem. Logical composition layer only; Tier-0–Tier-3 physical architecture unchanged.
+**Strategic cross-domain capability (architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; runtime qualification not established):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — Enterprise Foundation → Integrax Intelligence → Product & Application Ecosystem. Logical composition layer only; Tier-0–Tier-3 physical architecture unchanged.
  - cross-layer capability docs that coordinate multiple domain pairs without replacing domain ownership.
 **Invariants:** [`../technical/guides/SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) - cross-layer MUST/MUST NOT rules + `SYS-INV-*` index (P2-ARCH-01)
 **Maturity:** [`../technical/guides/MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) - four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
@@ -38,7 +38,7 @@ Current feature pairs:
 |---------|--------------|------|
 | `TOKEN_OPTIMIZATION` | [`../capabilities/architecture/TOKEN_OPTIMIZATION.md`](../capabilities/architecture/TOKEN_OPTIMIZATION.md) | [`../capabilities/plan/TOKEN_OPTIMIZATION.md`](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
 | `LANGCHAIN_INDEPENDENCE` | [`../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md`](../capabilities/architecture/LANGCHAIN_INDEPENDENCE.md) | [`../capabilities/plan/LANGCHAIN_INDEPENDENCE.md`](../capabilities/plan/LANGCHAIN_INDEPENDENCE.md) |
-| `INTEGRAX_INTELLIGENCE` | [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) | [`../capabilities/plan/INTEGRAX_INTELLIGENCE.md`](../capabilities/plan/INTEGRAX_INTELLIGENCE.md) | **PROPOSED** — `INTELLIGENCE-X` post-freeze horizontal capability; hub owns WBS |
+| `INTEGRAX_INTELLIGENCE` | [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) | [`../capabilities/plan/INTEGRAX_INTELLIGENCE.md`](../capabilities/plan/INTEGRAX_INTELLIGENCE.md) | **Architecture ratified (OD-INTELLIGENCE-01)** — `INTELLIGENCE-X`; WBS owned by [`INTELLIGENCE-X-MASTER-PLAN.md`](../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md); execution status in plan register |
 | `ARTIFACT_LIFECYCLE` | [`../capabilities/architecture/ARTIFACT_LIFECYCLE.md`](../capabilities/architecture/ARTIFACT_LIFECYCLE.md) | [`../capabilities/plan/ARTIFACT_LIFECYCLE.md`](../capabilities/plan/ARTIFACT_LIFECYCLE.md) |
 
 ---

@@ -1,7 +1,7 @@
 # Autonomous Organization Capability Model
 
-**Document type:** Architecture direction — capability domains and gap clusters (not code)  
-**Initiative SSOT:** [`AUTONOMOUS_ORGANIZATION_INITIATIVE.md`](AUTONOMOUS_ORGANIZATION_INITIATIVE.md)  
+**Document type:** Architecture direction — capability domains and gap clusters (not code)
+**Initiative SSOT:** [`AUTONOMOUS_ORGANIZATION_INITIATIVE.md`](AUTONOMOUS_ORGANIZATION_INITIATIVE.md)
 **Status:** Planned capability model for scenario-driven discovery — **not implemented as runtime**
 
 > **Naming discipline:** Domains, critical capabilities, and gap clusters below are **not** class names, module names, or service identifiers.
@@ -14,7 +14,7 @@ This model describes **what a self-organizing virtual organization must be able 
 
 Atomic capability inventories may grow in later program stages; v1 keeps **domains**, **critical capabilities**, **fourteen gap clusters**, and the **dependency spine**.
 
-**Integrax Intelligence reuse (PROPOSED):** [../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — prefer shared qualified intelligence mechanisms over duplicate organizational harnesses; domain ownership unchanged.
+**Integrax Intelligence reuse (architecture ratified; qualification pending):** [../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md](../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — prefer shared qualified intelligence mechanisms over duplicate organizational harnesses when authorized; domain ownership unchanged.
 
 ---
 
@@ -69,20 +69,20 @@ Execution at the bottom of the spine **delegates to existing Intergrax substrate
 
 These clusters group expected **platform and architecture discovery** work — **not** product module boundaries:
 
-1. Mission → Goal Formation  
-2. Persistent Organizational World Model  
-3. Autonomous Discovery & Experimentation  
-4. Capability Requirement & Gap Discovery  
-5. Capability Acquisition & Composition  
-6. Responsibility & Organizational Design  
-7. Strategic Resource Allocation  
-8. Organizational Memory & Institutional Learning  
-9. Organizational Self-Evaluation  
-10. Self-Reorganization  
-11. Commitment Management & Migration  
-12. Organizational Identity & Continuity  
-13. Organizational Governance Integration  
-14. Capability / Organization Economics & Stabilization  
+1. Mission → Goal Formation
+2. Persistent Organizational World Model
+3. Autonomous Discovery & Experimentation
+4. Capability Requirement & Gap Discovery
+5. Capability Acquisition & Composition
+6. Responsibility & Organizational Design
+7. Strategic Resource Allocation
+8. Organizational Memory & Institutional Learning
+9. Organizational Self-Evaluation
+10. Self-Reorganization
+11. Commitment Management & Migration
+12. Organizational Identity & Continuity
+13. Organizational Governance Integration
+14. Capability / Organization Economics & Stabilization
 
 Scenarios should map discovered gaps to **one or more clusters** when stopping for architecture — without renaming clusters after code packages.
 

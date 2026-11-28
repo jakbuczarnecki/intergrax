@@ -16,6 +16,8 @@ Use this map when you know what you want to do but not which document to open.
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
 | [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index - primary domain-pair baseline + additional canonical pairs + cross-layer feature pairs |
 
+**Integrax Intelligence (OD-INTELLIGENCE-01):** [Architecture hub](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (normative semantics) · [Master Roadmap](../../../governance/tickets/plans/INTELLIGENCE-X-MASTER-PLAN.md) (sole canonical WBS) · [Execution register](../capabilities/plan/INTEGRAX_INTELLIGENCE.md) (mutable execution and closure status). Runtime implementation and qualification are **not established**; W1 **NOT_AUTHORIZED**.
+
 **First contact** stays in the [README](../../../README.md) - including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 
 ---

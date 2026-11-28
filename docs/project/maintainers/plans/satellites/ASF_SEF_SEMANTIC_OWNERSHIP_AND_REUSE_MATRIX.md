@@ -1,6 +1,6 @@
 ﻿# ASF/SEF — Semantic ownership & reuse matrix
 
-**Status:** Published architecture satellite (P1-B1) · **SSOT tables:** Master Plan Deliverable 5  
+**Status:** Published architecture satellite (P1-B1) · **SSOT tables:** Master Plan Deliverable 5
 **Binding plan:** [`governance/tickets/plans/ASF-SEF-MASTER-PLAN.md`](../../../../../governance/tickets/plans/ASF-SEF-MASTER-PLAN.md)
 
 | Concern | Canonical owner | Engineering plane may | Scenario plane may | Duplicate risk |
@@ -18,5 +18,5 @@
 | Nexus / UAEP | Tier-1 runtime | invoke only via proof hosts for REF demos | primary scenario loop | engineering loop SSOT |
 
 **Dependency direction:** Engineering → (artifacts, manifests, tests, evidence) → Tier-3 composition → Scenario runtime. **Never** Engineering → live ToolRuntime production profiles without PROD-Q.
-**Integrax Intelligence reuse (PROPOSED):** [`../../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — SEF-X should consume shared cross-domain intelligence; engineering-specific ownership stays in SEF domains. Approved `ASF-SEF-MASTER-PLAN.md` dependency edits remain DEFERRED_PENDING_AUTHORITY.
+**Integrax Intelligence reuse (architecture ratified; SEF dependency adoption pending):** [`../../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../../../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — SEF-X should consume shared cross-domain intelligence; engineering-specific ownership stays in SEF domains. Approved `ASF-SEF-MASTER-PLAN.md` dependency edits remain DEFERRED_PENDING_AUTHORITY.
 

@@ -567,7 +567,7 @@ Canonical Execution Boundary / `ExecutionId`; `AgentExecutor` behind Execution s
 
 Architecture maturity: **A4** *(target)* - **current invariant closure reopened** by Protocol v2 [`STRATEGIC_HARNESS_MODEL`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) and [`AGENT_SYSTEM`](../../audit_results/2026-08-18/AGENT_SYSTEM.md)
 Implementation maturity: **I4** *(target)* - same reopening; prior ACP delivery remains historical
-Production readiness: **P2**  
+Production readiness: **P2**
 Evidence maturity: **E3**
 
 - **A4 (target)** - Normative contract, author/runtime ownership split, assembly model, registry/capability architecture, adjacent-domain boundaries (Nexus, UER, Tools, Memory, Reasoning, Distribution, Tier-3); AUDIT-IDEAL §12–§20 **Done** historically ([plan](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)). **Current:** accepted Protocol v2 findings `AUDIT-20260818-STRATEGIC_HARNESS_MODEL-01`…`AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10` and `AUDIT-20260818-AGENT_SYSTEM-01`…`AUDIT-20260818-AGENT_SYSTEM-06` block architecture-complete claims until remediated and re-verified.
@@ -611,14 +611,14 @@ Evidence maturity: **E3**
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** at **platform** level (mutating agents can meet platform gates - not universal product qualification)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** at **platform** level (mutating agents can meet platform gates - not universal product qualification)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **Last updated:** 2026-08-26 - **UE-DOC-0.8** iterative tools/streaming alignment with frozen UEA
-**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) - ACP · `run()` · `on_next_step` · dual observability · distribution boundary  
+**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) · [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) - ACP · `run()` · `on_next_step` · dual observability · distribution boundary
 
 **Distribution (execution-adjacent - do not duplicate here):** [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) - catalog · install · binding · runtime lock · activation (AGENT-PLATFORM-2)
 
@@ -1033,7 +1033,7 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 
 # 21. Agent Cognitive Architecture (ACP)
 
-**Status:** Canonical architecture - **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)  
+**Status:** Canonical architecture - **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)
 **ADR:** [ADR-AGENT-001](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md)
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) - ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md#verification-safety-boundaries) (reflection / verification safety) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) (ephemeral codegen - no agent-local craft loops)
@@ -1097,4 +1097,4 @@ CI: `scripts/check_no_upward_application_imports.py` (canonical) plus maintenanc
 
 ---
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

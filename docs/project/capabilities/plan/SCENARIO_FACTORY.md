@@ -1,8 +1,8 @@
 # Scenario Factory — delivery plan (multi-layer feature)
 
-**Architecture pair:** [architecture/SCENARIO_FACTORY.md](../architecture/SCENARIO_FACTORY.md)  
-**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12; approval scope W0–W2)  
-**Campaign dossier (authoritative WBS, gaps, SHA ladder, traceability):** [`SFX_INDEX.md`](../../maintainers/qualification/scenario_factory_x/SFX_INDEX.md)  
+**Architecture pair:** [architecture/SCENARIO_FACTORY.md](../architecture/SCENARIO_FACTORY.md)
+**SSOT:** [`SFX-MASTER-PLAN.md`](../../../../governance/tickets/plans/SFX-MASTER-PLAN.md) (R1, operator-approved 2026-11-12; approval scope W0–W2)
+**Campaign dossier (authoritative WBS, gaps, SHA ladder, traceability):** [`SFX_INDEX.md`](../../maintainers/qualification/scenario_factory_x/SFX_INDEX.md)
 **Workstream documents (on demand):** `../../maintainers/qualification/scenario_factory_x/` — research, inventory, design drafts, UX, IDE walkthrough (created by T-IGX-037-B..E; kept in the dossier, outside the PDC closed-world doc scan, per operator amendment 2026-11-12)
 
 Do not duplicate the WBS here — edit the dossier files only.
@@ -34,9 +34,9 @@ Do not duplicate the WBS here — edit the dossier files only.
 Every post-freeze wave ends with **REBIND-Wn** (ECAP A1–A8 delta audit, D1–D6 classification, IIAC ACT-N11 audited re-bind, independent reviewer session).
 
 
-## Proposed Integrax Intelligence dependency (not ratified)
+## Integrax Intelligence dependency (architecture ratified; consumer adoption pending)
 
-Architecture hub: [`INTEGRAX_INTELLIGENCE.md`](../architecture/INTEGRAX_INTELLIGENCE.md). Program `INTELLIGENCE-X` is proposed **after** ARCH-FREEZE and required Enterprise Campaign acceptance and **before** productive SFX-P5+ implementation. An additional scoped **`GATE-INTELLIGENCE-CONSUME`** entry condition for SFX-P5+ is **PROPOSED** pending amendment of the approved `SFX-MASTER-PLAN.md` digest (DEFERRED_PENDING_AUTHORITY). SFX-P0..P4 preparatory waves and existing gates remain unchanged.
+Architecture hub: [`INTEGRAX_INTELLIGENCE.md`](../architecture/INTEGRAX_INTELLIGENCE.md). Program `INTELLIGENCE-X` architecture and Master Roadmap are **ratified under OD-INTELLIGENCE-01**; productive SFX-P5+ implementation remains gated by ARCH-FREEZE, Enterprise Campaign acceptance, and future runtime qualification. An additional scoped **`GATE-INTELLIGENCE-CONSUME`** entry condition for SFX-P5+ is **PROPOSED** pending amendment of the approved `SFX-MASTER-PLAN.md` digest (DEFERRED_PENDING_AUTHORITY). SFX-P0..P4 preparatory waves and existing gates remain unchanged.
 
 ## Gates
 

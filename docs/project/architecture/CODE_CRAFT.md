@@ -484,9 +484,9 @@ Phase tracker and maintenance queues: [plan](../maintainers/plans/CODE_CRAFT.md)
 
 ## Current maturity
 
-Architecture maturity: **A4**  
-Implementation maturity: **I4**  
-Production readiness: **P1**  
+Architecture maturity: **A4**
+Implementation maturity: **I4**
+Production readiness: **P1**
 Evidence maturity: **E3**
 
 - **A4** - Canonical domain pair; orchestrator/session/profile separation; Tool / Sandbox / Governance / CVL boundaries; promotion semantics; isolation model documented honestly; P2-ARCH-12 safety boundary ([plan](../maintainers/plans/CODE_CRAFT.md)). AW-7B-GATE (2026-09) closed Protocol v2 authority/HITL/promotion/isolation anti-downgrade/egress contract gaps on `development`; hostile-code production qualification remains unproven.
@@ -547,14 +547,14 @@ CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOr
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/CODE_CRAFT.md`](../maintainers/plans/CODE_CRAFT.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6  
-**ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../technical/adr/entries/2026-06-10/ADR-CODECRAFT-001.md)  
-**Audit layer:** 11b (Ephemeral Code Craft)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
-**Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/CODE_CRAFT.md`](../maintainers/plans/CODE_CRAFT.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6
+**ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../technical/adr/entries/2026-06-10/ADR-CODECRAFT-001.md)
+**Audit layer:** 11b (Ephemeral Code Craft)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
+**Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`
 **Last updated:** 2026-09-07 - AW-7B-GATE independent verification closure (qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 
 ### Cursor read scope (token budget)
@@ -760,4 +760,4 @@ Wiring **Done** (ECC-3): `wire_application_codecraft()` → `RuntimeConfig` → 
 
 Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`) - **Done** (ECC-MAINT-01); host profile remains default when metadata absent.
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

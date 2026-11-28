@@ -12,7 +12,7 @@ Intergrax exists for teams building specialized agent applications that would ot
 > This page explains the problem category and evaluation boundary. See [PROOFS.md](../proofs/PROOFS.md) for detailed evidence and claim limits.
 >
 > **Document roles:** Use this page when evaluating category, problem, fit, alternatives, and strategic/business thesis. Use [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) when evaluating architecture, responsibility boundaries, execution model, and platform composition.
-**Proposed strategic sequence (not qualified):** Enterprise Foundation → [Integrax Intelligence](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (INTELLIGENCE-X, cross-domain capability) → Product & Application Ecosystem.
+**Ratified strategic sequence (architecture under OD-INTELLIGENCE-01; runtime qualification not established):** Enterprise Foundation → [Integrax Intelligence](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) (INTELLIGENCE-X, cross-domain capability) → Product & Application Ecosystem.
 
 ---
 

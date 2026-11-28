@@ -164,9 +164,9 @@ Tier routing via `RagProfile` is **cost/latency routing**, not autonomous MIME-b
 
 ## Current maturity
 
-Architecture maturity: **A5**  
-Implementation maturity: **I4**  
-Production readiness: **P3**  
+Architecture maturity: **A5**
+Implementation maturity: **I4**
+Production readiness: **P3**
 Evidence maturity: **E4**
 
 - **A5** - Canonical domain pair with normative contracts (`KnowledgeDocument`, `VectorStoreScope`, ownership/replacement semantics), closed qualification tracks (RAG-FINAL, RAG-PROD, RAG-LIVE, RAG-ENT), and enforced invariants - global **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** ([§8](#8-live-claim-boundary-and-roadmap) below). Protocol v2 audit (2026-08-18) documents **accepted residual contract gaps** on canonical `RetrievalService` scope authority, `RetrievalHit` ABI enforcement, and resource-policy validation - target invariants in [Protocol v2 RAG target invariants (2026-08-18)](#protocol-v2-rag-target-invariants-2026-08-18); **not** a maturity-axis downgrade of bounded qualification evidence.
@@ -639,4 +639,4 @@ Accepted Protocol v2 audit layer [`RAG`](../../audit_results/2026-08-18/RAG.md) 
 
 Remediation tracked as **RAG-SCOPE-CONTRACT-INTEGRITY** (findings 01–02), **RAG-CONFIGURATION-QUALIFICATION-INTEGRITY** (findings 03–05), and **RAG-OBSERVABILITY-IDENTITY** (finding 06) in [plan](../maintainers/plans/RAG.md#protocol-v2-rag-remediation-2026-08-18). **Not implemented** by audit persistence.
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

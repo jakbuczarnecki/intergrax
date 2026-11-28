@@ -617,12 +617,12 @@ Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` - six a
 
 ## Maintainer and Cursor context
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12  
-**Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
-**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
+**Status:** Canonical architecture (domain pair 1:1)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12
+**Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)
+**Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)
 **ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-09/ADR-SCALE-002.md)
 **Last updated:** 2026-08-18 - DOC-3T design-system modernization; reconciled loop/back-end wiring truth
 
@@ -678,4 +678,4 @@ Before modifying ECP behavior, verify:
 - Plan rows mark AUDIT-IDEAL-30.4 Celery/K8s adapters **Done** - accurate for adapter **implementation**, not for default reference host wiring or production cluster evidence (reconciled in this hub).
 - Satellite may contain extended production-gate detail - verify against code before citing operational runbooks; do not duplicate satellite into hub.
 
-**Integrax Intelligence (cross-domain capability, PROPOSED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.
+**Integrax Intelligence (cross-domain capability; architecture and Master Roadmap ratified under OD-INTELLIGENCE-01; complete runtime implementation and qualification not established; W1 NOT_AUTHORIZED):** [`INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — horizontal composition of this domain's authorized mechanisms into goal-driven execution; not a competing runtime, physical tier, or sole execution authority. Semantic ownership remains in this document.

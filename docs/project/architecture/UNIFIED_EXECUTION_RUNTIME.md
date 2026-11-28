@@ -1,5 +1,5 @@
 # Unified Execution Runtime
-**Integrax Intelligence adoption surface (PROPOSED):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — intelligent goal execution adopts through canonical admission, lifecycle, checkpoint, and child execution mechanisms defined here; no parallel runtime or scheduler.
+**Integrax Intelligence adoption surface (architecture ratified under OD-INTELLIGENCE-01; runtime qualification not established):** [`../capabilities/architecture/INTEGRAX_INTELLIGENCE.md`](../capabilities/architecture/INTEGRAX_INTELLIGENCE.md) — intelligent goal execution adopts through canonical admission, lifecycle, checkpoint, and child execution mechanisms defined here; no parallel runtime or scheduler.
 
 **Intergrax Unified Execution Runtime (UER)** owns Run/Attempt lifecycle structure, Execution identity coordination, executor strategy routing, and lifecycle facts for every platform work unit.
 
