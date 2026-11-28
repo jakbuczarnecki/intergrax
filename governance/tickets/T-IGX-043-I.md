@@ -90,3 +90,7 @@ Session: `INTEGRAX | ARCH-FREEZE | W3 | PT-WD | AF-W3-PT-WD-01` (Cursor `rename_
 | TASK-09 preservation | DONE (91 checks; no package delta) |
 
 Pytest log sha256 `B0418231824C91C5B843975C9B9825FCE4131CF28ED283887AB7ABD3A59B3FEA` (115 collected, 113 passed, 2 failed). Residuals unchanged; no independent PASS.
+
+## AF-W3-BATCH-12-14 — Q2 overlap & 043-M stale guard settlement (2026-11-28)
+
+Sibling batch `T-IGX-043-M` corrected the two legacy **85-check** PDC manifest guards (now **91**); those failures are **resolved** on current `development`. Shared ENT unit regression: **304/305** pass @ execution SHA `2f8ec5dd5328908295bbcb7a82ae31033d6a0ebb` (log sha256 `44eaf05b5a6cf8d79f05072b07501c593215ce265413f89fa431f368be6024fe`). **Q2 Tier-1 98-node inventory:** `regression_nodes_split2.txt` still **absent** — overlap via `tests/qualification/ent_audit_x/unit` only; do not claim historical 98/98. Remaining failure: `test_run_qual_wave.py::test_acceptance_tests_not_collected_as_ent_l2` (environment: `uv` missing from subprocess PATH on Windows). No change to plan digest, approval, or prior evidence records.
