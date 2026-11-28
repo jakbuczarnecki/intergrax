@@ -6,7 +6,7 @@ Documentation-only adoption batch for package **II-W0-05 — Main architecture d
 
 ## Plan digest
 
-Plan digest: 3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481
+Plan digest: 2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89
 
 ## Approved
 
@@ -14,7 +14,7 @@ _(pending: Operator; implementing session does not write this line)_
 
 ## Test contract
 
-After Operator approval only — execute canonical validators listed in plan Q07; preserve command, exit code, scope and evidence locator. Preparation baseline used `python` when `uv` was unavailable on PATH; confirm `uv run` at execution baseline per ENTERPRISE_QUALITY_WORKFLOW.
+After Operator approval only — execute canonical `uv run` validators listed in plan Q07 (including `tests/qualification/pdc_x/p6_repair/test_p6r_feature_docs.py` and `uv run python -m scripts.governance.igx_gov ticket --profile smoke`, using process-scoped PATH adjustment if `uv` is not on default PATH); preserve command, exit code, scope and evidence locator.
 
 ## Out of scope
 
@@ -26,4 +26,6 @@ plan_pending
 
 ## Checkpoint
 
-**II-W0-B-PREP-01 (2026-11-28):** Ticket and plan prepared at `plan_pending`; digest `3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481`; mechanical Chapter 14 inventory bound in plan; no `Approved:` line; no II-W0-05 deliverable execution; terminal preparation state `W0_B_PLAN_PREPARED_PENDING_INDEPENDENT_ACCEPTANCE_AND_OPERATOR_APPROVAL`.
+**II-W0-B-PREP-01 (2026-11-28):** Ticket and plan prepared at `plan_pending`; digest `3258f736c30de77aca8a2fe7faffb89c41a1863059dd092f035a065101824481` (commit `6e5110cb08320e05aba3fb44d3bfbecb946adeaf`, blob `7673ad3f19a51988598391be7bbd2b3347b3fe55`); independent preparation review verdict `PLAN_CORRECTIONS_REQUIRED` (`F-W0B-01`..`F-W0B-06`); rejected for execution.
+
+**II-W0-B-PREP-CORRECTIVE-01 (2026-11-28):** Resolved findings `F-W0B-01`..`F-W0B-06`: deduplicated core inventory (49 unique paths: 3 `NO_CHANGE_WITH_REASON`, 41 `STATUS_RECONCILIATION`, 1 `DEFERRED_PENDING_AUTHORITY`, 3 `W0_06_SCOPE`, 1 `LINK_ONLY`), corrected 5 document dispositions, enumerated 49-path execution write-set, enumerated 137-path additional record-only inventory (136 `NO_CHANGE_WITH_REASON`, 1 `CANDIDATE_REQUIRED_CHANGE_RECORD_ONLY`), bound semantic status/authority boundaries, and corrected Q07/Q08 qualification contract. Previous rejected digest preserved as historical evidence; new digest `2441e877f2eb337ab008cff36a34ae1719f4e07279b85738a4921e55a1d2da89`; no `Approved:` line; lifecycle `plan_pending`; no II-W0-05 deliverable execution; terminal preparation state `W0_B_CORRECTED_PLAN_READY_FOR_INDEPENDENT_ACCEPTANCE`.
